@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "chinverse-backend"
+version = "0.1.0"
+description = "Backend for ChinVerse"
+authors = ["Admin <admin@chinverse.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+sqlalchemy = "^2.0.25"
+asyncpg = "^0.29.0"
+alembic = "^1.13.1"
+pydantic-settings = "^2.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
