@@ -5,6 +5,7 @@ from jose import jwt, JWTError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core import security
@@ -35,7 +36,9 @@ async def get_current_user(
             detail="Could not validate credentials",
         )
     
-    result = await session.execute(select(User).where(User.id == int(token_data.sub)))
+    result = await session.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == int(token_data.sub))
+    )
     user = result.scalars().first()
     
     if not user:

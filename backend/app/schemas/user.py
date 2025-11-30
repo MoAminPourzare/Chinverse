@@ -24,9 +24,28 @@ class UserInDBBase(UserBase):
     class Config:
         from_attributes = True
 
+# Profile schemas
+class UserProfileBase(BaseModel):
+    display_name: Optional[str] = None
+    headline: Optional[str] = None
+    about_me: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    website_url: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class UserProfileUpdate(UserProfileBase):
+    pass
+
+class UserProfile(UserProfileBase):
+    user_id: int
+
+    class Config:
+        from_attributes = True
+
 # Additional properties to return via API
 class User(UserInDBBase):
-    pass
+    profile: Optional[UserProfile] = None
 
 class UserInDB(UserInDBBase):
     hashed_password: str
