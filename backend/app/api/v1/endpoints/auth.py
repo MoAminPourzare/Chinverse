@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app import schemas
 from app.api import deps
@@ -85,6 +86,11 @@ async def create_user_signup(
     db.add(profile)
     
     await db.commit()
-    await db.refresh(user)
+    
+    # FIX: Reload user with profile relationship eagerly loaded
+    # This prevents MissingGreenlet error in async SQLAlchemy
+    query = select(User).options(selectinload(User.profile)).where(User.id == user.id)
+    result = await db.execute(query)
+    user = result.scalars().first()
     
     return user

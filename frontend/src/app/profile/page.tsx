@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { userService, User, UserProfile } from '@/services/user.service';
@@ -22,35 +23,32 @@ export default function ProfilePage() {
     });
 
     useEffect(() => {
-        fetchUser();
-    }, []);
-
-    const fetchUser = async () => {
-        try {
-            const userData = await userService.getMe();
-            setUser(userData);
-            if (userData.profile) {
-                setFormData({
-                    display_name: userData.profile.display_name || '',
-                    headline: userData.profile.headline || '',
-                    about_me: userData.profile.about_me || '',
-                    country: userData.profile.country || '',
-                    city: userData.profile.city || '',
-                    website_url: userData.profile.website_url || '',
-                });
-            } else {
-                // Initialize display name from user data if profile is empty
-                // But schema requires display_name in profile. 
-                // If profile is null, we might want to set a default.
-                setFormData(prev => ({ ...prev, display_name: 'User' }));
+        const fetchUser = async () => {
+            try {
+                const userData = await userService.getMe();
+                setUser(userData);
+                if (userData.profile) {
+                    setFormData({
+                        display_name: userData.profile.display_name || '',
+                        headline: userData.profile.headline || '',
+                        about_me: userData.profile.about_me || '',
+                        country: userData.profile.country || '',
+                        city: userData.profile.city || '',
+                        website_url: userData.profile.website_url || '',
+                    });
+                } else {
+                    setFormData(prev => ({ ...prev, display_name: 'User' }));
+                }
+            } catch (error) {
+                console.error('Failed to fetch user', error);
+                router.push('/login');
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Failed to fetch user', error);
-            router.push('/login');
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
+
+        fetchUser();
+    }, [router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -88,9 +86,15 @@ export default function ProfilePage() {
                     {/* Header */}
                     <div className="bg-indigo-600 px-8 py-10 text-white text-center">
                         <div className="inline-block p-1 rounded-full bg-white/20 mb-4">
-                            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-indigo-600 text-4xl font-bold">
+                            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-indigo-600 text-4xl font-bold relative overflow-hidden">
                                 {user?.profile?.avatar_url ? (
-                                    <img src={user.profile.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                                    <Image
+                                        src={user.profile.avatar_url}
+                                        alt="Avatar"
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
                                 ) : (
                                     (formData.display_name?.[0] || user?.email?.[0] || 'U').toUpperCase()
                                 )}

@@ -39,7 +39,7 @@ export const authService = {
     },
 
     // تابع ثبت‌نام
-    async signup(data: SignupRequest): Promise<any> {
+    async signup(data: SignupRequest): Promise<unknown> {
         // FIX: آدرس از /users/signup به /signup تغییر کرد
         const response = await api.post('/signup', data);
         return response.data;
