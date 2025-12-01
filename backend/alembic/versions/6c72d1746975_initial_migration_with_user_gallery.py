@@ -1,18 +1,18 @@
-"""Initial migration
+"""Initial migration with user gallery
 
-Revision ID: a5df6541b707
+Revision ID: 6c72d1746975
 Revises: 
-Create Date: 2025-11-27 17:10:54.862585
+Create Date: 2025-12-01 16:25:59.511242
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'a5df6541b707'
+revision: str = '6c72d1746975'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -169,6 +169,17 @@ def upgrade() -> None:
     sa.UniqueConstraint('follower_id', 'followee_id', name='uq_follower_followee')
     )
     op.create_index(op.f('ix_user_follows_id'), 'user_follows', ['id'], unique=False)
+    op.create_table('user_gallery_items',
+    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('user_id', sa.BigInteger(), nullable=False),
+    sa.Column('image_url', sa.String(), nullable=False),
+    sa.Column('caption', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_user_gallery_items_id'), 'user_gallery_items', ['id'], unique=False)
     op.create_table('user_language_settings',
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('user_id', sa.BigInteger(), nullable=False),
@@ -204,6 +215,10 @@ def upgrade() -> None:
     sa.Column('city', sa.String(), nullable=True),
     sa.Column('website_url', sa.String(), nullable=True),
     sa.Column('avatar_url', sa.String(), nullable=True),
+    sa.Column('bio', sa.String(), nullable=True),
+    sa.Column('websites', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+    sa.Column('socials', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+    sa.Column('resume', postgresql.JSON(astext_type=sa.Text()), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
@@ -465,6 +480,8 @@ def downgrade() -> None:
     op.drop_table('user_preferences')
     op.drop_index(op.f('ix_user_language_settings_id'), table_name='user_language_settings')
     op.drop_table('user_language_settings')
+    op.drop_index(op.f('ix_user_gallery_items_id'), table_name='user_gallery_items')
+    op.drop_table('user_gallery_items')
     op.drop_index(op.f('ix_user_follows_id'), table_name='user_follows')
     op.drop_table('user_follows')
     op.drop_index(op.f('ix_subcategories_id'), table_name='subcategories')
