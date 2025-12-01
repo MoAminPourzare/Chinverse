@@ -33,6 +33,10 @@ class UserProfileBase(BaseModel):
     city: Optional[str] = None
     website_url: Optional[str] = None
     avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    websites: Optional[list[str]] = None
+    socials: Optional[list[dict]] = None
+    resume: Optional[dict] = None
 
 class UserProfileUpdate(UserProfileBase):
     pass

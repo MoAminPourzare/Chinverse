@@ -3,6 +3,7 @@ from typing import Optional, List
 from sqlalchemy import String, Boolean, ForeignKey, Text, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+from sqlalchemy.dialects.postgresql import JSON
 
 class UserStatus(str, Enum):
     ACTIVE = "active"
@@ -32,6 +33,7 @@ class User(Base, TimestampMixin):
     social_links: Mapped[List["UserSocialLink"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     preference: Mapped["UserPreference"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
     language_settings: Mapped[List["UserLanguageSetting"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    gallery_items: Mapped[List["UserGalleryItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 class UserProfile(Base, TimestampMixin):
     __tablename__ = "user_profiles"
@@ -44,9 +46,14 @@ class UserProfile(Base, TimestampMixin):
     city: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     website_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    websites: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
+    socials: Mapped[Optional[list[dict]]] = mapped_column(JSON, nullable=True)
+    resume: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="profile")
+
 
 class UserSocialLink(Base, TimestampMixin):
     __tablename__ = "user_social_links"
@@ -59,3 +66,14 @@ class UserSocialLink(Base, TimestampMixin):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="social_links")
+
+class UserGalleryItem(Base, TimestampMixin):
+    __tablename__ = "user_gallery_items"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    image_url: Mapped[str] = mapped_column(String, nullable=False)
+    caption: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="gallery_items")
