@@ -38,4 +38,17 @@ export const userService = {
         const response = await api.put<User>('/users/me/profile', data);
         return response.data;
     },
+
+    // آپلود کردن آواتار
+    async uploadAvatar(file: File): Promise<User> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post<User>('/users/me/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
 };
