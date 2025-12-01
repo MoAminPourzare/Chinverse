@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowRight, Pencil, User as UserIcon, Loader2, LogOut } from "lucide-react";
@@ -17,6 +17,9 @@ export default function AccountPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
     // Initial state
     const [formData, setFormData] = useState<AccountFormState>({
@@ -56,21 +59,63 @@ export default function AccountPage() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // فقط فایل‌های تصویری
+            if (!file.type.startsWith('image/')) {
+                alert('لطفاً یک فایل تصویری انتخاب کنید');
+                return;
+            }
+
+            setAvatarFile(file);
+
+            // ایجاد پیش‌نمایش
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
         try {
-            // Extract only UserProfile fields for update
+            // اول آواتار را آپلود می‌کنیم (اگر انتخاب شده باشد)
+            if (avatarFile) {
+                await userService.uploadAvatar(avatarFile);
+            }
+
+            // سپس پروفایل را آپدیت می‌کنیم
             const profileData: UserProfile = {
                 display_name: formData.display_name,
                 headline: formData.headline,
                 city: formData.city,
-                avatar_url: formData.avatar_url,
-                // Add other profile fields if they exist in the form in the future
             };
 
             await userService.updateProfile(profileData);
             alert("تغییرات با موفقیت ذخیره شد");
+
+            // پاک کردن فایل و پیش‌نمایش بعد از موفقیت
+            setAvatarFile(null);
+            setAvatarPreview(null);
+
+            // بارگذاری مجدد اطلاعات کاربر
+            const userData = await userService.getMe();
+            setFormData({
+                display_name: userData.profile?.display_name || "",
+                headline: userData.profile?.headline || "",
+                city: userData.profile?.city || "",
+                email: userData.email || "",
+                phone: userData.phone || "",
+                avatar_url: userData.profile?.avatar_url || "",
+            });
         } catch (error) {
             console.error("Failed to update profile", error);
             alert("خطا در ذخیره تغییرات");
@@ -108,14 +153,31 @@ export default function AccountPage() {
                 </header>
 
                 <div className="px-8">
+                    {/* Hidden File Input */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                    />
+
                     {/* Avatar Section */}
                     <div className="flex flex-col items-center mb-10">
-                        <div className="relative mb-4">
+                        <div className="relative mb-4 cursor-pointer" onClick={handleAvatarClick}>
                             <div className="w-28 h-28 rounded-full border-2 border-blue-700 p-1.5 relative">
                                 <div className="w-full h-full rounded-full bg-orange-200 flex items-center justify-center overflow-hidden relative z-10 text-orange-500">
-                                    {formData.avatar_url ? (
+                                    {avatarPreview ? (
                                         <Image
-                                            src={formData.avatar_url}
+                                            src={avatarPreview}
+                                            alt="Preview"
+                                            width={112}
+                                            height={112}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : formData.avatar_url ? (
+                                        <Image
+                                            src={`http://localhost:8000${formData.avatar_url}`}
                                             alt="Profile"
                                             width={112}
                                             height={112}
@@ -128,7 +190,11 @@ export default function AccountPage() {
                                 </div>
                             </div>
                         </div>
-                        <button className="flex items-center text-gray-700 text-sm font-bold gap-2 hover:text-blue-600 transition-colors">
+                        <button
+                            type="button"
+                            onClick={handleAvatarClick}
+                            className="flex items-center text-gray-700 text-sm font-bold gap-2 hover:text-blue-600 transition-colors"
+                        >
                             <Pencil className="w-4 h-4" />
                             <span>ویرایش تصویر پروفایل</span>
                         </button>
