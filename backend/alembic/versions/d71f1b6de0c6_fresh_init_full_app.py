@@ -1,8 +1,8 @@
-"""Initial migration with user gallery
+"""fresh_init_full_app
 
-Revision ID: 6c72d1746975
+Revision ID: d71f1b6de0c6
 Revises: 
-Create Date: 2025-12-01 16:25:59.511242
+Create Date: 2025-12-04 16:47:40.394516
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '6c72d1746975'
+revision: str = 'd71f1b6de0c6'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -412,6 +412,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_lessons_id'), 'lessons', ['id'], unique=False)
+    op.create_table('contents',
+    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('lesson_id', sa.BigInteger(), nullable=False),
+    sa.Column('content_type', sa.String(), nullable=False),
+    sa.Column('video_url', sa.String(), nullable=True),
+    sa.Column('text_content', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['lesson_id'], ['lessons.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_contents_id'), 'contents', ['id'], unique=False)
     op.create_table('lesson_subtitles',
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('lesson_id', sa.BigInteger(), nullable=False),
@@ -446,6 +458,8 @@ def downgrade() -> None:
     op.drop_table('lesson_word_maps')
     op.drop_index(op.f('ix_lesson_subtitles_id'), table_name='lesson_subtitles')
     op.drop_table('lesson_subtitles')
+    op.drop_index(op.f('ix_contents_id'), table_name='contents')
+    op.drop_table('contents')
     op.drop_index(op.f('ix_lessons_id'), table_name='lessons')
     op.drop_table('lessons')
     op.drop_index(op.f('ix_course_sections_id'), table_name='course_sections')

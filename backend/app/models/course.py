@@ -64,8 +64,21 @@ class Lesson(Base, TimestampMixin):
 
     # Relationships
     section: Mapped["CourseSection"] = relationship(back_populates="lessons")
+    content: Mapped[List["Content"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
     subtitles: Mapped[List["LessonSubtitle"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
     word_maps: Mapped[List["LessonWordMap"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
+
+class Content(Base, TimestampMixin):
+    __tablename__ = "contents"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False)
+    content_type: Mapped[str] = mapped_column(String, nullable=False) # video, text
+    video_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    text_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Relationships
+    lesson: Mapped["Lesson"] = relationship(back_populates="content")
 
 class LessonSubtitle(Base, TimestampMixin):
     __tablename__ = "lesson_subtitles"
