@@ -20,9 +20,9 @@ export default function ExplorePage() {
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                         {[
-                            { title: "تلفظ", id: "pronunciation" },
+                            { title: "تلفظ", id: "pronunciation", href: "/explore/pronunciation" },
                             { title: "HSK", id: "hsk", href: "/explore/hsk" },
-                            { title: "گرامر", id: "grammar" },
+                            { title: "گرامر", id: "grammar", href: "/explore/grammar" },
                             { title: "مکالمه", id: "conversation" },
                         ].map((item) => (
                             item.href ? (
@@ -53,18 +53,28 @@ export default function ExplorePage() {
                     </div>
                     <div className="flex overflow-x-auto px-4 gap-3 pb-2 no-scrollbar">
                         {[
-                            { title: "فیلم و سریال", id: "movies" },
-                            { title: "آشپزی", id: "cooking" },
+                            { title: "فیلم و سریال", id: "movies", href: "/explore/movies" },
+                            { title: "آشپزی", id: "cooking", href: "/explore/cooking" },
                             { title: "پادکست", id: "podcast" },
                             { title: "موسیقی", id: "music" },
-                            { title: "ریالیتی شو", id: "reality" },
+                            { title: "ریالیتی شو", id: "reality", href: "/explore/reality" },
                         ].map((item) => (
-                            <button
-                                key={item.id}
-                                className="flex-shrink-0 w-28 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
-                            >
-                                <span className="text-sm text-center px-1 leading-tight">{item.title}</span>
-                            </button>
+                            item.href ? (
+                                <Link
+                                    key={item.id}
+                                    href={item.href}
+                                    className="flex-shrink-0 w-28 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
+                                >
+                                    <span className="text-sm text-center px-1 leading-tight">{item.title}</span>
+                                </Link>
+                            ) : (
+                                <button
+                                    key={item.id}
+                                    className="flex-shrink-0 w-28 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
+                                >
+                                    <span className="text-sm text-center px-1 leading-tight">{item.title}</span>
+                                </button>
+                            )
                         ))}
                     </div>
                 </section>
