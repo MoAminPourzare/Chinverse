@@ -2,6 +2,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.api import deps
 from app.models.course import Course, Lesson, Content, Category, Subcategory
@@ -36,7 +37,16 @@ async def read_course(
     """
     Get course by ID.
     """
-    course = await db.get(Course, id)
+    from app.models.course import CourseSection
+    
+    result = await db.execute(
+        select(Course)
+        .options(
+            selectinload(Course.sections).selectinload(CourseSection.lessons)
+        )
+        .where(Course.id == id)
+    )
+    course = result.scalar_one_or_none()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
@@ -50,7 +60,16 @@ async def read_course_lessons(
     """
     Get lessons for a course.
     """
-    course = await db.get(Course, id)
+    from app.models.course import CourseSection
+    
+    result = await db.execute(
+        select(Course)
+        .options(
+            selectinload(Course.sections).selectinload(CourseSection.lessons)
+        )
+        .where(Course.id == id)
+    )
+    course = result.scalar_one_or_none()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
