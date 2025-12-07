@@ -16,7 +16,7 @@ router = APIRouter()
 UPLOAD_DIR = "static/uploads/gallery"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@router.get("/me/gallery", response_model=List[GalleryItem])
+@router.get("/", response_model=List[GalleryItem])
 async def get_user_gallery(
     *,
     db: Session = Depends(get_db),
@@ -34,7 +34,7 @@ async def get_user_gallery(
     
     return gallery_items
 
-@router.post("/me/gallery", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
 async def upload_gallery_image(
     *,
     db: Session = Depends(get_db),
@@ -76,7 +76,7 @@ async def upload_gallery_image(
     
     return gallery_item
 
-@router.delete("/me/gallery/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_gallery_item(
     *,
     db: Session = Depends(get_db),
