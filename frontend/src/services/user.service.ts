@@ -142,6 +142,14 @@ export const userService = {
         const response = await api.get<UserService[]>(`/users/${userId}/services`);
         return response.data;
     },
+
+    // دریافت همه خدمات عمومی برای ویترین
+    async getPublicServices(skip = 0, limit = 50): Promise<ServiceWithProvider[]> {
+        const response = await api.get<ServiceWithProvider[]>('/users/me/services/public', {
+            params: { skip, limit }
+        });
+        return response.data;
+    },
 };
 
 // ===== SHOWCASE TYPES =====
@@ -185,4 +193,20 @@ export interface UserService {
     description: string;
     banner_url?: string;
     price_label?: string;
+}
+
+export interface ServiceProvider {
+    id: number;
+    display_name?: string;
+    avatar_url?: string;
+    headline?: string;
+}
+
+export interface ServiceWithProvider {
+    id: number;
+    title: string;
+    description: string;
+    banner_url?: string;
+    price_label?: string;
+    provider?: ServiceProvider;
 }

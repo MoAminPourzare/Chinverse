@@ -114,3 +114,58 @@ async def delete_service(
     
     await db.delete(service)
     await db.commit()
+
+
+# ===== PUBLIC ENDPOINTS =====
+
+@router.get("/public", response_model=List[dict])
+async def get_public_services(
+    db: AsyncSession = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 50,
+) -> Any:
+    """
+    Get all public services for the showcase marketplace.
+    Returns services with provider info (name, avatar).
+    No authentication required.
+    """
+    from sqlalchemy.orm import selectinload
+    from app.models.user import UserProfile
+    
+    result = await db.execute(
+        select(UserService)
+        .options(selectinload(UserService.user).selectinload(User.profile))
+        .offset(skip)
+        .limit(limit)
+    )
+    services = result.scalars().all()
+    
+    # Build response with provider info
+    public_services = []
+    for service in services:
+        provider_info = None
+        if service.user and service.user.profile:
+            provider_info = {
+                "id": service.user.id,
+                "display_name": service.user.profile.display_name,
+                "avatar_url": service.user.profile.avatar_url,
+                "headline": service.user.profile.headline,
+            }
+        elif service.user:
+            provider_info = {
+                "id": service.user.id,
+                "display_name": None,
+                "avatar_url": None,
+                "headline": None,
+            }
+        
+        public_services.append({
+            "id": service.id,
+            "title": service.title,
+            "description": service.description,
+            "banner_url": service.banner_url,
+            "price_label": service.price_label,
+            "provider": provider_info
+        })
+    
+    return public_services
