@@ -7,3 +7,4 @@ from app.models.course import Category, Subcategory, Course, CourseSection, Less
 from app.models.social import UserFollow, Post, PostMedia, PostLike, PostComment, ForumQuestion, ForumAnswer
 from app.models.business import Service, ConsultationRequest, SubscriptionPlan, UserSubscription
 from app.models.learning import LeitnerCard, StudySession, UserStreak, CourseReview
+from app.models.service import UserService

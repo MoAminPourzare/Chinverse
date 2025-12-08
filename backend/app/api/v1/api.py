@@ -1,17 +1,23 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, gallery, courses
+from app.api.v1.endpoints import auth, users, gallery, courses, services
 
 api_router = APIRouter()
 
-# Authentication - auth.py has /login/access-token and /signup endpoints
-# No prefix needed since paths are already complete
+# ===== AUTHENTICATION =====
+# auth.py has /login/access-token and /signup endpoints
 api_router.include_router(auth.router, tags=["auth"])
 
-# Users - users.py has /me, /me/profile, /me/avatar endpoints
-api_router.include_router(users.router, prefix="/users", tags=["users"])
-
-# Gallery - gallery.py has /, /{item_id} endpoints (maps to /users/me/gallery/*)
+# ===== GALLERY =====
+# MUST come before users router to avoid /{user_id} matching "me"
 api_router.include_router(gallery.router, prefix="/users/me/gallery", tags=["gallery"])
 
-# Courses - courses.py has /, /{id}, /{id}/lessons, /lessons/{id} endpoints
+# ===== SERVICES =====
+# MUST come before users router to avoid /{user_id} matching "me"
+api_router.include_router(services.router, prefix="/users/me/services", tags=["services"])
+
+# ===== USERS =====
+# MUST come after /me/* specific routes to avoid path conflicts
+api_router.include_router(users.router, prefix="/users", tags=["users"])
+
+# ===== COURSES =====
 api_router.include_router(courses.router, prefix="/courses", tags=["courses"])

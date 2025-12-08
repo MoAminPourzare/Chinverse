@@ -8,6 +8,7 @@ import { userService, User } from "@/services/user.service";
 import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
 import EditResumeModal from "@/components/profile/EditResumeModal";
 import GalleryTab from "@/components/gallery/GalleryTab";
+import ServicesTab from "@/components/profile/ServicesTab";
 
 interface Tab {
     id: string;
@@ -249,6 +250,10 @@ export default function ProfilePage() {
 
         if (activeTab === "gallery") {
             return <GalleryTab />;
+        }
+
+        if (activeTab === "services") {
+            return <ServicesTab />;
         }
 
         const tab = tabs.find((t) => t.id === activeTab);

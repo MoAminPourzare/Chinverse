@@ -97,4 +97,92 @@ export const userService = {
         });
         return response.data;
     },
+
+    // ===== PUBLIC ENDPOINTS =====
+
+    // دریافت لیست کاربران برای ویترین
+    async getShowcaseUsers(skip = 0, limit = 20): Promise<ShowcaseUser[]> {
+        const response = await api.get<ShowcaseUser[]>('/users/showcase', {
+            params: { skip, limit }
+        });
+        return response.data;
+    },
+
+    // دریافت پروفایل عمومی کاربر
+    async getPublicProfile(userId: number): Promise<PublicUser> {
+        const response = await api.get<PublicUser>(`/users/${userId}/public`);
+        return response.data;
+    },
+
+    // ===== SERVICES ENDPOINTS =====
+
+    // دریافت خدمات کاربر فعلی
+    async getMyServices(): Promise<UserService[]> {
+        const response = await api.get<UserService[]>('/users/me/services');
+        return response.data;
+    },
+
+    // ایجاد خدمت جدید
+    async createService(data: FormData): Promise<UserService> {
+        const response = await api.post<UserService>('/users/me/services', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    // حذف خدمت
+    async deleteService(serviceId: number): Promise<void> {
+        await api.delete(`/users/me/services/${serviceId}`);
+    },
+
+    // دریافت خدمات یک کاربر (عمومی)
+    async getUserServices(userId: number): Promise<UserService[]> {
+        const response = await api.get<UserService[]>(`/users/${userId}/services`);
+        return response.data;
+    },
 };
+
+// ===== SHOWCASE TYPES =====
+
+export interface EducationSummary {
+    university?: string;
+    field?: string;
+    degree?: string;
+}
+
+export interface ShowcaseUser {
+    id: number;
+    display_name?: string;
+    headline?: string;
+    city?: string;
+    country?: string;
+    avatar_url?: string;
+    education?: EducationSummary;
+    gallery_preview: string[];
+    hsk_level?: string;
+}
+
+export interface GalleryItemPublic {
+    id: number;
+    image_url: string;
+    caption?: string;
+}
+
+export interface PublicUser {
+    id: number;
+    profile?: UserProfile;
+    gallery_items: GalleryItemPublic[];
+}
+
+// ===== SERVICE TYPES =====
+
+export interface UserService {
+    id: number;
+    user_id: number;
+    title: string;
+    description: string;
+    banner_url?: string;
+    price_label?: string;
+}
