@@ -27,10 +27,11 @@ uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(uploads_dir, exist_ok=True)
 os.makedirs(os.path.join(uploads_dir, "avatars"), exist_ok=True)
 
-# ایجاد دایرکتوری static برای گالری
+# ایجاد دایرکتوری static برای گالری و خدمات
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 os.makedirs(static_dir, exist_ok=True)
 os.makedirs(os.path.join(static_dir, "uploads", "gallery"), exist_ok=True)
+os.makedirs(os.path.join(static_dir, "uploads", "services"), exist_ok=True)
 
 # Mount static files برای سرو کردن تصاویر آپلود شده
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")

@@ -1,8 +1,8 @@
-"""fresh_init_full_app
+"""Final Full Setup
 
-Revision ID: d71f1b6de0c6
+Revision ID: e7e64854d48d
 Revises: 
-Create Date: 2025-12-04 16:47:40.394516
+Create Date: 2025-12-08 19:48:19.584409
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'd71f1b6de0c6'
+revision: str = 'e7e64854d48d'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -224,6 +224,19 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id')
     )
+    op.create_table('user_services',
+    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('user_id', sa.BigInteger(), nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=False),
+    sa.Column('description', sa.Text(), nullable=False),
+    sa.Column('banner_url', sa.String(length=500), nullable=True),
+    sa.Column('price_label', sa.String(length=100), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_user_services_id'), 'user_services', ['id'], unique=False)
     op.create_table('user_social_links',
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('user_id', sa.BigInteger(), nullable=False),
@@ -490,6 +503,8 @@ def downgrade() -> None:
     op.drop_table('user_streaks')
     op.drop_index(op.f('ix_user_social_links_id'), table_name='user_social_links')
     op.drop_table('user_social_links')
+    op.drop_index(op.f('ix_user_services_id'), table_name='user_services')
+    op.drop_table('user_services')
     op.drop_table('user_profiles')
     op.drop_table('user_preferences')
     op.drop_index(op.f('ix_user_language_settings_id'), table_name='user_language_settings')
