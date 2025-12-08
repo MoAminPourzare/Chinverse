@@ -41,3 +41,29 @@ class ServicePublic(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ===== PUBLIC SHOWCASE SCHEMAS =====
+
+class ServiceProviderInfo(BaseModel):
+    """Minimal user info for service provider"""
+    id: int
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    headline: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ServiceWithProvider(BaseModel):
+    """Service with provider info for public showcase"""
+    id: int
+    title: str
+    description: str
+    banner_url: Optional[str] = None
+    price_label: Optional[str] = None
+    provider: Optional[ServiceProviderInfo] = None
+
+    class Config:
+        from_attributes = True
