@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, gallery, courses, services, feed, community
+from app.api.v1.endpoints import auth, users, gallery, courses, services, feed, community, chat
 
 api_router = APIRouter()
 
@@ -23,4 +23,8 @@ api_router.include_router(courses.router, prefix="/courses", tags=["courses"])
 
 # ===== COMMUNITY =====
 api_router.include_router(community.router, prefix="/community", tags=["community"])
+
+# ===== CHAT =====
+api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
+
 

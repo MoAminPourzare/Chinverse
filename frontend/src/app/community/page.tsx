@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Search, X, Send, MessageSquare, BookOpen, Headphones, User as UserIcon } from 'lucide-react';
 import { communityService, ForumQuestion, Article } from '@/services/community.service';
+import { chatService, ConversationPreview } from '@/services/chat.service';
 
 type Tab = 'messages' | 'forum';
 
@@ -12,6 +13,7 @@ export default function CommunityPage() {
     const [activeTab, setActiveTab] = useState<Tab>('forum');
     const [questions, setQuestions] = useState<ForumQuestion[]>([]);
     const [articles, setArticles] = useState<Article[]>([]);
+    const [conversations, setConversations] = useState<ConversationPreview[]>([]);
     const [newQuestion, setNewQuestion] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,6 +22,8 @@ export default function CommunityPage() {
     useEffect(() => {
         if (activeTab === 'forum') {
             fetchForumData();
+        } else if (activeTab === 'messages') {
+            fetchConversations();
         }
     }, [activeTab]);
 
@@ -34,6 +38,18 @@ export default function CommunityPage() {
             setArticles(articlesData);
         } catch (error) {
             console.error('Failed to fetch forum data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchConversations = async () => {
+        setIsLoading(true);
+        try {
+            const data = await chatService.getConversations();
+            setConversations(data);
+        } catch (error) {
+            console.error('Failed to fetch conversations:', error);
         } finally {
             setIsLoading(false);
         }
@@ -57,31 +73,109 @@ export default function CommunityPage() {
         }
     };
 
-    const renderMessagesTab = () => (
-        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            {/* Empty state illustration */}
-            <div className="relative mb-6">
-                <div className="w-32 h-32 flex items-center justify-center">
-                    <svg viewBox="0 0 120 120" className="w-full h-full">
-                        {/* Speech bubble illustration */}
-                        <rect x="15" y="25" width="90" height="60" rx="10" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                        <polygon points="35,85 45,85 40,100" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                        {/* Message dots */}
-                        <circle cx="40" cy="55" r="5" fill="#d97706" />
-                        <circle cx="60" cy="55" r="5" fill="#d97706" />
-                        <circle cx="80" cy="55" r="5" fill="#d97706" />
-                    </svg>
-                </div>
-            </div>
+    const formatTime = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-            <h2 className="text-xl font-bold text-gray-900 mb-3">
-                هنوز پیامی دریافت نکردی!
-            </h2>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
-                در این بخش میتونی با معلم‌ها در تماس باشی، با زبان‌آموزهای دیگه گفتگو کنی، از پشتیبانی کمک بگیری یا حتی پیام‌های شغلی از کارفرماها دریافت کنی.
-            </p>
-        </div>
-    );
+        if (diffDays === 0) {
+            return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays === 1) {
+            return 'دیروز';
+        } else if (diffDays < 7) {
+            return date.toLocaleDateString('fa-IR', { weekday: 'short' });
+        } else {
+            return date.toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' });
+        }
+    };
+
+    const renderMessagesTab = () => {
+        if (isLoading) {
+            return (
+                <div className="flex justify-center py-16">
+                    <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+                </div>
+            );
+        }
+
+        if (conversations.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                    {/* Empty state illustration */}
+                    <div className="relative mb-6">
+                        <div className="w-32 h-32 flex items-center justify-center">
+                            <svg viewBox="0 0 120 120" className="w-full h-full">
+                                {/* Speech bubble illustration */}
+                                <rect x="15" y="25" width="90" height="60" rx="10" fill="none" stroke="#1e3a5f" strokeWidth="2" />
+                                <polygon points="35,85 45,85 40,100" fill="none" stroke="#1e3a5f" strokeWidth="2" />
+                                {/* Message dots */}
+                                <circle cx="40" cy="55" r="5" fill="#d97706" />
+                                <circle cx="60" cy="55" r="5" fill="#d97706" />
+                                <circle cx="80" cy="55" r="5" fill="#d97706" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h2 className="text-xl font-bold text-gray-900 mb-3">
+                        هنوز پیامی دریافت نکردی!
+                    </h2>
+                    <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+                        در این بخش میتونی با معلم‌ها در تماس باشی، با زبان‌آموزهای دیگه گفتگو کنی، از پشتیبانی کمک بگیری یا حتی پیام‌های شغلی از کارفرماها دریافت کنی.
+                    </p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="divide-y divide-gray-100">
+                {conversations.map((conv) => (
+                    <Link
+                        key={conv.user.id}
+                        href={`/chat/${conv.user.id}`}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {conv.user.avatar_url ? (
+                                <Image
+                                    src={`http://localhost:8000${conv.user.avatar_url}`}
+                                    alt={conv.user.display_name || 'User'}
+                                    width={48}
+                                    height={48}
+                                    className="w-full h-full object-cover"
+                                    unoptimized
+                                />
+                            ) : (
+                                <UserIcon className="w-6 h-6 text-gray-400" />
+                            )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-0.5">
+                                <h3 className="font-bold text-gray-900 text-sm truncate">
+                                    {conv.user.display_name || 'کاربر'}
+                                </h3>
+                                <span className="text-xs text-gray-400 flex-shrink-0 mr-2">
+                                    {formatTime(conv.last_message_time)}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <p className="text-gray-500 text-sm truncate">
+                                    {conv.last_message}
+                                </p>
+                                {conv.unread_count > 0 && (
+                                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full mr-2 flex-shrink-0">
+                                        {conv.unread_count}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        );
+    };
 
     const renderForumTab = () => (
         <div className="pb-24">
@@ -249,8 +343,8 @@ export default function CommunityPage() {
                     <button
                         onClick={() => setActiveTab('messages')}
                         className={`flex-1 py-3 text-sm font-bold transition-colors relative ${activeTab === 'messages'
-                                ? 'text-blue-700'
-                                : 'text-gray-500 hover:text-gray-700'
+                            ? 'text-blue-700'
+                            : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         پیام‌ها
@@ -261,8 +355,8 @@ export default function CommunityPage() {
                     <button
                         onClick={() => setActiveTab('forum')}
                         className={`flex-1 py-3 text-sm font-bold transition-colors relative ${activeTab === 'forum'
-                                ? 'text-blue-700'
-                                : 'text-gray-500 hover:text-gray-700'
+                            ? 'text-blue-700'
+                            : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         تالار گفت‌وگو
