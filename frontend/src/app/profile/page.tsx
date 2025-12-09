@@ -291,7 +291,7 @@ export default function ProfilePage() {
                         <span className="text-xl font-extrabold text-blue-800 tracking-tighter">ChinVerse</span>
                     </div>
                     <div className="flex gap-5 text-gray-600">
-                        <Link href="/chat" className="hover:text-blue-600 transition-colors"><MessageCircle className="w-6 h-6" /></Link>
+                        <Link href="/community" className="hover:text-blue-600 transition-colors"><MessageCircle className="w-6 h-6" /></Link>
                         <Link href="/notifications" className="hover:text-blue-600 transition-colors"><Bell className="w-6 h-6" /></Link>
                         <button onClick={() => setIsSettingsOpen(true)} className="hover:text-blue-600 transition-colors"><Settings className="w-6 h-6" /></button>
                     </div>

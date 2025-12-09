@@ -105,6 +105,33 @@ class ForumAnswer(Base, TimestampMixin):
     question: Mapped["ForumQuestion"] = relationship(back_populates="answers")
     author: Mapped["User"] = relationship()
 
+class SupportStatus(str, Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    CLOSED = "closed"
+
+class Article(Base, TimestampMixin):
+    """Educational articles for the community forum"""
+    __tablename__ = "articles"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    cover_image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+class SupportTicket(Base, TimestampMixin):
+    """Support tickets submitted by users"""
+    __tablename__ = "support_tickets"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[SupportStatus] = mapped_column(String, default=SupportStatus.OPEN)
+
+    # Relationships
+    user: Mapped["User"] = relationship()
+
 # Forward references
 from app.models.user import User
 from app.models.media import MediaAsset
