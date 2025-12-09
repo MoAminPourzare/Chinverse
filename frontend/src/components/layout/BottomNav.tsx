@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Brain, List, User, Users } from "lucide-react";
+import { Home, Compass, User, Users } from "lucide-react";
 
 export default function BottomNav() {
     const pathname = usePathname();
 
     const navItems = [
-        { name: "Home", href: "/", icon: Home },
-        { name: "Explore", href: "/explore", icon: Compass },
+        { name: "خانه", href: "/", icon: Home },
+        { name: "کاوش", href: "/explore", icon: Compass },
         { name: "ویترین", href: "/showcase", icon: Users },
-        { name: "AI", href: "/ai", icon: Brain },
-        { name: "Profile", href: "/profile", icon: User },
+        { name: "پروفایل", href: "/profile", icon: User },
     ];
 
     return (
@@ -20,7 +19,8 @@ export default function BottomNav() {
             <div className="flex justify-around items-center h-16 px-2">
                 {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href ||
+                        (item.href !== "/" && pathname.startsWith(item.href));
                     return (
                         <Link
                             key={item.name}

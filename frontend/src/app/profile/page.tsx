@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Award, Wrench, Languages } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Award, Wrench, Languages, LogIn, UserPlus, LogOut, X } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
 import EditResumeModal from "@/components/profile/EditResumeModal";
@@ -33,10 +34,17 @@ const socialIcons: Record<string, any> = {
 };
 
 export default function ProfilePage() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<string>(tabs[0].id);
     const [user, setUser] = useState<User | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    const handleLogout = () => {
+        localStorage.removeItem('access_token');
+        router.push('/landing');
+    };
 
     const fetchUser = async () => {
         try {
@@ -275,7 +283,7 @@ export default function ProfilePage() {
                     <div className="flex gap-5 text-gray-600">
                         <Link href="/chat" className="hover:text-blue-600 transition-colors"><MessageCircle className="w-6 h-6" /></Link>
                         <Link href="/notifications" className="hover:text-blue-600 transition-colors"><Bell className="w-6 h-6" /></Link>
-                        <Link href="/account" className="hover:text-blue-600 transition-colors"><Settings className="w-6 h-6" /></Link>
+                        <button onClick={() => setIsSettingsOpen(true)} className="hover:text-blue-600 transition-colors"><Settings className="w-6 h-6" /></button>
                     </div>
                 </header>
 
@@ -355,6 +363,72 @@ export default function ProfilePage() {
                     user={user}
                     onUpdate={fetchUser}
                 />
+
+                {/* Settings Modal */}
+                {isSettingsOpen && (
+                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-end justify-center" onClick={() => setIsSettingsOpen(false)}>
+                        <div
+                            className="bg-white w-full max-w-md rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300"
+                            onClick={(e) => e.stopPropagation()}
+                            dir="rtl"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-bold text-gray-900">تنظیمات</h2>
+                                <button
+                                    onClick={() => setIsSettingsOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full"
+                                >
+                                    <X className="w-5 h-5 text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Link
+                                    href="/account"
+                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    onClick={() => setIsSettingsOpen(false)}
+                                >
+                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <UserIcon className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <span className="font-medium text-gray-800">حساب کاربری</span>
+                                </Link>
+
+                                <Link
+                                    href="/login"
+                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    onClick={() => setIsSettingsOpen(false)}
+                                >
+                                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                        <LogIn className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <span className="font-medium text-gray-800">ورود</span>
+                                </Link>
+
+                                <Link
+                                    href="/signup"
+                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    onClick={() => setIsSettingsOpen(false)}
+                                >
+                                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <UserPlus className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <span className="font-medium text-gray-800">ثبت نام</span>
+                                </Link>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-3 p-4 hover:bg-red-50 rounded-xl transition-colors w-full"
+                                >
+                                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                        <LogOut className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <span className="font-medium text-red-600">خروج</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
