@@ -81,12 +81,26 @@ export default function PublicProfilePage() {
     const [user, setUser] = useState<PublicUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<GalleryItemPublic | null>(null);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [followersCount, setFollowersCount] = useState(0);
+    const [followLoading, setFollowLoading] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
                 const data = await userService.getPublicProfile(userId);
                 setUser(data);
+
+                // Fetch follow status and count
+                try {
+                    const following = await userService.isFollowing(userId);
+                    setIsFollowing(following);
+                } catch {
+                    // User not logged in, ignore
+                }
+
+                const count = await userService.getFollowersCount(userId);
+                setFollowersCount(count);
             } catch (error) {
                 console.error("Failed to fetch user", error);
             } finally {
@@ -97,6 +111,25 @@ export default function PublicProfilePage() {
             fetchUser();
         }
     }, [userId]);
+
+    const handleFollowToggle = async () => {
+        setFollowLoading(true);
+        try {
+            if (isFollowing) {
+                await userService.unfollowUser(userId);
+                setIsFollowing(false);
+                setFollowersCount(prev => prev - 1);
+            } else {
+                await userService.followUser(userId);
+                setIsFollowing(true);
+                setFollowersCount(prev => prev + 1);
+            }
+        } catch (error) {
+            console.error("Failed to toggle follow", error);
+        } finally {
+            setFollowLoading(false);
+        }
+    };
 
     const handleShare = async () => {
         try {
@@ -400,7 +433,7 @@ export default function PublicProfilePage() {
                         <span className="text-gray-300">|</span>
                         <div className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5" />
-                            <span>۹</span>
+                            <span>{followersCount}</span>
                         </div>
                     </div>
 
@@ -411,11 +444,18 @@ export default function PublicProfilePage() {
                             className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-200 rounded-full text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
                         >
                             <Share2 className="w-4 h-4" />
-                            اشتراک گذاری پروفایل
+                            اشتراک گذاری
                         </button>
-                        <button className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors">
+                        <button
+                            onClick={handleFollowToggle}
+                            disabled={followLoading}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-sm font-medium transition-colors ${isFollowing
+                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                                } ${followLoading ? "opacity-50" : ""}`}
+                        >
                             <Users className="w-4 h-4" />
-                            شبکه سازی
+                            {followLoading ? "..." : isFollowing ? "قطع ارتباط" : "شبکه سازی"}
                         </button>
                     </div>
                 </section>
