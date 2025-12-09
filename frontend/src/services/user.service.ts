@@ -150,6 +150,66 @@ export const userService = {
         });
         return response.data;
     },
+
+    // ===== NETWORKING / FOLLOWING =====
+
+    // دریافت لیست شبکه من (افرادی که دنبال می‌کنم)
+    async getMyNetwork(): Promise<NetworkUser[]> {
+        const response = await api.get<NetworkUser[]>('/users/me/network');
+        return response.data;
+    },
+
+    // دریافت لیست دنبال‌کنندگان من
+    async getMyFollowers(): Promise<NetworkUser[]> {
+        const response = await api.get<NetworkUser[]>('/users/me/followers');
+        return response.data;
+    },
+
+    // دریافت لیست افرادی که دنبال می‌کنم
+    async getMyFollowing(): Promise<NetworkUser[]> {
+        const response = await api.get<NetworkUser[]>('/users/me/following');
+        return response.data;
+    },
+
+    // دریافت تعداد دنبال‌کنندگان من
+    async getMyFollowersCount(): Promise<number> {
+        const response = await api.get<{ followers_count: number }>('/users/me/followers-count');
+        return response.data.followers_count;
+    },
+
+    // دریافت تعداد افرادی که دنبال می‌کنم
+    async getMyFollowingCount(): Promise<number> {
+        const response = await api.get<{ following_count: number }>('/users/me/following-count');
+        return response.data.following_count;
+    },
+
+    // دنبال کردن کاربر
+    async followUser(userId: number): Promise<void> {
+        await api.post(`/users/${userId}/follow`);
+    },
+
+    // لغو دنبال کردن کاربر
+    async unfollowUser(userId: number): Promise<void> {
+        await api.delete(`/users/${userId}/follow`);
+    },
+
+    // بررسی آیا کاربر را دنبال می‌کنم
+    async isFollowing(userId: number): Promise<boolean> {
+        const response = await api.get<{ is_following: boolean }>(`/users/${userId}/is-following`);
+        return response.data.is_following;
+    },
+
+    // دریافت تعداد دنبال‌کنندگان کاربر
+    async getFollowersCount(userId: number): Promise<number> {
+        const response = await api.get<{ followers_count: number }>(`/users/${userId}/followers-count`);
+        return response.data.followers_count;
+    },
+
+    // دریافت تعداد دنبال‌شوندگان کاربر
+    async getFollowingCount(userId: number): Promise<number> {
+        const response = await api.get<{ following_count: number }>(`/users/${userId}/following-count`);
+        return response.data.following_count;
+    },
 };
 
 // ===== SHOWCASE TYPES =====
@@ -209,4 +269,13 @@ export interface ServiceWithProvider {
     banner_url?: string;
     price_label?: string;
     provider?: ServiceProvider;
+}
+
+// ===== NETWORK TYPES =====
+
+export interface NetworkUser {
+    id: number;
+    display_name?: string;
+    avatar_url?: string;
+    headline?: string;
 }

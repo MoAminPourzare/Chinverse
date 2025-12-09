@@ -40,6 +40,8 @@ export default function ProfilePage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [followersCount, setFollowersCount] = useState<number>(0);
+    const [followingCount, setFollowingCount] = useState<number>(0);
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -50,6 +52,14 @@ export default function ProfilePage() {
         try {
             const data = await userService.getMe();
             setUser(data);
+
+            // Fetch followers and following counts
+            const [followers, following] = await Promise.all([
+                userService.getMyFollowersCount(),
+                userService.getMyFollowingCount(),
+            ]);
+            setFollowersCount(followers);
+            setFollowingCount(following);
         } catch (error) {
             console.error("Failed to fetch user", error);
         }
@@ -313,13 +323,27 @@ export default function ProfilePage() {
                             {user?.profile?.display_name || "کاربر مهمان"}
                         </h1>
 
-                        <p className="text-gray-500 text-sm font-medium mb-3">
+                        <p className="text-gray-500 text-sm font-medium mb-2">
                             {user?.profile?.headline || "عنوان شغلی"}
                         </p>
 
-                        <div className="flex items-center text-gray-400 text-xs gap-1">
+                        {/* Location */}
+                        <div className="flex items-center text-gray-400 text-xs gap-1 mb-3">
                             <MapPin className="w-3.5 h-3.5" />
                             <span>{user?.profile?.city || "موقعیت مکانی"}</span>
+                        </div>
+
+                        {/* Followers / Following counts */}
+                        <div className="flex items-center justify-center gap-4 text-gray-500 text-sm">
+                            <Link href="/profile/network" className="flex flex-col items-center hover:text-blue-600 transition-colors">
+                                <span className="font-bold text-gray-900">{followersCount}</span>
+                                <span className="text-xs">دنبال‌کننده</span>
+                            </Link>
+                            <div className="w-px h-8 bg-gray-200" />
+                            <Link href="/profile/network" className="flex flex-col items-center hover:text-blue-600 transition-colors">
+                                <span className="font-bold text-gray-900">{followingCount}</span>
+                                <span className="text-xs">دنبال‌شونده</span>
+                            </Link>
                         </div>
                     </section>
 
