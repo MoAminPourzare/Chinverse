@@ -132,6 +132,20 @@ class SupportTicket(Base, TimestampMixin):
     # Relationships
     user: Mapped["User"] = relationship()
 
+class Message(Base, TimestampMixin):
+    """1-on-1 chat messages between users"""
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    receiver_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    is_read: Mapped[bool] = mapped_column(default=False)
+
+    # Relationships
+    sender: Mapped["User"] = relationship(foreign_keys=[sender_id])
+    receiver: Mapped["User"] = relationship(foreign_keys=[receiver_id])
+
 # Forward references
 from app.models.user import User
 from app.models.media import MediaAsset

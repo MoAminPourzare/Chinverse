@@ -390,9 +390,7 @@ export default function PublicProfilePage() {
                     <span className="text-lg font-extrabold text-blue-800">چین ورس</span>
                     <span className="text-blue-600">🌀</span>
                 </div>
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <MessageCircle className="w-5 h-5 text-gray-600" />
-                </button>
+                <div className="w-9" /> {/* Spacer for centering */}
             </header>
 
             <main className="pb-4">
@@ -444,18 +442,25 @@ export default function PublicProfilePage() {
                             className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-200 rounded-full text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
                         >
                             <Share2 className="w-4 h-4" />
-                            اشتراک گذاری
+                            اشتراک
                         </button>
+                        <Link
+                            href={`/chat/${userId}`}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-200 rounded-full text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            پیام
+                        </Link>
                         <button
                             onClick={handleFollowToggle}
                             disabled={followLoading}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-sm font-medium transition-colors ${isFollowing
-                                    ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                                : "bg-blue-600 text-white hover:bg-blue-700"
                                 } ${followLoading ? "opacity-50" : ""}`}
                         >
                             <Users className="w-4 h-4" />
-                            {followLoading ? "..." : isFollowing ? "قطع ارتباط" : "شبکه سازی"}
+                            {followLoading ? "..." : isFollowing ? "لغو" : "شبکه"}
                         </button>
                     </div>
                 </section>
