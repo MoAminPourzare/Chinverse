@@ -27,6 +27,70 @@ async def read_user_me(
     """
     return current_user
 
+
+@router.delete("/me", status_code=200)
+async def delete_user_account(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Delete current user account and all related data.
+    This is a destructive action - all user data will be permanently removed.
+    Manual cascade delete to handle foreign key constraints.
+    """
+    from sqlalchemy import delete
+    from app.models.social import (
+        ForumQuestion, ForumAnswer, Post, PostLike, PostComment, 
+        UserFollow, Message, SupportTicket
+    )
+    from app.models.service import UserService
+    from app.models.user import UserGalleryItem, UserProfile
+    
+    user_id = current_user.id
+    
+    # 1. Delete Forum Answers (where user is author) - uses author_user_id column
+    await db.execute(delete(ForumAnswer).where(ForumAnswer.author_user_id == user_id))
+    
+    # 2. Delete Forum Questions (where user is author) - uses author_user_id column
+    await db.execute(delete(ForumQuestion).where(ForumQuestion.author_user_id == user_id))
+    
+    # 3. Delete Post Likes (where user liked)
+    await db.execute(delete(PostLike).where(PostLike.user_id == user_id))
+    
+    # 4. Delete Post Comments (where user commented)
+    await db.execute(delete(PostComment).where(PostComment.user_id == user_id))
+    
+    # 5. Delete Posts (where user is author) - uses author_user_id column
+    await db.execute(delete(Post).where(Post.author_user_id == user_id))
+    
+    # 6. Delete Services (where user is owner)
+    await db.execute(delete(UserService).where(UserService.user_id == user_id))
+    
+    # 7. Delete Messages (where user is sender OR receiver)
+    await db.execute(delete(Message).where(
+        (Message.sender_id == user_id) | (Message.receiver_id == user_id)
+    ))
+    
+    # 8. Delete Support Tickets (where user submitted)
+    await db.execute(delete(SupportTicket).where(SupportTicket.user_id == user_id))
+    
+    # 9. Delete Gallery Items (where user is owner)
+    await db.execute(delete(UserGalleryItem).where(UserGalleryItem.user_id == user_id))
+    
+    # 10. Delete Follow relationships (where user is follower OR followee)
+    await db.execute(delete(UserFollow).where(
+        (UserFollow.follower_id == user_id) | (UserFollow.followee_id == user_id)
+    ))
+    
+    # 11. Delete User Profile
+    await db.execute(delete(UserProfile).where(UserProfile.user_id == user_id))
+    
+    # 12. Finally delete the user
+    await db.delete(current_user)
+    await db.commit()
+    
+    return {"message": "حساب کاربری با موفقیت حذف شد"}
+
 @router.put("/me/profile", response_model=schemas.User)
 async def update_user_profile(
     *,

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Star, Clock, BookOpen } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Star, Clock, BookOpen, Bookmark, MoreVertical } from "lucide-react";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
 
@@ -20,15 +21,14 @@ interface Course {
     }>;
 }
 
-// Color mapping for different course types
-const courseColors: Record<string, string> = {
-    "1": "bg-yellow-500",
-    "2": "bg-teal-500",
-    "3": "bg-orange-500",
-    "4": "bg-red-600",
-    "5": "bg-blue-600",
-    "6": "bg-purple-600",
-    "default": "bg-gradient-to-br from-blue-500 to-purple-600",
+// HSK Book Cover URLs (orange book design)
+const hskBookCovers: Record<string, string> = {
+    "1": "https://images-na.ssl-images-amazon.com/images/I/51L+Q5wvNML.jpg",
+    "2": "https://images-na.ssl-images-amazon.com/images/I/51L+Q5wvNML.jpg",
+    "3": "https://images-na.ssl-images-amazon.com/images/I/51L+Q5wvNML.jpg",
+    "4": "https://images-na.ssl-images-amazon.com/images/I/51L+Q5wvNML.jpg",
+    "5": "https://images-na.ssl-images-amazon.com/images/I/51L+Q5wvNML.jpg",
+    "6": "https://images-na.ssl-images-amazon.com/images/I/51L+Q5wvNML.jpg",
 };
 
 export default function CourseDetailPage() {
@@ -71,91 +71,128 @@ export default function CourseDetailPage() {
     }
 
     // Calculate total lessons and duration
-    const totalLessons = course.sections.reduce(
-        (sum, section) => sum + section.lessons.length,
+    const totalLessons = course.sections?.reduce(
+        (sum, section) => sum + (section.lessons?.length || 0),
         0
-    );
-    const totalMinutes = course.sections.reduce(
+    ) || 0;
+    const totalMinutes = course.sections?.reduce(
         (sum, section) =>
-            sum + section.lessons.reduce((s, l) => s + l.duration_minutes, 0),
+            sum + (section.lessons?.reduce((s, l) => s + (l.duration_minutes || 0), 0) || 0),
         0
-    );
+    ) || 0;
     const totalHours = Math.round(totalMinutes / 60);
 
-    // Determine cover color
-    const coverColor = courseColors[course.level] || courseColors.default;
+    // Get book cover
+    const bookCover = hskBookCovers[course.level] || hskBookCovers["3"];
 
     return (
         <div className="min-h-full bg-white pb-24 relative" dir="rtl">
-            {/* Cover Image / Header */}
-            <div className={`h-80 ${coverColor} relative flex items-center justify-center`}>
-                <Link
-                    href="#"
-                    onClick={() => window.history.back()}
-                    className="absolute top-4 right-4 text-white z-10 bg-black bg-opacity-20 p-2 rounded-full"
-                >
+            {/* Header */}
+            <header className="px-4 py-3 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-gray-100">
+                <Link href="#" onClick={() => window.history.back()} className="text-gray-600">
                     <ArrowRight size={24} />
                 </Link>
+                <div className="flex items-center gap-3">
+                    <button className="text-gray-600">
+                        <Bookmark size={22} />
+                    </button>
+                    <button className="text-gray-600">
+                        <MoreVertical size={22} />
+                    </button>
+                </div>
+            </header>
 
-                {/* Course Title on Cover */}
-                <div className="text-center text-white px-6">
-                    <div className="text-sm opacity-90 mb-2 tracking-wide">STANDARD COURSE</div>
-                    <div className="text-6xl font-bold mb-2" dir="ltr">
-                        {course.title.includes("HSK")
-                            ? course.title.split(" ")[0] + " " + course.title.split(" ")[1]
-                            : course.title.substring(0, 20)}
+            {/* Main Content */}
+            <main className="px-6 py-4">
+                {/* Title */}
+                <h1 className="text-2xl font-bold text-gray-900 text-center mb-1" dir="ltr">
+                    HSK {course.level}
+                </h1>
+                <p className="text-gray-500 text-sm text-center mb-4">
+                    یادگیری زبان چینی | {totalHours > 0 ? `${totalHours} ساعت` : `${totalMinutes} دقیقه`}
+                </p>
+
+                {/* Rating */}
+                <div className="flex items-center justify-center gap-2 mb-6">
+                    <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4].map((i) => (
+                            <Star key={i} size={18} className="text-orange-400 fill-orange-400" />
+                        ))}
+                        <Star size={18} className="text-orange-400" />
+                    </div>
+                    <span className="text-xs text-blue-600 underline">ثبت نظر</span>
+                </div>
+
+                {/* Book Cover Image */}
+                <div className="flex justify-center mb-8">
+                    <div className="w-48 h-64 rounded-xl overflow-hidden shadow-xl border-4 border-white relative bg-orange-500">
+                        {/* Fallback HSK Book Design */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-orange-400 to-orange-600 flex flex-col items-center justify-center p-4">
+                            <div className="bg-blue-900 text-white text-xs px-2 py-1 rounded mb-2">标准教程</div>
+                            <div className="text-white text-xs mb-1">STANDARD COURSE</div>
+                            <div className="text-white text-6xl font-bold mb-1" dir="ltr">HSK</div>
+                            <div className="text-white text-5xl font-bold">{course.level}</div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Large watermark number for HSK */}
-                {course.title.includes("HSK") && (
-                    <div className="text-9xl font-bold text-white opacity-10 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" dir="ltr">
-                        {course.level}
-                    </div>
-                )}
-            </div>
-
-            {/* Content */}
-            <div className="px-6 py-6 -mt-6 bg-white rounded-t-3xl relative z-10">
-                {/* Title and Rating */}
-                <div className="flex justify-between items-start mb-4">
-                    <h1 className="text-2xl font-bold text-gray-900 flex-1" dir="ltr">
-                        {course.title}
-                    </h1>
-                    <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1.5 rounded-lg ml-3">
-                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                        <span className="text-sm font-bold text-yellow-700">4.8</span>
-                    </div>
-                </div>
-
-                {/* Metadata */}
-                <div className="flex gap-4 mb-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-1.5">
-                        <BookOpen size={16} />
-                        <span>درس {totalLessons}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <Clock size={16} />
-                        <span>ساعت {totalHours}</span>
-                    </div>
-                </div>
-
-                {/* About Section */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-bold text-gray-800">درباره این دوره</h2>
-                    <p className="text-gray-600 leading-relaxed text-justify">
-                        {course.description}
+                {/* Description */}
+                <div className="mb-8">
+                    <p className="text-gray-700 text-sm leading-relaxed text-justify">
+                        کتاب " 《HSK标准教程》HSK 3" یا به انگلیسی "HSK Standard Course 3" یکی از کتاب‌های رسمی و معتبر برای آموزش زبان چینی در سطح HSK 3 است که توسط Hanban / Confucius Institute Headquarters (نهاد برگذارکننده آزمون HSK) منتشر شده.
                     </p>
                 </div>
-            </div>
+
+                {/* Book Specifications */}
+                <div className="bg-gray-50 rounded-2xl p-5 mb-6">
+                    <h3 className="font-bold text-gray-900 mb-4">مشخصات کلی کتاب:</h3>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span><strong>سطح:</strong> متوسط (معادل HSK 3)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span><strong>مخاطب:</strong> زبان‌آموزانی که HSK 2 را گذرانده‌اند و حدود ۳۰۰ واژه چینی بلدند</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span><strong>تعداد درس‌ها:</strong> {totalLessons} درس</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span><strong>محتوا:</strong> ترکیبی از درس‌های گرامر، واژگان، مکالمه، درک مطلب و شنیداری</span>
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Learning Objectives */}
+                <div className="mb-6">
+                    <h3 className="font-bold text-gray-900 mb-4">اهداف یادگیری</h3>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span>افزایش دایره واژگان از ۳۰۰ به ۶۰۰ واژه (مجموع)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span>آمادگی برای شرکت در آزمون رسمی HSK سطح ۳</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-blue-600">•</span>
+                            <span>توانایی برقراری مکالمات ساده تا نیمه‌پیشرفته در زندگی روزمره، محیط کار و تحصیل</span>
+                        </li>
+                    </ul>
+                </div>
+            </main>
 
             {/* Fixed Bottom Button */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-20 max-w-md mx-auto">
                 <Link
-                    href={`/courses/${id}/watch`}
-                    className="block w-full bg-blue-600 text-white text-center py-4 rounded-xl font-bold text-lg shadow-blue-200 shadow-lg active:scale-[0.98] transition-transform"
+                    href={`/courses/${id}/lessons`}
+                    className="block w-full bg-blue-600 text-white text-center py-4 rounded-2xl font-bold text-lg shadow-blue-200 shadow-lg active:scale-[0.98] transition-transform"
                 >
-                    مشاهده
+                    دیدن همه درس‌ها
                 </Link>
             </div>
         </div>
