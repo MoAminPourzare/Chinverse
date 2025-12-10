@@ -20,16 +20,15 @@ class LessonBase(BaseModel):
     title: str
     duration_minutes: float = 0.0
     is_free: bool = False
+    video_url: Optional[str] = None
 
 class LessonCreate(LessonBase):
     section_id: int
-    video_url: str # Legacy support or direct creation
 
 class Lesson(LessonBase):
     id: int
     course_id: int
     section_id: int
-    content: List[Content] = []
 
     class Config:
         from_attributes = True

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Award, Wrench, Languages, LogIn, UserPlus, LogOut, X } from "lucide-react";
+import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Award, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2 } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
 import EditResumeModal from "@/components/profile/EditResumeModal";
@@ -46,6 +46,24 @@ export default function ProfilePage() {
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         router.push('/landing');
+    };
+
+    const handleDeleteAccount = async () => {
+        const confirmed = window.confirm(
+            'آیا مطمئن هستید؟ با حذف حساب کاربری، تمام اطلاعات شما (رزومه، گالری، چت‌ها) برای همیشه پاک خواهد شد.'
+        );
+
+        if (confirmed) {
+            try {
+                const api = (await import('@/lib/api')).default;
+                await api.delete('/users/me');
+                localStorage.removeItem('access_token');
+                router.push('/landing');
+            } catch (error) {
+                console.error('Failed to delete account:', error);
+                alert('خطا در حذف حساب کاربری. لطفا دوباره تلاش کنید.');
+            }
+        }
     };
 
     const fetchUser = async () => {
@@ -407,6 +425,7 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="space-y-2">
+                                {/* 1. حساب کاربری */}
                                 <Link
                                     href="/account"
                                     className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
@@ -418,6 +437,19 @@ export default function ProfilePage() {
                                     <span className="font-medium text-gray-800">حساب کاربری</span>
                                 </Link>
 
+                                {/* 2. درباره چین‌ورس */}
+                                <Link
+                                    href="/about"
+                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    onClick={() => setIsSettingsOpen(false)}
+                                >
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <Info className="w-5 h-5 text-gray-600" />
+                                    </div>
+                                    <span className="font-medium text-gray-800">درباره چین‌ورس</span>
+                                </Link>
+
+                                {/* 3. ورود */}
                                 <Link
                                     href="/login"
                                     className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
@@ -429,6 +461,7 @@ export default function ProfilePage() {
                                     <span className="font-medium text-gray-800">ورود</span>
                                 </Link>
 
+                                {/* 4. ثبت نام */}
                                 <Link
                                     href="/signup"
                                     className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
@@ -440,14 +473,26 @@ export default function ProfilePage() {
                                     <span className="font-medium text-gray-800">ثبت نام</span>
                                 </Link>
 
+                                {/* 5. خروج */}
                                 <button
                                     onClick={handleLogout}
                                     className="flex items-center gap-3 p-4 hover:bg-red-50 rounded-xl transition-colors w-full"
                                 >
-                                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                                        <LogOut className="w-5 h-5 text-red-600" />
+                                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                        <LogOut className="w-5 h-5 text-orange-600" />
                                     </div>
-                                    <span className="font-medium text-red-600">خروج</span>
+                                    <span className="font-medium text-gray-800">خروج</span>
+                                </button>
+
+                                {/* 6. حذف حساب کاربری */}
+                                <button
+                                    onClick={() => { setIsSettingsOpen(false); handleDeleteAccount(); }}
+                                    className="flex items-center gap-3 p-4 hover:bg-red-50 rounded-xl transition-colors w-full"
+                                >
+                                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                        <Trash2 className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <span className="font-medium text-red-600">حذف حساب کاربری</span>
                                 </button>
                             </div>
                         </div>
