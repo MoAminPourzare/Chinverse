@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { X, MoreVertical, Rewind, FastForward, Play, Pause, SkipForward, RotateCcw } from "lucide-react";
+import { X, MoreVertical, Rewind, FastForward, Play, Pause, SkipForward, RotateCcw, Maximize } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import VocabularyModal from "@/components/lms/VocabularyModal";
 
 interface Lesson {
     id: number;
@@ -24,31 +25,53 @@ interface Course {
     sections: Section[];
 }
 
-// Sample transcript data with Chinese, Pinyin, and Persian translations only
+interface VocabularyWord {
+    id: number;
+    chinese: string;
+    pinyin: string;
+    audio_url?: string;
+    persian_meaning?: string;
+    chinese_meaning?: string;
+    composition?: string;
+    examples: Array<{
+        id: number;
+        zh_text: string;
+        pinyin: string;
+        target_text: string;
+    }>;
+}
+
+// Sample transcript data with highlighted words
 const sampleTranscript = [
     {
         id: 1,
         chinese: "今天和我一起学习HSK第三级，第一课。",
-        pinyin: "Jīntiān hé wǒ yīqǐ xuéxí HSK dì sān jí, dì yī kè.",
-        persian: "به دوره‌ی استاندارد HSK سطح ۳، درس ۱ خوش آمدی."
+        persian: "امروز با من درس اول از سطح سوم HSK رو یاد می‌گیریم.",
+        highlightedWords: ["学习", "第三级"]
     },
     {
         id: 2,
         chinese: "首先我们一起读一下标题吧。",
-        pinyin: "Shǒuxiān wǒmen yīqǐ dú yīxià biāotí ba.",
-        persian: "اول با هم عنوان درس رو بخونیم."
+        persian: "اول با هم عنوان درس رو بخونیم.",
+        highlightedWords: ["标题"]
     },
     {
         id: 3,
         chinese: "周末你有什么打算？",
-        pinyin: "Zhōumò nǐ yǒu shénme dǎsuàn?",
-        persian: "آخر هفته چه برنامه‌ای داری؟"
+        persian: "آخر هفته چه برنامه‌ای داری؟",
+        highlightedWords: ["打算"]
     },
     {
         id: 4,
         chinese: "周末你有什么打算？",
-        pinyin: "Zhōumò nǐ yǒu shénme dǎsuàn?",
-        persian: "(تکرار) آخر هفته چه برنامه‌ای داری؟"
+        persian: "(تکرار) آخر هفته چه برنامه‌ای داری؟",
+        highlightedWords: ["打算"]
+    },
+    {
+        id: 5,
+        chinese: "好，首先我们来看热身。",
+        persian: "خیله خب، اول بریم سراغ گرم‌کردن (Warm-up).",
+        highlightedWords: ["热身"]
     },
 ];
 
@@ -64,7 +87,11 @@ export default function CourseWatchPage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [selectedWord, setSelectedWord] = useState<VocabularyWord | null>(null);
+    const [showVocabModal, setShowVocabModal] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const videoContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -92,6 +119,15 @@ export default function CourseWatchPage() {
             fetchCourse();
         }
     }, [courseId, lessonIdParam]);
+
+    // Fullscreen change listener
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
 
     const handlePlayPause = () => {
         if (videoRef.current) {
@@ -128,6 +164,90 @@ export default function CourseWatchPage() {
             videoRef.current.currentTime = time;
             setCurrentTime(time);
         }
+    };
+
+    const toggleFullscreen = async () => {
+        if (!videoContainerRef.current) return;
+
+        try {
+            if (!document.fullscreenElement) {
+                await videoContainerRef.current.requestFullscreen();
+            } else {
+                await document.exitFullscreen();
+            }
+        } catch (err) {
+            console.error("Fullscreen error:", err);
+        }
+    };
+
+    const handleWordClick = async (word: string) => {
+        try {
+            const response = await api.get(`/vocabulary/${encodeURIComponent(word)}`);
+            setSelectedWord(response.data);
+            setShowVocabModal(true);
+        } catch (error) {
+            console.error("Failed to fetch vocabulary:", error);
+            // Show mock data on error
+            setSelectedWord({
+                id: 0,
+                chinese: word,
+                pinyin: "dǎ suàn",
+                persian_meaning: "قصد داشتن، خواستن",
+                chinese_meaning: "1. 关于行动的方向、方法等的想法；念头\n2. 考虑；计划",
+                composition: "打算盘\n另有打算",
+                examples: [
+                    { id: 1, zh_text: `他${word}当医生`, pinyin: "Tā dǎsuàn dāng yīshēng", target_text: "او قصد دارد پزشک شود" },
+                    { id: 2, zh_text: `各有各的${word}`, pinyin: "Gè yǒu gè de dǎsuàn", target_text: "هر کسی برنامه خودش را دارد" },
+                    { id: 3, zh_text: `为自己作${word}`, pinyin: "Wèi zìjǐ zuò dǎsuàn", target_text: "برای خودش برنامه‌ریزی کردن" },
+                ]
+            });
+            setShowVocabModal(true);
+        }
+    };
+
+    // Render Chinese text with highlighted clickable words
+    const renderChineseWithHighlights = (text: string, highlightedWords: string[]) => {
+        let result: React.ReactNode[] = [];
+        let remainingText = text;
+        let key = 0;
+
+        while (remainingText.length > 0) {
+            let foundWord = null;
+            let foundIndex = -1;
+
+            // Find the first highlighted word in remaining text
+            for (const word of highlightedWords) {
+                const index = remainingText.indexOf(word);
+                if (index !== -1 && (foundIndex === -1 || index < foundIndex)) {
+                    foundWord = word;
+                    foundIndex = index;
+                }
+            }
+
+            if (foundWord && foundIndex !== -1) {
+                // Add text before the highlighted word
+                if (foundIndex > 0) {
+                    result.push(<span key={key++}>{remainingText.slice(0, foundIndex)}</span>);
+                }
+                // Add the highlighted word
+                result.push(
+                    <button
+                        key={key++}
+                        onClick={() => handleWordClick(foundWord!)}
+                        className="bg-orange-200 text-orange-800 px-1 rounded hover:bg-orange-300 transition-colors"
+                    >
+                        {foundWord}
+                    </button>
+                );
+                remainingText = remainingText.slice(foundIndex + foundWord.length);
+            } else {
+                // No more highlighted words, add remaining text
+                result.push(<span key={key++}>{remainingText}</span>);
+                break;
+            }
+        }
+
+        return result;
     };
 
     if (loading) {
@@ -178,7 +298,7 @@ export default function CourseWatchPage() {
             </header>
 
             {/* Video Player */}
-            <div className="w-full aspect-video bg-black relative">
+            <div ref={videoContainerRef} className="w-full aspect-video bg-black relative">
                 <video
                     ref={videoRef}
                     className="w-full h-full"
@@ -212,6 +332,14 @@ export default function CourseWatchPage() {
                         <FastForward size={32} />
                     </button>
                 </div>
+
+                {/* Fullscreen Button */}
+                <button
+                    onClick={toggleFullscreen}
+                    className="absolute bottom-3 right-3 w-10 h-10 flex items-center justify-center bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors"
+                >
+                    <Maximize size={20} />
+                </button>
             </div>
 
             {/* Progress Bar */}
@@ -235,9 +363,9 @@ export default function CourseWatchPage() {
                 <div className="space-y-6">
                     {sampleTranscript.map((item) => (
                         <div key={item.id} className="border-b border-gray-100 pb-4 last:border-0">
-                            {/* Chinese Characters - Large */}
+                            {/* Chinese Characters with Highlighted Words */}
                             <p className="text-xl font-bold text-blue-600 mb-3" dir="ltr">
-                                {item.chinese}
+                                {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
                             </p>
 
                             {/* Persian Translation - RTL */}
@@ -267,6 +395,15 @@ export default function CourseWatchPage() {
                     </svg>
                 </button>
             </div>
+
+            {/* Vocabulary Modal */}
+            {selectedWord && (
+                <VocabularyModal
+                    word={selectedWord}
+                    isOpen={showVocabModal}
+                    onClose={() => setShowVocabModal(false)}
+                />
+            )}
         </div>
     );
 }

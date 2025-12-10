@@ -11,6 +11,9 @@ class DictionaryWord(Base, TimestampMixin):
     pinyin: Mapped[str] = mapped_column(String, index=True, nullable=False)
     audio_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     level: Mapped[str] = mapped_column(String, index=True, nullable=False) # HSK1, HSK2, etc.
+    persian_meaning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    chinese_meaning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    composition: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
     definitions: Mapped[List["WordDefinition"]] = relationship(back_populates="word", cascade="all, delete-orphan")
