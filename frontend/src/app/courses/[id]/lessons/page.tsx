@@ -95,20 +95,20 @@ export default function LessonListPage() {
         <div className="min-h-full bg-gray-100 pb-6" dir="rtl">
             {/* Header */}
             <header className="px-4 py-3 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-gray-100">
-                <Link href={`/courses/${courseId}`} className="text-gray-600">
-                    <ArrowRight size={24} />
-                </Link>
-                <h1 className="text-lg font-bold text-gray-900" dir="ltr">
-                    HSK {course.level}
-                </h1>
                 <div className="flex items-center gap-2">
-                    <button className="text-gray-600">
-                        <Bookmark size={22} />
-                    </button>
                     <button className="text-gray-600">
                         <MoreVertical size={22} />
                     </button>
+                    <button className="text-gray-600">
+                        <Bookmark size={22} />
+                    </button>
                 </div>
+                <h1 className="text-lg font-bold text-gray-900" dir="ltr">
+                    HSK {course.level}
+                </h1>
+                <Link href={`/courses/${courseId}`} className="text-gray-600">
+                    <ArrowRight size={24} />
+                </Link>
             </header>
 
             {/* Lesson List */}
