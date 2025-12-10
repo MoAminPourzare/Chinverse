@@ -86,10 +86,10 @@ export default function CourseDetailPage() {
     const bookCover = hskBookCovers[course.level] || hskBookCovers["3"];
 
     return (
-        <div className="min-h-full bg-white pb-24 relative" dir="rtl">
+        <div className="min-h-full bg-white relative" dir="rtl">
             {/* Header */}
             <header className="px-4 py-3 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-gray-100">
-                <Link href="#" onClick={() => window.history.back()} className="text-gray-600">
+                <Link href="/explore/hsk" className="text-gray-600">
                     <ArrowRight size={24} />
                 </Link>
                 <div className="flex items-center gap-3">
@@ -184,17 +184,16 @@ export default function CourseDetailPage() {
                         </li>
                     </ul>
                 </div>
+                {/* View All Lessons Button - Static at bottom of content */}
+                <div className="mt-8 mb-24">
+                    <Link
+                        href={`/courses/${id}/lessons`}
+                        className="block w-full bg-blue-600 text-white text-center py-4 rounded-2xl font-bold text-lg shadow-blue-200 shadow-lg active:scale-[0.98] transition-transform"
+                    >
+                        دیدن همه درس‌ها
+                    </Link>
+                </div>
             </main>
-
-            {/* Fixed Bottom Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-20 max-w-md mx-auto">
-                <Link
-                    href={`/courses/${id}/lessons`}
-                    className="block w-full bg-blue-600 text-white text-center py-4 rounded-2xl font-bold text-lg shadow-blue-200 shadow-lg active:scale-[0.98] transition-transform"
-                >
-                    دیدن همه درس‌ها
-                </Link>
-            </div>
         </div>
     );
 }

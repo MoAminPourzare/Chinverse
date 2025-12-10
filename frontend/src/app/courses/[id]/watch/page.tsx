@@ -24,35 +24,31 @@ interface Course {
     sections: Section[];
 }
 
-// Sample transcript data with Chinese, Pinyin, and translations
+// Sample transcript data with Chinese, Pinyin, and Persian translations only
 const sampleTranscript = [
     {
         id: 1,
         chinese: "今天和我一起学习HSK第三级，第一课。",
         pinyin: "Jīntiān hé wǒ yīqǐ xuéxí HSK dì sān jí, dì yī kè.",
-        persian: "به دوره‌ی استاندارد HSK سطح ۳ / ۳۰ درس / خوش آمدی.",
-        english: "Welcome to HSK Standard Course Level 3, Lesson 30."
+        persian: "به دوره‌ی استاندارد HSK سطح ۳، درس ۱ خوش آمدی."
     },
     {
         id: 2,
         chinese: "首先我们一起读一下标题吧。",
         pinyin: "Shǒuxiān wǒmen yīqǐ dú yīxià biāotí ba.",
-        persian: "اول با هم عنوان درس رو بخونیم.",
-        english: "Let's read the title."
+        persian: "اول با هم عنوان درس رو بخونیم."
     },
     {
         id: 3,
         chinese: "周末你有什么打算？",
         pinyin: "Zhōumò nǐ yǒu shénme dǎsuàn?",
-        persian: "آخر هفته چه برنامه‌ای داری؟",
-        english: "What's your plan for the weekend?"
+        persian: "آخر هفته چه برنامه‌ای داری؟"
     },
     {
         id: 4,
         chinese: "周末你有什么打算？",
         pinyin: "Zhōumò nǐ yǒu shénme dǎsuàn?",
-        persian: "(تکرار) آخر هفته چه برنامه‌ای داری؟",
-        english: "(Repeat) What's your plan for the weekend?"
+        persian: "(تکرار) آخر هفته چه برنامه‌ای داری؟"
     },
 ];
 
@@ -238,28 +234,14 @@ export default function CourseWatchPage() {
             <div className="flex-1 overflow-y-auto px-4 py-6 bg-white">
                 <div className="space-y-6">
                     {sampleTranscript.map((item) => (
-                        <div key={item.id} className="space-y-2">
-                            {/* Chinese with highlighted words */}
-                            <p className="text-xl font-bold text-gray-900" dir="ltr">
-                                {item.chinese.split(/(\S+)/).map((word, idx) => (
-                                    <span
-                                        key={idx}
-                                        className={word.includes('HSK') || word.includes('第') ? 'bg-red-100 text-red-600 px-1 rounded' : ''}
-                                    >
-                                        {word}
-                                    </span>
-                                ))}
+                        <div key={item.id} className="border-b border-gray-100 pb-4 last:border-0">
+                            {/* Chinese Characters - Large */}
+                            <p className="text-xl font-bold text-blue-600 mb-3" dir="ltr">
+                                {item.chinese}
                             </p>
 
-                            {/* Pinyin - now with improved formatting */}
-                            {item.pinyin && (
-                                <p className="text-sm text-gray-500" dir="ltr">
-                                    {item.pinyin}
-                                </p>
-                            )}
-
-                            {/* Persian Translation */}
-                            <p className="text-gray-700 text-sm leading-relaxed">
+                            {/* Persian Translation - RTL */}
+                            <p className="text-gray-800 text-base leading-relaxed text-right">
                                 {item.persian}
                             </p>
                         </div>
