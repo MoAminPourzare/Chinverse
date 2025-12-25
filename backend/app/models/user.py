@@ -35,6 +35,7 @@ class User(Base, TimestampMixin):
     language_settings: Mapped[List["UserLanguageSetting"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     gallery_items: Mapped[List["UserGalleryItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     services: Mapped[List["UserService"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    flashcards: Mapped[List["UserFlashcard"]] = relationship("UserFlashcard", back_populates="user", cascade="all, delete-orphan")
 
 class UserProfile(Base, TimestampMixin):
     __tablename__ = "user_profiles"
