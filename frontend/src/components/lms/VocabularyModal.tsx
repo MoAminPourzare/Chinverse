@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Volume2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Volume2, Check } from "lucide-react";
+import api from "@/lib/api";
 
 interface VocabularyWord {
     id: number;
@@ -29,6 +30,23 @@ type TabType = "chinese" | "persian" | "composition" | "examples";
 
 export default function VocabularyModal({ word, isOpen, onClose }: VocabularyModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>("chinese");
+    const [isInLeitner, setIsInLeitner] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
+
+    // Check if word is already in Leitner when modal opens
+    useEffect(() => {
+        if (isOpen && word.id !== undefined && word.id !== null) {
+            const checkLeitner = async () => {
+                try {
+                    const response = await api.get(`/leitner/check/${word.id}`);
+                    setIsInLeitner(response.data.in_leitner);
+                } catch (error) {
+                    console.error("Failed to check leitner status:", error);
+                }
+            };
+            checkLeitner();
+        }
+    }, [isOpen, word.id]);
 
     if (!isOpen) return null;
 
@@ -43,6 +61,25 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         if (word.audio_url) {
             const audio = new Audio(word.audio_url);
             audio.play();
+        }
+    };
+
+    const handleAddToLeitner = async () => {
+        if (word.id === undefined || word.id === null || isInLeitner || isAdding) return;
+        setIsAdding(true);
+        try {
+            await api.post("/leitner/add", {
+                word_id: word.id,
+                chinese: word.chinese,
+                pinyin: word.pinyin,
+                persian_meaning: word.persian_meaning,
+                chinese_meaning: word.chinese_meaning
+            });
+            setIsInLeitner(true);
+        } catch (error) {
+            console.error("Failed to add to leitner:", error);
+        } finally {
+            setIsAdding(false);
         }
     };
 
@@ -104,8 +141,8 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
-                                    ? "text-blue-600 border-b-2 border-blue-600"
-                                    : "text-gray-500 hover:text-gray-700"
+                                ? "text-blue-600 border-b-2 border-blue-600"
+                                : "text-gray-500 hover:text-gray-700"
                                 }`}
                         >
                             {tab.label}
@@ -172,8 +209,26 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
 
                 {/* Footer Button */}
                 <div className="p-4 border-t border-gray-100">
-                    <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform">
-                        اضافه کردن به لایتنر
+                    <button
+                        onClick={handleAddToLeitner}
+                        disabled={isInLeitner || isAdding}
+                        className={`w-full py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${isInLeitner
+                            ? "bg-green-500 text-white cursor-default"
+                            : isAdding
+                                ? "bg-gray-400 text-white cursor-wait"
+                                : "bg-blue-600 text-white active:scale-[0.98] hover:bg-blue-700"
+                            }`}
+                    >
+                        {isInLeitner ? (
+                            <>
+                                <Check size={20} />
+                                اضافه شد
+                            </>
+                        ) : isAdding ? (
+                            "در حال افزودن..."
+                        ) : (
+                            "اضافه کردن به لایتنر"
+                        )}
                     </button>
                 </div>
             </div>
