@@ -285,7 +285,7 @@ export default function CourseWatchPage() {
         <div className="min-h-full bg-white flex flex-col" dir="rtl">
             {/* Header */}
             <header className="px-4 py-3 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-gray-100">
-                <Link href={`/courses/${courseId}/lessons`} className="text-gray-600">
+                <Link href={`/courses/${courseId}`} className="text-gray-600">
                     <X size={24} />
                 </Link>
                 <div className="flex-1 text-center">
