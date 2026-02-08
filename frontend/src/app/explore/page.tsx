@@ -23,7 +23,7 @@ export default function ExplorePage() {
                             { title: "تلفظ", id: "pronunciation", href: "/explore/pronunciation" },
                             { title: "HSK", id: "hsk", href: "/explore/hsk" },
                             { title: "گرامر", id: "grammar", href: "/explore/grammar" },
-                            { title: "مکالمه", id: "conversation" },
+                            { title: "کاراکتر", id: "characters", href: "/explore/characters" },
                         ].map((item) => (
                             item.href ? (
                                 <Link
