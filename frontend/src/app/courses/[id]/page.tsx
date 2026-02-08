@@ -100,6 +100,76 @@ const mockPronunciationCourses: Record<number, Course> = {
     }
 };
 
+// ==================== MOCK DATA FOR CHARACTERS COURSES ====================
+const mockCharactersCourses: Record<number, Course> = {
+    201: {
+        id: 201,
+        title: "Mandarin Blueprint",
+        description: "یادگیری کاراکترهای چینی با متد Blueprint. این روش منحصربه‌فرد به شما کمک می‌کند هزاران کاراکتر را به خاطر بسپارید.",
+        cover_image_url: "https://randomuser.me/api/portraits/men/32.jpg",
+        level: "Beginner",
+        category: "characters",
+        sections: [{
+            id: 1,
+            title: "Foundations",
+            lessons: [
+                { id: 4001, title: "Introduction to Chinese Characters", duration_minutes: 15, is_free: true },
+                { id: 4002, title: "Basic Strokes (Part 1)", duration_minutes: 18, is_free: true },
+                { id: 4003, title: "Basic Strokes (Part 2)", duration_minutes: 16, is_free: false },
+                { id: 4004, title: "Stroke Order Rules", duration_minutes: 20, is_free: false },
+                { id: 4005, title: "Common Radicals (Part 1)", duration_minutes: 22, is_free: false },
+                { id: 4006, title: "Common Radicals (Part 2)", duration_minutes: 19, is_free: false },
+                { id: 4007, title: "Building Your First Characters", duration_minutes: 25, is_free: false },
+                { id: 4008, title: "Memory Techniques", duration_minutes: 18, is_free: false },
+            ]
+        }]
+    },
+    202: {
+        id: 202,
+        title: "Hanzi Hero",
+        description: "قهرمان کاراکترهای چینی شوید! با روش‌های گیمیفیکیشن و تمرین‌های تعاملی، نوشتن و خواندن چینی را یاد بگیرید.",
+        cover_image_url: "https://randomuser.me/api/portraits/men/45.jpg",
+        level: "Beginner",
+        category: "characters",
+        sections: [{
+            id: 1,
+            title: "Hero Training",
+            lessons: [
+                { id: 5001, title: "Your First 10 Characters", duration_minutes: 12, is_free: true },
+                { id: 5002, title: "Understanding Components", duration_minutes: 15, is_free: true },
+                { id: 5003, title: "Daily Practice Routine", duration_minutes: 10, is_free: false },
+                { id: 5004, title: "Numbers 1-10", duration_minutes: 14, is_free: false },
+                { id: 5005, title: "Basic Verbs", duration_minutes: 16, is_free: false },
+                { id: 5006, title: "Time Characters", duration_minutes: 18, is_free: false },
+            ]
+        }]
+    },
+    203: {
+        id: 203,
+        title: "Grace Mandarin - Hanzi",
+        description: "آموزش نوشتار چینی با گریس. از پایه‌ترین خطوط تا کاراکترهای پیچیده را با تمرین‌های عملی یاد بگیرید.",
+        cover_image_url: "https://randomuser.me/api/portraits/women/44.jpg",
+        level: "Intermediate",
+        category: "characters",
+        sections: [{
+            id: 1,
+            title: "Writing Mastery",
+            lessons: [
+                { id: 6001, title: "Perfecting Basic Strokes", duration_minutes: 20, is_free: true },
+                { id: 6002, title: "Character Structure", duration_minutes: 18, is_free: true },
+                { id: 6003, title: "Semantic Components", duration_minutes: 22, is_free: false },
+                { id: 6004, title: "Phonetic Components", duration_minutes: 20, is_free: false },
+                { id: 6005, title: "Common Character Pairs", duration_minutes: 25, is_free: false },
+                { id: 6006, title: "Handwriting Practice", duration_minutes: 15, is_free: false },
+                { id: 6007, title: "Reading Handwritten Text", duration_minutes: 18, is_free: false },
+                { id: 6008, title: "Character Etymology", duration_minutes: 22, is_free: false },
+                { id: 6009, title: "Advanced Radicals", duration_minutes: 24, is_free: false },
+                { id: 6010, title: "Final Calligraphy Project", duration_minutes: 30, is_free: false },
+            ]
+        }]
+    }
+};
+
 // Sample Chinese titles for HSK lessons
 const lessonChineseTitles: Record<number, string> = {
     1: "周末你有什么打算？",
@@ -147,9 +217,11 @@ export default function CourseDetailPage() {
             } catch (error) {
                 console.error("Failed to fetch course from API:", error);
 
-                // Fallback to mock data for Pronunciation courses
+                // Fallback to mock data for Pronunciation or Characters courses
                 if (courseId && mockPronunciationCourses[courseId]) {
                     setCourse(mockPronunciationCourses[courseId]);
+                } else if (courseId && mockCharactersCourses[courseId]) {
+                    setCourse(mockCharactersCourses[courseId]);
                 }
             } finally {
                 setLoading(false);
@@ -181,9 +253,14 @@ export default function CourseDetailPage() {
     const isHSK = course.title.toLowerCase().includes('hsk') || course.level?.match(/^[1-6]$/);
     const isPronunciation = course.category === 'pronunciation' ||
         course.title.toLowerCase().includes('pinyin') ||
-        course.title.toLowerCase().includes('yoyo') ||
-        course.title.toLowerCase().includes('grace') ||
-        course.title.toLowerCase().includes('yang');
+        course.title.toLowerCase().includes('yoyo');
+    const isCharacters = course.category === 'characters' ||
+        course.title.toLowerCase().includes('hanzi') ||
+        course.title.toLowerCase().includes('blueprint') ||
+        course.title.toLowerCase().includes('character');
+
+    // Type B layout (thumbnail video list) for Pronunciation and Characters
+    const useTypeBLayout = isPronunciation || isCharacters;
 
     // Calculate totals
     const totalLessons = course.sections?.reduce(
@@ -203,7 +280,7 @@ export default function CourseDetailPage() {
     ) || [];
 
     // Back link
-    const backLink = isHSK ? "/explore/hsk" : isPronunciation ? "/explore/pronunciation" : "/explore";
+    const backLink = isHSK ? "/explore/hsk" : isPronunciation ? "/explore/pronunciation" : isCharacters ? "/explore/characters" : "/explore";
 
     return (
         <div className="min-h-full bg-white relative" dir="rtl">
@@ -224,7 +301,7 @@ export default function CourseDetailPage() {
 
             <main className="px-6 py-4">
                 {/* ===================== TYPE A: HSK LAYOUT ===================== */}
-                {isHSK && !isPronunciation && (
+                {isHSK && !useTypeBLayout && (
                     <>
                         {/* HSK Title */}
                         <h1 className="text-2xl font-bold text-gray-900 text-center mb-1" dir="ltr">
@@ -312,8 +389,8 @@ export default function CourseDetailPage() {
                     </>
                 )}
 
-                {/* ===================== TYPE B: PRONUNCIATION LAYOUT ===================== */}
-                {isPronunciation && (
+                {/* ===================== TYPE B: PRONUNCIATION/CHARACTERS LAYOUT ===================== */}
+                {useTypeBLayout && (
                     <>
                         {/* Instructor Image + Title */}
                         <div className="flex flex-col items-center mb-6">
