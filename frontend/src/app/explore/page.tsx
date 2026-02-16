@@ -53,7 +53,7 @@ export default function ExplorePage() {
                     </div>
                     <div className="flex overflow-x-auto px-4 gap-3 pb-2 no-scrollbar">
                         {[
-                            { title: "فیلم و سریال", id: "movies", href: "/explore/movies" },
+                            { title: "سریال", id: "series", href: "/explore/series" },
                             { title: "آشپزی", id: "cooking", href: "/explore/cooking" },
                             { title: "پادکست", id: "podcast" },
                             { title: "موسیقی", id: "music" },

@@ -6,6 +6,7 @@ import { X, MoreVertical, Rewind, FastForward, Play, Pause, SkipForward, RotateC
 import { useParams, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import VocabularyModal from "@/components/lms/VocabularyModal";
+import { lessonChineseTitles, persianNumbers } from "@/lib/videoUtils";
 
 interface Lesson {
     id: number;
@@ -41,31 +42,55 @@ interface VocabularyWord {
     }>;
 }
 
+// Domain-specific configuration
+const domainConfig: Record<string, { label: string; color: string; backPath: (courseId: string) => string }> = {
+    hsk: {
+        label: "HSK",
+        color: "text-blue-600",
+        backPath: (courseId) => `/hsk/${courseId}`,
+    },
+    pronunciation: {
+        label: "تلفظ",
+        color: "text-purple-600",
+        backPath: (courseId) => `/pronunciation/${courseId}`,
+    },
+    characters: {
+        label: "کاراکتر",
+        color: "text-indigo-600",
+        backPath: (courseId) => `/characters/${courseId}`,
+    },
+    series: {
+        label: "سریال",
+        color: "text-rose-600",
+        backPath: (courseId) => `/series/${courseId}`,
+    },
+};
+
 // Sample transcript data with highlighted words
 const sampleTranscript = [
     {
         id: 1,
         chinese: "今天和我一起学习HSK第三级，第一课。",
-        persian: "امروز با من درس اول از سطح سوم HSK رو یاد می‌گیریم.",
+        persian: "امروز با من HSK سطح سوم، درس اول رو یاد بگیرید.",
         highlightedWords: ["学习", "第三级"]
     },
     {
         id: 2,
-        chinese: "首先我们一起读一下标题吧。",
-        persian: "اول با هم عنوان درس رو بخونیم.",
-        highlightedWords: ["标题"]
+        chinese: "周末你有什么打算？",
+        persian: "آخر هفته چه برنامه‌ای داری؟",
+        highlightedWords: ["周末", "打算"]
     },
     {
         id: 3,
-        chinese: "周末你有什么打算？",
-        persian: "آخر هفته چه برنامه‌ای داری؟",
-        highlightedWords: ["打算"]
+        chinese: "我打算和朋友一起去旅游。",
+        persian: "قصد دارم با دوستم برم مسافرت.",
+        highlightedWords: ["打算", "旅游"]
     },
     {
         id: 4,
-        chinese: "周末你有什么打算？",
-        persian: "(تکرار) آخر هفته چه برنامه‌ای داری؟",
-        highlightedWords: ["打算"]
+        chinese: "你打算什么时候出发？",
+        persian: "قصد داری کِی حرکت کنی؟",
+        highlightedWords: ["打算", "出发"]
     },
     {
         id: 5,
@@ -75,11 +100,15 @@ const sampleTranscript = [
     },
 ];
 
-export default function CourseWatchPage() {
+export default function SharedWatchPage() {
     const params = useParams();
     const searchParams = useSearchParams();
-    const courseId = params?.id;
-    const lessonIdParam = searchParams.get('lesson');
+
+    const domain = params?.domain as string;
+    const courseId = params?.courseId as string;
+    const lessonIdParam = searchParams.get("lesson");
+
+    const config = domainConfig[domain] || domainConfig.hsk;
 
     const [course, setCourse] = useState<Course | null>(null);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -125,8 +154,8 @@ export default function CourseWatchPage() {
         const handleFullscreenChange = () => {
             setIsFullscreen(!!document.fullscreenElement);
         };
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
     }, []);
 
     const handlePlayPause = () => {
@@ -155,7 +184,7 @@ export default function CourseWatchPage() {
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +228,7 @@ export default function CourseWatchPage() {
                     { id: 1, zh_text: `他${word}当医生`, pinyin: "Tā dǎsuàn dāng yīshēng", target_text: "او قصد دارد پزشک شود" },
                     { id: 2, zh_text: `各有各的${word}`, pinyin: "Gè yǒu gè de dǎsuàn", target_text: "هر کسی برنامه خودش را دارد" },
                     { id: 3, zh_text: `为自己作${word}`, pinyin: "Wèi zìjǐ zuò dǎsuàn", target_text: "برای خودش برنامه‌ریزی کردن" },
-                ]
+                ],
             });
             setShowVocabModal(true);
         }
@@ -212,7 +241,7 @@ export default function CourseWatchPage() {
         let key = 0;
 
         while (remainingText.length > 0) {
-            let foundWord = null;
+            let foundWord: string | null = null;
             let foundIndex = -1;
 
             // Find the first highlighted word in remaining text
@@ -230,10 +259,11 @@ export default function CourseWatchPage() {
                     result.push(<span key={key++}>{remainingText.slice(0, foundIndex)}</span>);
                 }
                 // Add the highlighted word
+                const clickWord = foundWord;
                 result.push(
                     <button
                         key={key++}
-                        onClick={() => handleWordClick(foundWord!)}
+                        onClick={() => handleWordClick(clickWord)}
                         className="bg-orange-200 text-orange-800 px-1 rounded hover:bg-orange-300 transition-colors"
                     >
                         {foundWord}
@@ -267,30 +297,29 @@ export default function CourseWatchPage() {
     }
 
     // Get lesson index
-    const allLessons = course.sections?.flatMap(s => s.lessons) || [];
-    const lessonIndex = allLessons.findIndex(l => l.id === currentLesson.id);
+    const allLessons = course.sections?.flatMap((s) => s.lessons) || [];
+    const lessonIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
     const lessonNumber = lessonIndex + 1;
 
-    // Chinese lesson title
-    const chineseTitles: Record<number, string> = {
-        1: "周末你有什么打算？",
-        2: "他什么时候回来？",
-        3: "桌子上放着很多饮料。",
-    };
-    const chineseTitle = chineseTitles[lessonNumber] || "你好！";
-    const persianLessonNames = ["اول", "دوم", "سوم", "چهارم", "پنجم"];
-    const persianLessonName = persianLessonNames[lessonNumber - 1] || `${lessonNumber}`;
+    // Domain-aware title generation
+    const isSeries = domain === "series";
+    const chineseTitle = lessonChineseTitles[lessonNumber] || "你好！";
+    const persianLessonName = persianNumbers[lessonNumber - 1] || `${lessonNumber}`;
+
+    // Header title varies per domain
+    const headerTitle = isSeries ? `قسمت ${persianLessonName}` : `درس ${persianLessonName}`;
+    const headerSubtitle = isSeries ? `${course.title} - EP ${lessonNumber}` : chineseTitle;
 
     return (
         <div className="min-h-full bg-white flex flex-col" dir="rtl">
             {/* Header */}
             <header className="px-4 py-3 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-gray-100">
-                <Link href={`/courses/${courseId}`} className="text-gray-600">
+                <Link href={config.backPath(courseId)} className="text-gray-600">
                     <X size={24} />
                 </Link>
                 <div className="flex-1 text-center">
-                    <h1 className="text-base font-bold text-gray-900">درس {persianLessonName}</h1>
-                    <p className="text-xs text-gray-500" dir="ltr">{chineseTitle}</p>
+                    <h1 className={`text-base font-bold text-gray-900`}>{headerTitle}</h1>
+                    <p className="text-xs text-gray-500" dir="ltr">{headerSubtitle}</p>
                 </div>
                 <button className="text-gray-600">
                     <MoreVertical size={22} />
