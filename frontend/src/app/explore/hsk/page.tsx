@@ -27,7 +27,7 @@ export default function HSKLevelPage() {
                 {levels.map((item) => (
                     <Link
                         key={item.level}
-                        href={`/courses/${item.level}`} // Assuming ID matches level for now, or we'll need to fetch real IDs
+                        href={`/hsk/${item.level}`}
                         className={`aspect-[4/5] ${item.color} rounded-2xl flex flex-col items-center justify-center text-white shadow-md active:scale-95 transition-transform`}
                     >
                         <span className="text-xs opacity-90 mb-1">Standard Course</span>

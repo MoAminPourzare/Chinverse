@@ -93,7 +93,7 @@ export default function CharactersPage() {
                             return (
                                 <Link
                                     key={course.id}
-                                    href={`/courses/${course.id}`}
+                                    href={`/characters/${course.id}`}
                                     className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all active:scale-[0.98]"
                                 >
                                     <div className="flex items-center p-4 gap-4">
@@ -144,7 +144,7 @@ export default function CharactersPage() {
                         {displayCourses.length === 0 && mockCharactersCourses.map((course) => (
                             <Link
                                 key={course.id}
-                                href={`/courses/${course.id}`}
+                                href={`/characters/${course.id}`}
                                 className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all active:scale-[0.98]"
                             >
                                 <div className="flex items-center p-4 gap-4">

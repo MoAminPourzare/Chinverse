@@ -73,46 +73,57 @@ export default function CategoryPage() {
                                 ? 'space-y-4'
                                 : 'grid grid-cols-2 gap-4'
                     }>
-                        {courses.map((course) => (
-                            <Link
-                                key={course.id}
-                                href={`/courses/${course.id}`}
-                                className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
-                            >
-                                {/* Thumbnail */}
-                                <div className={`
+                        {courses.map((course) => {
+                            // Resolve domain-specific route based on category
+                            const domainRoutes: Record<string, string> = {
+                                pronunciation: "pronunciation",
+                                characters: "characters",
+                                series: "series",
+                                hsk: "hsk",
+                            };
+                            const routePrefix = domainRoutes[category] || category;
+
+                            return (
+                                <Link
+                                    key={course.id}
+                                    href={`/${routePrefix}/${course.id}`}
+                                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                                >
+                                    {/* Thumbnail */}
+                                    <div className={`
                   ${config.cardStyle === 'portrait' ? 'aspect-[2/3]' : ''}
                   ${config.cardStyle === 'landscape' ? 'aspect-video' : ''}
                   ${config.cardStyle === 'square' ? 'aspect-square' : ''}
                   bg-gradient-to-br from-blue-400 to-purple-500 relative overflow-hidden group
                 `}>
-                                    {/* Play Overlay */}
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all">
-                                        <div className="w-16 h-16 rounded-full bg-white bg-opacity-90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                            <Play size={28} className="text-blue-600 fill-blue-600 ml-1" />
+                                        {/* Play Overlay */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all">
+                                            <div className="w-16 h-16 rounded-full bg-white bg-opacity-90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                                <Play size={28} className="text-blue-600 fill-blue-600 ml-1" />
+                                            </div>
+                                        </div>
+                                        {/* Placeholder Text */}
+                                        <span className="absolute top-2 left-2 text-white text-xs opacity-50 bg-black bg-opacity-20 px-2 py-1 rounded">
+                                            Cover
+                                        </span>
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="p-3">
+                                        <h3 className="font-bold text-gray-900 text-base line-clamp-2 mb-1">
+                                            {course.title}
+                                        </h3>
+                                        <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+                                            {course.description}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-blue-600 font-medium">{course.level}</span>
+                                            <span className="text-xs text-gray-400">مشاهده</span>
                                         </div>
                                     </div>
-                                    {/* Placeholder Text */}
-                                    <span className="absolute top-2 left-2 text-white text-xs opacity-50 bg-black bg-opacity-20 px-2 py-1 rounded">
-                                        Cover
-                                    </span>
-                                </div>
-
-                                {/* Info */}
-                                <div className="p-3">
-                                    <h3 className="font-bold text-gray-900 text-base line-clamp-2 mb-1">
-                                        {course.title}
-                                    </h3>
-                                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">
-                                        {course.description}
-                                    </p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-blue-600 font-medium">{course.level}</span>
-                                        <span className="text-xs text-gray-400">مشاهده</span>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </main>

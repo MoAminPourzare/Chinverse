@@ -94,7 +94,7 @@ export default function PronunciationPage() {
                             return (
                                 <Link
                                     key={course.id}
-                                    href={`/courses/${course.id}`}
+                                    href={`/pronunciation/${course.id}`}
                                     className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all active:scale-[0.98]"
                                 >
                                     <div className="flex items-center p-4 gap-4">
@@ -145,7 +145,7 @@ export default function PronunciationPage() {
                         {displayCourses.length === 0 && pronunciationCourses.map((course) => (
                             <Link
                                 key={course.id}
-                                href={`/courses/${course.id}`}
+                                href={`/pronunciation/${course.id}`}
                                 className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all active:scale-[0.98]"
                             >
                                 <div className="flex items-center p-4 gap-4">
