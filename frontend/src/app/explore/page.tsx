@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function ExplorePage() {
     return (
         <div className="min-h-full bg-gray-50 pb-4" dir="rtl">
-            {/* Header - Optional/Simple */}
+            {/* Header */}
             <header className="px-4 py-4 sticky top-0 bg-gray-50 z-10">
                 <h1 className="text-xl font-bold text-gray-800">کاوش</h1>
             </header>
@@ -18,29 +18,21 @@ export default function ExplorePage() {
                         <h2 className="text-lg font-bold text-gray-800">یادگیری زبان چینی</h2>
                         <button className="text-sm text-blue-600 font-medium hover:text-blue-700">نمایش همه</button>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-5 gap-2">
                         {[
-                            { title: "تلفظ", id: "pronunciation", href: "/explore/pronunciation" },
                             { title: "HSK", id: "hsk", href: "/explore/hsk" },
-                            { title: "گرامر", id: "grammar", href: "/explore/grammar" },
+                            { title: "تلفظ", id: "pronunciation", href: "/explore/pronunciation" },
                             { title: "کاراکتر", id: "characters", href: "/explore/characters" },
+                            { title: "گرامر", id: "grammar", href: "/explore/grammar" },
+                            { title: "اصطلاح", id: "idioms", href: "/explore/idioms" },
                         ].map((item) => (
-                            item.href ? (
-                                <Link
-                                    key={item.id}
-                                    href={item.href}
-                                    className="aspect-square bg-gradient-to-br from-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
-                                >
-                                    <span className="text-sm">{item.title}</span>
-                                </Link>
-                            ) : (
-                                <button
-                                    key={item.id}
-                                    className="aspect-square bg-gradient-to-br from-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
-                                >
-                                    <span className="text-sm">{item.title}</span>
-                                </button>
-                            )
+                            <Link
+                                key={item.id}
+                                href={item.href}
+                                className="aspect-square bg-gradient-to-br from-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
+                            >
+                                <span className="text-xs text-center px-1 leading-tight">{item.title}</span>
+                            </Link>
                         ))}
                     </div>
                 </section>
@@ -54,27 +46,20 @@ export default function ExplorePage() {
                     <div className="flex overflow-x-auto px-4 gap-3 pb-2 no-scrollbar">
                         {[
                             { title: "سریال", id: "series", href: "/explore/series" },
+                            { title: "فیلم", id: "movies", href: "/explore/movies" },
+                            { title: "کارتون و انیمیشن", id: "cartoons", href: "/explore/cartoons" },
                             { title: "آشپزی", id: "cooking", href: "/explore/cooking" },
-                            { title: "پادکست", id: "podcast" },
-                            { title: "موسیقی", id: "music" },
+                            { title: "پادکست", id: "podcasts", href: "/explore/podcasts" },
+                            { title: "موسیقی", id: "music", href: "/explore/music" },
                             { title: "ریالیتی شو", id: "reality", href: "/explore/reality" },
                         ].map((item) => (
-                            item.href ? (
-                                <Link
-                                    key={item.id}
-                                    href={item.href}
-                                    className="flex-shrink-0 w-28 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
-                                >
-                                    <span className="text-sm text-center px-1 leading-tight">{item.title}</span>
-                                </Link>
-                            ) : (
-                                <button
-                                    key={item.id}
-                                    className="flex-shrink-0 w-28 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
-                                >
-                                    <span className="text-sm text-center px-1 leading-tight">{item.title}</span>
-                                </button>
-                            )
+                            <Link
+                                key={item.id}
+                                href={item.href}
+                                className="flex-shrink-0 w-28 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold shadow-sm active:scale-95 transition-transform"
+                            >
+                                <span className="text-sm text-center px-1 leading-tight">{item.title}</span>
+                            </Link>
                         ))}
                     </div>
                 </section>
