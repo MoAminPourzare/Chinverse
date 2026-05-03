@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api import deps
 from app.models.dictionary import DictionaryWord, WordExample, WordCollocation
@@ -38,8 +38,8 @@ class VocabularyWordResponse(BaseModel):
     persian_meaning: Optional[str] = None
     chinese_meaning: Optional[str] = None
     composition: Optional[str] = None
-    examples: List[WordExampleSchema] = []
-    collocations: List[WordCollocationSchema] = []
+    examples: List[WordExampleSchema] = Field(default_factory=list)
+    collocations: List[WordCollocationSchema] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

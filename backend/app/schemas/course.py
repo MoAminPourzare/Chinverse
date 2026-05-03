@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class ContentBase(BaseModel):
     content_type: str
@@ -42,7 +42,7 @@ class CourseSectionCreate(CourseSectionBase):
 
 class CourseSection(CourseSectionBase):
     id: int
-    lessons: List[Lesson] = []
+    lessons: List[Lesson] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
@@ -59,7 +59,7 @@ class CourseCreate(CourseBase):
 class Course(CourseBase):
     id: int
     subcategory_id: int
-    sections: List[CourseSection] = []
+    sections: List[CourseSection] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

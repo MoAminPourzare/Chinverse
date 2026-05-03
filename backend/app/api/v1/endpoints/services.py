@@ -2,19 +2,15 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import os
 import uuid
 
 from app.api import deps
+from app.core.paths import SERVICE_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
 from app.models.user import User
 from app.models.service import UserService
 from app.schemas.service import Service
 
 router = APIRouter()
-
-# Upload directory for service banners
-UPLOAD_DIR = "static/uploads/services"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.get("", response_model=List[Service])
@@ -56,9 +52,10 @@ async def create_service(
             )
         
         # Generate unique filename
-        file_extension = os.path.splitext(banner.filename)[1]
+        file_extension = "." + banner.filename.rsplit(".", 1)[-1].lower() if "." in banner.filename else ""
         unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        SERVICE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        file_path = SERVICE_UPLOAD_DIR / unique_filename
         
         # Save file
         with open(file_path, "wb") as buffer:
@@ -108,9 +105,7 @@ async def delete_service(
     
     # Delete banner file if exists
     if service.banner_url:
-        file_path = os.path.join("static", service.banner_url.lstrip("/"))
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        safe_unlink(resolve_backend_file_url(service.banner_url))
     
     await db.delete(service)
     await db.commit()
@@ -130,7 +125,6 @@ async def get_public_services(
     No authentication required.
     """
     from sqlalchemy.orm import selectinload
-    from app.models.user import UserProfile
     
     result = await db.execute(
         select(UserService)
