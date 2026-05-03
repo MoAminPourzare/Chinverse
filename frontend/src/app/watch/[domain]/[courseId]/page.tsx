@@ -64,6 +64,46 @@ const domainConfig: Record<string, { label: string; color: string; backPath: (co
         color: "text-rose-600",
         backPath: (courseId) => `/series/${courseId}`,
     },
+    movies: {
+        label: "فیلم",
+        color: "text-red-600",
+        backPath: (courseId) => `/movies/${courseId}`,
+    },
+    cartoons: {
+        label: "انیمیشن",
+        color: "text-purple-600",
+        backPath: (courseId) => `/cartoons/${courseId}`,
+    },
+    music: {
+        label: "موسیقی",
+        color: "text-teal-600",
+        backPath: (courseId) => `/music/${courseId}`,
+    },
+    grammar: {
+        label: "گرامر",
+        color: "text-emerald-600",
+        backPath: (courseId) => `/grammar/${courseId}`,
+    },
+    idioms: {
+        label: "اصطلاحات",
+        color: "text-rose-600",
+        backPath: (courseId) => `/idioms/${courseId}`,
+    },
+    cooking: {
+        label: "آشپزی",
+        color: "text-orange-600",
+        backPath: (courseId) => `/cooking/${courseId}`,
+    },
+    podcasts: {
+        label: "پادکست",
+        color: "text-indigo-600",
+        backPath: (courseId) => `/podcasts/${courseId}`,
+    },
+    reality: {
+        label: "ریالیتی شو",
+        color: "text-pink-600",
+        backPath: (courseId) => `/reality/${courseId}`,
+    },
 };
 
 // Sample transcript data with highlighted words
@@ -302,13 +342,19 @@ export default function SharedWatchPage() {
     const lessonNumber = lessonIndex + 1;
 
     // Domain-aware title generation
-    const isSeries = domain === "series";
+    const entertainmentDomains = ["series", "movies", "cartoons", "music", "cooking", "podcasts", "reality"];
+    const isEntertainment = entertainmentDomains.includes(domain);
+    const isMusic = domain === "music";
     const chineseTitle = lessonChineseTitles[lessonNumber] || "你好！";
     const persianLessonName = persianNumbers[lessonNumber - 1] || `${lessonNumber}`;
 
     // Header title varies per domain
-    const headerTitle = isSeries ? `قسمت ${persianLessonName}` : `درس ${persianLessonName}`;
-    const headerSubtitle = isSeries ? `${course.title} - EP ${lessonNumber}` : chineseTitle;
+    const headerTitle = isMusic
+        ? `آهنگ ${persianLessonName}`
+        : isEntertainment
+            ? `قسمت ${persianLessonName}`
+            : `درس ${persianLessonName}`;
+    const headerSubtitle = isEntertainment ? `${course.title} - ${isMusic ? "Track" : "EP"} ${lessonNumber}` : chineseTitle;
 
     return (
         <div className="min-h-full bg-white flex flex-col" dir="rtl">
