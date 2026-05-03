@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-import os
 import uuid
 import shutil
 
 from app.api import deps
+from app.core.paths import AVATARS_DIR, resolve_backend_file_url, safe_unlink
 from app.models.user import User, UserProfile, UserGalleryItem
 from app.schemas import user as schemas
 from app.schemas.showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic, EducationSummary
@@ -17,6 +17,16 @@ router = APIRouter()
 # مجاز فایل‌های تصویری
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+async def get_user_with_profile(db: AsyncSession, user_id: int) -> User:
+    result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 @router.get("/me", response_model=schemas.User)
 async def read_user_me(
@@ -38,56 +48,99 @@ async def delete_user_account(
     This is a destructive action - all user data will be permanently removed.
     Manual cascade delete to handle foreign key constraints.
     """
-    from sqlalchemy import delete
+    from sqlalchemy import delete, or_, update
+    from app.models.business import ConsultationRequest, Service as BusinessService, UserSubscription
+    from app.models.dictionary import WordExample
+    from app.models.learning import LeitnerCard, StudySession, UserStreak, CourseReview
+    from app.models.leitner import UserFlashcard
+    from app.models.media import MediaAsset
+    from app.models.settings import UserLanguageSetting, UserPreference
     from app.models.social import (
-        ForumQuestion, ForumAnswer, Post, PostLike, PostComment, 
+        ForumQuestion, ForumAnswer, Post, PostMedia, PostLike, PostComment,
         UserFollow, Message, SupportTicket
     )
     from app.models.service import UserService
-    from app.models.user import UserGalleryItem, UserProfile
+    from app.models.user import UserGalleryItem, UserProfile, UserSocialLink
     
     user_id = current_user.id
-    
-    # 1. Delete Forum Answers (where user is author) - uses author_user_id column
-    await db.execute(delete(ForumAnswer).where(ForumAnswer.author_user_id == user_id))
-    
-    # 2. Delete Forum Questions (where user is author) - uses author_user_id column
+
+    gallery_files = await db.execute(
+        select(UserGalleryItem.image_url).where(UserGalleryItem.user_id == user_id)
+    )
+    service_files = await db.execute(
+        select(UserService.banner_url).where(UserService.user_id == user_id)
+    )
+    file_urls = list(gallery_files.scalars().all()) + [
+        url for url in service_files.scalars().all() if url
+    ]
+    if current_user.profile and current_user.profile.avatar_url:
+        file_urls.append(current_user.profile.avatar_url)
+
+    owned_question_ids = select(ForumQuestion.id).where(ForumQuestion.author_user_id == user_id)
+    owned_post_ids = select(Post.id).where(Post.author_user_id == user_id)
+    owned_comment_ids = select(PostComment.id).where(PostComment.user_id == user_id)
+    owned_media_ids = select(MediaAsset.id).where(MediaAsset.user_id == user_id)
+    owned_business_service_ids = select(BusinessService.id).where(
+        BusinessService.provider_user_id == user_id
+    )
+
+    await db.execute(delete(ForumAnswer).where(
+        or_(ForumAnswer.author_user_id == user_id, ForumAnswer.question_id.in_(owned_question_ids))
+    ))
     await db.execute(delete(ForumQuestion).where(ForumQuestion.author_user_id == user_id))
-    
-    # 3. Delete Post Likes (where user liked)
-    await db.execute(delete(PostLike).where(PostLike.user_id == user_id))
-    
-    # 4. Delete Post Comments (where user commented)
-    await db.execute(delete(PostComment).where(PostComment.user_id == user_id))
-    
-    # 5. Delete Posts (where user is author) - uses author_user_id column
+
+    await db.execute(update(PostComment).where(
+        PostComment.parent_id.in_(owned_comment_ids)
+    ).values(parent_id=None))
+    await db.execute(delete(PostMedia).where(
+        or_(PostMedia.post_id.in_(owned_post_ids), PostMedia.media_id.in_(owned_media_ids))
+    ))
+    await db.execute(delete(PostLike).where(
+        or_(PostLike.user_id == user_id, PostLike.post_id.in_(owned_post_ids))
+    ))
+    await db.execute(delete(PostComment).where(
+        or_(PostComment.user_id == user_id, PostComment.post_id.in_(owned_post_ids))
+    ))
     await db.execute(delete(Post).where(Post.author_user_id == user_id))
-    
-    # 6. Delete Services (where user is owner)
+
+    await db.execute(delete(ConsultationRequest).where(
+        or_(
+            ConsultationRequest.requester_user_id == user_id,
+            ConsultationRequest.service_id.in_(owned_business_service_ids),
+        )
+    ))
+    await db.execute(delete(BusinessService).where(BusinessService.provider_user_id == user_id))
+    await db.execute(delete(UserSubscription).where(UserSubscription.user_id == user_id))
+
     await db.execute(delete(UserService).where(UserService.user_id == user_id))
-    
-    # 7. Delete Messages (where user is sender OR receiver)
+    await db.execute(update(WordExample).where(
+        WordExample.media_id.in_(owned_media_ids)
+    ).values(media_id=None))
+    await db.execute(delete(MediaAsset).where(MediaAsset.user_id == user_id))
+    await db.execute(delete(UserFlashcard).where(UserFlashcard.user_id == user_id))
+    await db.execute(delete(LeitnerCard).where(LeitnerCard.user_id == user_id))
+    await db.execute(delete(StudySession).where(StudySession.user_id == user_id))
+    await db.execute(delete(UserStreak).where(UserStreak.user_id == user_id))
+    await db.execute(delete(CourseReview).where(CourseReview.user_id == user_id))
+
     await db.execute(delete(Message).where(
         (Message.sender_id == user_id) | (Message.receiver_id == user_id)
     ))
-    
-    # 8. Delete Support Tickets (where user submitted)
     await db.execute(delete(SupportTicket).where(SupportTicket.user_id == user_id))
-    
-    # 9. Delete Gallery Items (where user is owner)
     await db.execute(delete(UserGalleryItem).where(UserGalleryItem.user_id == user_id))
-    
-    # 10. Delete Follow relationships (where user is follower OR followee)
     await db.execute(delete(UserFollow).where(
         (UserFollow.follower_id == user_id) | (UserFollow.followee_id == user_id)
     ))
-    
-    # 11. Delete User Profile
+    await db.execute(delete(UserSocialLink).where(UserSocialLink.user_id == user_id))
+    await db.execute(delete(UserLanguageSetting).where(UserLanguageSetting.user_id == user_id))
+    await db.execute(delete(UserPreference).where(UserPreference.user_id == user_id))
     await db.execute(delete(UserProfile).where(UserProfile.user_id == user_id))
-    
-    # 12. Finally delete the user
+
     await db.delete(current_user)
     await db.commit()
+
+    for file_url in file_urls:
+        safe_unlink(resolve_backend_file_url(file_url))
     
     return {"message": "حساب کاربری با موفقیت حذف شد"}
 
@@ -101,22 +154,25 @@ async def update_user_profile(
     """
     Update current user profile.
     """
+    update_data = profile_in.model_dump(exclude_unset=True)
+    if update_data.get("display_name") is None:
+        update_data.pop("display_name", None)
+
     # Check if profile exists
     if not current_user.profile:
         # Create new profile
-        profile = UserProfile(user_id=current_user.id, **profile_in.model_dump(exclude_unset=True))
+        update_data.setdefault("display_name", current_user.email or "User")
+        profile = UserProfile(user_id=current_user.id, **update_data)
         db.add(profile)
     else:
         # Update existing profile
         profile = current_user.profile
-        update_data = profile_in.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(profile, field, value)
         db.add(profile)
     
     await db.commit()
-    await db.refresh(current_user)
-    return current_user
+    return await get_user_with_profile(db, current_user.id)
 
 @router.post("/me/avatar", response_model=schemas.User)
 async def upload_avatar(
@@ -151,9 +207,8 @@ async def upload_avatar(
     unique_filename = f"{uuid.uuid4()}.{file_ext}"
     
     # مسیر ذخیره‌سازی
-    upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "uploads", "avatars")
-    os.makedirs(upload_dir, exist_ok=True)
-    file_path = os.path.join(upload_dir, unique_filename)
+    AVATARS_DIR.mkdir(parents=True, exist_ok=True)
+    file_path = AVATARS_DIR / unique_filename
     
     # ذخیره فایل
     try:
@@ -174,13 +229,12 @@ async def upload_avatar(
         db.add(profile)
     else:
         # به‌روزرسانی پروفایل موجود
+        safe_unlink(resolve_backend_file_url(current_user.profile.avatar_url))
         current_user.profile.avatar_url = avatar_url
         db.add(current_user.profile)
     
     await db.commit()
-    await db.refresh(current_user)
-    
-    return current_user
+    return await get_user_with_profile(db, current_user.id)
 
 
 # ===== PUBLIC ENDPOINTS (No auth required) =====

@@ -1,25 +1,21 @@
 from typing import List
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
-from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
-import os
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import uuid
-from datetime import datetime
 
 from app.api import deps
 from app.models.user import User, UserGalleryItem
-from app.schemas.gallery import GalleryItem, GalleryItemCreate
+from app.core.paths import GALLERY_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
+from app.schemas.gallery import GalleryItem
 from app.db.session import get_db
 
 router = APIRouter()
 
-UPLOAD_DIR = "static/uploads/gallery"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 @router.get("/", response_model=List[GalleryItem])
 async def get_user_gallery(
     *,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
 ):
     """
@@ -37,7 +33,7 @@ async def get_user_gallery(
 @router.post("/", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
 async def upload_gallery_image(
     *,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
     file: UploadFile = File(...),
     caption: str = Form(None),
@@ -53,9 +49,10 @@ async def upload_gallery_image(
         )
     
     # Generate unique filename
-    file_extension = os.path.splitext(file.filename)[1]
+    file_extension = "." + file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
     unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    GALLERY_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    file_path = GALLERY_UPLOAD_DIR / unique_filename
     
     # Save file
     with open(file_path, "wb") as buffer:
@@ -79,7 +76,7 @@ async def upload_gallery_image(
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_gallery_item(
     *,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
     item_id: int,
 ):
@@ -101,9 +98,7 @@ async def delete_gallery_item(
         )
     
     # Delete file from filesystem
-    file_path = os.path.join("static", gallery_item.image_url.lstrip("/"))
-    if os.path.exists(file_path):
-        os.remove(file_path)
+    safe_unlink(resolve_backend_file_url(gallery_item.image_url))
     
     await db.delete(gallery_item)
     await db.commit()

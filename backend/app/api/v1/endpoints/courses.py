@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.models.course import Course, Lesson, Content, Category, Subcategory
+from app.models.course import Course, CourseSection, Lesson, Category, Subcategory
 from app.schemas import course as schemas
 
 router = APIRouter()
@@ -20,7 +20,9 @@ async def read_courses(
     """
     Retrieve courses.
     """
-    query = select(Course)
+    query = select(Course).options(
+        selectinload(Course.sections).selectinload(CourseSection.lessons)
+    )
     if category_slug:
         query = query.join(Course.subcategory).join(Subcategory.category).where(Category.slug == category_slug)
     
@@ -37,8 +39,6 @@ async def read_course(
     """
     Get course by ID.
     """
-    from app.models.course import CourseSection
-    
     result = await db.execute(
         select(Course)
         .options(
@@ -60,8 +60,6 @@ async def read_course_lessons(
     """
     Get lessons for a course.
     """
-    from app.models.course import CourseSection
-    
     result = await db.execute(
         select(Course)
         .options(
