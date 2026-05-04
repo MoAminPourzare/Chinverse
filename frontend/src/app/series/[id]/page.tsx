@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { SeriesData } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // ==================== MOCK DATA ====================
 const mockSeriesCourses: Record<number, SeriesData> = {
@@ -92,14 +93,21 @@ export default function SeriesDetailPage() {
 
     useEffect(() => {
         const fetchSeries = async () => {
+            if (courseId && mockSeriesCourses[courseId]) {
+                setSeries(mockSeriesCourses[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setSeries(response.data);
             } catch (error) {
-                console.error("Failed to fetch series:", error);
                 // Fallback to mock data
                 if (courseId && mockSeriesCourses[courseId]) {
                     setSeries(mockSeriesCourses[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch series:", error);
                 }
             } finally {
                 setLoading(false);
@@ -113,7 +121,7 @@ export default function SeriesDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -121,7 +129,7 @@ export default function SeriesDetailPage() {
 
     if (!series) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">سریال یافت نشد</div>
             </div>
         );

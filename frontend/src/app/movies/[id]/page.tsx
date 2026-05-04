@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { SeriesData } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // ==================== MOCK DATA ====================
 const mockMovies: Record<number, SeriesData> = {
@@ -91,14 +92,21 @@ export default function MovieDetailPage() {
 
     useEffect(() => {
         const fetchMovie = async () => {
+            if (courseId && mockMovies[courseId]) {
+                setMovie(mockMovies[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setMovie(response.data);
             } catch (error) {
-                console.error("Failed to fetch movie:", error);
                 // Fallback to mock data
                 if (courseId && mockMovies[courseId]) {
                     setMovie(mockMovies[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch movie:", error);
                 }
             } finally {
                 setLoading(false);
@@ -112,7 +120,7 @@ export default function MovieDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -120,7 +128,7 @@ export default function MovieDetailPage() {
 
     if (!movie) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">فیلم یافت نشد</div>
             </div>
         );

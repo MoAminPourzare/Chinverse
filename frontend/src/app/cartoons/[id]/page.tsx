@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { SeriesData } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // Extended type for cartoons with director
 interface CartoonData extends SeriesData {
@@ -99,14 +100,21 @@ export default function CartoonDetailPage() {
 
     useEffect(() => {
         const fetchCartoon = async () => {
+            if (courseId && mockCartoons[courseId]) {
+                setCartoon(mockCartoons[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setCartoon(response.data);
             } catch (error) {
-                console.error("Failed to fetch cartoon:", error);
                 // Fallback to mock data
                 if (courseId && mockCartoons[courseId]) {
                     setCartoon(mockCartoons[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch cartoon:", error);
                 }
             } finally {
                 setLoading(false);
@@ -120,7 +128,7 @@ export default function CartoonDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -128,7 +136,7 @@ export default function CartoonDetailPage() {
 
     if (!cartoon) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">انیمیشن یافت نشد</div>
             </div>
         );

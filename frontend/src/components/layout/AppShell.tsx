@@ -23,8 +23,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
     return (
-        <div className="w-full max-w-md bg-white min-h-dvh relative shadow-2xl overflow-hidden flex flex-col">
-            <div className={`flex-1 overflow-y-auto scrollbar-hide ${showBottomNav ? "pb-20" : ""}`}>
+        <div className="w-full max-w-md bg-white h-dvh max-h-dvh relative shadow-2xl overflow-hidden flex flex-col">
+            <div className={`flex-1 min-h-0 overflow-y-auto scrollbar-hide ${showBottomNav ? "pb-20" : ""}`}>
                 {children}
             </div>
             {showBottomNav && <BottomNav />}
