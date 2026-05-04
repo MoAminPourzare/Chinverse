@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { Course } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // ==================== MOCK DATA ====================
 const mockPronunciationCourses: Record<number, Course> = {
@@ -89,14 +90,21 @@ export default function PronunciationDetailPage() {
 
     useEffect(() => {
         const fetchCourse = async () => {
+            if (courseId && mockPronunciationCourses[courseId]) {
+                setCourse(mockPronunciationCourses[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setCourse(response.data);
             } catch (error) {
-                console.error("Failed to fetch pronunciation course:", error);
                 // Fallback to mock data
                 if (courseId && mockPronunciationCourses[courseId]) {
                     setCourse(mockPronunciationCourses[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch pronunciation course:", error);
                 }
             } finally {
                 setLoading(false);
@@ -110,7 +118,7 @@ export default function PronunciationDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -118,7 +126,7 @@ export default function PronunciationDetailPage() {
 
     if (!course) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">دوره یافت نشد</div>
             </div>
         );

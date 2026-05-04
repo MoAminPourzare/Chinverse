@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa">
-      <body className="antialiased bg-gray-100 flex justify-center min-h-dvh">
+      <body className="antialiased bg-gray-100 flex justify-center h-dvh overflow-hidden">
         <AppShell>{children}</AppShell>
       </body>
     </html>

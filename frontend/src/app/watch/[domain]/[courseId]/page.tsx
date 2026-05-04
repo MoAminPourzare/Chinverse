@@ -6,6 +6,7 @@ import { X, MoreVertical, Rewind, FastForward, Play, Pause, SkipForward, RotateC
 import { useParams, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import VocabularyModal from "@/components/lms/VocabularyModal";
+import { isHttpStatus } from "@/lib/http";
 import { lessonChineseTitles, persianNumbers } from "@/lib/videoUtils";
 
 interface Lesson {
@@ -178,7 +179,9 @@ export default function SharedWatchPage() {
                     setCurrentLesson(allLessons[0]);
                 }
             } catch (error) {
-                console.error("Failed to fetch course:", error);
+                if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch course:", error);
+                }
             } finally {
                 setLoading(false);
             }
@@ -322,7 +325,7 @@ export default function SharedWatchPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -330,7 +333,7 @@ export default function SharedWatchPage() {
 
     if (!course || !currentLesson) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">محتوا یافت نشد</div>
             </div>
         );

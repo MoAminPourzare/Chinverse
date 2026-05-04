@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { SeriesData } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // Extended type for music artists
 interface MusicArtistData extends SeriesData {
@@ -105,14 +106,21 @@ export default function MusicDetailPage() {
 
     useEffect(() => {
         const fetchArtist = async () => {
+            if (courseId && mockArtists[courseId]) {
+                setArtist(mockArtists[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setArtist(response.data);
             } catch (error) {
-                console.error("Failed to fetch music artist:", error);
                 // Fallback to mock data
                 if (courseId && mockArtists[courseId]) {
                     setArtist(mockArtists[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch music artist:", error);
                 }
             } finally {
                 setLoading(false);
@@ -126,7 +134,7 @@ export default function MusicDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -134,7 +142,7 @@ export default function MusicDetailPage() {
 
     if (!artist) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">هنرمند یافت نشد</div>
             </div>
         );

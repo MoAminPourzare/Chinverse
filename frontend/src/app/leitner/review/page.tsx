@@ -121,7 +121,7 @@ export default function LeitnerReviewPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -130,7 +130,7 @@ export default function LeitnerReviewPage() {
     // Session Complete Screen
     if (sessionComplete) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6 text-center" dir="rtl">
+            <div className="min-h-full flex flex-col items-center justify-center bg-gray-50 p-6 text-center" dir="rtl">
                 <div className="text-6xl mb-6">🎉</div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">آفرین! همه کارت‌ها مرور شدند!</h2>
                 <p className="text-gray-500 mb-8">برای امروز کارتی برای مرور نداری. فردا دوباره بیا!</p>
@@ -170,7 +170,7 @@ export default function LeitnerReviewPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col" dir="rtl">
+        <div className="min-h-full bg-gray-50 flex flex-col" dir="rtl">
             {/* Header */}
             <header className="px-6 py-4 flex items-center justify-between bg-white shadow-sm">
                 <button onClick={() => router.back()} className="text-gray-600">

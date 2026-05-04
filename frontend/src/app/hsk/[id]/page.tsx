@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { Course } from "@/lib/types";
 import { lessonChineseTitles, persianNumbers } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 export default function HskDetailPage() {
     const params = useParams();
@@ -23,7 +24,9 @@ export default function HskDetailPage() {
                 const response = await api.get(`/courses/${id}`);
                 setCourse(response.data);
             } catch (error) {
-                console.error("Failed to fetch HSK course:", error);
+                if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch HSK course:", error);
+                }
             } finally {
                 setLoading(false);
             }
@@ -36,7 +39,7 @@ export default function HskDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -44,7 +47,7 @@ export default function HskDetailPage() {
 
     if (!course) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">دوره یافت نشد</div>
             </div>
         );

@@ -6,6 +6,7 @@ import { ArrowRight, Star, Bookmark, MoreVertical, Play, Headphones } from "luci
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { SeriesData } from "@/lib/types";
+import { isHttpStatus } from "@/lib/http";
 
 // Extended type for podcasts
 interface PodcastData extends SeriesData {
@@ -106,13 +107,20 @@ export default function PodcastDetailPage() {
 
     useEffect(() => {
         const fetchPodcast = async () => {
+            if (courseId && mockPodcasts[courseId]) {
+                setPodcast(mockPodcasts[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setPodcast(response.data);
             } catch (error) {
-                console.error("Failed to fetch podcast:", error);
                 if (courseId && mockPodcasts[courseId]) {
                     setPodcast(mockPodcasts[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch podcast:", error);
                 }
             } finally {
                 setLoading(false);
@@ -123,7 +131,7 @@ export default function PodcastDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -131,7 +139,7 @@ export default function PodcastDetailPage() {
 
     if (!podcast) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">پادکست یافت نشد</div>
             </div>
         );

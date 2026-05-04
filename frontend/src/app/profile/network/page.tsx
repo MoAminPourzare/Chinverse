@@ -47,7 +47,7 @@ export default function NetworkPage() {
     const currentList = activeTab === "followers" ? followers : following;
 
     return (
-        <div className="min-h-screen bg-gray-50" dir="rtl">
+        <div className="min-h-full bg-gray-50" dir="rtl">
             {/* Header */}
             <header className="bg-white sticky top-0 z-50 border-b border-gray-100">
                 <div className="flex items-center gap-4 px-4 py-4">

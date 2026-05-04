@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Tahoma, Arial, Helvetica, sans-serif;
 }
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}

@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { SeriesData } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // Extended type for cooking shows
 interface CookingData extends SeriesData {
@@ -110,13 +111,20 @@ export default function CookingDetailPage() {
 
     useEffect(() => {
         const fetchShow = async () => {
+            if (courseId && mockCooking[courseId]) {
+                setShow(mockCooking[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setShow(response.data);
             } catch (error) {
-                console.error("Failed to fetch cooking show:", error);
                 if (courseId && mockCooking[courseId]) {
                     setShow(mockCooking[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch cooking show:", error);
                 }
             } finally {
                 setLoading(false);
@@ -127,7 +135,7 @@ export default function CookingDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -135,7 +143,7 @@ export default function CookingDetailPage() {
 
     if (!show) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">برنامه یافت نشد</div>
             </div>
         );

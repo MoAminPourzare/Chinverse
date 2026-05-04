@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { Course } from "@/lib/types";
 import { getVideoThumbnail } from "@/lib/videoUtils";
+import { isHttpStatus } from "@/lib/http";
 
 // ==================== MOCK DATA ====================
 const mockIdiomsCourses: Record<number, Course> = {
@@ -83,13 +84,20 @@ export default function IdiomsDetailPage() {
 
     useEffect(() => {
         const fetchCourse = async () => {
+            if (courseId && mockIdiomsCourses[courseId]) {
+                setCourse(mockIdiomsCourses[courseId]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await api.get(`/courses/${id}`);
                 setCourse(response.data);
             } catch (error) {
-                console.error("Failed to fetch idioms course:", error);
                 if (courseId && mockIdiomsCourses[courseId]) {
                     setCourse(mockIdiomsCourses[courseId]);
+                } else if (!isHttpStatus(error, 404)) {
+                    console.error("Failed to fetch idioms course:", error);
                 }
             } finally {
                 setLoading(false);
@@ -100,7 +108,7 @@ export default function IdiomsDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -108,7 +116,7 @@ export default function IdiomsDetailPage() {
 
     if (!course) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">دوره یافت نشد</div>
             </div>
         );
