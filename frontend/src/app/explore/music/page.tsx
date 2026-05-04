@@ -68,7 +68,7 @@ export default function MusicExplorePage() {
     const displayArtists = mockArtists;
 
     return (
-        <div className="min-h-full bg-gray-50 pb-20" dir="rtl">
+        <div className="min-h-full bg-gray-50" dir="rtl">
             {/* Header */}
             <header className="px-4 py-4 flex items-center gap-3 bg-white shadow-sm sticky top-0 z-10">
                 <Link href="/explore" className="text-gray-600">

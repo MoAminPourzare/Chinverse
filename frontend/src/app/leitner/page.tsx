@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Brain, ArrowRight } from "lucide-react";
-import BottomNav from "@/components/layout/BottomNav";
 import api from "@/lib/api";
 
 interface Word {
@@ -64,7 +63,7 @@ export default function LeitnerDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 pb-20">
+            <div className="min-h-full flex items-center justify-center bg-gray-50">
                 <div className="text-gray-500">در حال بارگذاری...</div>
             </div>
         );
@@ -73,7 +72,7 @@ export default function LeitnerDashboard() {
     if (!stats) return null;
 
     return (
-        <div className="min-h-screen bg-white pb-24" dir="rtl">
+        <div className="min-h-full bg-white pb-6" dir="rtl">
             {/* Header */}
             <header className="px-6 pt-8 pb-4">
                 <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">لایتنر</h1>
@@ -181,7 +180,6 @@ export default function LeitnerDashboard() {
                 )}
 
             </main>
-            <BottomNav />
         </div>
     );
 }

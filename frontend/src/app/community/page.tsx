@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Search, X, Send, MessageSquare, BookOpen, Headphones, User as UserIcon } from 'lucide-react';
+import { ArrowRight, Search, X, Send, BookOpen, Headphones, User as UserIcon } from 'lucide-react';
 import { communityService, ForumQuestion, Article } from '@/services/community.service';
 import { chatService, ConversationPreview } from '@/services/chat.service';
+import { getMediaUrl } from '@/lib/media';
 
 type Tab = 'messages' | 'forum';
 
@@ -138,7 +139,7 @@ export default function CommunityPage() {
                         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {conv.user.avatar_url ? (
                                 <Image
-                                    src={`http://localhost:8000${conv.user.avatar_url}`}
+                                    src={getMediaUrl(conv.user.avatar_url)}
                                     alt={conv.user.display_name || 'User'}
                                     width={48}
                                     height={48}
@@ -225,7 +226,7 @@ export default function CommunityPage() {
                                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                         {question.author?.avatar_url ? (
                                             <Image
-                                                src={`http://localhost:8000${question.author.avatar_url}`}
+                                                src={getMediaUrl(question.author.avatar_url)}
                                                 alt={question.author.display_name || 'User'}
                                                 width={40}
                                                 height={40}
@@ -288,7 +289,7 @@ export default function CommunityPage() {
                                 <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
                                     {article.cover_image ? (
                                         <Image
-                                            src={`http://localhost:8000${article.cover_image}`}
+                                            src={getMediaUrl(article.cover_image)}
                                             alt={article.title}
                                             width={256}
                                             height={128}
@@ -325,8 +326,8 @@ export default function CommunityPage() {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden min-h-[80vh] relative">
+        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
+            <div className="w-full bg-white min-h-full relative">
                 {/* Header */}
                 <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
                     <Link href="/profile" className="p-2 hover:bg-gray-100 rounded-full transition-colors">

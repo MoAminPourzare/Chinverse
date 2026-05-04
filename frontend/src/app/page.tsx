@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { User as UserIcon, ThumbsUp, MessageCircle, MoreHorizontal } from "lucide-react";
 import api from "@/lib/api";
+import { getMediaUrl } from "@/lib/media";
 
 type TabType = "activities" | "learning";
 
@@ -36,32 +37,6 @@ interface FeedItem {
     data: GalleryData | ServiceData;
     provider?: FeedProvider;
 }
-
-// Helper function to construct proper image URLs
-const getImageUrl = (path: string | null | undefined): string => {
-    if (!path) return "";
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    if (path.startsWith("http")) return path;
-
-    if (path.includes("/uploads/gallery/")) {
-        const filename = path.split("/").pop();
-        return `${API_URL}/static/uploads/gallery/${filename}`;
-    }
-
-    if (path.includes("/uploads/services/")) {
-        const filename = path.split("/").pop();
-        return `${API_URL}/static/uploads/services/${filename}`;
-    }
-
-    if (path.includes("/uploads/avatars/")) {
-        return `${API_URL}${path}`;
-    }
-
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${API_URL}${cleanPath}`;
-};
 
 export default function HomePage() {
     const [activeTab, setActiveTab] = useState<TabType>("activities");
@@ -169,7 +144,7 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
                     <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border-2 border-blue-500">
                         {provider?.avatar_url ? (
                             <Image
-                                src={getImageUrl(provider.avatar_url)}
+                                src={getMediaUrl(provider.avatar_url)}
                                 alt={provider.display_name || "User"}
                                 fill
                                 className="object-cover"
@@ -201,7 +176,7 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
                 {service.banner_url && (
                     <div className="w-28 h-28 flex-shrink-0 rounded-xl overflow-hidden relative bg-gray-100">
                         <Image
-                            src={getImageUrl(service.banner_url)}
+                            src={getMediaUrl(service.banner_url)}
                             alt={service.title}
                             fill
                             className="object-cover"
@@ -268,7 +243,7 @@ function GalleryFeedCard({ item }: { item: FeedItem }) {
                     <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border-2 border-blue-500">
                         {provider?.avatar_url ? (
                             <Image
-                                src={getImageUrl(provider.avatar_url)}
+                                src={getMediaUrl(provider.avatar_url)}
                                 alt={provider.display_name || "User"}
                                 fill
                                 className="object-cover"
@@ -299,7 +274,7 @@ function GalleryFeedCard({ item }: { item: FeedItem }) {
             {/* Image */}
             <div className="relative w-full aspect-video bg-gray-100">
                 <Image
-                    src={getImageUrl(gallery.image_url)}
+                    src={getMediaUrl(gallery.image_url)}
                     alt={gallery.caption || "Gallery image"}
                     fill
                     className="object-cover"

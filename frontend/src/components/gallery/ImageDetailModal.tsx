@@ -4,25 +4,13 @@ import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
 import { GalleryItem } from '@/services/gallery.service';
+import Image from 'next/image';
+import { getMediaUrl } from '@/lib/media';
 
 interface ImageDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     item: GalleryItem | null;
-}
-
-// Helper function to construct image URLs
-function getImageUrl(path: string): string {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    // Remove leading slash if present to avoid double slashes
-    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-
-    // Prepend /static/ to the path since backend mounts static dir at /static
-    // and images are stored in static/uploads/gallery
-    return `${baseUrl}/static/${cleanPath}`;
 }
 
 export default function ImageDetailModal({ isOpen, onClose, item }: ImageDetailModalProps) {
@@ -72,10 +60,13 @@ export default function ImageDetailModal({ isOpen, onClose, item }: ImageDetailM
 
                                 {/* Image Container */}
                                 <div className="relative w-full max-h-[70vh] rounded-2xl overflow-hidden bg-gray-900 mb-4">
-                                    <img
-                                        src={getImageUrl(item.image_url)}
+                                    <Image
+                                        src={getMediaUrl(item.image_url)}
                                         alt={item.caption || 'Gallery image'}
-                                        className="w-full h-full max-h-[70vh] object-contain"
+                                        width={900}
+                                        height={900}
+                                        className="w-full h-auto max-h-[70vh] object-contain"
+                                        unoptimized
                                     />
                                 </div>
 

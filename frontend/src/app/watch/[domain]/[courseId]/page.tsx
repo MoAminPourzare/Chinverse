@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { X, MoreVertical, Rewind, FastForward, Play, Pause, SkipForward, RotateCcw, Maximize } from "lucide-react";
+import { X, MoreVertical, Rewind, FastForward, Play, Pause, SkipForward, RotateCcw, Maximize, Minimize } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import VocabularyModal from "@/components/lms/VocabularyModal";
@@ -276,7 +276,7 @@ export default function SharedWatchPage() {
 
     // Render Chinese text with highlighted clickable words
     const renderChineseWithHighlights = (text: string, highlightedWords: string[]) => {
-        let result: React.ReactNode[] = [];
+        const result: React.ReactNode[] = [];
         let remainingText = text;
         let key = 0;
 
@@ -413,7 +413,7 @@ export default function SharedWatchPage() {
                     onClick={toggleFullscreen}
                     className="absolute bottom-3 right-3 w-10 h-10 flex items-center justify-center bg-black/50 rounded-lg text-white hover:bg-black/70 transition-colors"
                 >
-                    <Maximize size={20} />
+                    {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
                 </button>
             </div>
 

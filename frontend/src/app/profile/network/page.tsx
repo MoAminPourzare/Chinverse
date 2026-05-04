@@ -5,24 +5,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, User as UserIcon } from "lucide-react";
 import { userService, NetworkUser } from "@/services/user.service";
+import { getMediaUrl } from "@/lib/media";
 
 type TabType = "followers" | "following";
-
-// Helper function to construct proper image URLs
-const getImageUrl = (path: string | null | undefined): string => {
-    if (!path) return "";
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    if (path.startsWith("http")) return path;
-
-    if (path.includes("/uploads/avatars/")) {
-        return `${API_URL}${path}`;
-    }
-
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${API_URL}${cleanPath}`;
-};
 
 export default function NetworkPage() {
     const [activeTab, setActiveTab] = useState<TabType>("followers");
@@ -130,7 +115,7 @@ export default function NetworkPage() {
                                     <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden relative">
                                         {user.avatar_url ? (
                                             <Image
-                                                src={getImageUrl(user.avatar_url)}
+                                                src={getMediaUrl(user.avatar_url)}
                                                 alt={user.display_name || "User"}
                                                 fill
                                                 className="object-cover"

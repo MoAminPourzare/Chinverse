@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 import { ArrowRight, Send, User as UserIcon } from 'lucide-react';
 import { chatService, ChatMessage } from '@/services/chat.service';
 import { userService } from '@/services/user.service';
+import { getMediaUrl } from '@/lib/media';
 
 export default function ChatRoomPage() {
     const params = useParams();
@@ -24,10 +24,6 @@ export default function ChatRoomPage() {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        fetchData();
-    }, [userId]);
-
-    useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
@@ -35,7 +31,7 @@ export default function ChatRoomPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
             // Get current user
@@ -57,7 +53,11 @@ export default function ChatRoomPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [userId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleSend = async () => {
         if (!newMessage.trim() || isSending) return;
@@ -107,15 +107,15 @@ export default function ChatRoomPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-full bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden h-[85vh] flex flex-col">
+        <div className="min-h-full bg-gray-50 font-sans flex flex-col" dir="rtl">
+            <div className="w-full bg-white min-h-full flex flex-col">
                 {/* Header */}
                 <header className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
                     <button
@@ -129,7 +129,7 @@ export default function ChatRoomPage() {
                         <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
                             {otherUser?.avatar_url ? (
                                 <Image
-                                    src={`http://localhost:8000${otherUser.avatar_url}`}
+                                    src={getMediaUrl(otherUser.avatar_url)}
                                     alt={otherUser.display_name || 'User'}
                                     width={40}
                                     height={40}

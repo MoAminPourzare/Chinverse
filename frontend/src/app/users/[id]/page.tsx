@@ -20,36 +20,12 @@ import {
     Award,
     Wrench,
     Languages,
-    X
+    X,
+    type LucideIcon
 } from "lucide-react";
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
 import ServicesTab from "@/components/profile/ServicesTab";
-
-// Helper function to construct proper image URLs
-const getImageUrl = (path: string | null | undefined): string => {
-    if (!path) return "";
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    // If already a full URL, return as-is
-    if (path.startsWith("http")) return path;
-
-    // Handle different path formats
-    // Gallery images are stored at /uploads/gallery/ but served from /static/uploads/gallery/
-    if (path.includes("/uploads/gallery/")) {
-        const filename = path.split("/").pop();
-        return `${API_URL}/static/uploads/gallery/${filename}`;
-    }
-
-    // Avatar images are at /uploads/avatars/
-    if (path.includes("/uploads/avatars/")) {
-        return `${API_URL}${path}`;
-    }
-
-    // Default: prepend API URL
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${API_URL}${cleanPath}`;
-};
+import { getMediaUrl } from "@/lib/media";
 
 interface Tab {
     id: string;
@@ -63,7 +39,7 @@ const tabs: Tab[] = [
     { id: "services", label: "خدمات" },
 ];
 
-const socialIcons: Record<string, any> = {
+const socialIcons: Record<string, LucideIcon> = {
     instagram: Instagram,
     linkedin: Linkedin,
     twitter: Twitter,
@@ -212,7 +188,7 @@ export default function PublicProfilePage() {
 
         if (activeTab === "resume") {
             const resume = user.profile.resume;
-            const isEmpty = !resume || Object.values(resume).every((arr: any) => !arr || arr.length === 0);
+            const isEmpty = !resume || Object.values(resume).every((arr) => !arr || arr.length === 0);
 
             if (isEmpty) {
                 return (
@@ -232,7 +208,7 @@ export default function PublicProfilePage() {
                                 سوابق کاری
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
-                                {resume.work_experiences.map((work: any, idx: number) => (
+                                {resume.work_experiences.map((work, idx) => (
                                     <div key={idx} className="relative">
                                         <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{work.job_title}</h4>
@@ -252,7 +228,7 @@ export default function PublicProfilePage() {
                                 تحصیلات
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
-                                {resume.educations.map((edu: any, idx: number) => (
+                                {resume.educations.map((edu, idx) => (
                                     <div key={idx} className="relative">
                                         <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{edu.degree} - {edu.field}</h4>
@@ -272,7 +248,7 @@ export default function PublicProfilePage() {
                                 مهارت‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {resume.skills.map((skill: any, idx: number) => (
+                                {resume.skills.map((skill, idx) => (
                                     <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-medium">
                                         {skill.name} <span className="text-xs opacity-70">({skill.level})</span>
                                     </span>
@@ -289,7 +265,7 @@ export default function PublicProfilePage() {
                                 زبان‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {resume.languages.map((lang: any, idx: number) => (
+                                {resume.languages.map((lang, idx) => (
                                     <span key={idx} className="bg-green-50 text-green-700 px-3 py-1 rounded-lg text-sm font-medium">
                                         {lang.name} <span className="text-xs opacity-70">({lang.level})</span>
                                     </span>
@@ -306,7 +282,7 @@ export default function PublicProfilePage() {
                                 گواهینامه‌ها
                             </h3>
                             <div className="space-y-2">
-                                {resume.certificates.map((cert: any, idx: number) => (
+                                {resume.certificates.map((cert, idx) => (
                                     <div key={idx} className="bg-gray-50 p-3 rounded-lg">
                                         <h4 className="font-medium text-gray-800">{cert.title}</h4>
                                         <p className="text-sm text-gray-500">{cert.issuer} • {cert.date}</p>
@@ -340,7 +316,7 @@ export default function PublicProfilePage() {
                                 className="aspect-square bg-gray-100 relative overflow-hidden rounded hover:opacity-90 transition-opacity"
                             >
                                 <Image
-                                    src={getImageUrl(item.image_url)}
+                                    src={getMediaUrl(item.image_url)}
                                     alt={item.caption || "Gallery image"}
                                     fill
                                     className="object-cover"
@@ -401,7 +377,7 @@ export default function PublicProfilePage() {
                             <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
                                 {user.profile?.avatar_url ? (
                                     <Image
-                                        src={getImageUrl(user.profile.avatar_url)}
+                                        src={getMediaUrl(user.profile.avatar_url)}
                                         alt="Avatar"
                                         width={112}
                                         height={112}
@@ -506,7 +482,7 @@ export default function PublicProfilePage() {
                     </button>
                     <div className="relative max-w-full max-h-full">
                         <Image
-                            src={getImageUrl(selectedImage.image_url)}
+                            src={getMediaUrl(selectedImage.image_url)}
                             alt={selectedImage.caption || "Gallery image"}
                             width={800}
                             height={800}
