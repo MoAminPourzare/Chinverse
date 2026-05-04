@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight, Pencil, User as UserIcon, Loader2, LogOut } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
+import { getMediaUrl } from "@/lib/media";
 
 // Local interface for form state, combining UserProfile and read-only User fields
 interface AccountFormState extends UserProfile {
@@ -131,15 +132,15 @@ export default function AccountPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50" dir="rtl">
+            <div className="flex items-center justify-center min-h-full bg-gray-50" dir="rtl">
                 <Loader2 className="animate-spin text-gray-600 w-8 h-8" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden pb-8">
+        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
+            <div className="w-full bg-white min-h-full pb-8">
 
                 {/* Header */}
                 <header className="flex items-center justify-between p-6">
@@ -177,7 +178,7 @@ export default function AccountPage() {
                                         />
                                     ) : formData.avatar_url ? (
                                         <Image
-                                            src={`http://localhost:8000${formData.avatar_url}`}
+                                            src={getMediaUrl(formData.avatar_url)}
                                             alt="Profile"
                                             width={112}
                                             height={112}

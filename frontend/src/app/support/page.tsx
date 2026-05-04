@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { X, Send } from 'lucide-react';
 import { communityService } from '@/services/community.service';
@@ -35,8 +34,8 @@ export default function SupportPage() {
 
     if (screen === 'success') {
         return (
-            <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-                <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden min-h-[80vh] relative flex flex-col">
+            <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
+                <div className="w-full bg-white min-h-full relative flex flex-col">
                     {/* Header */}
                     <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
                         <button
@@ -94,8 +93,8 @@ export default function SupportPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden min-h-[80vh] relative flex flex-col">
+        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
+            <div className="w-full bg-white min-h-full relative flex flex-col">
                 {/* Header */}
                 <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
                     <button

@@ -5,8 +5,8 @@ import { ArrowRight, Instagram } from 'lucide-react';
 
 export default function AboutPage() {
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden min-h-[80vh] relative flex flex-col">
+        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
+            <div className="w-full bg-white min-h-full relative flex flex-col">
                 {/* Header */}
                 <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
                     <Link href="/profile" className="p-2 hover:bg-gray-100 rounded-full transition-colors">

@@ -58,7 +58,7 @@ export default function LessonPlayerPage() {
 
                     <p className="text-gray-600 leading-relaxed text-justify">
                         In this lesson, we will learn the basic greetings in Chinese.
-                        "Ni hao" is the most common way to say hello.
+                        &quot;Ni hao&quot; is the most common way to say hello.
                     </p>
                 </div>
             </div>

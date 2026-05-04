@@ -5,34 +5,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Search, MapPin, GraduationCap, User as UserIcon } from "lucide-react";
 import { userService, ShowcaseUser, ServiceWithProvider } from "@/services/user.service";
+import { getMediaUrl } from "@/lib/media";
 
 type TabType = "talents" | "services";
-
-// Helper function to construct proper image URLs
-const getImageUrl = (path: string | null | undefined): string => {
-    if (!path) return "";
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    if (path.startsWith("http")) return path;
-
-    if (path.includes("/uploads/gallery/")) {
-        const filename = path.split("/").pop();
-        return `${API_URL}/static/uploads/gallery/${filename}`;
-    }
-
-    if (path.includes("/uploads/services/")) {
-        const filename = path.split("/").pop();
-        return `${API_URL}/static/uploads/services/${filename}`;
-    }
-
-    if (path.includes("/uploads/avatars/")) {
-        return `${API_URL}${path}`;
-    }
-
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${API_URL}${cleanPath}`;
-};
 
 export default function ShowcasePage() {
     const [activeTab, setActiveTab] = useState<TabType>("talents");
@@ -145,7 +120,7 @@ function TalentCard({ user }: TalentCardProps) {
                             <>
                                 <div className="col-span-1 row-span-2 aspect-[3/4] bg-gray-100 relative">
                                     <Image
-                                        src={getImageUrl(galleryImages[0])}
+                                        src={getMediaUrl(galleryImages[0])}
                                         alt="Gallery"
                                         fill
                                         className="object-cover"
@@ -155,7 +130,7 @@ function TalentCard({ user }: TalentCardProps) {
                                 <div className="aspect-square bg-gray-100 relative">
                                     {galleryImages[1] ? (
                                         <Image
-                                            src={getImageUrl(galleryImages[1])}
+                                            src={getMediaUrl(galleryImages[1])}
                                             alt="Gallery"
                                             fill
                                             className="object-cover"
@@ -168,7 +143,7 @@ function TalentCard({ user }: TalentCardProps) {
                                 <div className="aspect-square bg-gray-100 relative">
                                     {galleryImages[2] ? (
                                         <Image
-                                            src={getImageUrl(galleryImages[2])}
+                                            src={getMediaUrl(galleryImages[2])}
                                             alt="Gallery"
                                             fill
                                             className="object-cover"
@@ -195,7 +170,7 @@ function TalentCard({ user }: TalentCardProps) {
                         <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 relative">
                             {user.avatar_url ? (
                                 <Image
-                                    src={getImageUrl(user.avatar_url)}
+                                    src={getMediaUrl(user.avatar_url)}
                                     alt={user.display_name || "User"}
                                     fill
                                     className="object-cover"
@@ -269,7 +244,7 @@ function ServiceCard({ service }: ServiceCardProps) {
             {service.banner_url && (
                 <div className="relative w-full h-40">
                     <Image
-                        src={getImageUrl(service.banner_url)}
+                        src={getMediaUrl(service.banner_url)}
                         alt={service.title}
                         fill
                         className="object-cover"
@@ -294,7 +269,7 @@ function ServiceCard({ service }: ServiceCardProps) {
                         <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden relative flex-shrink-0">
                             {service.provider.avatar_url ? (
                                 <Image
-                                    src={getImageUrl(service.provider.avatar_url)}
+                                    src={getMediaUrl(service.provider.avatar_url)}
                                     alt={service.provider.display_name || "Provider"}
                                     fill
                                     className="object-cover"

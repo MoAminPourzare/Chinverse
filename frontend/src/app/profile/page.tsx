@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Award, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2 } from "lucide-react";
+import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, type LucideIcon } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
 import EditResumeModal from "@/components/profile/EditResumeModal";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
+import { getMediaUrl } from "@/lib/media";
 
 interface Tab {
     id: string;
@@ -24,7 +25,7 @@ const tabs: Tab[] = [
     { id: "services", label: "خدمات" },
 ];
 
-const socialIcons: Record<string, any> = {
+const socialIcons: Record<string, LucideIcon> = {
     instagram: Instagram,
     linkedin: Linkedin,
     twitter: Twitter,
@@ -44,7 +45,7 @@ export default function ProfilePage() {
     const [followingCount, setFollowingCount] = useState<number>(0);
 
     const handleLogout = () => {
-        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
         router.push('/landing');
     };
 
@@ -57,7 +58,7 @@ export default function ProfilePage() {
             try {
                 const api = (await import('@/lib/api')).default;
                 await api.delete('/users/me');
-                localStorage.removeItem('access_token');
+                localStorage.removeItem('token');
                 router.push('/landing');
             } catch (error) {
                 console.error('Failed to delete account:', error);
@@ -173,7 +174,7 @@ export default function ProfilePage() {
 
         if (activeTab === "resume") {
             const resume = user?.profile?.resume;
-            const isEmpty = !resume || Object.values(resume).every((arr: any) => !arr || arr.length === 0);
+            const isEmpty = !resume || Object.values(resume).every((arr) => !arr || arr.length === 0);
 
             if (isEmpty) {
                 return (
@@ -214,7 +215,7 @@ export default function ProfilePage() {
                                 سوابق کاری
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
-                                {resume.work_experiences.map((work: any, idx: number) => (
+                                {resume.work_experiences.map((work, idx) => (
                                     <div key={idx} className="relative">
                                         <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{work.job_title}</h4>
@@ -234,7 +235,7 @@ export default function ProfilePage() {
                                 تحصیلات
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
-                                {resume.educations.map((edu: any, idx: number) => (
+                                {resume.educations.map((edu, idx) => (
                                     <div key={idx} className="relative">
                                         <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{edu.degree} - {edu.field}</h4>
@@ -254,7 +255,7 @@ export default function ProfilePage() {
                                 مهارت‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {resume.skills.map((skill: any, idx: number) => (
+                                {resume.skills.map((skill, idx) => (
                                     <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-medium">
                                         {skill.name} <span className="text-xs opacity-70">({skill.level})</span>
                                     </span>
@@ -271,7 +272,7 @@ export default function ProfilePage() {
                                 زبان‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                                {resume.languages.map((lang: any, idx: number) => (
+                                {resume.languages.map((lang, idx) => (
                                     <span key={idx} className="bg-green-50 text-green-700 px-3 py-1 rounded-lg text-sm font-medium">
                                         {lang.name} <span className="text-xs opacity-70">({lang.level})</span>
                                     </span>
@@ -301,8 +302,8 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden min-h-[80vh] relative">
+        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
+            <div className="w-full bg-white min-h-full relative">
                 {/* Header */}
                 <header className="flex items-center justify-between px-6 py-4 bg-white/95 sticky top-0 z-50 backdrop-blur-sm border-b border-gray-50">
                     <div className="flex items-center gap-2">
@@ -315,7 +316,7 @@ export default function ProfilePage() {
                     </div>
                 </header>
 
-                <main className="pb-20">
+                <main className="pb-6">
                     {/* Hero Section */}
                     <section className="flex flex-col items-center mt-8 mb-8 px-4">
                         <div className="relative mb-4">
@@ -323,7 +324,7 @@ export default function ProfilePage() {
                                 <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
                                     {user?.profile?.avatar_url ? (
                                         <Image
-                                            src={`http://localhost:8000${user.profile.avatar_url}`}
+                                            src={getMediaUrl(user.profile.avatar_url)}
                                             alt="Avatar"
                                             width={128}
                                             height={128}

@@ -6,20 +6,7 @@ import { galleryService, GalleryItem } from '@/services/gallery.service';
 import Image from 'next/image';
 import AddPhotoModal from '@/components/gallery/AddPhotoModal';
 import ImageDetailModal from '@/components/gallery/ImageDetailModal';
-
-// Helper function to construct image URLs
-function getImageUrl(path: string): string {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    // Remove leading slash if present to avoid double slashes
-    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-
-    // Prepend /static/ to the path since backend mounts static dir at /static
-    // and images are stored in static/uploads/gallery
-    return `${baseUrl}/static/${cleanPath}`;
-}
+import { getMediaUrl } from '@/lib/media';
 
 export default function GalleryTab() {
     const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
@@ -99,7 +86,7 @@ export default function GalleryTab() {
                             className="relative aspect-square bg-gray-100 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         >
                             <Image
-                                src={getImageUrl(item.image_url)}
+                                src={getMediaUrl(item.image_url)}
                                 alt={item.caption || 'Gallery image'}
                                 fill
                                 className="object-cover"

@@ -5,29 +5,12 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Plus, X, Trash2, Upload, Loader2 } from "lucide-react";
 import { userService, UserService } from "@/services/user.service";
+import { getMediaUrl } from "@/lib/media";
 
 interface ServicesTabProps {
     userId?: number;  // If provided, show public view. If not, show owner view
     readOnly?: boolean;
 }
-
-// Helper function to construct proper image URLs
-const getImageUrl = (path: string | null | undefined): string => {
-    if (!path) return "";
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    if (path.startsWith("http")) return path;
-
-    // Service banners are at /uploads/services/
-    if (path.includes("/uploads/services/")) {
-        const filename = path.split("/").pop();
-        return `${API_URL}/static/uploads/services/${filename}`;
-    }
-
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${API_URL}${cleanPath}`;
-};
 
 export default function ServicesTab({ userId, readOnly = false }: ServicesTabProps) {
     const [services, setServices] = useState<UserService[]>([]);
@@ -294,7 +277,7 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
             {service.banner_url && (
                 <div className="relative w-full h-40">
                     <Image
-                        src={getImageUrl(service.banner_url)}
+                        src={getMediaUrl(service.banner_url)}
                         alt={service.title}
                         fill
                         className="object-cover"
