@@ -1,5 +1,6 @@
-from typing import List, Optional
-from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger
+from typing import Any, Dict, List, Optional
+from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -20,6 +21,7 @@ class Subcategory(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     category_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("categories.id"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
 
     # Relationships
     category: Mapped["Category"] = relationship(back_populates="subcategories")
@@ -31,9 +33,16 @@ class Course(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     subcategory_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subcategories.id"), nullable=False)
     title: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     cover_image_url: Mapped[str] = mapped_column(String, nullable=False)
     level: Mapped[str] = mapped_column(String, nullable=False) # beginner, intermediate, advanced
+    metadata_json: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
 
     # Relationships
     subcategory: Mapped["Subcategory"] = relationship(back_populates="courses")

@@ -15,6 +15,7 @@ lib/
 frontend/src/lib/*
 !frontend/src/lib/http.ts
 !frontend/src/lib/media.ts
+!frontend/src/lib/courses.ts
 lib64/
 parts/
 sdist/

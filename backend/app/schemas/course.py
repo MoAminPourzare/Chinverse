@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 class ContentBase(BaseModel):
@@ -49,9 +49,11 @@ class CourseSection(CourseSectionBase):
 
 class CourseBase(BaseModel):
     title: str
+    slug: str
     description: str
     cover_image_url: str
     level: str
+    metadata_json: Dict[str, Any] = Field(default_factory=dict)
 
 class CourseCreate(CourseBase):
     subcategory_id: int

@@ -2,7 +2,7 @@
 
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Plus, Trash2, Instagram, Linkedin, Twitter, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, Instagram, Linkedin, Twitter, MessageCircle } from 'lucide-react';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { User, userService } from '@/services/user.service';
 

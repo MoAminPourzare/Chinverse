@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus, X, Trash2, Upload, Loader2 } from "lucide-react";
 import { userService, UserService } from "@/services/user.service";
 import { getMediaUrl } from "@/lib/media";
@@ -27,7 +27,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
 
     const isOwner = !userId && !readOnly;
 
-    const fetchServices = async () => {
+    const fetchServices = useCallback(async () => {
         try {
             let data: UserService[];
             if (userId) {
@@ -41,11 +41,11 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
 
     useEffect(() => {
         fetchServices();
-    }, [userId]);
+    }, [fetchServices]);
 
     const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
