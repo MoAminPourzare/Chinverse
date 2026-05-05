@@ -27,7 +27,7 @@ const categories = [
 export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: EditResumeModalProps) {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-    const { register, control, handleSubmit, reset, watch, setValue } = useForm<ResumeData>({
+    const { register, control, handleSubmit, reset } = useForm<ResumeData>({
         defaultValues: {
             work_experiences: [],
             educations: [],

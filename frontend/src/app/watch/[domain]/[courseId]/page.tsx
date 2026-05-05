@@ -259,21 +259,8 @@ export default function SharedWatchPage() {
             setShowVocabModal(true);
         } catch (error) {
             console.error("Failed to fetch vocabulary:", error);
-            // Show mock data on error
-            setSelectedWord({
-                id: 0,
-                chinese: word,
-                pinyin: "dǎ suàn",
-                persian_meaning: "قصد داشتن، خواستن",
-                chinese_meaning: "1. 关于行动的方向、方法等的想法；念头\n2. 考虑；计划",
-                composition: "打算盘\n另有打算",
-                examples: [
-                    { id: 1, zh_text: `他${word}当医生`, pinyin: "Tā dǎsuàn dāng yīshēng", target_text: "او قصد دارد پزشک شود" },
-                    { id: 2, zh_text: `各有各的${word}`, pinyin: "Gè yǒu gè de dǎsuàn", target_text: "هر کسی برنامه خودش را دارد" },
-                    { id: 3, zh_text: `为自己作${word}`, pinyin: "Wèi zìjǐ zuò dǎsuàn", target_text: "برای خودش برنامه‌ریزی کردن" },
-                ],
-            });
-            setShowVocabModal(true);
+            setSelectedWord(null);
+            setShowVocabModal(false);
         }
     };
 

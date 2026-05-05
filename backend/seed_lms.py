@@ -1,278 +1,622 @@
 import asyncio
-import sys
 import os
+import re
+import sys
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# 1. اضافه کردن مسیر پروژه به پایتون
 sys.path.append(os.getcwd())
 
-# 2. ایمپورت‌های پروژه
 from app.db.session import SessionLocal
-# فرض بر این است که مدل‌های شما در این مسیر هستند
-from app.models.course import Course, CourseSection, Lesson, Content, Category, Subcategory
+from app.models.course import Category, Course, CourseSection, Lesson, Subcategory
 
-# لینک ویدیوی تستی برای همه درس‌ها
+
 SAMPLE_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4"
 
-async def get_or_create_category(db: AsyncSession, name: str, slug: str):
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "item"
+
+
+async def get_or_create_category(db: AsyncSession, name: str, slug: str) -> Category:
     result = await db.execute(select(Category).where(Category.slug == slug))
     category = result.scalars().first()
+
     if not category:
-        print(f"Creating Category: {name}")
         category = Category(name=name, slug=slug)
         db.add(category)
         await db.commit()
         await db.refresh(category)
+        print(f"Created category: {name}")
+    elif category.name != name:
+        category.name = name
+        await db.commit()
+        await db.refresh(category)
+
     return category
 
-async def get_or_create_subcategory(db: AsyncSession, name: str, slug: str, category_id: int):
-    result = await db.execute(select(Subcategory).where(
-        Subcategory.name == name, 
-        Subcategory.category_id == category_id
-    ))
-    sub = result.scalars().first()
-    if not sub:
-        print(f"Created Subcategory: {name}")
-        # فیلد slug حذف شد تا ارور ندهد
-        sub = Subcategory(name=name, category_id=category_id)
-        db.add(sub)
+
+async def get_or_create_subcategory(
+    db: AsyncSession,
+    *,
+    name: str,
+    slug: str,
+    category_id: int,
+) -> Subcategory:
+    result = await db.execute(select(Subcategory).where(Subcategory.slug == slug))
+    subcategory = result.scalars().first()
+
+    if not subcategory:
+        subcategory = Subcategory(name=name, slug=slug, category_id=category_id)
+        db.add(subcategory)
         await db.commit()
-        await db.refresh(sub)
-    return sub
+        await db.refresh(subcategory)
+        print(f"Created subcategory: {name}")
+    else:
+        changed = False
+        if subcategory.name != name:
+            subcategory.name = name
+            changed = True
+        if subcategory.category_id != category_id:
+            subcategory.category_id = category_id
+            changed = True
+        if changed:
+            await db.commit()
+            await db.refresh(subcategory)
 
-async def seed_lms_data():
+    return subcategory
+
+
+async def get_or_create_course(
+    db: AsyncSession,
+    *,
+    subcategory_id: int,
+    title: str,
+    description: str,
+    cover_image_url: str,
+    level: str,
+    metadata_json: dict[str, Any] | None = None,
+) -> Course:
+    slug = slugify(title)
+    result = await db.execute(select(Course).where(Course.slug == slug))
+    course = result.scalars().first()
+
+    if not course:
+        result = await db.execute(select(Course).where(Course.title == title))
+        course = result.scalars().first()
+
+    if not course:
+        course = Course(
+            subcategory_id=subcategory_id,
+            title=title,
+            slug=slug,
+            description=description,
+            cover_image_url=cover_image_url,
+            level=level,
+            metadata_json=metadata_json or {},
+        )
+        db.add(course)
+        await db.commit()
+        await db.refresh(course)
+        print(f"Created course: {title}")
+    else:
+        course.subcategory_id = subcategory_id
+        course.title = title
+        course.slug = slug
+        course.description = description
+        course.cover_image_url = cover_image_url
+        course.level = level
+        course.metadata_json = metadata_json or {}
+        await db.commit()
+        await db.refresh(course)
+
+    return course
+
+
+async def get_or_create_section(
+    db: AsyncSession,
+    *,
+    course_id: int,
+    title: str,
+    order_index: int,
+) -> CourseSection:
+    result = await db.execute(
+        select(CourseSection).where(
+            CourseSection.course_id == course_id,
+            CourseSection.title == title,
+        )
+    )
+    section = result.scalars().first()
+
+    if not section:
+        section = CourseSection(course_id=course_id, title=title, order_index=order_index)
+        db.add(section)
+        await db.commit()
+        await db.refresh(section)
+    elif section.order_index != order_index:
+        section.order_index = order_index
+        await db.commit()
+        await db.refresh(section)
+
+    return section
+
+
+async def get_or_create_lesson(
+    db: AsyncSession,
+    *,
+    course_id: int,
+    section_id: int,
+    title: str,
+    duration_minutes: float,
+    is_free: bool,
+    video_url: str = SAMPLE_VIDEO,
+) -> Lesson:
+    result = await db.execute(
+        select(Lesson).where(
+            Lesson.course_id == course_id,
+            Lesson.section_id == section_id,
+            Lesson.title == title,
+        )
+    )
+    lesson = result.scalars().first()
+
+    if not lesson:
+        lesson = Lesson(
+            course_id=course_id,
+            section_id=section_id,
+            title=title,
+            duration_minutes=duration_minutes,
+            is_free=is_free,
+            video_url=video_url,
+        )
+        db.add(lesson)
+        await db.commit()
+        await db.refresh(lesson)
+    else:
+        lesson.duration_minutes = duration_minutes
+        lesson.is_free = is_free
+        lesson.video_url = video_url
+        await db.commit()
+        await db.refresh(lesson)
+
+    return lesson
+
+
+def make_lessons(prefix: str, count: int, duration: float) -> list[dict[str, Any]]:
+    return [
+        {
+            "title": f"{prefix} {index}",
+            "duration_minutes": duration,
+            "is_free": index == 1,
+        }
+        for index in range(1, count + 1)
+    ]
+
+
+COURSE_CATALOG: dict[str, list[dict[str, Any]]] = {
+    "hsk": [
+        {
+            "title": f"HSK {level} Standard Course",
+            "description": f"Structured HSK {level} course for Persian-speaking learners.",
+            "cover_image_url": f"/static/hsk{level}.jpg",
+            "level": str(level),
+            "metadata_json": {"content_kind": "course", "hsk_level": str(level)},
+            "section_title": "Standard Course Lessons",
+            "lessons": make_lessons("Lesson", 3, 45.0),
+        }
+        for level in range(1, 7)
+    ],
+    "pronunciation": [
+        {
+            "title": "Grace Mandarin",
+            "description": "Chinese pronunciation, tones, and pinyin practice with Grace Mandarin.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/44.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "course", "lesson_count": 12},
+            "section_title": "Pronunciation Lessons",
+            "lessons": make_lessons("Pronunciation Lesson", 3, 20.0),
+        },
+        {
+            "title": "Yoyo Chinese",
+            "description": "Pinyin and pronunciation fundamentals for new learners.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/68.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "course", "lesson_count": 10},
+            "section_title": "Pinyin Lessons",
+            "lessons": make_lessons("Pinyin Lesson", 3, 18.0),
+        },
+        {
+            "title": "Yang Yang",
+            "description": "Tone drills and sound practice for Mandarin learners.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/32.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "course", "lesson_count": 8},
+            "section_title": "Tone Lessons",
+            "lessons": make_lessons("Tone Lesson", 3, 16.0),
+        },
+    ],
+    "characters": [
+        {
+            "title": "Mandarin Blueprint",
+            "description": "Learn Chinese characters through visual memory and structure.",
+            "cover_image_url": "https://randomuser.me/api/portraits/men/32.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "course", "lesson_count": 15},
+            "section_title": "Character Foundations",
+            "lessons": make_lessons("Character Lesson", 3, 22.0),
+        },
+        {
+            "title": "Hanzi Hero",
+            "description": "Character building blocks, radicals, and writing logic.",
+            "cover_image_url": "https://randomuser.me/api/portraits/men/45.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "course", "lesson_count": 12},
+            "section_title": "Hanzi Lessons",
+            "lessons": make_lessons("Hanzi Lesson", 3, 20.0),
+        },
+        {
+            "title": "Grace Mandarin - Hanzi",
+            "description": "Chinese writing and character recognition with Grace Mandarin.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/44.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "course", "lesson_count": 10},
+            "section_title": "Writing Lessons",
+            "lessons": make_lessons("Writing Lesson", 3, 18.0),
+        },
+    ],
+    "grammar": [
+        {
+            "title": "HSK Grammar",
+            "description": "Core grammar patterns for HSK learners.",
+            "cover_image_url": "https://randomuser.me/api/portraits/men/52.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "course", "lesson_count": 24},
+            "section_title": "Grammar Patterns",
+            "lessons": make_lessons("Grammar Pattern", 3, 18.0),
+        },
+        {
+            "title": "Chinese Grammar Wiki",
+            "description": "Practical Mandarin grammar explanations with examples.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/55.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "course", "lesson_count": 36},
+            "section_title": "Grammar Lessons",
+            "lessons": make_lessons("Grammar Lesson", 3, 18.0),
+        },
+        {
+            "title": "Grammar Patterns A2-B1",
+            "description": "Intermediate grammar structures for daily Chinese.",
+            "cover_image_url": "https://randomuser.me/api/portraits/men/33.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "course", "lesson_count": 18},
+            "section_title": "A2-B1 Patterns",
+            "lessons": make_lessons("Pattern", 3, 18.0),
+        },
+    ],
+    "idioms": [
+        {
+            "title": "Everyday Chengyu",
+            "description": "Common Chinese idioms used in daily conversation.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/40.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "course", "lesson_count": 20},
+            "section_title": "Daily Idioms",
+            "lessons": make_lessons("Chengyu", 3, 14.0),
+        },
+        {
+            "title": "Historical Idioms",
+            "description": "Story-based Chinese idioms and their cultural background.",
+            "cover_image_url": "https://randomuser.me/api/portraits/men/45.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "course", "lesson_count": 15},
+            "section_title": "Historical Stories",
+            "lessons": make_lessons("Story", 3, 15.0),
+        },
+        {
+            "title": "HSK Chengyu Collection",
+            "description": "Useful chengyu and fixed expressions for HSK learners.",
+            "cover_image_url": "https://randomuser.me/api/portraits/women/28.jpg",
+            "level": "Advanced",
+            "metadata_json": {"content_kind": "course", "lesson_count": 25},
+            "section_title": "HSK Chengyu",
+            "lessons": make_lessons("HSK Chengyu", 3, 15.0),
+        },
+    ],
+    "series": [
+        {
+            "title": "Reset / Kai Duan",
+            "description": "A suspense drama series for listening and vocabulary practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/5/53/Reset_2022_Poster.jpg/220px-Reset_2022_Poster.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "series", "episodes_count": 15, "rating": 4.8, "year": 2022},
+            "section_title": "Season 1",
+            "lessons": make_lessons("Episode", 3, 45.0),
+        },
+        {
+            "title": "The Untamed / Chen Qing Ling",
+            "description": "Fantasy drama episodes for contextual Chinese learning.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/5/52/The_Untamed_web_series_poster.jpg/220px-The_Untamed_web_series_poster.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "series", "episodes_count": 50, "rating": 4.9, "year": 2019},
+            "section_title": "Season 1",
+            "lessons": make_lessons("Episode", 3, 45.0),
+        },
+        {
+            "title": "Go Ahead / Yi Jia Ren Zhi Ming",
+            "description": "Family drama for everyday Mandarin listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/6/6e/Go_Ahead_TV_series_poster.jpg/220px-Go_Ahead_TV_series_poster.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "series", "episodes_count": 40, "rating": 4.7, "year": 2020},
+            "section_title": "Season 1",
+            "lessons": make_lessons("Episode", 3, 45.0),
+        },
+        {
+            "title": "Love O2O / Wei Wei Yi Xiao Hen Qing Cheng",
+            "description": "Modern romance drama for natural dialogue practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/6/66/Love_O2O_poster.jpg/220px-Love_O2O_poster.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "series", "episodes_count": 30, "rating": 4.6, "year": 2016},
+            "section_title": "Season 1",
+            "lessons": make_lessons("Episode", 3, 45.0),
+        },
+    ],
+    "movies": [
+        {
+            "title": "Dying to Survive / Wo Bu Shi Yao Shen",
+            "description": "Feature film for advanced listening and discussion.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/4/44/Dying_to_Survive_poster.jpg/220px-Dying_to_Survive_poster.jpg",
+            "level": "Advanced",
+            "metadata_json": {"content_kind": "movie", "episodes_count": 1, "rating": 4.9, "year": 2018},
+            "section_title": "Movie Parts",
+            "lessons": make_lessons("Part", 3, 35.0),
+        },
+        {
+            "title": "The Wandering Earth / Liu Lang Di Qiu",
+            "description": "Science-fiction film for vocabulary and listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/The_Wandering_Earth_poster.png/220px-The_Wandering_Earth_poster.png",
+            "level": "Advanced",
+            "metadata_json": {"content_kind": "movie", "episodes_count": 1, "rating": 4.5, "year": 2019},
+            "section_title": "Movie Parts",
+            "lessons": make_lessons("Part", 3, 35.0),
+        },
+        {
+            "title": "Better Days / Shao Nian De Ni",
+            "description": "Drama film for emotional dialogue and vocabulary.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/7/74/Better_Days_film_poster.png/220px-Better_Days_film_poster.png",
+            "level": "Advanced",
+            "metadata_json": {"content_kind": "movie", "episodes_count": 1, "rating": 4.8, "year": 2019},
+            "section_title": "Movie Parts",
+            "lessons": make_lessons("Part", 3, 35.0),
+        },
+    ],
+    "cartoons": [
+        {
+            "title": "Ne Zha",
+            "description": "Animated film for story-based vocabulary learning.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/6/6c/Ne_Zha_%282019_film%29_poster.png/220px-Ne_Zha_%282019_film%29_poster.png",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "cartoon", "episodes_count": 1, "rating": 4.8, "year": 2019},
+            "section_title": "Movie Parts",
+            "lessons": make_lessons("Part", 3, 30.0),
+        },
+        {
+            "title": "White Snake",
+            "description": "Animated fantasy for listening and cultural context.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/d/de/White_Snake_%28film%29_poster.jpg/220px-White_Snake_%28film%29_poster.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "cartoon", "episodes_count": 1, "rating": 4.6, "year": 2019},
+            "section_title": "Movie Parts",
+            "lessons": make_lessons("Part", 3, 30.0),
+        },
+        {
+            "title": "Big Fish & Begonia",
+            "description": "Animated feature for poetic vocabulary and listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/Big_Fish_%26_Begonia_poster.jpg/220px-Big_Fish_%26_Begonia_poster.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "cartoon", "episodes_count": 1, "rating": 4.5, "year": 2016},
+            "section_title": "Movie Parts",
+            "lessons": make_lessons("Part", 3, 30.0),
+        },
+    ],
+    "cooking": [
+        {
+            "title": "Chef Wang",
+            "description": "Chinese cooking videos for practical food vocabulary.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Chinese_cuisine_montage.png/220px-Chinese_cuisine_montage.png",
+            "level": "All Levels",
+            "metadata_json": {"content_kind": "cooking", "episodes_count": 120, "rating": 4.9, "year": 2017},
+            "section_title": "Recipes",
+            "lessons": make_lessons("Recipe", 3, 12.0),
+        },
+        {
+            "title": "A Bite of China",
+            "description": "Documentary-style cooking and culture videos.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/0/09/A_Bite_of_China.jpg/220px-A_Bite_of_China.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "cooking", "episodes_count": 21, "rating": 4.8, "year": 2012},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 45.0),
+        },
+        {
+            "title": "Li Ziqi",
+            "description": "Calm food and rural life videos for immersive listening.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Chinese_food.jpg/220px-Chinese_food.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "cooking", "episodes_count": 80, "rating": 4.7, "year": 2016},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 18.0),
+        },
+    ],
+    "podcasts": [
+        {
+            "title": "ChinesePod",
+            "description": "Podcast episodes for Mandarin listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Podcast_microphone.jpg/220px-Podcast_microphone.jpg",
+            "level": "All Levels",
+            "metadata_json": {"content_kind": "podcast", "episodes_count": 50, "rating": 4.8, "year": 2005},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 15.0),
+        },
+        {
+            "title": "Mandarin Bean",
+            "description": "Short listening practice episodes for Mandarin learners.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/220px-Good_Food_Display_-_NCI_Visuals_Online.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "podcast", "episodes_count": 30, "rating": 4.6, "year": 2018},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 12.0),
+        },
+        {
+            "title": "Slow Chinese / Man Su Zhong Wen",
+            "description": "Slow Mandarin audio for careful listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Podcast_microphone.jpg/220px-Podcast_microphone.jpg",
+            "level": "Beginner",
+            "metadata_json": {"content_kind": "podcast", "episodes_count": 45, "rating": 4.7, "year": 2010},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 12.0),
+        },
+    ],
+    "music": [
+        {
+            "title": "Jay Chou",
+            "description": "Songs and lyrics for Chinese listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Jay_Chou_2019.jpg/220px-Jay_Chou_2019.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "music", "tracks_count": 12, "rating": 4.9, "year": 2000},
+            "section_title": "Songs",
+            "lessons": make_lessons("Song", 3, 5.0),
+        },
+        {
+            "title": "G.E.M.",
+            "description": "Mandarin pop songs for pronunciation and listening practice.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/G.E.M._at_Madame_Tussauds_Hong_Kong.jpg/220px-G.E.M._at_Madame_Tussauds_Hong_Kong.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "music", "tracks_count": 10, "rating": 4.7, "year": 2012},
+            "section_title": "Songs",
+            "lessons": make_lessons("Song", 3, 5.0),
+        },
+        {
+            "title": "Eason Chan",
+            "description": "Mandarin and Cantonese songs for listening exposure.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Eason_Chan_2009.jpg/220px-Eason_Chan_2009.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "music", "tracks_count": 15, "rating": 4.8, "year": 1996},
+            "section_title": "Songs",
+            "lessons": make_lessons("Song", 3, 5.0),
+        },
+    ],
+    "reality": [
+        {
+            "title": "Keep Running",
+            "description": "Reality show episodes for conversational Chinese listening.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a0/Keep_Running_%28Chinese_TV_series%29.jpg/220px-Keep_Running_%28Chinese_TV_series%29.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "reality", "episodes_count": 72, "rating": 4.5, "year": 2014},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 60.0),
+        },
+        {
+            "title": "Go Fighting!",
+            "description": "Variety show clips for informal Mandarin and slang.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/0/06/Go_Fighting%21_Season_1.jpg/220px-Go_Fighting%21_Season_1.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "reality", "episodes_count": 60, "rating": 4.6, "year": 2015},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 60.0),
+        },
+        {
+            "title": "Day Day Up",
+            "description": "Talk and variety show episodes for natural speech.",
+            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/7/7c/Day_Day_Up.jpg/220px-Day_Day_Up.jpg",
+            "level": "Intermediate",
+            "metadata_json": {"content_kind": "reality", "episodes_count": 200, "rating": 4.4, "year": 2008},
+            "section_title": "Episodes",
+            "lessons": make_lessons("Episode", 3, 60.0),
+        },
+    ],
+}
+
+
+SUBCATEGORIES = {
+    "learning": [
+        {"name": "HSK", "slug": "hsk"},
+        {"name": "Pronunciation", "slug": "pronunciation"},
+        {"name": "Characters", "slug": "characters"},
+        {"name": "Grammar", "slug": "grammar"},
+        {"name": "Idioms", "slug": "idioms"},
+    ],
+    "entertainment": [
+        {"name": "Series", "slug": "series"},
+        {"name": "Movies", "slug": "movies"},
+        {"name": "Cartoons & Animation", "slug": "cartoons"},
+        {"name": "Cooking", "slug": "cooking"},
+        {"name": "Podcasts", "slug": "podcasts"},
+        {"name": "Music", "slug": "music"},
+        {"name": "Reality Shows", "slug": "reality"},
+    ],
+}
+
+
+async def seed_lms_data() -> None:
     async with SessionLocal() as db:
-        print("🌱 Seeding LMS Data...")
+        print("Seeding LMS data...")
 
-        # --- 1. Categories ---
-        learning_cat = await get_or_create_category(db, "Chinese Learning", "chinese-learning")
-        ent_cat = await get_or_create_category(db, "Chinese Entertainment", "chinese-entertainment")
+        learning_category = await get_or_create_category(db, "Chinese Learning", "chinese-learning")
+        entertainment_category = await get_or_create_category(
+            db,
+            "Chinese Entertainment",
+            "chinese-entertainment",
+        )
 
-        # --- 2. Subcategories ---
-        subs_learning = {}
-        for item in [{"name": "HSK", "slug": "hsk"}, {"name": "Pronunciation", "slug": "pronunciation"}, {"name": "Grammar", "slug": "grammar"}]:
-            sub = await get_or_create_subcategory(db, item["name"], item["slug"], learning_cat.id)
-            subs_learning[item["slug"]] = sub
+        subcategories: dict[str, Subcategory] = {}
+        for item in SUBCATEGORIES["learning"]:
+            subcategories[item["slug"]] = await get_or_create_subcategory(
+                db,
+                name=item["name"],
+                slug=item["slug"],
+                category_id=learning_category.id,
+            )
+        for item in SUBCATEGORIES["entertainment"]:
+            subcategories[item["slug"]] = await get_or_create_subcategory(
+                db,
+                name=item["name"],
+                slug=item["slug"],
+                category_id=entertainment_category.id,
+            )
 
-        subs_ent = {}
-        for item in [{"name": "Movies & Series", "slug": "movies"}, {"name": "Cooking", "slug": "cooking"}, {"name": "Reality Shows", "slug": "reality"}]:
-            sub = await get_or_create_subcategory(db, item["name"], item["slug"], ent_cat.id)
-            subs_ent[item["slug"]] = sub
-
-        # --- 3. HSK Courses ---
-        hsk_courses = [
-            {"level": "1", "title": "HSK 1 Standard Course", "desc": "Beginner level covering 150 words."},
-            {"level": "2", "title": "HSK 2 Standard Course", "desc": "Elementary level covering 300 words."},
-            {"level": "3", "title": "HSK 3 Standard Course", "desc": "Intermediate level covering 600 words."},
-            {"level": "4", "title": "HSK 4 Standard Course", "desc": "Intermediate level covering 1200 words."},
-            {"level": "5", "title": "HSK 5 Standard Course", "desc": "Advanced level covering 2500 words."},
-            {"level": "6", "title": "HSK 6 Standard Course", "desc": "Advanced level covering 5000 words."},
-        ]
-
-        for data in hsk_courses:
-            res = await db.execute(select(Course).where(Course.title == data["title"]))
-            if not res.scalars().first():
-                course = Course(
-                    subcategory_id=subs_learning["hsk"].id,
-                    title=data["title"],
-                    description=data["desc"],
-                    cover_image_url=f"/static/hsk{data['level']}.jpg",
-                    level=data["level"]
+        for subcategory_slug, courses in COURSE_CATALOG.items():
+            subcategory = subcategories[subcategory_slug]
+            for course_data in courses:
+                course = await get_or_create_course(
+                    db,
+                    subcategory_id=subcategory.id,
+                    title=course_data["title"],
+                    description=course_data["description"],
+                    cover_image_url=course_data["cover_image_url"],
+                    level=course_data["level"],
+                    metadata_json=course_data["metadata_json"],
                 )
-                db.add(course)
-                await db.commit()
-                await db.refresh(course)
-                print(f"Created Course: {course.title}")
-
-                section = CourseSection(course_id=course.id, title="Standard Course Lessons", order_index=1)
-                db.add(section)
-                await db.commit()
-                await db.refresh(section)
-
-                for i in range(1, 4):
-                    lesson = Lesson(
+                section = await get_or_create_section(
+                    db,
+                    course_id=course.id,
+                    title=course_data["section_title"],
+                    order_index=1,
+                )
+                for lesson_data in course_data["lessons"]:
+                    await get_or_create_lesson(
+                        db,
                         course_id=course.id,
                         section_id=section.id,
-                        title=f"Lesson {i}",
-                        duration_minutes=45.0,
-                        is_free=(i == 1),
-                        video_url=SAMPLE_VIDEO  # <--- اصلاح شد: اضافه کردن لینک ویدیو
+                        **lesson_data,
                     )
-                    db.add(lesson)
-                    await db.commit()
 
-        # --- 4. Pronunciation ---
-        pron_courses = [
-            {"title": "Basic Tones Mastery", "desc": "Master the 4 tones."},
-            {"title": "Pinyin Complete Guide", "desc": "Learn pinyin system."},
-        ]
-        for data in pron_courses:
-            res = await db.execute(select(Course).where(Course.title == data["title"]))
-            if not res.scalars().first():
-                course = Course(
-                    subcategory_id=subs_learning["pronunciation"].id,
-                    title=data["title"],
-                    description=data["desc"],
-                    cover_image_url="/static/pronunciation.jpg",
-                    level="Beginner"
-                )
-                db.add(course)
-                await db.commit()
-                await db.refresh(course)
-                
-                section = CourseSection(course_id=course.id, title="Main", order_index=1)
-                db.add(section)
-                await db.commit()
-                await db.refresh(section)
-                
-                lesson = Lesson(
-                    course_id=course.id, 
-                    section_id=section.id, 
-                    title="Full Guide", 
-                    duration_minutes=20.0, 
-                    is_free=True,
-                    video_url=SAMPLE_VIDEO # <--- اصلاح شد
-                )
-                db.add(lesson)
-                await db.commit()
-                print(f"Created: {course.title}")
+        print("LMS seeding complete.")
 
-        # --- 5. Grammar ---
-        gram_courses = [{"title": "Chinese Sentence Structure", "desc": "Word order."}]
-        for data in gram_courses:
-            res = await db.execute(select(Course).where(Course.title == data["title"]))
-            if not res.scalars().first():
-                course = Course(
-                    subcategory_id=subs_learning["grammar"].id,
-                    title=data["title"],
-                    description=data["desc"],
-                    cover_image_url="/static/grammar.jpg",
-                    level="Intermediate"
-                )
-                db.add(course)
-                await db.commit()
-                await db.refresh(course)
-                
-                section = CourseSection(course_id=course.id, title="Main", order_index=1)
-                db.add(section)
-                await db.commit()
-                await db.refresh(section)
-                
-                lesson = Lesson(
-                    course_id=course.id, 
-                    section_id=section.id, 
-                    title="Lesson 1", 
-                    duration_minutes=15.0, 
-                    is_free=True,
-                    video_url=SAMPLE_VIDEO # <--- اصلاح شد
-                )
-                db.add(lesson)
-                await db.commit()
-                print(f"Created: {course.title}")
-
-        # --- 6. Movies ---
-        movies = [{"title": "The Untamed", "desc": "Fantasy drama."}]
-        for data in movies:
-            res = await db.execute(select(Course).where(Course.title == data["title"]))
-            if not res.scalars().first():
-                course = Course(
-                    subcategory_id=subs_ent["movies"].id,
-                    title=data["title"],
-                    description=data["desc"],
-                    cover_image_url="/static/movies.jpg",
-                    level="All Levels"
-                )
-                db.add(course)
-                await db.commit()
-                await db.refresh(course)
-                
-                section = CourseSection(course_id=course.id, title="Movie", order_index=1)
-                db.add(section)
-                await db.commit()
-                await db.refresh(section)
-                
-                lesson = Lesson(
-                    course_id=course.id, 
-                    section_id=section.id, 
-                    title="Full Movie", 
-                    duration_minutes=120.0, 
-                    is_free=True,
-                    video_url=SAMPLE_VIDEO # <--- اصلاح شد
-                )
-                db.add(lesson)
-                await db.commit()
-                print(f"Created: {course.title}")
-
-        # --- 7. Cooking ---
-        cooking = [{"title": "Mapo Tofu", "desc": "Sichuan dish."}]
-        for data in cooking:
-            res = await db.execute(select(Course).where(Course.title == data["title"]))
-            if not res.scalars().first():
-                course = Course(
-                    subcategory_id=subs_ent["cooking"].id,
-                    title=data["title"],
-                    description=data["desc"],
-                    cover_image_url="/static/cooking.jpg",
-                    level="All Levels"
-                )
-                db.add(course)
-                await db.commit()
-                await db.refresh(course)
-                
-                section = CourseSection(course_id=course.id, title="Recipe", order_index=1)
-                db.add(section)
-                await db.commit()
-                await db.refresh(section)
-                
-                lesson = Lesson(
-                    course_id=course.id, 
-                    section_id=section.id, 
-                    title="Cooking Process", 
-                    duration_minutes=10.0, 
-                    is_free=True,
-                    video_url=SAMPLE_VIDEO # <--- اصلاح شد
-                )
-                db.add(lesson)
-                await db.commit()
-                print(f"Created: {course.title}")
-
-        # --- 8. Reality ---
-        reality = [{"title": "Keep Running", "desc": "Variety show."}]
-        for data in reality:
-            res = await db.execute(select(Course).where(Course.title == data["title"]))
-            if not res.scalars().first():
-                course = Course(
-                    subcategory_id=subs_ent["reality"].id,
-                    title=data["title"],
-                    description=data["desc"],
-                    cover_image_url="/static/reality.jpg",
-                    level="All Levels"
-                )
-                db.add(course)
-                await db.commit()
-                await db.refresh(course)
-                
-                section = CourseSection(course_id=course.id, title="Ep 1", order_index=1)
-                db.add(section)
-                await db.commit()
-                await db.refresh(section)
-                
-                lesson = Lesson(
-                    course_id=course.id, 
-                    section_id=section.id, 
-                    title="Ep 1", 
-                    duration_minutes=60.0, 
-                    is_free=True,
-                    video_url=SAMPLE_VIDEO # <--- اصلاح شد
-                )
-                db.add(lesson)
-                await db.commit()
-                print(f"Created: {course.title}")
-
-        print("✅ LMS seeding complete!")
 
 if __name__ == "__main__":
-    if os.name == 'nt':
+    if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(seed_lms_data())
