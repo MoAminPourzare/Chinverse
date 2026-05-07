@@ -11,10 +11,23 @@ const categoryConfig: Record<string, {
     countLabel?: string;
     accentClass?: string;
 }> = {
-    pronunciation: { title: "تلفظ", detailPath: "/pronunciation", layout: "list", accentClass: "bg-blue-500" },
-    characters: { title: "کاراکتر", detailPath: "/characters", layout: "list", accentClass: "bg-purple-500" },
-    grammar: { title: "گرامر", detailPath: "/grammar", layout: "list", accentClass: "bg-emerald-500" },
-    idioms: { title: "اصطلاحات", detailPath: "/idioms", layout: "list", accentClass: "bg-rose-500" },
+    pronunciation: { title: "تلفظ", detailPath: "/pronunciation", layout: "list", countLabel: "درس", accentClass: "bg-blue-500" },
+    characters: { title: "کاراکتر", detailPath: "/characters", layout: "list", countLabel: "درس", accentClass: "bg-purple-500" },
+    grammar: { title: "گرامر", detailPath: "/grammar", layout: "list", countLabel: "درس", accentClass: "bg-emerald-500" },
+    idioms: { title: "اصطلاحات", detailPath: "/idioms", layout: "list", countLabel: "درس", accentClass: "bg-rose-500" },
+    practical: { title: "چینی کاربردی", detailPath: "/practical", layout: "list", countLabel: "درس", accentClass: "bg-cyan-600" },
+    vlogs: { title: "یادگیری با ولاگ", detailPath: "/vlogs", layout: "list", countLabel: "درس", accentClass: "bg-amber-600" },
+    synonyms: { title: "واژگان هم معنی", detailPath: "/synonyms", layout: "list", countLabel: "درس", accentClass: "bg-sky-600" },
+    classical: { title: "زبان چینی کلاسیک", detailPath: "/classical", layout: "list", countLabel: "درس", accentClass: "bg-slate-700" },
+    "arts-cooking": { title: "آشپزی", detailPath: "/arts-cooking", layout: "list", countLabel: "درس", accentClass: "bg-orange-600" },
+    "martial-arts": { title: "هنرهای رزمی", detailPath: "/martial-arts", layout: "list", countLabel: "درس", accentClass: "bg-red-600" },
+    "energy-health": { title: "تمرینات انرژی و سلامت", detailPath: "/energy-health", layout: "list", countLabel: "درس", accentClass: "bg-emerald-600" },
+    calligraphy: { title: "خطاطی", detailPath: "/calligraphy", layout: "list", countLabel: "درس", accentClass: "bg-indigo-600" },
+    "tea-culture": { title: "فرهنگ چای", detailPath: "/tea-culture", layout: "list", countLabel: "درس", accentClass: "bg-amber-700" },
+    "culture-texts": { title: "متون کلاسیک آموزشی", detailPath: "/culture-texts", layout: "list", countLabel: "درس", accentClass: "bg-slate-700" },
+    "historical-stories": { title: "داستان‌های تاریخی", detailPath: "/historical-stories", layout: "list", countLabel: "درس", accentClass: "bg-stone-600" },
+    "classical-poetry": { title: "شعر و ادبیات کلاسیک", detailPath: "/classical-poetry", layout: "list", countLabel: "درس", accentClass: "bg-violet-600" },
+    "festivals-customs": { title: "آیین‌ها و جشن‌ها", detailPath: "/festivals-customs", layout: "list", countLabel: "درس", accentClass: "bg-fuchsia-600" },
     series: { title: "سریال‌ها", detailPath: "/series", layout: "portrait", countKeys: ["episodes_count"], countLabel: "قسمت" },
     movies: { title: "فیلم", detailPath: "/movies", layout: "portrait", countKeys: ["episodes_count"], countLabel: "بخش" },
     cartoons: { title: "کارتون و انیمیشن", detailPath: "/cartoons", layout: "portrait", countKeys: ["episodes_count"], countLabel: "بخش" },
@@ -22,6 +35,7 @@ const categoryConfig: Record<string, {
     podcasts: { title: "پادکست", detailPath: "/podcasts", layout: "square", countKeys: ["episodes_count"], countLabel: "اپیزود" },
     music: { title: "موسیقی", detailPath: "/music", layout: "square", countKeys: ["tracks_count"], countLabel: "آهنگ" },
     reality: { title: "ریالیتی شو", detailPath: "/reality", layout: "portrait", countKeys: ["episodes_count"], countLabel: "قسمت" },
+    "topic-talks": { title: "گفتارهای موضوعی", detailPath: "/topic-talks", layout: "square", countKeys: ["episodes_count"], countLabel: "گفتار" },
 };
 
 export default function CategoryPage() {
