@@ -163,7 +163,7 @@ export default function CourseExplorePage({
                                                 <div className={`h-full ${accentClass} rounded-full`} style={{ width: "0%" }} />
                                             </div>
                                             <div className="flex items-center justify-between text-xs text-gray-400">
-                                                <span>{totalLessons || getCourseMetaNumber(course, "lesson_count", 0)} قسمت</span>
+                                                <span>{totalLessons || getCourseMetaNumber(course, "lesson_count", 0)} {countLabel}</span>
                                                 <span>{course.level}</span>
                                             </div>
                                         </div>

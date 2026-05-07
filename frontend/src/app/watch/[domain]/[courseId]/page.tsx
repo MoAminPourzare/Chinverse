@@ -90,6 +90,71 @@ const domainConfig: Record<string, { label: string; color: string; backPath: (co
         color: "text-rose-600",
         backPath: (courseId) => `/idioms/${courseId}`,
     },
+    practical: {
+        label: "چینی کاربردی",
+        color: "text-cyan-600",
+        backPath: (courseId) => `/practical/${courseId}`,
+    },
+    vlogs: {
+        label: "یادگیری با ولاگ",
+        color: "text-amber-600",
+        backPath: (courseId) => `/vlogs/${courseId}`,
+    },
+    synonyms: {
+        label: "واژگان هم معنی",
+        color: "text-sky-600",
+        backPath: (courseId) => `/synonyms/${courseId}`,
+    },
+    classical: {
+        label: "زبان چینی کلاسیک",
+        color: "text-slate-700",
+        backPath: (courseId) => `/classical/${courseId}`,
+    },
+    "arts-cooking": {
+        label: "آشپزی",
+        color: "text-orange-600",
+        backPath: (courseId) => `/arts-cooking/${courseId}`,
+    },
+    "martial-arts": {
+        label: "هنرهای رزمی",
+        color: "text-red-600",
+        backPath: (courseId) => `/martial-arts/${courseId}`,
+    },
+    "energy-health": {
+        label: "تمرینات انرژی و سلامت",
+        color: "text-emerald-600",
+        backPath: (courseId) => `/energy-health/${courseId}`,
+    },
+    calligraphy: {
+        label: "خطاطی",
+        color: "text-indigo-600",
+        backPath: (courseId) => `/calligraphy/${courseId}`,
+    },
+    "tea-culture": {
+        label: "فرهنگ چای",
+        color: "text-amber-700",
+        backPath: (courseId) => `/tea-culture/${courseId}`,
+    },
+    "culture-texts": {
+        label: "متون کلاسیک آموزشی",
+        color: "text-slate-700",
+        backPath: (courseId) => `/culture-texts/${courseId}`,
+    },
+    "historical-stories": {
+        label: "داستان‌های تاریخی",
+        color: "text-stone-600",
+        backPath: (courseId) => `/historical-stories/${courseId}`,
+    },
+    "classical-poetry": {
+        label: "شعر و ادبیات کلاسیک",
+        color: "text-violet-600",
+        backPath: (courseId) => `/classical-poetry/${courseId}`,
+    },
+    "festivals-customs": {
+        label: "آیین‌ها و جشن‌ها",
+        color: "text-fuchsia-600",
+        backPath: (courseId) => `/festivals-customs/${courseId}`,
+    },
     cooking: {
         label: "آشپزی",
         color: "text-orange-600",
@@ -104,6 +169,11 @@ const domainConfig: Record<string, { label: string; color: string; backPath: (co
         label: "ریالیتی شو",
         color: "text-pink-600",
         backPath: (courseId) => `/reality/${courseId}`,
+    },
+    "topic-talks": {
+        label: "گفتارهای موضوعی",
+        color: "text-fuchsia-600",
+        backPath: (courseId) => `/topic-talks/${courseId}`,
     },
 };
 
@@ -332,7 +402,7 @@ export default function SharedWatchPage() {
     const lessonNumber = lessonIndex + 1;
 
     // Domain-aware title generation
-    const entertainmentDomains = ["series", "movies", "cartoons", "music", "cooking", "podcasts", "reality"];
+    const entertainmentDomains = ["series", "movies", "cartoons", "music", "cooking", "podcasts", "reality", "topic-talks"];
     const isEntertainment = entertainmentDomains.includes(domain);
     const isMusic = domain === "music";
     const chineseTitle = lessonChineseTitles[lessonNumber] || "你好！";
