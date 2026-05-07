@@ -10,6 +10,21 @@ from app.schemas import course as schemas
 
 router = APIRouter()
 
+
+@router.get("/taxonomy", response_model=List[schemas.CategorySummary])
+async def read_course_taxonomy(
+    db: AsyncSession = Depends(deps.get_db),
+) -> Any:
+    """
+    Return categories and subcategories for simple content management screens.
+    """
+    result = await db.execute(
+        select(Category)
+        .options(selectinload(Category.subcategories))
+        .order_by(Category.name)
+    )
+    return result.scalars().unique().all()
+
 @router.get("/", response_model=List[schemas.Course])
 async def read_courses(
     db: AsyncSession = Depends(deps.get_db),

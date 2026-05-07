@@ -13,10 +13,16 @@ interface Lesson {
     id: number;
     title: string;
     video_url: string;
+    duration_minutes?: number;
+    is_free?: boolean;
+    metadata_json?: Record<string, unknown>;
 }
 
 interface Section {
+    id?: number;
+    title?: string;
     lessons: Lesson[];
+    metadata_json?: Record<string, unknown>;
 }
 
 interface Course {
@@ -41,6 +47,13 @@ interface VocabularyWord {
         pinyin: string;
         target_text: string;
     }>;
+}
+
+interface TranscriptEntry {
+    id: number;
+    chinese: string;
+    persian: string;
+    highlightedWords: string[];
 }
 
 // Domain-specific configuration
@@ -209,7 +222,50 @@ const sampleTranscript = [
         persian: "خیله خب، اول بریم سراغ گرم‌کردن (Warm-up).",
         highlightedWords: ["热身"]
     },
-];
+].map((item) => ({ ...item, highlightedWords: item.highlightedWords || [] })) as TranscriptEntry[];
+
+const getMetaString = (meta: Record<string, unknown> | undefined, key: string, fallback = ""): string => {
+    const value = meta?.[key];
+    return typeof value === "string" ? value : fallback;
+};
+
+const getMetaArray = (meta: Record<string, unknown> | undefined, key: string): string[] => {
+    const value = meta?.[key];
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+};
+
+const getTranscriptEntries = (meta: Record<string, unknown> | undefined): TranscriptEntry[] => {
+    const value = meta?.transcript;
+    if (!Array.isArray(value) || value.length === 0) {
+        return sampleTranscript;
+    }
+
+    return value
+        .map((item, index) => {
+            if (!item || typeof item !== "object") {
+                return null;
+            }
+
+            const entry = item as Record<string, unknown>;
+            const chinese = typeof entry.chinese === "string" ? entry.chinese : "";
+            const persian = typeof entry.persian === "string" ? entry.persian : "";
+            if (!chinese && !persian) {
+                return null;
+            }
+
+            const highlightedWords = Array.isArray(entry.highlightedWords)
+                ? entry.highlightedWords.filter((word): word is string => typeof word === "string")
+                : [];
+
+            return {
+                id: typeof entry.id === "number" ? entry.id : index + 1,
+                chinese,
+                persian,
+                highlightedWords,
+            };
+        })
+        .filter((item): item is TranscriptEntry => Boolean(item));
+};
 
 export default function SharedWatchPage() {
     const params = useParams();
@@ -414,7 +470,14 @@ export default function SharedWatchPage() {
         : isEntertainment
             ? `قسمت ${persianLessonName}`
             : `درس ${persianLessonName}`;
-    const headerSubtitle = isEntertainment ? `${course.title} - ${isMusic ? "Track" : "EP"} ${lessonNumber}` : chineseTitle;
+    const lessonMeta = currentLesson.metadata_json || {};
+    const lessonSummary = getMetaString(lessonMeta, "summary", "");
+    const lessonSubtitle = getMetaString(lessonMeta, "subtitle", "");
+    const lessonNotes = getMetaArray(lessonMeta, "key_points");
+    const lessonTranscript = getTranscriptEntries(lessonMeta);
+    const headerSubtitle = isEntertainment
+        ? `${course.title} - ${isMusic ? "Track" : "EP"} ${lessonNumber}`
+        : lessonSubtitle || chineseTitle;
 
     return (
         <div className="min-h-full bg-white flex flex-col" dir="rtl">
@@ -493,10 +556,26 @@ export default function SharedWatchPage() {
                 </div>
             </div>
 
+            {(lessonSummary || lessonSubtitle || lessonNotes.length > 0) && (
+                <section className="px-4 py-4 bg-gray-50 border-b border-gray-100 space-y-3">
+                    {lessonSubtitle && <p className="text-xs font-semibold text-blue-700">{lessonSubtitle}</p>}
+                    {lessonSummary && <p className="text-sm leading-7 text-gray-700">{lessonSummary}</p>}
+                    {lessonNotes.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {lessonNotes.map((note) => (
+                                <span key={note} className="text-[11px] text-gray-600 bg-white border border-gray-200 px-2 py-1 rounded-full">
+                                    {note}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
+
             {/* Transcript Section */}
             <div className="flex-1 overflow-y-auto px-4 py-6 bg-white">
                 <div className="space-y-6">
-                    {sampleTranscript.map((item) => (
+                    {lessonTranscript.map((item) => (
                         <div key={item.id} className="border-b border-gray-100 pb-4 last:border-0">
                             {/* Chinese Characters with Highlighted Words */}
                             <p className="text-xl font-bold text-blue-600 mb-3" dir="ltr">

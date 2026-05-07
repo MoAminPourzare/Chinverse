@@ -122,6 +122,7 @@ async def get_or_create_section(
     course_id: int,
     title: str,
     order_index: int,
+    metadata_json: dict[str, Any] | None = None,
 ) -> CourseSection:
     result = await db.execute(
         select(CourseSection).where(
@@ -132,12 +133,23 @@ async def get_or_create_section(
     section = result.scalars().first()
 
     if not section:
-        section = CourseSection(course_id=course_id, title=title, order_index=order_index)
+        section = CourseSection(
+            course_id=course_id,
+            title=title,
+            order_index=order_index,
+            metadata_json=metadata_json or {},
+        )
         db.add(section)
         await db.commit()
         await db.refresh(section)
     elif section.order_index != order_index:
         section.order_index = order_index
+        if metadata_json is not None:
+            section.metadata_json = metadata_json
+        await db.commit()
+        await db.refresh(section)
+    elif metadata_json is not None and section.metadata_json != metadata_json:
+        section.metadata_json = metadata_json
         await db.commit()
         await db.refresh(section)
 
@@ -153,6 +165,7 @@ async def get_or_create_lesson(
     duration_minutes: float,
     is_free: bool,
     video_url: str = SAMPLE_VIDEO,
+    metadata_json: dict[str, Any] | None = None,
 ) -> Lesson:
     result = await db.execute(
         select(Lesson).where(
@@ -171,6 +184,7 @@ async def get_or_create_lesson(
             duration_minutes=duration_minutes,
             is_free=is_free,
             video_url=video_url,
+            metadata_json=metadata_json or {},
         )
         db.add(lesson)
         await db.commit()
@@ -179,6 +193,8 @@ async def get_or_create_lesson(
         lesson.duration_minutes = duration_minutes
         lesson.is_free = is_free
         lesson.video_url = video_url
+        if metadata_json is not None:
+            lesson.metadata_json = metadata_json
         await db.commit()
         await db.refresh(lesson)
 
@@ -191,6 +207,17 @@ def make_lessons(prefix: str, count: int, duration: float) -> list[dict[str, Any
             "title": f"{prefix} {index}",
             "duration_minutes": duration,
             "is_free": index == 1,
+            "metadata_json": {
+                "subtitle": f"{prefix} {index}",
+                "summary": f"Lesson {index} in the {prefix.lower()} series.",
+                "key_points": [
+                    f"Review lesson {index}",
+                    f"Practice for about {int(duration)} minutes",
+                ],
+                "lesson_index": index,
+                "lesson_total": count,
+                "duration_label": f"{int(duration)} min",
+            },
         }
         for index in range(1, count + 1)
     ]
@@ -975,11 +1002,16 @@ async def seed_lms_data() -> None:
                     level=course_data["level"],
                     metadata_json=course_data["metadata_json"],
                 )
+                section_metadata = course_data.get("section_metadata_json") or {
+                    "summary": f"{course_data['section_title']} for {course.title}",
+                    "lesson_total": len(course_data["lessons"]),
+                }
                 section = await get_or_create_section(
                     db,
                     course_id=course.id,
                     title=course_data["section_title"],
                     order_index=1,
+                    metadata_json=section_metadata,
                 )
                 for lesson_data in course_data["lessons"]:
                     await get_or_create_lesson(

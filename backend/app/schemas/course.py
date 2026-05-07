@@ -16,11 +16,33 @@ class Content(ContentBase):
     class Config:
         from_attributes = True
 
+
+class SubcategorySummary(BaseModel):
+    id: int
+    name: str
+    slug: str
+    category_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class CategorySummary(BaseModel):
+    id: int
+    name: str
+    slug: str
+    icon_url: Optional[str] = None
+    subcategories: List[SubcategorySummary] = Field(default_factory=list)
+
+    class Config:
+        from_attributes = True
+
 class LessonBase(BaseModel):
     title: str
     duration_minutes: float = 0.0
     is_free: bool = False
     video_url: Optional[str] = None
+    metadata_json: Dict[str, Any] = Field(default_factory=dict)
 
 class LessonCreate(LessonBase):
     section_id: int
@@ -36,6 +58,7 @@ class Lesson(LessonBase):
 class CourseSectionBase(BaseModel):
     title: str
     order_index: int = 0
+    metadata_json: Dict[str, Any] = Field(default_factory=dict)
 
 class CourseSectionCreate(CourseSectionBase):
     pass
