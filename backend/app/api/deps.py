@@ -44,3 +44,30 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+def _get_admin_emails() -> set[str]:
+    return {
+        email.strip().lower()
+        for email in settings.ADMIN_EMAILS.split(",")
+        if email.strip()
+    }
+
+
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    admin_emails = _get_admin_emails()
+    if not admin_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access is not configured",
+        )
+
+    if current_user.email.lower() not in admin_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+
+    return current_user

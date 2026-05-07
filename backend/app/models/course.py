@@ -55,6 +55,12 @@ class CourseSection(Base, TimestampMixin):
     course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id"), nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0)
+    metadata_json: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
 
     # Relationships
     course: Mapped["Course"] = relationship(back_populates="sections")
@@ -70,6 +76,12 @@ class Lesson(Base, TimestampMixin):
     video_url: Mapped[str] = mapped_column(String, nullable=False)
     duration_minutes: Mapped[float] = mapped_column(Float, default=0.0)
     is_free: Mapped[bool] = mapped_column(Boolean, default=False)
+    metadata_json: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
 
     # Relationships
     section: Mapped["CourseSection"] = relationship(back_populates="lessons")

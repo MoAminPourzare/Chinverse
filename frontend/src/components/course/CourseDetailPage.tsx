@@ -26,6 +26,16 @@ interface CourseDetailPageProps {
 
 const splitList = (value: string) => value.split(/[،,]/).map((item) => item.trim()).filter(Boolean);
 
+const getMetaString = (meta: Record<string, unknown> | undefined, key: string, fallback = ""): string => {
+    const value = meta?.[key];
+    return typeof value === "string" ? value : fallback;
+};
+
+const getMetaArray = (meta: Record<string, unknown> | undefined, key: string): string[] => {
+    const value = meta?.[key];
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+};
+
 export default function CourseDetailPage({
     domain,
     explorePath,
@@ -114,6 +124,7 @@ export default function CourseDetailPage({
     const director = getCourseMetaString(course, "director", "");
     const countText = getDisplayCount(course, countKeys, countLabel);
     const hasPosterLayout = ["series", "movies", "cartoons", "reality"].includes(domain);
+    const sections = course.sections || [];
 
     return (
         <div className="min-h-full bg-gray-50" dir="rtl">
@@ -213,28 +224,74 @@ export default function CourseDetailPage({
 
                 <section className="px-4">
                     <h3 className="text-base font-bold text-gray-900 mb-3">ویدیوها</h3>
-                    <div className="space-y-3">
-                        {lessons.length === 0 ? (
+                    <div className="space-y-5">
+                        {sections.length === 0 ? (
                             <div className="text-sm text-gray-500 bg-white rounded-2xl p-4">
                                 هنوز ویدیویی برای این محتوا ثبت نشده است.
                             </div>
                         ) : (
-                            lessons.map((lesson, index) => (
-                                <Link
-                                    key={lesson.id}
-                                    href={`/watch/${domain}/${course.id}?lesson=${lesson.id}`}
-                                    className="bg-white rounded-2xl p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] transition-transform"
-                                >
-                                    <div className={`w-12 h-12 rounded-xl ${accentClass} text-white flex items-center justify-center font-bold`}>
-                                        {index + 1}
+                            sections.map((section) => {
+                                const sectionSummary = getMetaString(section.metadata_json, "summary", "");
+                                const sectionBadge = getMetaString(section.metadata_json, "badge", "");
+                                const sectionNotes = getMetaArray(section.metadata_json, "notes");
+
+                                return (
+                                    <div key={section.id} className="space-y-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <h4 className="text-sm font-bold text-gray-900">{section.title}</h4>
+                                                {sectionSummary && <p className="text-xs text-gray-500 mt-1">{sectionSummary}</p>}
+                                            </div>
+                                            {sectionBadge && (
+                                                <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                                    {sectionBadge}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {sectionNotes.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {sectionNotes.map((note) => (
+                                                    <span key={note} className="text-[10px] text-gray-600 bg-white border border-gray-200 px-2 py-1 rounded-full">
+                                                        {note}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {(section.lessons || []).map((lesson, index) => {
+                                                const lessonSummary = getMetaString(lesson.metadata_json, "summary", "");
+                                                const lessonSubtitle = getMetaString(lesson.metadata_json, "subtitle", "");
+                                                const durationLabel = getMetaString(
+                                                    lesson.metadata_json,
+                                                    "duration_label",
+                                                    `${lesson.duration_minutes || 0} دقیقه`,
+                                                );
+
+                                                return (
+                                                    <Link
+                                                        key={lesson.id}
+                                                        href={`/watch/${domain}/${course.id}?lesson=${lesson.id}`}
+                                                        className="bg-white rounded-2xl p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] transition-transform border border-gray-100"
+                                                    >
+                                                        <div className={`w-12 h-12 rounded-xl ${accentClass} text-white flex items-center justify-center font-bold`}>
+                                                            {index + 1}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{lesson.title}</h4>
+                                                            {lessonSubtitle && <p className="text-xs text-gray-500 line-clamp-1">{lessonSubtitle}</p>}
+                                                            {lessonSummary && <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">{lessonSummary}</p>}
+                                                            <p className="text-xs text-gray-500 mt-1">{durationLabel}</p>
+                                                        </div>
+                                                        <Play size={18} className="text-gray-400" />
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{lesson.title}</h4>
-                                        <p className="text-xs text-gray-500">{lesson.duration_minutes || 0} دقیقه</p>
-                                    </div>
-                                    <Play size={18} className="text-gray-400" />
-                                </Link>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </section>

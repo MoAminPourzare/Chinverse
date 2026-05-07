@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     API_V1_STR: str = "/api/v1"
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000"] # Default for frontend
+    ADMIN_EMAILS: str = ""
 
     @computed_field
     @property

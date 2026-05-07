@@ -6,6 +6,7 @@ export interface LessonSummary {
     duration_minutes?: number;
     is_free?: boolean;
     video_url?: string;
+    metadata_json?: Record<string, unknown>;
 }
 
 export interface CourseSectionSummary {
@@ -13,6 +14,7 @@ export interface CourseSectionSummary {
     title?: string;
     order_index?: number;
     lessons?: LessonSummary[];
+    metadata_json?: Record<string, unknown>;
 }
 
 export interface Course {
@@ -26,8 +28,33 @@ export interface Course {
     sections?: CourseSectionSummary[];
 }
 
+export interface SubcategorySummary {
+    id: number;
+    name: string;
+    slug: string;
+    category_id: number;
+}
+
+export interface CategorySummary {
+    id: number;
+    name: string;
+    slug: string;
+    icon_url?: string | null;
+    subcategories: SubcategorySummary[];
+}
+
 export const fetchCoursesBySubcategory = async (subcategorySlug: string): Promise<Course[]> => {
     const response = await api.get(`/courses?subcategory_slug=${subcategorySlug}`);
+    return Array.isArray(response.data) ? response.data : [];
+};
+
+export const fetchAllCourses = async (): Promise<Course[]> => {
+    const response = await api.get('/courses', { params: { limit: 1000 } });
+    return Array.isArray(response.data) ? response.data : [];
+};
+
+export const fetchCourseTaxonomy = async (): Promise<CategorySummary[]> => {
+    const response = await api.get<CategorySummary[]>('/courses/taxonomy');
     return Array.isArray(response.data) ? response.data : [];
 };
 
