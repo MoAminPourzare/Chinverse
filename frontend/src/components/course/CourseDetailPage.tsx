@@ -3,7 +3,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Bookmark, BookOpen, MoreVertical, Play, Star } from "lucide-react";
+import {
+    ArrowRight,
+    Bookmark,
+    BookOpen,
+    MoreVertical,
+    Play,
+    Star,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
 import { isHttpStatus } from "@/lib/http";
@@ -14,6 +21,10 @@ import {
     getDisplayCount,
     mergeCourseMetadata,
 } from "@/lib/courses";
+import Surface from "@/components/ui/Surface";
+import SectionHeader from "@/components/ui/SectionHeader";
+import LessonCard from "@/components/course/LessonCard";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 interface CourseDetailPageProps {
     domain: string;
@@ -24,7 +35,7 @@ interface CourseDetailPageProps {
     accentClass?: string;
 }
 
-const splitList = (value: string) => value.split(/[،,]/).map((item) => item.trim()).filter(Boolean);
+const splitList = (value: string) => value.split(/[、,]/).map((item) => item.trim()).filter(Boolean);
 
 const getMetaString = (meta: Record<string, unknown> | undefined, key: string, fallback = ""): string => {
     const value = meta?.[key];
@@ -42,7 +53,7 @@ export default function CourseDetailPage({
     eyebrow,
     countLabel = "قسمت",
     countKeys = ["episodes_count", "lesson_count"],
-    accentClass = "bg-blue-600",
+    accentClass = "from-rose-500 to-orange-500",
 }: CourseDetailPageProps) {
     const params = useParams();
     const id = params?.id as string;
@@ -92,24 +103,30 @@ export default function CourseDetailPage({
 
     if (loading) {
         return (
-            <div className="min-h-full flex items-center justify-center bg-gray-50">
-                <div className="text-gray-500">در حال بارگذاری...</div>
+            <div className="flex min-h-full items-center justify-center bg-transparent">
+                <div className="flex items-center gap-3 text-slate-500">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                    <span>در حال بارگذاری...</span>
+                </div>
             </div>
         );
     }
 
     if (notFound || !course) {
         return (
-            <div className="min-h-full bg-gray-50 flex flex-col" dir="rtl">
-                <header className="px-4 py-4 flex items-center gap-3 bg-white shadow-sm">
-                    <Link href={explorePath} className="text-gray-600">
-                        <ArrowRight size={24} />
-                    </Link>
-                    <h1 className="text-lg font-bold text-gray-800">محتوا پیدا نشد</h1>
-                </header>
-                <main className="flex-1 flex items-center justify-center p-6 text-center text-gray-500">
-                    این محتوا در دیتابیس وجود ندارد یا هنوز seed نشده است.
-                </main>
+            <div className="min-h-full px-4 py-6" dir="rtl">
+                <Surface className="mx-auto flex min-h-[50vh] max-w-3xl flex-col items-center justify-center p-8 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                        <BookOpen size={28} />
+                    </div>
+                    <h1 className="mt-5 text-2xl font-bold tracking-tight text-slate-900">محتوا پیدا نشد</h1>
+                    <p className="mt-3 max-w-xl text-sm leading-7 text-slate-500">
+                        این محتوا در دیتابیس وجود ندارد یا هنوز seed نشده است.
+                    </p>
+                    <PrimaryButton href={explorePath} variant="secondary" className="mt-6">
+                        بازگشت به کاوش
+                    </PrimaryButton>
+                </Surface>
             </div>
         );
     }
@@ -127,108 +144,147 @@ export default function CourseDetailPage({
     const sections = course.sections || [];
 
     return (
-        <div className="min-h-full bg-gray-50" dir="rtl">
-            <header className="px-4 py-4 flex items-center justify-between bg-white shadow-sm sticky top-0 z-10">
-                <Link href={explorePath} className="text-gray-600">
-                    <ArrowRight size={24} />
-                </Link>
-                <h1 className="text-lg font-bold text-gray-800 line-clamp-1">{course.title}</h1>
-                <button className="text-gray-600">
-                    <MoreVertical size={22} />
-                </button>
-            </header>
+        <div className="min-h-full pb-28" dir="rtl">
+            <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
+                <header className="sticky top-0 z-20">
+                    <Surface className="flex items-center justify-between gap-3 px-4 py-3">
+                        <Link href={explorePath} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+                            <ArrowRight size={20} />
+                        </Link>
+                        <div className="min-w-0 flex-1 text-center">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-500">{eyebrow}</p>
+                            <h1 className="mt-1 truncate text-base font-bold text-slate-900">{course.title}</h1>
+                        </div>
+                        <button className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+                            <MoreVertical size={20} />
+                        </button>
+                    </Surface>
+                </header>
 
-            <main className="pb-6">
-                <section className="bg-white px-4 py-5">
-                    <div className={hasPosterLayout ? "grid grid-cols-[120px_1fr] gap-4 items-start" : "space-y-4"}>
-                        <div className={`relative ${hasPosterLayout ? "aspect-[2/3]" : "aspect-video"} bg-gray-100 rounded-2xl overflow-hidden shadow-sm`}>
+                <Surface className="overflow-hidden">
+                    <div className={`grid gap-5 p-5 ${hasPosterLayout ? "lg:grid-cols-[220px_1fr]" : "lg:grid-cols-[280px_1fr]"}`}>
+                        <div className={`relative overflow-hidden rounded-[26px] bg-slate-100 ${hasPosterLayout ? "aspect-[2/3]" : "aspect-[4/3]"}`}>
                             {course.cover_image_url ? (
                                 <Image
                                     src={course.cover_image_url}
                                     alt={course.title}
                                     fill
-                                    sizes={hasPosterLayout ? "120px" : "(max-width: 768px) 100vw, 640px"}
+                                    sizes={hasPosterLayout ? "220px" : "(max-width: 768px) 100vw, 640px"}
                                     className="object-cover"
                                     unoptimized
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                <div className="flex h-full items-center justify-center text-slate-400">
                                     <BookOpen size={34} />
                                 </div>
                             )}
                         </div>
 
                         <div className="min-w-0">
-                            <span className="inline-flex mb-2 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
-                                {eyebrow}
-                            </span>
-                            <h2 className="text-xl font-bold text-gray-900 leading-tight mb-3">{course.title}</h2>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
+                                    {eyebrow}
+                                </span>
+                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                    {course.level}
+                                </span>
+                                {year > 0 && (
+                                    <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                        {year}
+                                    </span>
+                                )}
+                            </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-3">
+                            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">{course.title}</h2>
+                            <p className="mt-3 text-sm leading-7 text-slate-600">{course.description}</p>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                                 {rating > 0 && (
-                                    <span className="flex items-center gap-1 text-gray-800">
-                                        <Star size={13} className="text-orange-400 fill-orange-400" />
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 font-semibold text-amber-700">
+                                        <Star size={13} className="fill-current" />
                                         {rating}
                                     </span>
                                 )}
-                                {year > 0 && <span>{year}</span>}
-                                <span>{countText}</span>
-                                <span>{course.level}</span>
+                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">
+                                    {countText}
+                                </span>
                             </div>
 
                             {genre && (
-                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                <div className="mt-4 flex flex-wrap gap-2">
                                     {splitList(genre).map((item) => (
-                                        <span key={item} className="text-[11px] text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                        <span key={item} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600">
                                             {item}
                                         </span>
                                     ))}
                                 </div>
                             )}
 
-                            <div className="flex gap-2">
+                            <div className="mt-6 flex flex-wrap gap-3">
                                 {lessons[0] && (
-                                    <Link
-                                        href={`/watch/${domain}/${course.id}?lesson=${lessons[0].id}`}
-                                        className={`h-10 px-4 rounded-xl ${accentClass} text-white flex items-center gap-2 text-sm font-semibold`}
-                                    >
-                                        <Play size={17} className="fill-white" />
+                                    <PrimaryButton href={`/watch/${domain}/${course.id}?lesson=${lessons[0].id}`} leadingIcon={<Play size={16} />}>
                                         شروع
-                                    </Link>
+                                    </PrimaryButton>
                                 )}
-                                <button className="h-10 w-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center">
-                                    <Bookmark size={18} />
-                                </button>
+                                <PrimaryButton variant="ghost" leadingIcon={<Bookmark size={16} />}>
+                                    ذخیره
+                                </PrimaryButton>
                             </div>
                         </div>
                     </div>
-                </section>
+                </Surface>
 
-                <section className="px-4 py-5">
-                    <h3 className="text-base font-bold text-gray-900 mb-2">معرفی</h3>
-                    <p className="text-sm leading-7 text-gray-700">{synopsis}</p>
-                </section>
+                <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+                    <Surface className="p-5">
+                        <SectionHeader title="معرفی" subtitle="توضیح کوتاه و خوانا درباره‌ی این course." />
+                        <p className="mt-4 text-sm leading-8 text-slate-600">{synopsis}</p>
+                    </Surface>
+
+                    <Surface className="p-5">
+                        <SectionHeader title="اطلاعات سریع" subtitle="چند نکته‌ی کاربردی درباره‌ی این محتوا." />
+                        <div className="mt-4 space-y-3">
+                            <div className="rounded-[20px] bg-slate-50 px-4 py-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">سبک</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">{course.level}</p>
+                            </div>
+                            <div className="rounded-[20px] bg-slate-50 px-4 py-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">محتوا</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">{countText}</p>
+                            </div>
+                            {year > 0 && (
+                                <div className="rounded-[20px] bg-slate-50 px-4 py-3">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">سال</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-900">{year}</p>
+                                </div>
+                            )}
+                        </div>
+                    </Surface>
+                </div>
 
                 {(host || director || castList.length > 0) && (
-                    <section className="px-4 pb-5">
-                        <h3 className="text-base font-bold text-gray-900 mb-3">افراد مرتبط</h3>
-                        <div className="flex flex-wrap gap-2">
+                    <Surface className="p-5">
+                        <SectionHeader title="افراد مرتبط" subtitle="آدم‌های اصلی پشت این محتوا." />
+                        <div className="mt-4 flex flex-wrap gap-2">
                             {[host, director, ...castList].filter(Boolean).map((person) => (
-                                <span key={person} className="text-xs text-gray-700 bg-white border border-gray-100 px-3 py-2 rounded-xl">
+                                <span key={person} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600">
                                     {person}
                                 </span>
                             ))}
                         </div>
-                    </section>
+                    </Surface>
                 )}
 
-                <section className="px-4">
-                    <h3 className="text-base font-bold text-gray-900 mb-3">ویدیوها</h3>
-                    <div className="space-y-5">
+                <section className="space-y-4">
+                    <SectionHeader
+                        title="درس‌ها"
+                        subtitle="هر درس به شکل یک کارت مرتب و قابل اسکن نمایش داده می‌شود."
+                    />
+
+                    <div className="space-y-4">
                         {sections.length === 0 ? (
-                            <div className="text-sm text-gray-500 bg-white rounded-2xl p-4">
+                            <Surface className="p-5 text-sm text-slate-500">
                                 هنوز ویدیویی برای این محتوا ثبت نشده است.
-                            </div>
+                            </Surface>
                         ) : (
                             sections.map((section) => {
                                 const sectionSummary = getMetaString(section.metadata_json, "summary", "");
@@ -236,30 +292,30 @@ export default function CourseDetailPage({
                                 const sectionNotes = getMetaArray(section.metadata_json, "notes");
 
                                 return (
-                                    <div key={section.id} className="space-y-3">
-                                        <div className="flex items-center justify-between gap-3">
+                                    <Surface key={section.id} className="p-5">
+                                        <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <h4 className="text-sm font-bold text-gray-900">{section.title}</h4>
-                                                {sectionSummary && <p className="text-xs text-gray-500 mt-1">{sectionSummary}</p>}
+                                                <h4 className="text-base font-bold text-slate-900">{section.title}</h4>
+                                                {sectionSummary && <p className="mt-1 text-sm leading-6 text-slate-500">{sectionSummary}</p>}
                                             </div>
                                             {sectionBadge && (
-                                                <span className="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600">
                                                     {sectionBadge}
                                                 </span>
                                             )}
                                         </div>
 
                                         {sectionNotes.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="mt-4 flex flex-wrap gap-2">
                                                 {sectionNotes.map((note) => (
-                                                    <span key={note} className="text-[10px] text-gray-600 bg-white border border-gray-200 px-2 py-1 rounded-full">
+                                                    <span key={note} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
                                                         {note}
                                                     </span>
                                                 ))}
                                             </div>
                                         )}
 
-                                        <div className="space-y-3">
+                                        <div className="mt-4 space-y-3">
                                             {(section.lessons || []).map((lesson, index) => {
                                                 const lessonSummary = getMetaString(lesson.metadata_json, "summary", "");
                                                 const lessonSubtitle = getMetaString(lesson.metadata_json, "subtitle", "");
@@ -270,26 +326,21 @@ export default function CourseDetailPage({
                                                 );
 
                                                 return (
-                                                    <Link
+                                                    <LessonCard
                                                         key={lesson.id}
                                                         href={`/watch/${domain}/${course.id}?lesson=${lesson.id}`}
-                                                        className="bg-white rounded-2xl p-3 flex items-center gap-3 shadow-sm active:scale-[0.99] transition-transform border border-gray-100"
-                                                    >
-                                                        <div className={`w-12 h-12 rounded-xl ${accentClass} text-white flex items-center justify-center font-bold`}>
-                                                            {index + 1}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{lesson.title}</h4>
-                                                            {lessonSubtitle && <p className="text-xs text-gray-500 line-clamp-1">{lessonSubtitle}</p>}
-                                                            {lessonSummary && <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">{lessonSummary}</p>}
-                                                            <p className="text-xs text-gray-500 mt-1">{durationLabel}</p>
-                                                        </div>
-                                                        <Play size={18} className="text-gray-400" />
-                                                    </Link>
+                                                        index={index + 1}
+                                                        title={lesson.title || `درس ${index + 1}`}
+                                                        subtitle={lessonSubtitle}
+                                                        summary={lessonSummary}
+                                                        durationLabel={durationLabel}
+                                                        accentClass={accentClass}
+                                                        badge={lesson.is_free ? "رایگان" : undefined}
+                                                    />
                                                 );
                                             })}
                                         </div>
-                                    </div>
+                                    </Surface>
                                 );
                             })
                         )}

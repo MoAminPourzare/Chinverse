@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Compass, User, Users, Brain } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 export default function BottomNav() {
     const pathname = usePathname();
@@ -16,8 +17,9 @@ export default function BottomNav() {
     ];
 
     return (
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
-            <div className="flex justify-around items-center h-16 px-2">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 px-3 pb-3">
+            <div className="pointer-events-auto mx-auto max-w-xl rounded-[28px] border border-white/70 bg-white/90 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+                <div className="flex items-end justify-around gap-1">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href ||
@@ -26,17 +28,23 @@ export default function BottomNav() {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${isActive ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
-                                }`}
+                            className={cn(
+                                "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center transition-all duration-200",
+                                isActive
+                                    ? "bg-gradient-to-b from-rose-50 to-white text-rose-600 shadow-sm"
+                                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-700",
+                            )}
                         >
-                            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                            <span className="text-[10px] font-medium">{item.name}</span>
+                            <Icon size={21} strokeWidth={isActive ? 2.5 : 2} />
+                            <span className="text-[10px] font-semibold leading-none">{item.name}</span>
+                            {isActive && <span className="absolute top-1 h-1 w-1 rounded-full bg-rose-500" />}
                         </Link>
                     );
                 })}
+                </div>
             </div>
             {/* Safe area padding for mobile devices */}
-            <div className="h-safe-bottom bg-white" />
+            <div className="h-safe-bottom" />
         </div>
     );
 }

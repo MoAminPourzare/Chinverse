@@ -1,55 +1,56 @@
-import Image from "next/image";
-import Link from "next/link";
+import Surface from "@/components/ui/Surface";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import { ArrowRight, BookOpen, Flame, Play, Sparkles } from "lucide-react";
+
+const highlights = [
+    { title: "درس‌های ساختارمند", icon: BookOpen },
+    { title: "پخش ویدیویی تمیز", icon: Play },
+    { title: "تمرین روزانه", icon: Flame },
+    { title: "مسیرهای فرهنگی", icon: Sparkles },
+];
 
 export default function LandingPage() {
     return (
-        <div className="flex min-h-full items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-            <main className="flex min-h-full w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-                <Image
-                    className="dark:invert"
-                    src="/next.svg"
-                    alt="Next.js logo"
-                    width={100}
-                    height={20}
-                    priority
-                />
-                <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-                    <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-                        Welcome to ChinVerse
-                    </h1>
-                    <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-                        Your journey to learning Chinese starts here.
-                    </p>
-                </div>
+        <div className="min-h-full px-4 py-6" dir="rtl">
+            <main className="mx-auto grid min-h-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_50%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
+                    <div className="p-6 sm:p-8">
+                        <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-white/80">
+                            ChinVerse
+                        </div>
+                        <h1 className="mt-6 text-3xl font-bold tracking-tight sm:text-5xl">
+                            یادگیری چینی، مرتب‌تر و جذاب‌تر
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
+                            یک وب‌اپ حرفه‌ای برای یادگیری زبان چینی با مسیرهای آموزشی، ویدیوها، واژگان و محتوای فرهنگی.
+                        </p>
 
-                <div className="flex flex-col gap-4 w-full sm:flex-row sm:flex-wrap">
-                    <Link
-                        href="/account"
-                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-white transition-colors hover:bg-blue-700 md:w-auto"
-                    >
-                        حساب کاربری (User Account)
-                    </Link>
+                        <div className="mt-6 flex flex-wrap gap-3">
+                            <PrimaryButton href="/login" variant="light" leadingIcon={<ArrowRight size={16} />}>
+                                ورود
+                            </PrimaryButton>
+                            <PrimaryButton href="/signup" variant="ghost" className="!border-white/15 !bg-white/10 !text-white hover:!bg-white/15">
+                                ثبت نام
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                </Surface>
 
-                    <Link
-                        href="/profile"
-                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-5 text-white transition-colors hover:bg-orange-600 md:w-auto"
-                    >
-                        پروفایل عمومی (Public Profile)
-                    </Link>
-
-                    <Link
-                        href="/login"
-                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-auto"
-                    >
-                        Login
-                    </Link>
-
-                    <Link
-                        href="/signup"
-                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-auto"
-                    >
-                        Signup
-                    </Link>
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {highlights.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Surface key={item.title} className="p-5">
+                                <div className="inline-flex rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 p-3 text-white shadow-lg">
+                                    <Icon size={18} />
+                                </div>
+                                <h2 className="mt-4 text-base font-bold text-slate-900">{item.title}</h2>
+                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                    یک تجربه‌ی تمیز و قابل‌اسکن برای یادگیری روزانه.
+                                </p>
+                            </Surface>
+                        );
+                    })}
                 </div>
             </main>
         </div>

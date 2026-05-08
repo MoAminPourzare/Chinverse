@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, BookOpen, Play, Star } from "lucide-react";
+import { BookOpen, Play, Star } from "lucide-react";
 import {
     Course,
     fetchCoursesBySubcategory,
@@ -11,6 +11,8 @@ import {
     getDisplayCount,
     getLessonCount,
 } from "@/lib/courses";
+import Surface from "@/components/ui/Surface";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 type CourseExploreLayout = "hsk" | "list" | "portrait" | "square";
 
@@ -25,12 +27,12 @@ interface CourseExplorePageProps {
 }
 
 const hskColors: Record<string, string> = {
-    "1": "bg-yellow-400",
-    "2": "bg-teal-500",
-    "3": "bg-orange-500",
-    "4": "bg-red-600",
-    "5": "bg-blue-600",
-    "6": "bg-purple-600",
+    "1": "from-amber-400 to-orange-500",
+    "2": "from-cyan-500 to-sky-600",
+    "3": "from-orange-400 to-amber-500",
+    "4": "from-rose-500 to-red-600",
+    "5": "from-blue-500 to-indigo-600",
+    "6": "from-violet-500 to-purple-600",
 };
 
 const getCourseHref = (detailPath: string, course: Course) => `${detailPath}/${course.id}`;
@@ -93,144 +95,205 @@ export default function CourseExplorePage({
     }, [courses, layout]);
 
     return (
-        <div className="min-h-full bg-gray-50" dir="rtl">
-            <header className="px-4 py-4 flex items-center gap-3 bg-white shadow-sm sticky top-0 z-10">
-                <Link href="/explore" className="text-gray-600">
-                    <ArrowRight size={24} />
-                </Link>
-                <h1 className="text-xl font-bold text-gray-800">{title}</h1>
-            </header>
+        <div className="min-h-full pb-28" dir="rtl">
+            <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
+                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_50%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                    <div className="p-5 sm:p-6">
+                        <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
+                            Explore
+                        </div>
+                        <div className="mt-4 flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">مسیر</p>
+                                <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
+                                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
+                                    کارت‌های این بخش را مرور کن و مستقیم وارد درس‌های هر دوره شو.
+                                </p>
+                            </div>
+                            <Link
+                                href="/explore"
+                                className="hidden rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/80 transition-colors hover:bg-white/15 sm:inline-flex"
+                            >
+                                همه مسیرها
+                            </Link>
+                        </div>
+                    </div>
+                </Surface>
 
-            <main className="p-4">
                 {loading ? (
-                    <div className="text-center py-10 text-gray-500">در حال بارگذاری...</div>
+                    <Surface className="p-8 text-center text-sm text-slate-500">
+                        در حال بارگذاری...
+                    </Surface>
                 ) : error ? (
-                    <div className="text-center py-10 text-gray-500">ارتباط با سرور برقرار نشد.</div>
+                    <Surface className="p-8 text-center text-sm text-slate-500">
+                        ارتباط با سرور برقرار نشد.
+                    </Surface>
                 ) : orderedCourses.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">هنوز محتوایی برای این بخش ثبت نشده است.</div>
+                    <Surface className="p-8 text-center text-sm text-slate-500">
+                        هنوز محتوایی برای این بخش ثبت نشده است.
+                    </Surface>
                 ) : layout === "hsk" ? (
-                    <div className="grid grid-cols-2 gap-4">
-                        {orderedCourses.map((course) => {
-                            const hskLevel = String(getCourseMetaNumber(course, "hsk_level", Number(course.level) || 0) || course.level);
-                            const wordCount = ["150", "300", "600", "1200", "2500", "5000"][Number(hskLevel) - 1];
+                    <section className="space-y-3">
+                        <SectionHeader
+                            title="سطوح HSK"
+                            subtitle="هر سطح به شکل یک کارت رنگی و واضح."
+                        />
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                            {orderedCourses.map((course) => {
+                                const hskLevel = String(getCourseMetaNumber(course, "hsk_level", Number(course.level) || 0) || course.level);
+                                const wordCount = ["150", "300", "600", "1200", "2500", "5000"][Number(hskLevel) - 1];
 
-                            return (
-                                <Link
-                                    key={course.id}
-                                    href={getCourseHref(detailPath, course)}
-                                    className={`aspect-[4/5] ${hskColors[hskLevel] || "bg-blue-600"} rounded-2xl flex flex-col items-center justify-center text-white shadow-md active:scale-95 transition-transform`}
-                                >
-                                    <span className="text-xs opacity-90 mb-1">Standard Course</span>
-                                    <span className="text-4xl font-bold mb-2">HSK {hskLevel}</span>
-                                    <span className="text-xs opacity-90">{wordCount ? `${wordCount} Words` : course.level}</span>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                ) : layout === "list" ? (
-                    <div className="grid grid-cols-1 gap-4">
-                        {orderedCourses.map((course) => {
-                            const totalLessons = getLessonCount(course);
-
-                            return (
-                                <Link
-                                    key={course.id}
-                                    href={getCourseHref(detailPath, course)}
-                                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all active:scale-[0.98]"
-                                >
-                                    <div className="flex items-center p-4 gap-4">
-                                        <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex-shrink-0 overflow-hidden">
-                                            {course.cover_image_url ? (
-                                                <Image
-                                                    src={course.cover_image_url}
-                                                    alt={course.title}
-                                                    fill
-                                                    sizes="80px"
-                                                    className="object-cover"
-                                                    unoptimized
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-white text-2xl font-bold">
-                                                    {course.title[0]}
+                                return (
+                                    <Link key={course.id} href={getCourseHref(detailPath, course)} className="group">
+                                        <Surface className={`overflow-hidden border-0 bg-gradient-to-br ${hskColors[hskLevel] || "from-slate-900 to-slate-600"} text-white shadow-[0_20px_45px_rgba(15,23,42,0.12)] transition-all duration-200 group-hover:-translate-y-0.5`}>
+                                            <div className="flex aspect-[4/5] flex-col justify-between p-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
+                                                        Standard Course
+                                                    </div>
+                                                    <div className="rounded-full bg-white/15 px-2 py-1 text-[11px] font-semibold text-white/85">
+                                                        HSK {hskLevel}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">{course.title}</h3>
-                                            <p className="text-sm text-gray-500 mb-2 line-clamp-1">{course.description}</p>
-                                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mb-1">
-                                                <div className={`h-full ${accentClass} rounded-full`} style={{ width: "0%" }} />
+                                                <div className="space-y-3">
+                                                    <div className="text-center">
+                                                        <div className="text-sm font-semibold uppercase tracking-[0.22em] text-white/75">HSK</div>
+                                                        <div className="mt-1 text-5xl font-black leading-none">HSK {hskLevel}</div>
+                                                    </div>
+                                                    <p className="text-center text-xs font-medium text-white/80">
+                                                        {wordCount ? `${wordCount} واژه` : course.level}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center justify-between text-xs text-gray-400">
-                                                <span>{totalLessons || getCourseMetaNumber(course, "lesson_count", 0)} {countLabel}</span>
-                                                <span>{course.level}</span>
-                                            </div>
-                                        </div>
+                                        </Surface>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </section>
+                ) : layout === "list" ? (
+                    <section className="space-y-3">
+                        <SectionHeader
+                            title={title}
+                            subtitle="کارت‌های فهرستی برای مرور سریع و مقایسه‌ی آسان."
+                        />
+                        <div className="grid gap-3">
+                            {orderedCourses.map((course) => {
+                                const totalLessons = getLessonCount(course);
 
-                                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                            <Play size={18} className="text-blue-600 fill-blue-600 mr-0.5" />
-                                        </div>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
+                                return (
+                                    <Link key={course.id} href={getCourseHref(detailPath, course)}>
+                                        <Surface className="overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(15,23,42,0.1)]">
+                                            <div className="flex items-center gap-4 p-4">
+                                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] bg-slate-100">
+                                                    {course.cover_image_url ? (
+                                                        <Image
+                                                            src={course.cover_image_url}
+                                                            alt={course.title}
+                                                            fill
+                                                            sizes="80px"
+                                                            className="object-cover"
+                                                            unoptimized
+                                                        />
+                                                    ) : (
+                                                        <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${accentClass} text-white`}>
+                                                            <BookOpen size={26} />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <h3 className="truncate text-lg font-bold tracking-tight text-slate-900">{course.title}</h3>
+                                                            <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">{course.description}</p>
+                                                        </div>
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                                                            <Play size={18} className="fill-current" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                            <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">
+                                                                {totalLessons || getCourseMetaNumber(course, "lesson_count", 0)} {countLabel}
+                                                            </span>
+                                                            <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">
+                                                                {course.level}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Surface>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </section>
                 ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                        {orderedCourses.map((course) => {
-                            const rating = getCourseMetaNumber(course, "rating", 0);
-                            const year = getCourseMetaNumber(course, "year", 0);
-                            const countText = getDisplayCount(course, countKeys, countLabel);
+                    <section className="space-y-3">
+                        <SectionHeader
+                            title={title}
+                            subtitle="پوسترها را مرور کن و وارد صفحه‌ی هر course شو."
+                        />
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                            {orderedCourses.map((course) => {
+                                const rating = getCourseMetaNumber(course, "rating", 0);
+                                const year = getCourseMetaNumber(course, "year", 0);
+                                const countText = getDisplayCount(course, countKeys, countLabel);
 
-                            return (
-                                <Link
-                                    key={course.id}
-                                    href={getCourseHref(detailPath, course)}
-                                    className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex flex-col"
-                                >
-                                    <div className={`${layout === "portrait" ? "aspect-[2/3]" : "aspect-square"} bg-gray-200 relative`}>
-                                        {course.cover_image_url ? (
-                                            <Image
-                                                src={course.cover_image_url}
-                                                alt={course.title}
-                                                fill
-                                                sizes="(max-width: 768px) 50vw, 220px"
-                                                className="object-cover"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
-                                                <BookOpen size={28} />
+                                return (
+                                    <Link
+                                        key={course.id}
+                                        href={getCourseHref(detailPath, course)}
+                                        className="group"
+                                    >
+                                        <Surface className="overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_18px_50px_rgba(15,23,42,0.1)]">
+                                            <div className={`${layout === "portrait" ? "aspect-[2/3]" : "aspect-square"} relative bg-slate-100`}>
+                                                {course.cover_image_url ? (
+                                                    <Image
+                                                        src={course.cover_image_url}
+                                                        alt={course.title}
+                                                        fill
+                                                        sizes="(max-width: 768px) 50vw, 220px"
+                                                        className="object-cover"
+                                                        unoptimized
+                                                    />
+                                                ) : (
+                                                    <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${accentClass} text-white`}>
+                                                        <BookOpen size={28} />
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/65 to-transparent" />
+                                                <div className="absolute left-2 top-2 rounded-full bg-black/50 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                                                    {year || countText}
+                                                </div>
                                             </div>
-                                        )}
-                                        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
-                                        <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                            {year || countText}
-                                        </div>
-                                    </div>
 
-                                    <div className="p-3 flex-1 flex flex-col justify-between">
-                                        <div>
-                                            <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-2 leading-tight">{course.title}</h3>
-                                            {year > 0 && <p className="text-xs text-gray-500">{year}</p>}
-                                        </div>
-
-                                        <div className="flex items-center gap-1 mt-2 text-xs text-gray-600">
-                                            {rating > 0 && (
-                                                <>
-                                                    <Star size={12} className="text-orange-400 fill-orange-400" />
-                                                    <span>{rating}</span>
-                                                </>
-                                            )}
-                                            {rating > 0 && <span className="text-gray-300 mx-1">|</span>}
-                                            <span>{countText}</span>
-                                        </div>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
+                                            <div className="p-3">
+                                                <h3 className="line-clamp-2 text-sm font-bold leading-5 text-slate-900">{course.title}</h3>
+                                                {year > 0 && <p className="mt-1 text-[11px] text-slate-500">{year}</p>}
+                                                <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                                                    {rating > 0 && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700">
+                                                            <Star size={12} className="fill-current" />
+                                                            {rating}
+                                                        </span>
+                                                    )}
+                                                    <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
+                                                        {countText}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Surface>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </section>
                 )}
             </main>
         </div>

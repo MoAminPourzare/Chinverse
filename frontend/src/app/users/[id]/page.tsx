@@ -147,7 +147,7 @@ export default function PublicProfilePage() {
                                         href={url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 text-sm hover:underline dir-ltr text-left truncate flex items-center gap-2"
+                                        className="dir-ltr flex truncate text-left text-sm text-rose-600 hover:underline"
                                     >
                                         <span className="text-gray-400">🔗</span>
                                         {url}
@@ -167,7 +167,7 @@ export default function PublicProfilePage() {
                                     const Icon = socialIcons[social.platform] || MessageCircle;
                                     return (
                                         <div key={idx} className="flex items-center gap-2 text-gray-600 text-sm">
-                                            <Icon className="w-4 h-4 text-blue-500" />
+                                            <Icon className="w-4 h-4 text-rose-500" />
                                             <span className="dir-ltr">{social.handle}</span>
                                             <span className="text-gray-400">🔗</span>
                                         </div>
@@ -204,13 +204,13 @@ export default function PublicProfilePage() {
                     {resume.work_experiences?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Briefcase className="w-5 h-5 text-blue-600" />
+                                <Briefcase className="w-5 h-5 text-rose-600" />
                                 سوابق کاری
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.work_experiences.map((work, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
+                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{work.job_title}</h4>
                                         <p className="text-sm text-gray-600">{work.company}</p>
                                         <span className="text-xs text-gray-400 mt-1 block">{work.start_date} - {work.end_date}</span>
@@ -224,13 +224,13 @@ export default function PublicProfilePage() {
                     {resume.educations?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <GraduationCap className="w-5 h-5 text-blue-600" />
+                                <GraduationCap className="w-5 h-5 text-rose-600" />
                                 تحصیلات
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.educations.map((edu, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
+                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{edu.degree} - {edu.field}</h4>
                                         <p className="text-sm text-gray-600">{edu.university}</p>
                                         <span className="text-xs text-gray-400 mt-1 block">{edu.start_date} - {edu.end_date}</span>
@@ -244,12 +244,12 @@ export default function PublicProfilePage() {
                     {resume.skills?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Wrench className="w-5 h-5 text-blue-600" />
+                                <Wrench className="w-5 h-5 text-rose-600" />
                                 مهارت‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {resume.skills.map((skill, idx) => (
-                                    <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-medium">
+                                    <span key={idx} className="rounded-xl bg-rose-50 px-3 py-1 text-sm font-medium text-rose-700">
                                         {skill.name} <span className="text-xs opacity-70">({skill.level})</span>
                                     </span>
                                 ))}
@@ -261,7 +261,7 @@ export default function PublicProfilePage() {
                     {resume.languages?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Languages className="w-5 h-5 text-blue-600" />
+                                <Languages className="w-5 h-5 text-rose-600" />
                                 زبان‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
@@ -278,7 +278,7 @@ export default function PublicProfilePage() {
                     {resume.certificates?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Award className="w-5 h-5 text-blue-600" />
+                                <Award className="w-5 h-5 text-rose-600" />
                                 گواهینامه‌ها
                             </h3>
                             <div className="space-y-2">
@@ -338,17 +338,17 @@ export default function PublicProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-full bg-white flex items-center justify-center py-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="flex min-h-full items-center justify-center py-20">
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
             </div>
         );
     }
 
     if (!user) {
         return (
-            <div className="min-h-full bg-white flex flex-col items-center justify-center py-20">
+            <div className="flex min-h-full flex-col items-center justify-center py-20">
                 <p className="text-gray-500 mb-4">کاربر یافت نشد</p>
-                <Link href="/showcase" className="text-blue-600 hover:underline">
+                <Link href="/showcase" className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800">
                     بازگشت به ویترین
                 </Link>
             </div>
@@ -356,24 +356,27 @@ export default function PublicProfilePage() {
     }
 
     return (
-        <div className="min-h-full bg-white" dir="rtl">
+        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             {/* Header */}
-            <header className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-50 border-b border-gray-100">
-                <Link href="/showcase" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <header className="sticky top-3 z-50 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                <Link href="/showcase" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600">
                     <ArrowRight className="w-5 h-5 text-gray-600" />
                 </Link>
                 <div className="flex items-center gap-2">
-                    <span className="text-lg font-extrabold text-blue-800">چین ورس</span>
-                    <span className="text-blue-600">🌀</span>
+                    <span className="text-lg font-black tracking-tight text-slate-950">ChinVerse</span>
+                    <span className="rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-xs font-bold text-white">User</span>
                 </div>
                 <div className="w-9" /> {/* Spacer for centering */}
             </header>
 
-            <main className="pb-4">
+            <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4 pt-5">
                 {/* Hero Section */}
-                <section className="flex flex-col items-center mt-8 mb-6 px-4">
+                <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-slate-950 px-5 py-7 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                    <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
+                    <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-emerald-400/15 blur-3xl" />
+                    <div className="relative flex flex-col items-center">
                     <div className="relative mb-4">
-                        <div className="w-28 h-28 rounded-full border-[3px] border-blue-600 p-1">
+                        <div className="h-28 w-28 rounded-[30px] border border-white/30 bg-white/10 p-1 shadow-2xl">
                             <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
                                 {user.profile?.avatar_url ? (
                                     <Image
@@ -391,20 +394,20 @@ export default function PublicProfilePage() {
                         </div>
                     </div>
 
-                    <h1 className="text-xl font-bold text-gray-900 mb-1">
+                    <h1 className="mb-1 text-2xl font-black tracking-tight text-white">
                         {user.profile?.display_name || "کاربر"}
                     </h1>
 
-                    <p className="text-blue-600 text-sm font-medium mb-2">
+                    <p className="mb-2 text-sm font-medium text-white/70">
                         {user.profile?.headline || ""}
                     </p>
 
-                    <div className="flex items-center text-gray-400 text-xs gap-2 mb-4">
+                    <div className="mb-5 flex flex-wrap items-center justify-center gap-2 text-xs text-white/65">
                         <div className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5" />
                             <span>{[user.profile?.city, user.profile?.country].filter(Boolean).join("، ") || "موقعیت نامشخص"}</span>
                         </div>
-                        <span className="text-gray-300">|</span>
+                        <span className="text-white/25">|</span>
                         <div className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5" />
                             <span>{followersCount}</span>
@@ -412,17 +415,17 @@ export default function PublicProfilePage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3 w-full max-w-xs">
+                    <div className="grid w-full max-w-lg grid-cols-3 gap-3">
                         <button
                             onClick={handleShare}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-200 rounded-full text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
                         >
                             <Share2 className="w-4 h-4" />
                             اشتراک
                         </button>
                         <Link
                             href={`/chat/${userId}`}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-200 rounded-full text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
                         >
                             <MessageCircle className="w-4 h-4" />
                             پیام
@@ -430,40 +433,38 @@ export default function PublicProfilePage() {
                         <button
                             onClick={handleFollowToggle}
                             disabled={followLoading}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-sm font-medium transition-colors ${isFollowing
+                            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors ${isFollowing
                                 ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                : "bg-blue-600 text-white hover:bg-blue-700"
+                                : "bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
                                 } ${followLoading ? "opacity-50" : ""}`}
                         >
                             <Users className="w-4 h-4" />
                             {followLoading ? "..." : isFollowing ? "لغو" : "شبکه"}
                         </button>
                     </div>
+                    </div>
                 </section>
 
                 {/* Tab Navigation */}
-                <div className="sticky top-[53px] bg-white z-40 border-b border-gray-100">
-                    <div className="flex justify-center px-2">
+                <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/90 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                    <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
-                                    whitespace-nowrap px-5 py-3 text-sm font-medium transition-all relative
-                                    ${activeTab === tab.id ? "text-gray-900" : "text-gray-400 hover:text-gray-600"}
+                                    relative whitespace-nowrap rounded-2xl px-5 py-3 text-sm font-bold transition-all
+                                    ${activeTab === tab.id ? "bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_12px_26px_rgba(244,63,94,0.18)]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
                                 `}
                             >
                                 {tab.label}
-                                {activeTab === tab.id && (
-                                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-t-full" />
-                                )}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Tab Content */}
-                <section className="min-h-[200px]">
+                <section className="min-h-[200px] overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl">
                     {renderTabContent()}
                 </section>
             </main>
