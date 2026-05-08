@@ -37,7 +37,7 @@ export default function GalleryTab() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="text-gray-500">در حال بارگذاری...</div>
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
             </div>
         );
     }
@@ -48,7 +48,7 @@ export default function GalleryTab() {
             <>
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[400px]">
                     <div className="mb-6 relative">
-                        <ImageIcon className="w-24 h-24 text-blue-200" strokeWidth={1} />
+                        <ImageIcon className="w-24 h-24 text-rose-200" strokeWidth={1} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-800 mb-2">
                         اولین عکست رو بارگذاری کن!
@@ -58,7 +58,7 @@ export default function GalleryTab() {
                     </p>
                     <button
                         onClick={() => setIsAddModalOpen(true)}
-                        className="bg-blue-800 text-white rounded-full p-4 shadow-lg hover:bg-blue-900 transition-colors"
+                        className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-4 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
                     >
                         <Plus className="w-6 h-6" />
                     </button>
@@ -76,14 +76,14 @@ export default function GalleryTab() {
     // Grid State
     return (
         <>
-            <div className="p-4 relative">
+            <div className="relative p-4">
                 {/* Gallery Grid */}
-                <div className="grid grid-cols-3 gap-1 mb-20">
+                <div className="mb-20 grid grid-cols-3 gap-2">
                     {galleryItems.map((item) => (
                         <button
                             key={item.id}
                             onClick={() => setSelectedItem(item)}
-                            className="relative aspect-square bg-gray-100 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                            className="relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-slate-100 transition hover:opacity-90"
                         >
                             <Image
                                 src={getMediaUrl(item.image_url)}
@@ -99,7 +99,7 @@ export default function GalleryTab() {
                 {/* Floating Add Button */}
                 <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="fixed bottom-20 right-1/2 transform translate-x-1/2 bg-blue-800 text-white rounded-full p-4 shadow-lg hover:bg-blue-900 transition-colors z-10"
+                    className="fixed bottom-20 right-1/2 z-10 translate-x-1/2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-4 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
                 >
                     <Plus className="w-6 h-6" />
                 </button>

@@ -10,6 +10,7 @@ import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
 import EditResumeModal from "@/components/profile/EditResumeModal";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
+import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 
 interface Tab {
@@ -99,8 +100,7 @@ export default function ProfilePage() {
                 return (
                     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                         <div className="mb-6 relative">
-                            {/* Placeholder illustration - using a simple SVG representation or Icon */}
-                            <PenLine className="w-24 h-24 text-blue-200" strokeWidth={1} />
+                            <PenLine className="w-24 h-24 text-rose-200" strokeWidth={1} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mb-2">
                             یه معرفی کوتاه درباره خودت بنویس!
@@ -110,7 +110,7 @@ export default function ProfilePage() {
                         </p>
                         <button
                             onClick={() => setIsEditModalOpen(true)}
-                            className="bg-blue-800 text-white rounded-xl p-3 shadow-lg hover:bg-blue-900 transition-colors"
+                            className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-3 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
                         >
                             <PenLine className="w-6 h-6" />
                         </button>
@@ -122,7 +122,7 @@ export default function ProfilePage() {
                 <div className="p-6 relative">
                     <button
                         onClick={() => setIsEditModalOpen(true)}
-                        className="absolute top-4 left-4 text-blue-600 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                        className="absolute left-4 top-4 rounded-2xl p-2 text-rose-600 transition-colors hover:bg-rose-50"
                     >
                         <PenLine className="w-5 h-5" />
                     </button>
@@ -144,7 +144,7 @@ export default function ProfilePage() {
                             </h3>
                             <div className="flex flex-col gap-2">
                                 {user?.profile?.websites?.map((url, idx) => (
-                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline dir-ltr text-left truncate">
+                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="dir-ltr truncate text-left text-sm text-rose-600 hover:underline">
                                         {url}
                                     </a>
                                 ))}
@@ -180,7 +180,7 @@ export default function ProfilePage() {
                 return (
                     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                         <div className="mb-6 relative">
-                            <FileText className="w-24 h-24 text-blue-200" strokeWidth={1} />
+                            <FileText className="w-24 h-24 text-rose-200" strokeWidth={1} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mb-2">
                             رزومه ات رو ثبت کن!
@@ -190,7 +190,7 @@ export default function ProfilePage() {
                         </p>
                         <button
                             onClick={() => setIsResumeModalOpen(true)}
-                            className="bg-blue-800 text-white rounded-xl p-3 shadow-lg hover:bg-blue-900 transition-colors"
+                            className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-3 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
                         >
                             <PenLine className="w-6 h-6" />
                         </button>
@@ -202,7 +202,7 @@ export default function ProfilePage() {
                 <div className="p-6 relative space-y-8">
                     <button
                         onClick={() => setIsResumeModalOpen(true)}
-                        className="absolute top-4 left-4 text-blue-600 hover:bg-blue-50 p-2 rounded-full transition-colors z-10"
+                        className="absolute left-4 top-4 z-10 rounded-2xl p-2 text-rose-600 transition-colors hover:bg-rose-50"
                     >
                         <PenLine className="w-5 h-5" />
                     </button>
@@ -211,13 +211,13 @@ export default function ProfilePage() {
                     {resume.work_experiences?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Briefcase className="w-5 h-5 text-blue-600" />
+                                <Briefcase className="w-5 h-5 text-rose-600" />
                                 سوابق کاری
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.work_experiences.map((work, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
+                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{work.job_title}</h4>
                                         <p className="text-sm text-gray-600">{work.company}</p>
                                         <span className="text-xs text-gray-400 mt-1 block">{work.start_date} - {work.end_date}</span>
@@ -231,13 +231,13 @@ export default function ProfilePage() {
                     {resume.educations?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <GraduationCap className="w-5 h-5 text-blue-600" />
+                                <GraduationCap className="w-5 h-5 text-rose-600" />
                                 تحصیلات
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.educations.map((edu, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-blue-400 ring-4 ring-white" />
+                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{edu.degree} - {edu.field}</h4>
                                         <p className="text-sm text-gray-600">{edu.university}</p>
                                         <span className="text-xs text-gray-400 mt-1 block">{edu.start_date} - {edu.end_date}</span>
@@ -251,12 +251,12 @@ export default function ProfilePage() {
                     {resume.skills?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Wrench className="w-5 h-5 text-blue-600" />
+                                <Wrench className="w-5 h-5 text-rose-600" />
                                 مهارت‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {resume.skills.map((skill, idx) => (
-                                    <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-medium">
+                                    <span key={idx} className="rounded-xl bg-rose-50 px-3 py-1 text-sm font-medium text-rose-700">
                                         {skill.name} <span className="text-xs opacity-70">({skill.level})</span>
                                     </span>
                                 ))}
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                     {resume.languages?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Languages className="w-5 h-5 text-blue-600" />
+                                <Languages className="w-5 h-5 text-rose-600" />
                                 زبان‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
@@ -302,25 +302,29 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
-            <div className="w-full bg-white min-h-full relative">
+        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
+            <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
                 {/* Header */}
-                <header className="flex items-center justify-between px-6 py-4 bg-white/95 sticky top-0 z-50 backdrop-blur-sm border-b border-gray-50">
+                <header className="sticky top-3 z-50 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:px-6">
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-extrabold text-blue-800 tracking-tighter">ChinVerse</span>
+                        <span className="text-xl font-black tracking-tight text-slate-950">ChinVerse</span>
+                        <span className="rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-xs font-bold text-white">Profile</span>
                     </div>
-                    <div className="flex gap-5 text-gray-600">
-                        <Link href="/community" className="hover:text-blue-600 transition-colors"><MessageCircle className="w-6 h-6" /></Link>
-                        <Link href="/notifications" className="hover:text-blue-600 transition-colors"><Bell className="w-6 h-6" /></Link>
-                        <button onClick={() => setIsSettingsOpen(true)} className="hover:text-blue-600 transition-colors"><Settings className="w-6 h-6" /></button>
+                    <div className="flex gap-2 text-slate-500">
+                        <Link href="/community" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><MessageCircle className="w-5 h-5" /></Link>
+                        <Link href="/notifications" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><Bell className="w-5 h-5" /></Link>
+                        <button onClick={() => setIsSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><Settings className="w-5 h-5" /></button>
                     </div>
                 </header>
 
-                <main className="pb-6">
+                <main className="flex flex-col gap-5 pb-4">
                     {/* Hero Section */}
-                    <section className="flex flex-col items-center mt-8 mb-8 px-4">
+                    <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-slate-950 px-5 py-7 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                        <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
+                        <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl" />
+                        <div className="relative flex flex-col items-center">
                         <div className="relative mb-4">
-                            <div className="w-32 h-32 rounded-full border-[3px] border-blue-600 p-1">
+                            <div className="h-32 w-32 rounded-[32px] border border-white/30 bg-white/10 p-1 shadow-2xl">
                                 <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
                                     {user?.profile?.avatar_url ? (
                                         <Image
@@ -338,57 +342,56 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <h1 className="text-xl font-bold text-gray-900 mb-1">
+                        <h1 className="mb-1 text-2xl font-black tracking-tight text-white">
                             {user?.profile?.display_name || "کاربر مهمان"}
                         </h1>
 
-                        <p className="text-gray-500 text-sm font-medium mb-2">
+                        <p className="mb-2 text-sm font-medium text-white/70">
                             {user?.profile?.headline || "عنوان شغلی"}
                         </p>
 
                         {/* Location */}
-                        <div className="flex items-center text-gray-400 text-xs gap-1 mb-3">
+                        <div className="mb-5 flex items-center gap-1 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs text-white/65">
                             <MapPin className="w-3.5 h-3.5" />
                             <span>{user?.profile?.city || "موقعیت مکانی"}</span>
                         </div>
 
                         {/* Followers / Following counts */}
-                        <div className="flex items-center justify-center gap-4 text-gray-500 text-sm">
-                            <Link href="/profile/network" className="flex flex-col items-center hover:text-blue-600 transition-colors">
-                                <span className="font-bold text-gray-900">{followersCount}</span>
+                        <div className="grid w-full max-w-md grid-cols-2 gap-3 text-sm">
+                            <Link href="/profile/network" className="rounded-[24px] border border-white/10 bg-white/10 p-4 text-center transition hover:bg-white/15">
+                                <span className="block text-2xl font-black text-white">{followersCount}</span>
                                 <span className="text-xs">دنبال‌کننده</span>
                             </Link>
-                            <div className="w-px h-8 bg-gray-200" />
-                            <Link href="/profile/network" className="flex flex-col items-center hover:text-blue-600 transition-colors">
-                                <span className="font-bold text-gray-900">{followingCount}</span>
+                            <Link href="/profile/network" className="rounded-[24px] border border-white/10 bg-white/10 p-4 text-center transition hover:bg-white/15">
+                                <span className="block text-2xl font-black text-white">{followingCount}</span>
                                 <span className="text-xs">دنبال‌شونده</span>
                             </Link>
+                        </div>
                         </div>
                     </section>
 
                     {/* Tab Navigation */}
-                    <div className="sticky top-[61px] bg-white z-40 shadow-sm">
-                        <div className="flex overflow-x-auto no-scrollbar px-2 border-b border-gray-100">
+                    <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/90 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                        <div className="flex overflow-x-auto no-scrollbar gap-2">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`
-                    whitespace-nowrap px-4 py-3 text-sm font-bold transition-all relative flex-shrink-0
-                    ${activeTab === tab.id ? "text-blue-700" : "text-gray-500 hover:text-gray-700"}
-                `}
+                                    className={cn(
+                                        "relative flex-shrink-0 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-bold transition-all",
+                                        activeTab === tab.id
+                                            ? "bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_12px_26px_rgba(244,63,94,0.18)]"
+                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
+                                    )}
                                 >
                                     {tab.label}
-                                    {activeTab === tab.id && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-t-full mx-2" />
-                                    )}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Tab Content */}
-                    <section className="min-h-[300px] bg-gray-50/30">
+                    <section className="min-h-[300px] overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl">
                         {renderTabContent()}
                     </section>
                 </main>
@@ -409,9 +412,9 @@ export default function ProfilePage() {
 
                 {/* Settings Modal */}
                 {isSettingsOpen && (
-                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-end justify-center" onClick={() => setIsSettingsOpen(false)}>
+                    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}>
                         <div
-                            className="bg-white w-full max-w-md rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300"
+                            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)] animate-in slide-in-from-bottom duration-300"
                             onClick={(e) => e.stopPropagation()}
                             dir="rtl"
                         >
@@ -419,7 +422,7 @@ export default function ProfilePage() {
                                 <h2 className="text-lg font-bold text-gray-900">تنظیمات</h2>
                                 <button
                                     onClick={() => setIsSettingsOpen(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full"
+                                    className="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                                 >
                                     <X className="w-5 h-5 text-gray-500" />
                                 </button>
@@ -429,11 +432,11 @@ export default function ProfilePage() {
                                 {/* 1. حساب کاربری */}
                                 <Link
                                     href="/account"
-                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <UserIcon className="w-5 h-5 text-blue-600" />
+                                        <UserIcon className="w-5 h-5 text-rose-600" />
                                     </div>
                                     <span className="font-medium text-gray-800">حساب کاربری</span>
                                 </Link>
@@ -441,7 +444,7 @@ export default function ProfilePage() {
                                 {/* 2. درباره چین‌ورس */}
                                 <Link
                                     href="/about"
-                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -453,7 +456,7 @@ export default function ProfilePage() {
                                 {/* 3. ورود */}
                                 <Link
                                     href="/login"
-                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -465,7 +468,7 @@ export default function ProfilePage() {
                                 {/* 4. ثبت نام */}
                                 <Link
                                     href="/signup"
-                                    className="flex items-center gap-3 p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -477,7 +480,7 @@ export default function ProfilePage() {
                                 {/* 5. خروج */}
                                 <button
                                     onClick={handleLogout}
-                                    className="flex items-center gap-3 p-4 hover:bg-red-50 rounded-xl transition-colors w-full"
+                                    className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-orange-50"
                                 >
                                     <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                                         <LogOut className="w-5 h-5 text-orange-600" />
@@ -488,7 +491,7 @@ export default function ProfilePage() {
                                 {/* 6. حذف حساب کاربری */}
                                 <button
                                     onClick={() => { setIsSettingsOpen(false); handleDeleteAccount(); }}
-                                    className="flex items-center gap-3 p-4 hover:bg-red-50 rounded-xl transition-colors w-full"
+                                    className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-red-50"
                                 >
                                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                                         <Trash2 className="w-5 h-5 text-red-600" />

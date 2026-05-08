@@ -68,7 +68,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center">
+                    <div className="flex min-h-full items-center justify-center p-3">
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"
@@ -78,19 +78,19 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-md transform bg-white transition-all h-screen flex flex-col">
+                            <Dialog.Panel className="flex h-[min(92vh,760px)] w-full max-w-md transform flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white transition-all shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
                                 {/* Header */}
-                                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                                <div className="flex items-center justify-between border-b border-slate-100 p-4">
                                     <button
                                         onClick={handleClose}
-                                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                        className="rounded-2xl p-2 transition hover:bg-slate-100"
                                     >
                                         <ArrowLeft className="w-6 h-6 text-gray-700" />
                                     </button>
                                     <button
                                         onClick={handleUpload}
                                         disabled={!selectedFile || uploading}
-                                        className="text-blue-600 font-bold disabled:text-gray-400 disabled:cursor-not-allowed"
+                                        className="font-bold text-rose-600 disabled:cursor-not-allowed disabled:text-slate-400"
                                     >
                                         {uploading ? 'در حال بارگذاری...' : 'بعدی'}
                                     </button>
@@ -100,7 +100,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                 <div className="flex-1 flex flex-col p-4 overflow-y-auto">
                                     {!preview ? (
                                         <div className="flex-1 flex items-center justify-center">
-                                            <label className="cursor-pointer bg-blue-800 text-white px-6 py-3 rounded-full font-bold hover:bg-blue-900 transition-colors">
+                                            <label className="cursor-pointer rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-3 font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600">
                                                 انتخاب عکس
                                                 <input
                                                     type="file"
@@ -130,7 +130,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                                     value={caption}
                                                     onChange={(e) => setCaption(e.target.value)}
                                                     rows={4}
-                                                    className="w-full rounded-xl bg-gray-50 border border-gray-300 p-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                                     placeholder="هر عکسی یه داستانی داره... داستانتو اینجا بنویس!"
                                                     dir="rtl"
                                                 />
@@ -141,11 +141,11 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
 
                                 {/* Footer Button (Alternative placement) */}
                                 {preview && (
-                                    <div className="p-4 border-t border-gray-100">
+                                    <div className="border-t border-slate-100 p-4">
                                         <button
                                             onClick={handleUpload}
                                             disabled={uploading}
-                                            className="w-full bg-blue-800 text-white font-bold py-3 rounded-full hover:bg-blue-900 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                            className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
                                         >
                                             {uploading ? 'در حال بارگذاری...' : 'اشتراک گذاری'}
                                         </button>

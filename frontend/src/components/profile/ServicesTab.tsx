@@ -104,7 +104,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
             </div>
         );
     }
@@ -127,12 +127,12 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                 {isOwner && (
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50/50 transition-colors group"
+                        className="group flex w-full flex-col items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-slate-300 p-8 transition hover:border-rose-300 hover:bg-rose-50/40"
                     >
-                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                            <Plus className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 transition-colors group-hover:bg-rose-100">
+                            <Plus className="h-6 w-6 text-slate-400 group-hover:text-rose-500" />
                         </div>
-                        <span className="text-gray-500 font-medium group-hover:text-blue-600">
+                        <span className="font-medium text-slate-500 group-hover:text-rose-600">
                             افزودن خدمت جدید
                         </span>
                     </button>
@@ -149,12 +149,12 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
             {/* Add Service Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
-                        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+                    <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]" dir="rtl">
+                        <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3">
                             <h2 className="font-bold text-lg">افزودن خدمت</h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full"
+                                className="rounded-2xl p-2 transition hover:bg-slate-100"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -167,7 +167,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                                     تصویر بنر
                                 </label>
                                 <div
-                                    className="relative w-full h-40 bg-gray-100 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer"
+                                    className="relative h-40 w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-100 transition-colors hover:border-rose-300"
                                     onClick={() => document.getElementById('banner-input')?.click()}
                                 >
                                     {bannerPreview ? (
@@ -204,7 +204,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                                     onChange={(e) => setTitle(e.target.value)}
                                     placeholder="مثال: دوره تربیت مدرس"
                                     required
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                 />
                             </div>
 
@@ -219,7 +219,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                                     placeholder="توضیحات کامل خدمت..."
                                     required
                                     rows={4}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                 />
                             </div>
 
@@ -233,7 +233,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                                     value={priceLabel}
                                     onChange={(e) => setPriceLabel(e.target.value)}
                                     placeholder="مثال: توافقی یا ۵۰۰,۰۰۰ تومان"
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                 />
                             </div>
 
@@ -241,7 +241,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                             <button
                                 type="submit"
                                 disabled={submitting || !title || !description}
-                                className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-medium text-white transition hover:from-rose-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {submitting ? (
                                     <>
@@ -272,7 +272,7 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
     const chatUserId = userId || service.user_id;
 
     return (
-        <div className="bg-gray-50 rounded-2xl overflow-hidden">
+        <div className="overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-sm">
             {/* Banner Image */}
             {service.banner_url && (
                 <div className="relative w-full h-40">
@@ -316,7 +316,7 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                 {!isOwner && (
                     <Link
                         href={`/chat/${chatUserId}`}
-                        className="block w-full bg-blue-600 text-white py-3 rounded-xl font-medium text-center hover:bg-blue-700 transition-colors"
+                    className="block w-full rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 text-center font-medium text-white transition hover:from-rose-600 hover:to-orange-600"
                     >
                         درخواست مشاوره
                     </Link>

@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Brain, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import api from "@/lib/api";
+import Surface from "@/components/ui/Surface";
+import SectionHeader from "@/components/ui/SectionHeader";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 interface Word {
     id: number;
@@ -27,14 +30,14 @@ interface LeitnerStats {
 }
 
 const BOX_COLORS: Record<number, string> = {
-    1: "bg-red-500", // Seed
-    2: "bg-orange-500", // Sprout
-    3: "bg-green-500", // Sapling
-    4: "bg-blue-500", // Tree
-    5: "bg-blue-800", // Mature Tree
+    1: "from-rose-500 to-orange-500",
+    2: "from-amber-500 to-orange-500",
+    3: "from-emerald-500 to-teal-500",
+    4: "from-sky-500 to-blue-600",
+    5: "from-indigo-600 to-slate-900",
 };
 
-const BOX_NAMES: Record<number, { title: string; subtitle: string, icon: string }> = {
+const BOX_NAMES: Record<number, { title: string; subtitle: string; icon: string }> = {
     1: { title: "بذر", subtitle: "(نیازمند یادآوری)", icon: "🌱" },
     2: { title: "جوانه", subtitle: "(حافظه کوتاه مدت)", icon: "🌿" },
     3: { title: "نهال", subtitle: "(حافظه میان مدت)", icon: "🪴" },
@@ -63,122 +66,118 @@ export default function LeitnerDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-full flex items-center justify-center bg-gray-50">
-                <div className="text-gray-500">در حال بارگذاری...</div>
+            <div className="flex min-h-full items-center justify-center">
+                <div className="flex items-center gap-3 text-slate-500">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                    <span>در حال بارگذاری...</span>
+                </div>
             </div>
         );
     }
 
     if (!stats) return null;
 
+    const boxCountEntries = Object.entries(stats.box_counts);
+
     return (
-        <div className="min-h-full bg-white pb-6" dir="rtl">
-            {/* Header */}
-            <header className="px-6 pt-8 pb-4">
-                <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">لایتنر</h1>
-            </header>
+        <div className="min-h-full px-4 py-4" dir="rtl">
+            <main className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_50%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
+                    <div className="grid gap-5 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                        <div>
+                            <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
+                                Leitner
+                            </div>
+                            <h1 className="mt-4 text-3xl font-bold tracking-tight">مرور واژه‌ها با ساختار روشن‌تر</h1>
+                            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
+                                کارت‌ها را به‌صورت منظم مرور کن و ببین هر واژه در کدام جعبه قرار دارد.
+                            </p>
+                        </div>
 
-            <main className="px-6 space-y-8">
-                {/* Boxes Grid */}
-                <div className="grid grid-cols-6 gap-2">
-                    {/* Top Row: 1, 2, 3 */}
-                    <div className="col-span-2 relative aspect-[0.9] bg-gray-100 rounded-xl overflow-hidden shadow-sm flex flex-col">
-                        <div className={`h-8 ${BOX_COLORS[1]} flex items-center justify-center`}>
-                            <span className="text-white text-[10px] font-bold">{BOX_NAMES[1].title}</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
-                            <span className="text-xs text-blue-100 bg-red-500/10 rounded px-1 mb-1 hidden">{BOX_NAMES[1].subtitle}</span>
-                            <span className="text-3xl mb-1">{BOX_NAMES[1].icon}</span>
-                            <span className="text-sm font-bold text-gray-700">{stats.box_counts[1] || 0} لغت</span>
-                        </div>
-                    </div>
-                    <div className="col-span-2 relative aspect-[0.9] bg-gray-100 rounded-xl overflow-hidden shadow-sm flex flex-col">
-                        <div className={`h-8 ${BOX_COLORS[2]} flex items-center justify-center`}>
-                            <span className="text-white text-[10px] font-bold">{BOX_NAMES[2].title}</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
-                            <span className="text-3xl mb-1">{BOX_NAMES[2].icon}</span>
-                            <span className="text-sm font-bold text-gray-700">{stats.box_counts[2] || 0} لغت</span>
-                        </div>
-                    </div>
-                    <div className="col-span-2 relative aspect-[0.9] bg-gray-100 rounded-xl overflow-hidden shadow-sm flex flex-col">
-                        <div className={`h-8 ${BOX_COLORS[3]} flex items-center justify-center`}>
-                            <span className="text-white text-[10px] font-bold">{BOX_NAMES[3].title}</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
-                            <span className="text-3xl mb-1">{BOX_NAMES[3].icon}</span>
-                            <span className="text-sm font-bold text-gray-700">{stats.box_counts[3] || 0} لغت</span>
-                        </div>
-                    </div>
-
-                    {/* Bottom Row: 4, 5 (Centered) */}
-                    <div className="col-span-3 relative aspect-[1.1] bg-gray-100 rounded-xl overflow-hidden shadow-sm flex flex-col max-w-[140px] mx-auto w-full">
-                        <div className={`h-8 ${BOX_COLORS[4]} flex items-center justify-center`}>
-                            <span className="text-white text-[10px] font-bold">{BOX_NAMES[4].title}</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
-                            <span className="text-4xl mb-1">{BOX_NAMES[4].icon}</span>
-                            <span className="text-sm font-bold text-gray-700">{stats.box_counts[4] || 0} لغت</span>
-                        </div>
-                    </div>
-                    <div className="col-span-3 relative aspect-[1.1] bg-gray-100 rounded-xl overflow-hidden shadow-sm flex flex-col max-w-[140px] mx-auto w-full">
-                        <div className={`h-8 ${BOX_COLORS[5]} flex items-center justify-center`}>
-                            <span className="text-white text-[10px] font-bold">{BOX_NAMES[5].title}</span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
-                            <span className="text-4xl mb-1 ">{BOX_NAMES[5].icon}</span>
-                            <span className="text-sm font-bold text-gray-700">{stats.box_counts[5] || 0} لغت</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Empty State */}
-                {Object.values(stats.box_counts).every(c => c === 0) && (
-                    <div className="mt-12 text-center space-y-4">
-                        <div className="flex justify-center mb-6">
-                            <div className="relative">
-                                {/* Simple network icon visualization using divs/svgs */}
-                                <Brain size={64} className="text-blue-300 mx-auto" strokeWidth={1} />
+                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            <div className="rounded-[24px] border border-white/10 bg-white/10 p-4">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65">واژه‌های آماده</p>
+                                <p className="mt-2 text-2xl font-bold text-white">{stats.total_due}</p>
+                            </div>
+                            <div className="rounded-[24px] border border-white/10 bg-white/10 p-4">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65">جعبه‌ها</p>
+                                <p className="mt-2 text-2xl font-bold text-white">{boxCountEntries.length}</p>
+                            </div>
+                            <div className="rounded-[24px] border border-white/10 bg-white/10 p-4">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65">وضعیت</p>
+                                <p className="mt-2 text-2xl font-bold text-white">فعال</p>
                             </div>
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">هنوز هیچ واژه‌ای به لایتنر اضافه نکردی!</h3>
-                        <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">
-                            با لایتنر، هر بار که مرور می‌کنی، اتصال‌های مغزت قوی‌تر می‌شن.
-                            این یعنی کم‌کم واژه‌ها برای همیشه توی حافظه‌ت موندگار می‌شن.
-                        </p>
                     </div>
-                )}
+                </Surface>
 
-                {/* Review Button */}
-                {stats.total_due > 0 && (
-                    <Link href="/leitner/review" className="block w-full">
-                        <button className="w-full bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-700/20 active:scale-[0.98] transition-transform">
-                            شروع مرور لغات
-                        </button>
-                    </Link>
-                )}
+                <section className="space-y-3">
+                    <SectionHeader
+                        title="جعبه‌های Leitner"
+                        subtitle="هر جعبه یک مرحله از مسیر مرور است."
+                    />
 
-                {/* Recent List */}
-                {stats.recent_cards.length > 0 && (
-                    <div className="space-y-3">
-                        {stats.recent_cards.map((card) => (
-                            <div key={card.id} className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                                <div className="flex items-center gap-4">
-                                    <div className="text-2xl">{BOX_NAMES[card.box_number].icon}</div>
-                                    <div>
-                                        <p className="font-bold text-gray-800 text-lg mb-1" dir="ltr">{card.word.chinese}</p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        {Object.keys(BOX_NAMES).map((key) => {
+                            const boxNumber = Number(key);
+                            const count = stats.box_counts[boxNumber] || 0;
+                            const box = BOX_NAMES[boxNumber];
+
+                            return (
+                                <Surface key={key} className="overflow-hidden">
+                                    <div className={`bg-gradient-to-r ${BOX_COLORS[boxNumber]} px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-white`}>
+                                        {box.title}
                                     </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                    <button className="text-gray-400">
-                                        <ArrowRight size={20} className="rotate-180" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                    <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                                        <span className="text-4xl">{box.icon}</span>
+                                        <p className="text-sm font-bold text-slate-900">{count} لغت</p>
+                                        <p className="text-[11px] leading-5 text-slate-500">{box.subtitle}</p>
+                                    </div>
+                                </Surface>
+                            );
+                        })}
                     </div>
+                </section>
+
+                {stats.total_due > 0 && (
+                    <Surface className="p-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">آماده‌ی مرور هستی</h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    {stats.total_due} کارت منتظر مرور است.
+                                </p>
+                            </div>
+                            <PrimaryButton href="/leitner/review">شروع مرور</PrimaryButton>
+                        </div>
+                    </Surface>
                 )}
 
+                {stats.recent_cards.length > 0 && (
+                    <section className="space-y-3">
+                        <SectionHeader title="کارت‌های اخیر" subtitle="آخرین واژه‌های ثبت شده در Leitner." />
+                        <div className="space-y-3">
+                            {stats.recent_cards.map((card) => (
+                                <Surface key={card.id} className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${BOX_COLORS[card.box_number]} text-2xl text-white`}>
+                                                {BOX_NAMES[card.box_number].icon}
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-bold text-slate-900" dir="ltr">{card.word.chinese}</p>
+                                                <p className="text-sm text-slate-500" dir="ltr">{card.word.pinyin}</p>
+                                            </div>
+                                        </div>
+                                        <Link href="/leitner/review" className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200">
+                                            <ArrowRight size={18} className="rotate-180" />
+                                        </Link>
+                                    </div>
+                                </Surface>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </main>
         </div>
     );

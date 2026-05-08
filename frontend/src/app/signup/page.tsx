@@ -1,21 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { authService } from '@/services/auth.service';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { AlertCircle, Loader2, Mail, Lock, Phone, User } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import { authService } from "@/services/auth.service";
+import { cn } from "@/lib/cn";
 
 export default function SignupPage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-        phone: '',
-        display_name: ''
+        email: "",
+        password: "",
+        phone: "",
+        display_name: "",
     });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,16 +26,15 @@ export default function SignupPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+        setError("");
         setLoading(true);
 
         try {
             await authService.signup(formData);
-            // Auto login logic can be added here
-            router.push('/login');
+            router.push("/login");
         } catch (err: unknown) {
             const apiError = err as { response?: { data?: { detail?: string } } };
-            const errorMessage = apiError.response?.data?.detail || 'ثبت نام ناموفق بود. لطفا مجددا تلاش کنید.';
+            const errorMessage = apiError.response?.data?.detail || "ثبت نام ناموفق بود. لطفا دوباره تلاش کن.";
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -40,42 +42,60 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-full bg-gray-50 font-sans flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden p-8">
+        <AuthShell
+            title="حساب تازه بساز"
+            subtitle="با یک حساب ساده شروع کن تا مسیرهای یادگیری، ویدیوها و تمرین‌های شخصی‌سازی‌شده را داشته باشی."
+            footer={
+                <p className="text-center text-sm text-slate-600">
+                    حساب داری؟{" "}
+                    <Link href="/login" className="font-semibold text-rose-600 transition-colors hover:text-rose-700">
+                        وارد شو
+                    </Link>
+                </p>
+            }
+        >
+            <div className="mb-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-500">
+                    Create account
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                    ثبت نام
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                    فقط چند فیلد ساده. بعد از ثبت نام می‌توانی پروفایل و مسیر آموزشی‌ات را کامل کنی.
+                </p>
+            </div>
 
-                <div className="mb-8 text-center">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">ایجاد حساب کاربری</h1>
-                    <p className="text-gray-500">لطفا اطلاعات خود را وارد کنید</p>
+            {error && (
+                <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    <p className="text-sm leading-6">{error}</p>
                 </div>
+            )}
 
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border-r-4 border-red-500 text-red-700 flex items-center rounded-lg">
-                        <AlertCircle className="w-5 h-5 ml-2" />
-                        <p className="text-sm">{error}</p>
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Name Input */}
-                    <div className="relative group">
-                        <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-orange-500">
-                            نام و نام خانوادگی
-                        </label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">نام و نام خانوادگی</span>
+                    <div className="relative">
+                        <User className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
                             name="display_name"
                             value={formData.display_name}
                             onChange={handleChange}
-                            className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-orange-500 transition-colors placeholder-gray-300"
-                            placeholder="نام خود را وارد کنید"
+                            placeholder="نام خودت را وارد کن"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                            )}
                         />
                     </div>
+                </label>
 
-                    {/* Email Input */}
-                    <div className="relative group">
-                        <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-blue-700">
-                            ایمیل
-                        </label>
+                <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">ایمیل</span>
+                    <div className="relative">
+                        <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="email"
                             name="email"
@@ -83,16 +103,19 @@ export default function SignupPage() {
                             value={formData.email}
                             onChange={handleChange}
                             dir="ltr"
-                            className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-blue-700 transition-colors placeholder-gray-300"
                             placeholder="example@mail.com"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                            )}
                         />
                     </div>
+                </label>
 
-                    {/* Phone Input */}
-                    <div className="relative group">
-                        <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-orange-500">
-                            شماره موبایل
-                        </label>
+                <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">شماره موبایل</span>
+                    <div className="relative">
+                        <Phone className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
                             name="phone"
@@ -100,16 +123,19 @@ export default function SignupPage() {
                             value={formData.phone}
                             onChange={handleChange}
                             dir="ltr"
-                            className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-orange-500 transition-colors placeholder-gray-300"
                             placeholder="09120000000"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                            )}
                         />
                     </div>
+                </label>
 
-                    {/* Password Input */}
-                    <div className="relative group">
-                        <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-blue-700">
-                            رمز عبور
-                        </label>
+                <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">رمز عبور</span>
+                    <div className="relative">
+                        <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="password"
                             name="password"
@@ -117,38 +143,19 @@ export default function SignupPage() {
                             value={formData.password}
                             onChange={handleChange}
                             dir="ltr"
-                            className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-blue-700 transition-colors placeholder-gray-300"
                             placeholder="••••••••"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                            )}
                         />
                     </div>
+                </label>
 
-                    <div className="pt-4">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-800 transition-colors disabled:opacity-70 flex justify-center items-center"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="animate-spin ml-2 h-5 w-5" />
-                                    <span>در حال ثبت نام...</span>
-                                </>
-                            ) : (
-                                'ثبت نام'
-                            )}
-                        </button>
-                    </div>
-                </form>
-
-                <div className="mt-8 text-center">
-                    <p className="text-sm text-gray-600">
-                        قبلا ثبت نام کرده‌اید؟{' '}
-                        <Link href="/login" className="font-bold text-blue-700 hover:text-blue-800">
-                            وارد شوید
-                        </Link>
-                    </p>
-                </div>
-            </div>
-        </div>
+                <PrimaryButton type="submit" className="mt-2 w-full" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
+                    {loading ? "در حال ثبت..." : "ثبت نام"}
+                </PrimaryButton>
+            </form>
+        </AuthShell>
     );
 }

@@ -1,11 +1,25 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { User as UserIcon, ThumbsUp, MessageCircle, MoreHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+    BookOpen,
+    Compass,
+    Flame,
+    Headphones,
+    Loader2,
+    Play,
+    Sparkles,
+    User as UserIcon,
+} from "lucide-react";
 import api from "@/lib/api";
 import { getMediaUrl } from "@/lib/media";
+import Surface from "@/components/ui/Surface";
+import SectionHeader from "@/components/ui/SectionHeader";
+import StatCard from "@/components/ui/StatCard";
+import ProgressBar from "@/components/ui/ProgressBar";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 type TabType = "activities" | "learning";
 
@@ -38,6 +52,13 @@ interface FeedItem {
     provider?: FeedProvider;
 }
 
+const quickPaths = [
+    { title: "HSK", subtitle: "سطح‌ها و درس‌های اصلی", href: "/explore/hsk", accent: "from-rose-500 to-orange-500", icon: BookOpen },
+    { title: "تلفظ", subtitle: "صداها و لحن‌ها", href: "/explore/pronunciation", accent: "from-sky-500 to-cyan-500", icon: Play },
+    { title: "گرامر", subtitle: "ساختار جمله‌ها", href: "/explore/grammar", accent: "from-emerald-500 to-teal-500", icon: Sparkles },
+    { title: "کاوش همه", subtitle: "تمام دسته‌ها", href: "/explore", accent: "from-slate-900 to-slate-600", icon: Compass },
+];
+
 export default function HomePage() {
     const [activeTab, setActiveTab] = useState<TabType>("activities");
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -45,11 +66,14 @@ export default function HomePage() {
 
     useEffect(() => {
         const fetchFeed = async () => {
-            if (activeTab !== "activities") return;
+            if (activeTab !== "activities") {
+                setLoading(false);
+                return;
+            }
 
             setLoading(true);
             try {
-                const response = await api.get<FeedItem[]>('/feed');
+                const response = await api.get<FeedItem[]>("/feed");
                 setFeedItems(response.data);
             } catch (error) {
                 console.error("Failed to fetch feed", error);
@@ -57,124 +81,217 @@ export default function HomePage() {
                 setLoading(false);
             }
         };
+
         fetchFeed();
     }, [activeTab]);
 
+    const activityCount = feedItems.length;
+    const highlightedFeed = useMemo(() => feedItems.slice(0, 3), [feedItems]);
+
     return (
-        <div className="min-h-full bg-gray-50" dir="rtl">
-            {/* Header */}
-            <header className="bg-white sticky top-0 z-50 border-b border-gray-100">
-                <div className="flex items-center justify-center px-4 py-3">
-                    <div className="flex items-center gap-2">
-                        <span className="text-blue-600 text-2xl">🌀</span>
-                        <span className="text-lg font-bold text-blue-800">چین ورس</span>
-                    </div>
-                </div>
+        <div className="min-h-full pb-28" dir="rtl">
+            <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
+                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
+                    <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+                        <div>
+                            <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
+                                ChinVerse
+                            </div>
+                            <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                                مسیر یادگیری چینی، تمیزتر و حرفه‌ای‌تر
+                            </h1>
+                            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
+                                روی درس بعدی، دسته‌های محبوب و فعالیت‌های تازه تمرکز کن. همه‌چیز در یک داشبورد سبک و منظم کنار هم قرار گرفته.
+                            </p>
 
-                {/* Tabs */}
-                <div className="flex justify-center gap-8 px-4 border-t border-gray-50">
-                    <button
-                        onClick={() => setActiveTab("activities")}
-                        className={`relative py-3 px-2 text-sm font-medium transition-colors ${activeTab === "activities" ? "text-blue-700" : "text-gray-400"
-                            }`}
-                    >
-                        فعالیت‌ها
-                        {activeTab === "activities" && (
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-t-full" />
-                        )}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("learning")}
-                        className={`relative py-3 px-2 text-sm font-medium transition-colors ${activeTab === "learning" ? "text-blue-700" : "text-gray-400"
-                            }`}
-                    >
-                        روند یادگیری
-                        {activeTab === "learning" && (
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-t-full" />
-                        )}
-                    </button>
-                </div>
-            </header>
-
-            {/* Content */}
-            <main className="pb-4">
-                {activeTab === "activities" ? (
-                    loading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                            <div className="mt-5 flex flex-wrap gap-2">
+                                <PrimaryButton variant="light" leadingIcon={<Compass size={16} />}>
+                                    رفتن به کاوش
+                                </PrimaryButton>
+                                <PrimaryButton variant="ghost" className="!border-white/15 !bg-white/10 !text-white hover:!bg-white/15" leadingIcon={<Flame size={16} />}>
+                                    ادامه یادگیری
+                                </PrimaryButton>
+                            </div>
                         </div>
+
+                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            <StatCard
+                                label="فعالیت‌های امروز"
+                                value={String(activityCount)}
+                                helper="آخرین آیتم‌های منتشر شده"
+                                icon={<Sparkles className="h-5 w-5" />}
+                                accent="from-amber-500 to-orange-500"
+                                inverted
+                            />
+                            <StatCard
+                                label="مسیرهای سریع"
+                                value="4"
+                                helper="موضوعات اصلی برای شروع"
+                                icon={<Compass className="h-5 w-5" />}
+                                accent="from-emerald-500 to-teal-500"
+                                inverted
+                            />
+                            <StatCard
+                                label="حالت مطالعه"
+                                value="آماده"
+                                helper="برای شروع یک درس تازه"
+                                icon={<Play className="h-5 w-5" />}
+                                accent="from-rose-500 to-orange-500"
+                                inverted
+                            />
+                        </div>
+                    </div>
+                </Surface>
+
+                <Surface className="p-5 sm:p-6">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Today</p>
+                            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">یک هدف سبک برای امروز</h2>
+                            <p className="mt-1 text-sm text-slate-500">به‌جای شلوغی، فقط روی یک جلسه کوتاه و یک مسیر مشخص تمرکز کن.</p>
+                        </div>
+                        <div className="hidden rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 sm:block">
+                            20 دقیقه
+                        </div>
+                    </div>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">تمرکز</p>
+                            <p className="mt-2 text-base font-bold text-slate-900">تلفظ و شنیدن</p>
+                            <p className="mt-1 text-xs text-slate-500">برای شروع روز خیلی مناسب است.</p>
+                        </div>
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">پیشنهاد</p>
+                            <p className="mt-2 text-base font-bold text-slate-900">یک درس کوتاه HSK</p>
+                            <p className="mt-1 text-xs text-slate-500">درس‌های مرتب و قابل پیگیری.</p>
+                        </div>
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">پیشرفت</p>
+                            <ProgressBar value={58} helper="مسیر امروز" className="mt-3" />
+                        </div>
+                    </div>
+                </Surface>
+
+                <section className="space-y-3">
+                    <SectionHeader
+                        title="مسیرهای سریع"
+                        subtitle="برای ورود به بخش‌های اصلی، چند کارت کوتاه و واضح."
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {quickPaths.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <Link key={item.title} href={item.href} className="group">
+                                    <Surface className="h-full overflow-hidden p-4 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+                                        <div className={`inline-flex rounded-2xl bg-gradient-to-br ${item.accent} p-3 text-white shadow-lg`}>
+                                            <Icon size={18} />
+                                        </div>
+                                        <h3 className="mt-4 text-base font-bold text-slate-900">{item.title}</h3>
+                                        <p className="mt-1 text-sm leading-6 text-slate-500">{item.subtitle}</p>
+                                    </Surface>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                <section className="space-y-3">
+                    <SectionHeader
+                        title="نمای کلی"
+                        subtitle="بین فعالیت‌ها و مسیر یادگیری جابه‌جا شو."
+                        actionLabel="تازه‌سازی"
+                        onAction={() => {
+                            if (activeTab === "activities") {
+                                setLoading(true);
+                                api.get<FeedItem[]>("/feed")
+                                    .then((response) => setFeedItems(response.data))
+                                    .catch((error) => console.error("Failed to refresh feed", error))
+                                    .finally(() => setLoading(false));
+                            }
+                        }}
+                    />
+
+                    <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+                        <button
+                            onClick={() => setActiveTab("activities")}
+                            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                                activeTab === "activities"
+                                    ? "bg-slate-900 text-white shadow-md"
+                                    : "text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            فعالیت‌ها
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("learning")}
+                            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                                activeTab === "learning"
+                                    ? "bg-slate-900 text-white shadow-md"
+                                    : "text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            یادگیری
+                        </button>
+                    </div>
+
+                    {activeTab === "activities" ? (
+                        loading ? (
+                            <div className="flex items-center justify-center py-16">
+                                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {feedItems.map((item) =>
+                                    item.type === "service" ? (
+                                        <ServiceFeedCard key={item.id} item={item} />
+                                    ) : (
+                                        <GalleryFeedCard key={item.id} item={item} />
+                                    ),
+                                )}
+                                {feedItems.length === 0 && (
+                                    <Surface className="p-8 text-center text-sm text-slate-500">
+                                        هنوز فعالیتی ثبت نشده است.
+                                    </Surface>
+                                )}
+                            </div>
+                        )
                     ) : (
-                        <div className="p-4 space-y-4">
-                            {feedItems.map((item) => (
-                                item.type === "service" ? (
-                                    <ServiceFeedCard key={item.id} item={item} />
-                                ) : (
-                                    <GalleryFeedCard key={item.id} item={item} />
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            {highlightedFeed.length > 0 ? (
+                                highlightedFeed.map((item) =>
+                                    item.type === "service" ? (
+                                        <ServiceFeedCard key={item.id} item={item} />
+                                    ) : (
+                                        <GalleryFeedCard key={item.id} item={item} />
+                                    ),
                                 )
-                            ))}
-                            {feedItems.length === 0 && (
-                                <div className="text-center py-20 text-gray-500">
-                                    هنوز فعالیتی ثبت نشده است
-                                </div>
+                            ) : (
+                                quickPaths.slice(0, 3).map((item) => (
+                                    <Link key={item.title} href={item.href}>
+                                        <Surface className="h-full p-5">
+                                            <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
+                                            <p className="mt-2 text-sm text-slate-500">{item.subtitle}</p>
+                                        </Surface>
+                                    </Link>
+                                ))
                             )}
                         </div>
-                    )
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                        <span className="text-4xl mb-4">📚</span>
-                        <p>روند یادگیری شما به زودی...</p>
-                    </div>
-                )}
+                    )}
+                </section>
             </main>
         </div>
     );
 }
-
-// ===== SERVICE FEED CARD =====
 
 function ServiceFeedCard({ item }: { item: FeedItem }) {
     const service = item.data as ServiceData;
     const provider = item.provider;
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {/* Provider Header */}
-            <div className="flex items-center gap-3 p-4 pb-3">
-                <Link href={`/users/${provider?.id || 0}`} className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border-2 border-blue-500">
-                        {provider?.avatar_url ? (
-                            <Image
-                                src={getMediaUrl(provider.avatar_url)}
-                                alt={provider.display_name || "User"}
-                                fill
-                                className="object-cover"
-                                unoptimized
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <UserIcon className="w-5 h-5 text-blue-400" />
-                            </div>
-                        )}
-                    </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">
-                        {provider?.display_name || "کاربر"}
-                    </p>
-                    {provider?.headline && (
-                        <p className="text-xs text-gray-500 truncate">{provider.headline}</p>
-                    )}
-                </div>
-                <button className="p-2 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex gap-3 px-4">
-                {/* Left: Banner Image */}
-                {service.banner_url && (
-                    <div className="w-28 h-28 flex-shrink-0 rounded-xl overflow-hidden relative bg-gray-100">
+        <Surface className="overflow-hidden">
+            <div className="grid gap-4 p-4 sm:grid-cols-[180px_1fr]">
+                <div className="relative min-h-44 overflow-hidden rounded-[22px] bg-slate-100">
+                    {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
                             alt={service.title}
@@ -182,122 +299,112 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
                             className="object-cover"
                             unoptimized
                         />
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_100%)] text-slate-400">
+                            <BookOpen size={32} />
+                        </div>
+                    )}
+                </div>
 
-                {/* Right: Details */}
-                <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">
-                        {service.title}
-                    </h3>
-                    <p className="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-2">
-                        {service.description}
-                    </p>
-                    <Link href={`#`} className="text-xs text-blue-600 font-medium">
-                        ... بیشتر
-                    </Link>
+                <div className="flex min-w-0 flex-col justify-between">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-100">
+                                {provider?.avatar_url ? (
+                                    <Image
+                                        src={getMediaUrl(provider.avatar_url)}
+                                        alt={provider.display_name || "User"}
+                                        width={44}
+                                        height={44}
+                                        className="h-full w-full object-cover"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <UserIcon className="h-5 w-5 text-slate-400" />
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                    {provider?.display_name || "کاربر"}
+                                </p>
+                                {provider?.headline && <p className="truncate text-xs text-slate-500">{provider.headline}</p>}
+                            </div>
+                        </div>
+
+                        <h3 className="mt-4 text-lg font-bold tracking-tight text-slate-900">{service.title}</h3>
+                        <p className="mt-2 line-clamp-3 text-sm leading-7 text-slate-500">{service.description}</p>
+                        {service.price_label && (
+                            <div className="mt-4 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
+                                {service.price_label}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 text-xs text-slate-400">
+                            {item.created_at && <span>{new Date(item.created_at).toLocaleDateString("fa-IR")}</span>}
+                        </div>
+                        <PrimaryButton
+                            href={`/chat/${provider?.id || 0}`}
+                            variant="primary"
+                            className="px-4 py-2.5"
+                            leadingIcon={<Headphones size={16} />}
+                        >
+                            درخواست مشاوره
+                        </PrimaryButton>
+                    </div>
                 </div>
             </div>
-
-            {/* Action Button */}
-            <div className="p-4 pt-3">
-                <Link
-                    href={`/chat/${provider?.id || 0}`}
-                    className="block w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-center text-sm hover:bg-blue-700 transition-colors"
-                >
-                    درخواست مشاوره
-                </Link>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50 text-xs text-gray-400">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span>۱۵</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>۱۰</span>
-                    </div>
-                </div>
-                {item.created_at && (
-                    <span>تاریخ انتشار: {new Date(item.created_at).toLocaleDateString("fa-IR")}</span>
-                )}
-            </div>
-        </div>
+        </Surface>
     );
 }
-
-// ===== GALLERY FEED CARD =====
 
 function GalleryFeedCard({ item }: { item: FeedItem }) {
     const gallery = item.data as GalleryData;
     const provider = item.provider;
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {/* Provider Header */}
-            <div className="flex items-center gap-3 p-4 pb-3">
-                <Link href={`/users/${provider?.id || 0}`} className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden relative border-2 border-blue-500">
+        <Surface className="overflow-hidden">
+            <div className="p-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-100">
                         {provider?.avatar_url ? (
                             <Image
                                 src={getMediaUrl(provider.avatar_url)}
                                 alt={provider.display_name || "User"}
-                                fill
-                                className="object-cover"
+                                width={44}
+                                height={44}
+                                className="h-full w-full object-cover"
                                 unoptimized
                             />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <UserIcon className="w-5 h-5 text-blue-400" />
-                            </div>
+                            <UserIcon className="h-5 w-5 text-slate-400" />
                         )}
                     </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">
-                        {provider?.display_name || "کاربر"}
-                    </p>
-                    {item.created_at && (
-                        <p className="text-xs text-gray-400">
-                            {new Date(item.created_at).toLocaleDateString("fa-IR")}
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                            {provider?.display_name || "کاربر"}
                         </p>
-                    )}
+                        {item.created_at && (
+                            <p className="text-xs text-slate-400">
+                                {new Date(item.created_at).toLocaleDateString("fa-IR")}
+                            </p>
+                        )}
+                    </div>
                 </div>
-                <button className="p-2 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                </button>
-            </div>
 
-            {/* Image */}
-            <div className="relative w-full aspect-video bg-gray-100">
-                <Image
-                    src={getMediaUrl(gallery.image_url)}
-                    alt={gallery.caption || "Gallery image"}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                />
-            </div>
-
-            {/* Caption & Footer */}
-            <div className="p-4">
-                {gallery.caption && (
-                    <p className="text-gray-700 text-sm mb-3">{gallery.caption}</p>
-                )}
-                <div className="flex items-center gap-4 text-gray-400">
-                    <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
-                        <ThumbsUp className="w-5 h-5" />
-                        <span className="text-sm">۱۲</span>
-                    </button>
-                    <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
-                        <MessageCircle className="w-5 h-5" />
-                        <span className="text-sm">۸</span>
-                    </button>
+                <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-[22px] bg-slate-100">
+                    <Image
+                        src={getMediaUrl(gallery.image_url)}
+                        alt={gallery.caption || "Gallery image"}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                    />
                 </div>
+
+                {gallery.caption && <p className="mt-4 text-sm leading-7 text-slate-600">{gallery.caption}</p>}
             </div>
-        </div>
+        </Surface>
     );
 }

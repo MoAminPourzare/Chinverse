@@ -114,15 +114,15 @@ export default function LeitnerReviewPage() {
         return parts.map((part, i) => (
             <React.Fragment key={i}>
                 {part}
-                {i < parts.length - 1 && <span className="text-blue-600 font-bold">{keyword}</span>}
+                {i < parts.length - 1 && <span className="font-bold text-rose-600">{keyword}</span>}
             </React.Fragment>
         ));
     };
 
     if (loading) {
         return (
-            <div className="min-h-full flex items-center justify-center bg-gray-50">
-                <div className="text-gray-500">در حال بارگذاری...</div>
+            <div className="flex min-h-full items-center justify-center">
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
             </div>
         );
     }
@@ -130,13 +130,13 @@ export default function LeitnerReviewPage() {
     // Session Complete Screen
     if (sessionComplete) {
         return (
-            <div className="min-h-full flex flex-col items-center justify-center bg-gray-50 p-6 text-center" dir="rtl">
-                <div className="text-6xl mb-6">🎉</div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">آفرین! همه کارت‌ها مرور شدند!</h2>
-                <p className="text-gray-500 mb-8">برای امروز کارتی برای مرور نداری. فردا دوباره بیا!</p>
+            <div className="flex min-h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-rose-50 to-amber-50 text-2xl font-black text-rose-500">完</div>
+                <h2 className="mb-2 text-2xl font-black text-slate-950">آفرین! همه کارت‌ها مرور شدند!</h2>
+                <p className="mb-8 text-slate-500">برای امروز کارتی برای مرور نداری. فردا دوباره بیا!</p>
                 <button
                     onClick={() => router.push("/leitner")}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors"
+                    className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-8 py-3 text-lg font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
                 >
                     بازگشت به لایتنر
                 </button>
@@ -170,30 +170,27 @@ export default function LeitnerReviewPage() {
     ];
 
     return (
-        <div className="min-h-full bg-gray-50 flex flex-col" dir="rtl">
+        <div className="flex min-h-full flex-col px-4 pb-5 pt-4" dir="rtl">
             {/* Header */}
-            <header className="px-6 py-4 flex items-center justify-between bg-white shadow-sm">
-                <button onClick={() => router.back()} className="text-gray-600">
+            <header className="sticky top-3 z-50 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                <button onClick={() => router.back()} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600">
                     <ArrowLeft size={24} className="rotate-180" />
                 </button>
-                <h1 className="text-lg font-bold text-gray-800">مرور لغات</h1>
-                <div className="text-sm text-gray-500">
+                <h1 className="text-lg font-black text-slate-950">مرور لغات</h1>
+                <div className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-500">
                     {currentIndex + 1} / {cards.length}
                 </div>
             </header>
 
-            <main className="flex-1 flex flex-col items-center p-4 space-y-4 overflow-hidden">
+            <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center space-y-4 overflow-hidden pt-5">
                 {/* Intro Text */}
                 <div className="text-center space-y-1">
-                    <p className="text-sm font-medium text-gray-700">الان ممکنه فراموش کنی، اما یادت باشه تکرار امروز،</p>
-                    <p className="text-sm font-medium text-gray-700">حافظه فردات رو می‌سازه.</p>
-                    <div className="flex justify-center mt-1">
-                        <span className="text-xl">🌱</span>
-                    </div>
+                    <p className="text-sm font-medium text-slate-600">الان ممکنه فراموش کنی، اما یادت باشه تکرار امروز،</p>
+                    <p className="text-sm font-medium text-slate-600">حافظه فردات رو می‌سازه.</p>
                 </div>
 
                 {/* Card Container */}
-                <div className={`w-full max-w-sm flex-1 bg-white rounded-2xl shadow-lg border-2 ${borderColor} flex flex-col overflow-hidden`}>
+                <div className={`flex w-full max-w-md flex-1 flex-col overflow-hidden rounded-[30px] border-2 bg-white/90 shadow-[0_24px_70px_rgba(15,23,42,0.14)] backdrop-blur-xl ${borderColor}`}>
 
                     {!isFlipped ? (
                         /* Front Side */
@@ -204,7 +201,7 @@ export default function LeitnerReviewPage() {
                                 </span>
                                 <button
                                     onClick={() => playAudio(currentCard.word.audio_url)}
-                                    className="text-blue-500 hover:text-blue-600 transition-colors"
+                                    className="text-rose-500 transition-colors hover:text-rose-600"
                                 >
                                     <Volume2 size={32} />
                                 </button>
@@ -214,14 +211,14 @@ export default function LeitnerReviewPage() {
                         /* Back Side with Tabs */
                         <div className="flex-1 flex flex-col overflow-hidden">
                             {/* Header: Character + Pinyin */}
-                            <div className="flex items-center justify-center gap-3 p-4 border-b border-gray-100 bg-gray-50">
+                            <div className="flex items-center justify-center gap-3 border-b border-slate-100 bg-slate-50 p-4">
                                 <button
                                     onClick={() => playAudio(currentCard.word.audio_url)}
                                     className="text-orange-500 hover:text-orange-600"
                                 >
                                     <Volume2 size={20} />
                                 </button>
-                                <span className="text-3xl font-bold text-blue-600" dir="ltr">
+                                <span className="text-3xl font-bold text-rose-600" dir="ltr">
                                     {currentCard.word.chinese}
                                 </span>
                             </div>
@@ -230,14 +227,14 @@ export default function LeitnerReviewPage() {
                             </p>
 
                             {/* Tab Bar */}
-                            <div className="flex border-b border-gray-200 px-2" dir="rtl">
+                            <div className="flex border-b border-slate-200 px-2" dir="rtl">
                                 {backTabs.map((tab) => (
                                     <button
                                         key={tab.key}
                                         onClick={() => setActiveBackTab(tab.key)}
                                         className={`flex-1 py-2 text-xs font-medium transition-colors ${activeBackTab === tab.key
-                                            ? "text-blue-600 border-b-2 border-blue-600"
-                                            : "text-gray-500 hover:text-gray-700"
+                                            ? "text-rose-600 border-b-2 border-rose-600"
+                                            : "text-slate-500 hover:text-slate-700"
                                             }`}
                                     >
                                         {tab.label}
@@ -322,11 +319,11 @@ export default function LeitnerReviewPage() {
                     )}
 
                     {/* Footer Button(s) - Fixed at bottom */}
-                    <div className="p-4 border-t border-gray-100 bg-white">
+                    <div className="border-t border-slate-100 bg-white p-4">
                         {!isFlipped ? (
                             <button
                                 onClick={() => setIsFlipped(true)}
-                                className="w-full bg-blue-800 text-white py-3 rounded-full font-bold text-lg shadow-md active:scale-[0.98] transition-transform"
+                                className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 text-lg font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition active:scale-[0.98]"
                             >
                                 دیدن پشت کارت
                             </button>
@@ -335,7 +332,7 @@ export default function LeitnerReviewPage() {
                                 <button
                                     onClick={() => handleReview(false)}
                                     disabled={isSubmitting}
-                                    className="flex-1 bg-red-500 text-white py-3 rounded-full font-bold text-base flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
                                 >
                                     <X size={18} />
                                     یادم نیست
@@ -343,7 +340,7 @@ export default function LeitnerReviewPage() {
                                 <button
                                     onClick={() => handleReview(true)}
                                     disabled={isSubmitting}
-                                    className="flex-1 bg-green-500 text-white py-3 rounded-full font-bold text-base flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
                                 >
                                     <Check size={18} />
                                     یادم هست

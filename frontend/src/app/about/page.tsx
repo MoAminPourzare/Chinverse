@@ -1,100 +1,92 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowRight, Instagram } from 'lucide-react';
+import { BookOpenText, Globe2, Instagram, MessageCircle, Sparkles, UsersRound } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import PrimaryButton from '@/components/ui/PrimaryButton';
+import Surface from '@/components/ui/Surface';
+
+const highlights = [
+    {
+        title: 'آموزش زبان',
+        description: 'درس‌ها، ویدیوها، تمرین واژگان و مسیرهای سطح‌بندی‌شده برای یادگیری چینی.',
+        icon: BookOpenText,
+    },
+    {
+        title: 'فرهنگ و سرگرمی',
+        description: 'فیلم، سریال، موسیقی، داستان، متون کلاسیک و محتوای فرهنگی برای درک عمیق‌تر.',
+        icon: Globe2,
+    },
+    {
+        title: 'جامعه و همکاری',
+        description: 'پروفایل، ویترین، خدمات، گفتگو و ارتباط با آدم‌های فعال در حوزه زبان چینی.',
+        icon: UsersRound,
+    },
+];
 
 export default function AboutPage() {
     return (
-        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
-            <div className="w-full bg-white min-h-full relative flex flex-col">
-                {/* Header */}
-                <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
-                    <Link href="/profile" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <ArrowRight className="w-5 h-5 text-gray-600" />
-                    </Link>
-                    <h1 className="text-lg font-bold text-gray-900">درباره چین ورس</h1>
-                    <div className="w-9" />
-                </header>
+        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
+            <PageHeader title="درباره چین‌ورس" subtitle="یک فضای یادگیری برای زبان و فرهنگ چینی" backHref="/profile" />
 
-                {/* Content */}
-                <main className="flex-1 px-6 py-8 overflow-y-auto">
-                    {/* Logo */}
-                    <div className="flex justify-center mb-8">
-                        <div className="relative">
-                            <svg viewBox="0 0 100 100" className="w-24 h-24">
-                                {/* Stylized dragon/wave logo */}
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="#1e40af" strokeWidth="2" />
-                                <path
-                                    d="M30 50 Q40 30 50 50 Q60 70 70 50"
-                                    fill="none"
-                                    stroke="#1e40af"
-                                    strokeWidth="3"
-                                    strokeLinecap="round"
-                                />
-                                <circle cx="35" cy="45" r="4" fill="#f97316" />
-                                <circle cx="65" cy="55" r="4" fill="#f97316" />
-                            </svg>
-                            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs font-bold text-blue-800">چین ورس</span>
+            <main className="mx-auto mt-5 flex w-full max-w-5xl flex-col gap-5">
+                <Surface className="overflow-hidden bg-slate-950 text-white">
+                    <div className="relative p-6 sm:p-8">
+                        <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
+                        <div className="absolute -bottom-20 right-12 h-52 w-52 rounded-full bg-emerald-400/15 blur-3xl" />
+                        <div className="relative max-w-3xl">
+                            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/75">
+                                <Sparkles size={15} />
+                                ChinVerse
+                            </div>
+                            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                                چین‌ورس فقط یک کلاس آنلاین نیست؛ یک مسیر کامل برای زندگی کردن با زبان چینی است.
+                            </h1>
+                            <p className="mt-4 text-sm leading-8 text-white/70">
+                                اینجا می‌توانی زبان چینی یاد بگیری، محتوای واقعی ببینی، دایره واژگان خودت را بسازی، با دیگران ارتباط بگیری و کم‌کم پروفایل تخصصی خودت را در این حوزه کامل کنی.
+                            </p>
                         </div>
                     </div>
+                </Surface>
 
-                    {/* Text Content */}
-                    <div className="space-y-6 text-gray-600 text-sm leading-relaxed text-justify">
-                        <p>
-                            <strong className="text-gray-900">چین‌ورس</strong> یک اپلیکیشن جامع و چندمنظوره برای همه علاقه‌مندان به زبان و فرهنگ چینه. اینجا جاییه که می‌تونی همزمان زبان چینی یاد بگیری، فیلم و سریال چینی ببینی، کتاب بخونی و با دنیای واقعی چینی‌ها آشنا بشی.
-                        </p>
-                        <p>
-                            همچنین می‌تونی مهارت‌های شنیداری، خواندن و درک مطلب رو تقویت کنی.
-                        </p>
-                        <p>
-                            <strong className="text-gray-900">اما ماجرا فقط آموزش نیست!</strong>
-                        </p>
-                        <p>
-                            در چین‌ورس، می‌تونی رزومت رو بسازی، خدماتت رو معرفی کنی و با افرادی که مثل تو در حوزه زبان چینی فعال‌اند، چه مدرس باشی، مترجم، تولیدکننده محتوا یا فقط یک زبان‌آموز علاقه‌مند، شبکه‌سازی و همکاری کنی.
-                        </p>
-                        <p>
-                            چین‌ورس یه پلتفرم زنده‌ست برای یادگیری، تعامل، رشد شخصی و معرفی تخصصیات.
-                        </p>
-                        <p className="font-bold text-gray-900">
-                            چین‌ورس فقط یک اپ نیست، یک جامعه زنده است برای رشد، یادگیری و همکاری.
-                        </p>
-                        <p className="text-center font-bold text-blue-800 text-base mt-6">
-                            با چین ورس زبان چینی رو زندگی کن!
+                <div className="grid gap-4 md:grid-cols-3">
+                    {highlights.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Surface key={item.title} as="article" className="p-5">
+                                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[20px] bg-gradient-to-br from-rose-50 to-amber-50 text-rose-500">
+                                    <Icon size={23} />
+                                </div>
+                                <h2 className="text-base font-bold text-slate-950">{item.title}</h2>
+                                <p className="mt-2 text-sm leading-7 text-slate-500">{item.description}</p>
+                            </Surface>
+                        );
+                    })}
+                </div>
+
+                <Surface className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
+                    <div>
+                        <h2 className="text-xl font-black tracking-tight text-slate-950">با چین‌ورس زبان چینی را وارد زندگی روزمره کن.</h2>
+                        <p className="mt-2 text-sm leading-7 text-slate-500">
+                            هدف این پروژه ساختن یک تجربه منظم، قابل توسعه و کاربردی برای فارسی‌زبان‌هایی است که می‌خواهند زبان و فرهنگ چینی را عمیق‌تر دنبال کنند.
                         </p>
                     </div>
-
-                    {/* Globe Illustration */}
-                    <div className="flex justify-center mt-8 mb-6">
-                        <svg viewBox="0 0 120 120" className="w-32 h-32">
-                            {/* Globe */}
-                            <circle cx="60" cy="60" r="45" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                            {/* Horizontal lines */}
-                            <ellipse cx="60" cy="40" rx="40" ry="12" fill="none" stroke="#1e3a5f" strokeWidth="1" />
-                            <ellipse cx="60" cy="60" rx="45" ry="15" fill="none" stroke="#1e3a5f" strokeWidth="1" />
-                            <ellipse cx="60" cy="80" rx="40" ry="12" fill="none" stroke="#1e3a5f" strokeWidth="1" />
-                            {/* Vertical line */}
-                            <ellipse cx="60" cy="60" rx="15" ry="45" fill="none" stroke="#1e3a5f" strokeWidth="1" />
-                            {/* Decorative circles */}
-                            <circle cx="40" cy="50" r="8" fill="#f97316" opacity="0.8" />
-                            <circle cx="80" cy="70" r="6" fill="#f97316" opacity="0.6" />
-                            <circle cx="55" cy="75" r="5" fill="#f97316" opacity="0.4" />
-                        </svg>
+                    <div className="flex flex-wrap gap-2">
+                        <PrimaryButton href="/explore" leadingIcon={<BookOpenText size={18} />}>
+                            شروع یادگیری
+                        </PrimaryButton>
+                        <PrimaryButton
+                            href="https://instagram.com/chinverse"
+                            variant="ghost"
+                            leadingIcon={<Instagram size={18} />}
+                        >
+                            اینستاگرام
+                        </PrimaryButton>
+                        <PrimaryButton href="/support" variant="ghost" leadingIcon={<MessageCircle size={18} />}>
+                            پشتیبانی
+                        </PrimaryButton>
                     </div>
-                </main>
-
-                {/* Footer - Instagram Button */}
-                <footer className="px-6 py-4 border-t border-gray-100">
-                    <a
-                        href="https://instagram.com/chinverse"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-3 w-full py-4 bg-blue-800 text-white rounded-2xl font-bold text-base hover:bg-blue-900 transition-colors"
-                    >
-                        <Instagram className="w-5 h-5" />
-                        اینستاگرام چین ورس
-                    </a>
-                </footer>
-            </div>
+                </Surface>
+            </main>
         </div>
     );
 }

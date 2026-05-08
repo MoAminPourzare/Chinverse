@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowRight, Pencil, User as UserIcon, Loader2, LogOut } from "lucide-react";
+import { ArrowRight, Loader2, LogOut, Pencil, User as UserIcon, Mail, MapPin } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
+import Surface from "@/components/ui/Surface";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import { cn } from "@/lib/cn";
 
-// Local interface for form state, combining UserProfile and read-only User fields
 interface AccountFormState extends UserProfile {
     email: string;
     phone: string;
@@ -22,7 +24,6 @@ export default function AccountPage() {
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-    // Initial state
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
         headline: "",
@@ -66,48 +67,39 @@ export default function AccountPage() {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            // فقط فایل‌های تصویری
-            if (!file.type.startsWith('image/')) {
-                alert('لطفاً یک فایل تصویری انتخاب کنید');
-                return;
-            }
+        if (!file) return;
 
-            setAvatarFile(file);
-
-            // ایجاد پیش‌نمایش
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setAvatarPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+        if (!file.type.startsWith("image/")) {
+            alert("لطفا یک فایل تصویری انتخاب کن");
+            return;
         }
+
+        setAvatarFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setAvatarPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
+
         try {
-            // اول آواتار را آپلود می‌کنیم (اگر انتخاب شده باشد)
             if (avatarFile) {
                 await userService.uploadAvatar(avatarFile);
             }
 
-            // سپس پروفایل را آپدیت می‌کنیم
-            const profileData: UserProfile = {
+            await userService.updateProfile({
                 display_name: formData.display_name,
                 headline: formData.headline,
                 city: formData.city,
-            };
+            });
 
-            await userService.updateProfile(profileData);
-            alert("تغییرات با موفقیت ذخیره شد");
-
-            // پاک کردن فایل و پیش‌نمایش بعد از موفقیت
             setAvatarFile(null);
             setAvatarPreview(null);
 
-            // بارگذاری مجدد اطلاعات کاربر
             const userData = await userService.getMe();
             setFormData({
                 display_name: userData.profile?.display_name || "",
@@ -117,6 +109,8 @@ export default function AccountPage() {
                 phone: userData.phone || "",
                 avatar_url: userData.profile?.avatar_url || "",
             });
+
+            alert("تغییرات با موفقیت ذخیره شد");
         } catch (error) {
             console.error("Failed to update profile", error);
             alert("خطا در ذخیره تغییرات");
@@ -127,180 +121,172 @@ export default function AccountPage() {
 
     const handleLogout = () => {
         authService.logout();
-        router.push('/login');
+        router.push("/login");
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-full bg-gray-50" dir="rtl">
-                <Loader2 className="animate-spin text-gray-600 w-8 h-8" />
+            <div className="flex min-h-full items-center justify-center" dir="rtl">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
-            <div className="w-full bg-white min-h-full pb-8">
+        <div className="min-h-full px-4 py-4" dir="rtl">
+            <main className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+                <Surface className="overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                        <button onClick={() => router.back()} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+                            <ArrowRight className="h-5 w-5" />
+                        </button>
+                        <div className="text-center">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-500">Account</p>
+                            <h1 className="mt-1 text-base font-bold text-slate-900">حساب کاربری</h1>
+                        </div>
+                        <button onClick={handleLogout} className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600 transition-colors hover:bg-rose-100" title="خروج">
+                            <LogOut className="h-4 w-4" />
+                        </button>
+                    </div>
 
-                {/* Header */}
-                <header className="flex items-center justify-between p-6">
-                    <button onClick={() => router.back()} className="text-gray-600 hover:text-gray-900">
-                        <ArrowRight className="w-6 h-6" />
-                    </button>
-                    <h1 className="text-lg font-bold text-gray-800">حساب کاربری</h1>
-                    <button onClick={handleLogout} className="text-red-500 hover:text-red-700" title="خروج">
-                        <LogOut className="w-5 h-5" />
-                    </button>
-                </header>
+                    <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-[220px_1fr] md:items-start">
+                        <div className="flex flex-col items-center gap-4">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                accept="image/*"
+                                className="hidden"
+                            />
 
-                <div className="px-8">
-                    {/* Hidden File Input */}
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        className="hidden"
-                    />
-
-                    {/* Avatar Section */}
-                    <div className="flex flex-col items-center mb-10">
-                        <div className="relative mb-4 cursor-pointer" onClick={handleAvatarClick}>
-                            <div className="w-28 h-28 rounded-full border-2 border-blue-700 p-1.5 relative">
-                                <div className="w-full h-full rounded-full bg-orange-200 flex items-center justify-center overflow-hidden relative z-10 text-orange-500">
+                            <button type="button" onClick={handleAvatarClick} className="group relative">
+                                <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-white bg-gradient-to-br from-rose-100 to-orange-50 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
                                     {avatarPreview ? (
-                                        <Image
-                                            src={avatarPreview}
-                                            alt="Preview"
-                                            width={112}
-                                            height={112}
-                                            className="w-full h-full object-cover"
-                                        />
+                                        <Image src={avatarPreview} alt="Preview" width={128} height={128} className="h-full w-full object-cover" />
                                     ) : formData.avatar_url ? (
                                         <Image
                                             src={getMediaUrl(formData.avatar_url)}
                                             alt="Profile"
-                                            width={112}
-                                            height={112}
-                                            className="w-full h-full object-cover"
+                                            width={128}
+                                            height={128}
+                                            className="h-full w-full object-cover"
                                             unoptimized
                                         />
                                     ) : (
-                                        <UserIcon className="w-14 h-14" />
+                                        <UserIcon className="h-12 w-12 text-slate-400" />
                                     )}
                                 </div>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={handleAvatarClick}
-                            className="flex items-center text-gray-700 text-sm font-bold gap-2 hover:text-blue-600 transition-colors"
-                        >
-                            <Pencil className="w-4 h-4" />
-                            <span>ویرایش تصویر پروفایل</span>
-                        </button>
-                    </div>
+                                <div className="absolute inset-0 rounded-full border border-transparent transition-colors group-hover:border-rose-200" />
+                            </button>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-6">
-
-                        {/* Name - Orange Border */}
-                        <div className="relative group">
-                            <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-orange-500">
-                                نام و نام خانوادگی
-                            </label>
-                            <input
-                                type="text"
-                                name="display_name"
-                                value={formData.display_name}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-orange-500 transition-colors placeholder-gray-300"
-                                placeholder="نام خود را وارد کنید"
-                            />
-                        </div>
-
-                        {/* Headline - Blue Border */}
-                        <div className="relative group">
-                            <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-blue-700">
-                                عنوان شغلی
-                            </label>
-                            <input
-                                type="text"
-                                name="headline"
-                                value={formData.headline}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-blue-700 transition-colors placeholder-gray-300"
-                                placeholder="عنوان شغلی"
-                            />
-                        </div>
-
-                        {/* Location - Orange Border */}
-                        <div className="relative group">
-                            <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-orange-500">
-                                لوکیشن
-                            </label>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 text-gray-800 text-center font-bold focus:outline-none focus:ring-0 focus:border-orange-500 transition-colors placeholder-gray-300"
-                                placeholder="شهر / کشور"
-                            />
-                        </div>
-
-                        {/* Mobile - Blue Border */}
-                        <div className="relative group">
-                            <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-blue-700">
-                                شماره موبایل
-                            </label>
-                            <input
-                                type="text"
-                                name="phone"
-                                value={formData.phone}
-                                readOnly
-                                dir="ltr"
-                                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 text-gray-500 text-center font-bold focus:outline-none bg-gray-50 cursor-not-allowed"
-                                placeholder="+98 900 000 0000"
-                            />
-                        </div>
-
-                        {/* Email - Orange Border */}
-                        <div className="relative group">
-                            <label className="absolute -top-3 right-4 bg-white px-2 text-sm font-bold text-gray-600 z-10 group-focus-within:text-orange-500">
-                                ایمیل
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                readOnly
-                                dir="ltr"
-                                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 text-gray-500 text-center font-bold focus:outline-none bg-gray-50 cursor-not-allowed"
-                                placeholder="example@mail.com"
-                            />
-                        </div>
-
-                        {/* Save Button */}
-                        <div className="pt-4">
                             <button
-                                type="submit"
-                                disabled={saving}
-                                className="w-full bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-800 transition-colors disabled:opacity-70 flex justify-center items-center"
+                                type="button"
+                                onClick={handleAvatarClick}
+                                className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200"
                             >
-                                {saving ? (
-                                    <>
-                                        <Loader2 className="animate-spin ml-2 h-5 w-5" />
-                                        <span>در حال ذخیره...</span>
-                                    </>
-                                ) : (
-                                    "ذخیره تغییرات"
-                                )}
+                                <Pencil className="h-4 w-4" />
+                                ویرایش تصویر
                             </button>
                         </div>
-                    </form>
-                </div>
-            </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <label className="space-y-2">
+                                    <span className="text-sm font-semibold text-slate-700">نام و نام خانوادگی</span>
+                                    <div className="relative">
+                                        <UserIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            name="display_name"
+                                            value={formData.display_name}
+                                            onChange={handleInputChange}
+                                            placeholder="نام خود را وارد کن"
+                                            className={cn(
+                                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                                            )}
+                                        />
+                                    </div>
+                                </label>
+
+                                <label className="space-y-2">
+                                    <span className="text-sm font-semibold text-slate-700">عنوان شغلی</span>
+                                    <div className="relative">
+                                        <Pencil className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            name="headline"
+                                            value={formData.headline}
+                                            onChange={handleInputChange}
+                                            placeholder="عنوان شغلی"
+                                            className={cn(
+                                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                                            )}
+                                        />
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                        <MapPin className="h-4 w-4" />
+                                        موقعیت
+                                    </div>
+                                    <label className="mt-3 block space-y-2">
+                                        <span className="text-sm font-semibold text-slate-700">شهر / کشور</span>
+                                        <input
+                                            type="text"
+                                            name="city"
+                                            value={formData.city}
+                                            onChange={handleInputChange}
+                                            placeholder="شهر / کشور"
+                                            className={cn(
+                                                "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                                            )}
+                                        />
+                                    </label>
+                                </div>
+
+                                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 space-y-4">
+                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                        <Mail className="h-4 w-4" />
+                                        اطلاعات
+                                    </div>
+                                    <label className="block space-y-2">
+                                        <span className="text-sm font-semibold text-slate-700">شماره موبایل</span>
+                                        <input
+                                            type="text"
+                                            name="phone"
+                                            value={formData.phone}
+                                            readOnly
+                                            dir="ltr"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 outline-none"
+                                        />
+                                    </label>
+                                    <label className="block space-y-2">
+                                        <span className="text-sm font-semibold text-slate-700">ایمیل</span>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            readOnly
+                                            dir="ltr"
+                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 outline-none"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <PrimaryButton type="submit" className="w-full" leadingIcon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
+                                {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
+                            </PrimaryButton>
+                        </form>
+                    </div>
+                </Surface>
+            </main>
         </div>
     );
 }

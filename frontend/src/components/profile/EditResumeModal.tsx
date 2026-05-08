@@ -24,6 +24,9 @@ const categories = [
     { id: 'languages', label: 'زبان ها', icon: Languages },
 ];
 
+const inputClass = "w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100";
+const halfInputClass = "w-1/2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100";
+
 export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: EditResumeModalProps) {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
@@ -69,18 +72,18 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
             case 'work_experiences':
                 return (
                     <div className="space-y-4">
-                        <button type="button" onClick={() => appendWork({ company: '', job_title: '', start_date: '', end_date: '' })} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => appendWork({ company: '', job_title: '', start_date: '', end_date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
                             <Plus className="w-5 h-5" />
                             سوابق کاری رو اضافه کن
                         </button>
                         {workFields.map((field, index) => (
                             <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
                                 <button type="button" onClick={() => removeWork(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`work_experiences.${index}.company`)} placeholder="اسم شرکت" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <input {...register(`work_experiences.${index}.company`)} placeholder="اسم شرکت" className={inputClass} />
+                                <input {...register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" className={inputClass} />
                                 <div className="flex gap-2">
-                                    <input {...register(`work_experiences.${index}.start_date`)} placeholder="تاریخ شروع" className="w-1/2 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                    <input {...register(`work_experiences.${index}.end_date`)} placeholder="تاریخ پایان" className="w-1/2 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                    <input {...register(`work_experiences.${index}.start_date`)} placeholder="تاریخ شروع" className={halfInputClass} />
+                                    <input {...register(`work_experiences.${index}.end_date`)} placeholder="تاریخ پایان" className={halfInputClass} />
                                 </div>
                             </div>
                         ))}
@@ -89,19 +92,19 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
             case 'educations':
                 return (
                     <div className="space-y-4">
-                        <button type="button" onClick={() => appendEdu({ university: '', degree: '', field: '', start_date: '', end_date: '' })} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => appendEdu({ university: '', degree: '', field: '', start_date: '', end_date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
                             <Plus className="w-5 h-5" />
                             سوابق تحصیلی رو اضافه کن
                         </button>
                         {eduFields.map((field, index) => (
                             <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
                                 <button type="button" onClick={() => removeEdu(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`educations.${index}.university`)} placeholder="اسم دانشگاه/موسسه" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`educations.${index}.field`)} placeholder="رشته تحصیلی" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <input {...register(`educations.${index}.university`)} placeholder="اسم دانشگاه/موسسه" className={inputClass} />
+                                <input {...register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" className={inputClass} />
+                                <input {...register(`educations.${index}.field`)} placeholder="رشته تحصیلی" className={inputClass} />
                                 <div className="flex gap-2">
-                                    <input {...register(`educations.${index}.start_date`)} placeholder="تاریخ شروع" className="w-1/2 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                    <input {...register(`educations.${index}.end_date`)} placeholder="تاریخ پایان" className="w-1/2 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                    <input {...register(`educations.${index}.start_date`)} placeholder="تاریخ شروع" className={halfInputClass} />
+                                    <input {...register(`educations.${index}.end_date`)} placeholder="تاریخ پایان" className={halfInputClass} />
                                 </div>
                             </div>
                         ))}
@@ -110,16 +113,16 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
             case 'certificates':
                 return (
                     <div className="space-y-4">
-                        <button type="button" onClick={() => appendCert({ title: '', issuer: '', date: '' })} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => appendCert({ title: '', issuer: '', date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
                             <Plus className="w-5 h-5" />
                             گواهینامه‌هات رو اضافه کن
                         </button>
                         {certFields.map((field, index) => (
                             <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
                                 <button type="button" onClick={() => removeCert(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`certificates.${index}.title`)} placeholder="عنوان گواهی" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`certificates.${index}.issuer`)} placeholder="صادر کننده" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`certificates.${index}.date`)} placeholder="تاریخ صدور" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <input {...register(`certificates.${index}.title`)} placeholder="عنوان گواهی" className={inputClass} />
+                                <input {...register(`certificates.${index}.issuer`)} placeholder="صادر کننده" className={inputClass} />
+                                <input {...register(`certificates.${index}.date`)} placeholder="تاریخ صدور" className={inputClass} />
                             </div>
                         ))}
                     </div>
@@ -127,16 +130,16 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
             case 'awards':
                 return (
                     <div className="space-y-4">
-                        <button type="button" onClick={() => appendAward({ title: '', issuer: '', date: '' })} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => appendAward({ title: '', issuer: '', date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
                             <Plus className="w-5 h-5" />
                             جوایز و تقدیرنامه‌هات رو اضافه کن
                         </button>
                         {awardFields.map((field, index) => (
                             <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
                                 <button type="button" onClick={() => removeAward(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`awards.${index}.title`)} placeholder="عنوان جایزه" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`awards.${index}.issuer`)} placeholder="اهدا کننده" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`awards.${index}.date`)} placeholder="تاریخ" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <input {...register(`awards.${index}.title`)} placeholder="عنوان جایزه" className={inputClass} />
+                                <input {...register(`awards.${index}.issuer`)} placeholder="اهدا کننده" className={inputClass} />
+                                <input {...register(`awards.${index}.date`)} placeholder="تاریخ" className={inputClass} />
                             </div>
                         ))}
                     </div>
@@ -144,15 +147,15 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
             case 'skills':
                 return (
                     <div className="space-y-4">
-                        <button type="button" onClick={() => appendSkill({ name: '', level: '' })} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => appendSkill({ name: '', level: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
                             <Plus className="w-5 h-5" />
                             مهارت‌هات رو اضافه کن
                         </button>
                         {skillFields.map((field, index) => (
                             <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
                                 <button type="button" onClick={() => removeSkill(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`skills.${index}.name`)} placeholder="نام مهارت" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`skills.${index}.level`)} placeholder="سطح (مثلا: پیشرفته)" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <input {...register(`skills.${index}.name`)} placeholder="نام مهارت" className={inputClass} />
+                                <input {...register(`skills.${index}.level`)} placeholder="سطح (مثلا: پیشرفته)" className={inputClass} />
                             </div>
                         ))}
                     </div>
@@ -160,15 +163,15 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
             case 'languages':
                 return (
                     <div className="space-y-4">
-                        <button type="button" onClick={() => appendLang({ name: '', level: '' })} className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => appendLang({ name: '', level: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
                             <Plus className="w-5 h-5" />
                             زبان‌هات رو اضافه کن
                         </button>
                         {langFields.map((field, index) => (
                             <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
                                 <button type="button" onClick={() => removeLang(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`languages.${index}.name`)} placeholder="نام زبان" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                                <input {...register(`languages.${index}.level`)} placeholder="سطح (مثلا: native)" className="w-full p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                                <input {...register(`languages.${index}.name`)} placeholder="نام زبان" className={inputClass} />
+                                <input {...register(`languages.${index}.level`)} placeholder="سطح (مثلا: native)" className={inputClass} />
                             </div>
                         ))}
                     </div>
@@ -204,7 +207,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-right align-middle shadow-xl transition-all">
+                            <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-[30px] border border-white/70 bg-white p-6 text-right align-middle shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
                                 <Dialog.Title as="h3" className="text-lg font-bold leading-6 text-gray-900 mb-4 text-center flex items-center justify-between">
                                     {activeCategory ? (
                                         <button onClick={() => setActiveCategory(null)} className="p-1 hover:bg-gray-100 rounded-full">
@@ -227,10 +230,10 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
                                                     key={cat.id}
                                                     type="button"
                                                     onClick={() => setActiveCategory(cat.id)}
-                                                    className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                                                    className="flex w-full items-center justify-between rounded-2xl bg-slate-50 p-4 transition-colors hover:bg-slate-100"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
+                                                        <div className="rounded-xl bg-white p-2 text-rose-600 shadow-sm">
                                                             <cat.icon className="w-5 h-5" />
                                                         </div>
                                                         <span className="font-bold text-gray-700">{cat.label}</span>
@@ -247,7 +250,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
                                     <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
                                         <button
                                             type="submit"
-                                            className="flex-1 bg-blue-800 text-white font-bold py-3 rounded-full hover:bg-blue-900 transition-colors"
+                                            className="flex-1 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white transition hover:from-rose-600 hover:to-orange-600"
                                         >
                                             ذخیره کردن
                                         </button>

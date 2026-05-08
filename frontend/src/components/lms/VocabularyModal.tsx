@@ -90,7 +90,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         return parts.map((part, i) => (
             <React.Fragment key={i}>
                 {part}
-                {i < parts.length - 1 && <span className="text-blue-600 font-bold">{targetWord}</span>}
+                {i < parts.length - 1 && <span className="font-bold text-rose-600">{targetWord}</span>}
             </React.Fragment>
         ));
     };
@@ -104,25 +104,25 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
             />
 
             {/* Modal Content */}
-            <div className="relative bg-white rounded-t-3xl w-full max-w-md max-h-[70vh] flex flex-col animate-slide-up">
+            <div className="relative flex max-h-[70vh] w-full max-w-md animate-slide-up flex-col rounded-t-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
                 {/* Header */}
-                <div className="p-6 text-center border-b border-gray-100">
+                <div className="border-b border-slate-100 p-6 text-center">
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                            className="absolute right-4 top-4 rounded-2xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                     >
                         <X size={24} />
                     </button>
 
                     {/* Chinese Character */}
                     <div className="flex items-center justify-center gap-3 mb-2">
-                        <h2 className="text-4xl font-bold text-blue-600" dir="ltr">
+                        <h2 className="text-4xl font-bold text-rose-600" dir="ltr">
                             {word.chinese}
                         </h2>
                         <button
                             onClick={playAudio}
-                            className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 hover:bg-orange-200 transition-colors"
+                            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-orange-500 transition-colors hover:bg-orange-200"
                         >
                             <Volume2 size={20} />
                         </button>
@@ -135,14 +135,14 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-gray-200 px-4" dir="rtl">
+                <div className="flex border-b border-slate-200 px-4" dir="rtl">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
-                                ? "text-blue-600 border-b-2 border-blue-600"
-                                : "text-gray-500 hover:text-gray-700"
+                                ? "text-rose-600 border-b-2 border-rose-600"
+                                : "text-slate-500 hover:text-slate-700"
                                 }`}
                         >
                             {tab.label}
@@ -208,7 +208,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
 
                 {/* Footer Button */}
-                <div className="p-4 border-t border-gray-100">
+                <div className="border-t border-slate-100 p-4">
                     <button
                         onClick={handleAddToLeitner}
                         disabled={isInLeitner || isAdding}
@@ -216,7 +216,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                             ? "bg-green-500 text-white cursor-default"
                             : isAdding
                                 ? "bg-gray-400 text-white cursor-wait"
-                                : "bg-blue-600 text-white active:scale-[0.98] hover:bg-blue-700"
+                                : "bg-gradient-to-r from-rose-500 to-orange-500 text-white active:scale-[0.98] hover:from-rose-600 hover:to-orange-600"
                             }`}
                     >
                         {isInLeitner ? (

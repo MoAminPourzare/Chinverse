@@ -126,7 +126,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                         <textarea
                                             {...register('bio')}
                                             rows={6}
-                                            className="w-full rounded-xl bg-gray-50 border border-gray-300 p-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                             placeholder="بنویس..."
                                         />
                                     </div>
@@ -137,7 +137,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                             <button
                                                 type="button"
                                                 onClick={() => appendWebsite({ url: '' })}
-                                                className="flex items-center text-blue-600 text-sm font-bold hover:text-blue-700"
+                                                className="flex items-center text-sm font-bold text-rose-600 hover:text-rose-700"
                                             >
                                                 <Plus className="w-4 h-4 ml-1" />
                                                 اضافه کردن وبسایت
@@ -148,7 +148,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                 <div key={field.id} className="flex gap-2">
                                                     <input
                                                         {...register(`websites.${index}.url` as const)}
-                                                        className="flex-1 rounded-lg bg-gray-50 border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                                         placeholder="https://example.com"
                                                         dir="ltr"
                                                     />
@@ -170,7 +170,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                             <button
                                                 type="button"
                                                 onClick={() => setShowSocialDropdown(!showSocialDropdown)}
-                                                className="flex items-center text-blue-600 text-sm font-bold hover:text-blue-700"
+                                                className="flex items-center text-sm font-bold text-rose-600 hover:text-rose-700"
                                             >
                                                 <Plus className="w-4 h-4 ml-1" />
                                                 اضافه کردن شبکه های اجتماعی
@@ -204,7 +204,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                         </div>
                                                         <input
                                                             {...register(`socials.${index}.handle` as const)}
-                                                            className="flex-1 rounded-lg bg-gray-50 border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
                                                             placeholder={`${platform?.name} ID/Link`}
                                                             dir="ltr"
                                                         />
@@ -225,14 +225,14 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                     <div className="flex gap-3 mt-8 pt-4">
                                         <button
                                             type="submit"
-                                            className="flex-1 bg-blue-800 text-white font-bold py-3 rounded-full hover:bg-blue-900 transition-colors"
+                                            className="flex-1 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white transition hover:from-rose-600 hover:to-orange-600"
                                         >
                                             ذخیره کردن
                                         </button>
                                         <button
                                             type="button"
                                             onClick={onClose}
-                                            className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-full hover:bg-gray-300 transition-colors"
+                                            className="flex-1 rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 transition hover:bg-slate-200"
                                         >
                                             لغو کردن
                                         </button>

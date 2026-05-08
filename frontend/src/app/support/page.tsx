@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Send } from 'lucide-react';
+import { CheckCircle2, Headphones, Send } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/ui/PageHeader';
+import PrimaryButton from '@/components/ui/PrimaryButton';
+import Surface from '@/components/ui/Surface';
 import { communityService } from '@/services/community.service';
 
 type Screen = 'input' | 'success';
@@ -34,142 +38,57 @@ export default function SupportPage() {
 
     if (screen === 'success') {
         return (
-            <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
-                <div className="w-full bg-white min-h-full relative flex flex-col">
-                    {/* Header */}
-                    <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
-                        <button
-                            onClick={handleClose}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                            <X className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-extrabold text-blue-800 tracking-tighter">ChinVerse</span>
-                            <span className="text-lg">🐉</span>
-                        </div>
-                        <div className="w-9" />
-                    </header>
-
-                    {/* Success Content */}
-                    <main className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
-                        {/* Girl Avatar Illustration */}
-                        <div className="relative mb-8">
-                            <svg viewBox="0 0 140 140" className="w-36 h-36">
-                                {/* Head outline */}
-                                <ellipse cx="70" cy="70" rx="45" ry="50" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                                {/* Hair */}
-                                <path d="M25 70 Q25 30 70 25 Q115 30 115 70" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                                <path d="M25 70 Q20 90 25 110" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                                <path d="M115 70 Q120 90 115 110" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                                {/* Face */}
-                                <circle cx="55" cy="65" r="3" fill="#1e3a5f" />
-                                <circle cx="85" cy="65" r="3" fill="#1e3a5f" />
-                                <path d="M60 82 Q70 88 80 82" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                                {/* Neck */}
-                                <rect x="60" y="115" width="20" height="15" fill="none" stroke="#d97706" strokeWidth="2" />
-                                {/* Shoulder hint */}
-                                <path d="M50 130 Q70 125 90 130" fill="none" stroke="#d97706" strokeWidth="2" />
-                            </svg>
-                        </div>
-
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">
-                            پیامت به دست ما رسید!
-                        </h2>
-                        <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
-                            تیم پشتیبانی چین‌ورس به‌زودی بررسیش می‌کنه و پاسخ میده. ممنون که با ما در ارتباط هستی.
-                        </p>
-
-                        <button
-                            onClick={handleClose}
-                            className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-                        >
-                            بازگشت
-                        </button>
-                    </main>
-                </div>
+            <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
+                <PageHeader title="پشتیبانی" subtitle="پیام شما ثبت شد" onBack={handleClose} />
+                <main className="mx-auto mt-5 w-full max-w-2xl">
+                    <EmptyState
+                        icon={<CheckCircle2 size={32} />}
+                        title="پیامت به دست ما رسید"
+                        description="تیم پشتیبانی چین‌ورس پیام را بررسی می‌کند و در اولین فرصت پاسخ می‌دهد."
+                        action={<PrimaryButton onClick={handleClose}>بازگشت</PrimaryButton>}
+                    />
+                </main>
             </div>
         );
     }
 
     return (
-        <div className="min-h-full bg-gray-50 font-sans" dir="rtl">
-            <div className="w-full bg-white min-h-full relative flex flex-col">
-                {/* Header */}
-                <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100">
-                    <button
-                        onClick={handleClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
+            <PageHeader title="پشتیبانی" subtitle="سوال یا مشکل خودت را برای ما بفرست" onBack={handleClose} />
+
+            <main className="mx-auto mt-5 grid w-full max-w-5xl gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+                <Surface className="bg-slate-950 p-6 text-white">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-white/10 text-amber-200">
+                        <Headphones size={28} />
+                    </div>
+                    <h1 className="mt-5 text-2xl font-black tracking-tight">چطور می‌توانیم کمک کنیم؟</h1>
+                    <p className="mt-3 text-sm leading-8 text-white/70">
+                        پیام کوتاه، واضح و همراه با جزئیات بنویس تا سریع‌تر بتوانیم مشکل را پیدا کنیم.
+                    </p>
+                </Surface>
+
+                <Surface className="p-4 sm:p-5">
+                    <label htmlFor="support-message" className="text-sm font-bold text-slate-900">
+                        متن پیام
+                    </label>
+                    <textarea
+                        id="support-message"
+                        value={message}
+                        onChange={(event) => setMessage(event.target.value)}
+                        placeholder="پیامت را اینجا بنویس..."
+                        className="mt-3 min-h-48 w-full resize-none rounded-[24px] border border-slate-200 bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+                        rows={7}
+                    />
+                    <PrimaryButton
+                        onClick={handleSubmit}
+                        disabled={!message.trim() || isSubmitting}
+                        className="mt-4 w-full"
+                        leadingIcon={isSubmitting ? undefined : <Send size={18} />}
                     >
-                        <X className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xl font-extrabold text-blue-800 tracking-tighter">ChinVerse</span>
-                        <span className="text-lg">🐉</span>
-                    </div>
-                    <div className="w-9" />
-                </header>
-
-                {/* Main Content */}
-                <main className="flex-1 flex flex-col px-6 py-8">
-                    {/* Welcome Message */}
-                    <div className="text-center mb-8">
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">سلام!</h2>
-                        <p className="text-gray-500 text-sm leading-relaxed">
-                            به پشتیبانی چین‌ورس خوش اومدی. لطفا سوال یا مشکلی که داری رو برامون بنویس تا در اسرع وقت بهش رسیدگی بشه.
-                        </p>
-                    </div>
-
-                    {/* Girl Avatar Illustration */}
-                    <div className="flex justify-center mb-8">
-                        <svg viewBox="0 0 140 140" className="w-32 h-32">
-                            {/* Head outline */}
-                            <ellipse cx="70" cy="70" rx="45" ry="50" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                            {/* Hair */}
-                            <path d="M25 70 Q25 30 70 25 Q115 30 115 70" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                            <path d="M25 70 Q20 90 25 110" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                            <path d="M115 70 Q120 90 115 110" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                            {/* Face */}
-                            <circle cx="55" cy="65" r="3" fill="#1e3a5f" />
-                            <circle cx="85" cy="65" r="3" fill="#1e3a5f" />
-                            <path d="M60 82 Q70 88 80 82" fill="none" stroke="#1e3a5f" strokeWidth="2" />
-                            {/* Neck */}
-                            <rect x="60" y="115" width="20" height="15" fill="none" stroke="#d97706" strokeWidth="2" />
-                            {/* Shoulder hint */}
-                            <path d="M50 130 Q70 125 90 130" fill="none" stroke="#d97706" strokeWidth="2" />
-                        </svg>
-                    </div>
-
-                    {/* Input Area */}
-                    <div className="flex-1 flex flex-col">
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-                            <textarea
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                placeholder="پیامتو اینجا بنویس..."
-                                className="w-full bg-transparent outline-none text-gray-800 placeholder-gray-400 text-sm resize-none min-h-[120px]"
-                                rows={5}
-                            />
-                        </div>
-
-                        {/* Submit Button */}
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!message.trim() || isSubmitting}
-                            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isSubmitting ? (
-                                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                            ) : (
-                                <>
-                                    <Send className="w-5 h-5" />
-                                    ارسال پیام
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </main>
-            </div>
+                        {isSubmitting ? 'در حال ارسال...' : 'ارسال پیام'}
+                    </PrimaryButton>
+                </Surface>
+            </main>
         </div>
     );
 }

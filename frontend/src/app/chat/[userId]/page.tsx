@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowRight, Send, User as UserIcon } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MessageCircle, Send, User as UserIcon } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/ui/PageHeader';
+import Surface from '@/components/ui/Surface';
+import { cn } from '@/lib/cn';
+import { getMediaUrl } from '@/lib/media';
 import { chatService, ChatMessage } from '@/services/chat.service';
 import { userService } from '@/services/user.service';
-import { getMediaUrl } from '@/lib/media';
 
 export default function ChatRoomPage() {
     const params = useParams();
@@ -23,29 +27,26 @@ export default function ChatRoomPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Get current user
             const me = await userService.getMe();
             setCurrentUserId(Number(me.id));
 
-            // Get other user's profile
             const otherUserProfile = await userService.getPublicProfile(userId);
             setOtherUser({
                 display_name: otherUserProfile.profile?.display_name || null,
-                avatar_url: otherUserProfile.profile?.avatar_url || null
+                avatar_url: otherUserProfile.profile?.avatar_url || null,
             });
 
-            // Get message history
             const history = await chatService.getMessageHistory(userId);
             setMessages(history);
         } catch (error) {
@@ -69,12 +70,12 @@ export default function ChatRoomPage() {
         try {
             const sent = await chatService.sendMessage({
                 receiver_id: userId,
-                content: messageContent
+                content: messageContent,
             });
             setMessages([...messages, sent]);
         } catch (error) {
             console.error('Failed to send message:', error);
-            setNewMessage(messageContent); // Restore message on error
+            setNewMessage(messageContent);
         } finally {
             setIsSending(false);
             inputRef.current?.focus();
@@ -91,142 +92,133 @@ export default function ChatRoomPage() {
         return date.toLocaleDateString('fa-IR');
     };
 
-    // Group messages by date
     const groupedMessages: { date: string; messages: ChatMessage[] }[] = [];
     let currentDate = '';
 
-    messages.forEach((msg) => {
-        const msgDate = formatDate(msg.created_at);
-        if (msgDate !== currentDate) {
-            currentDate = msgDate;
-            groupedMessages.push({ date: msgDate, messages: [msg] });
+    messages.forEach((message) => {
+        const messageDate = formatDate(message.created_at);
+        if (messageDate !== currentDate) {
+            currentDate = messageDate;
+            groupedMessages.push({ date: messageDate, messages: [message] });
         } else {
-            groupedMessages[groupedMessages.length - 1].messages.push(msg);
+            groupedMessages[groupedMessages.length - 1].messages.push(message);
         }
     });
 
-    if (isLoading) {
-        return (
-            <div className="min-h-full bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-full bg-gray-50 font-sans flex flex-col" dir="rtl">
-            <div className="w-full bg-white min-h-full flex flex-col">
-                {/* Header */}
-                <header className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                        <ArrowRight className="w-5 h-5 text-gray-600" />
-                    </button>
+        <div className="flex h-full min-h-full flex-col px-4 pb-4 pt-4" dir="rtl">
+            <PageHeader
+                title={otherUser?.display_name || 'گفت‌وگو'}
+                subtitle={isLoading ? 'در حال بارگذاری...' : 'پیام خصوصی'}
+                onBack={() => router.back()}
+                className="mx-0 shrink-0"
+                endContent={<Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />}
+            />
 
-                    <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                            {otherUser?.avatar_url ? (
-                                <Image
-                                    src={getMediaUrl(otherUser.avatar_url)}
-                                    alt={otherUser.display_name || 'User'}
-                                    width={40}
-                                    height={40}
-                                    className="w-full h-full object-cover"
-                                    unoptimized
-                                />
-                            ) : (
-                                <UserIcon className="w-5 h-5 text-gray-400" />
-                            )}
-                        </div>
-                        <div>
-                            <h1 className="font-bold text-gray-900 text-sm">
-                                {otherUser?.display_name || 'کاربر'}
-                            </h1>
-                            <p className="text-xs text-gray-400">آنلاین</p>
-                        </div>
+            <Surface className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+                {isLoading ? (
+                    <div className="flex flex-1 items-center justify-center">
+                        <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
                     </div>
-                </header>
-
-                {/* Messages Area */}
-                <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50/50">
-                    {groupedMessages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                                <Send className="w-8 h-8 text-blue-500" />
-                            </div>
-                            <p className="text-gray-500 text-sm">
-                                هنوز پیامی ندارید. اولین پیام رو بفرست!
-                            </p>
-                        </div>
-                    ) : (
-                        groupedMessages.map((group, groupIndex) => (
-                            <div key={groupIndex}>
-                                {/* Date separator */}
-                                <div className="flex items-center justify-center my-4">
-                                    <span className="bg-gray-200 text-gray-500 text-xs px-3 py-1 rounded-full">
-                                        {group.date}
-                                    </span>
+                ) : (
+                    <>
+                        <main className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 to-white px-3 py-4 sm:px-5">
+                            {groupedMessages.length === 0 ? (
+                                <div className="flex h-full items-center justify-center">
+                                    <EmptyState
+                                        className="max-w-md border-slate-100 bg-white shadow-none"
+                                        icon={<MessageCircle size={30} />}
+                                        title="هنوز پیامی رد و بدل نشده"
+                                        description="اولین پیام را بنویس تا گفت‌وگو شروع شود."
+                                    />
                                 </div>
-
-                                {/* Messages */}
-                                {group.messages.map((msg) => {
-                                    const isMyMessage = msg.sender_id === currentUserId;
-                                    return (
-                                        <div
-                                            key={msg.id}
-                                            className={`flex mb-3 ${isMyMessage ? 'justify-start' : 'justify-end'}`}
-                                        >
-                                            <div
-                                                className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${isMyMessage
-                                                    ? 'bg-blue-600 text-white rounded-br-md'
-                                                    : 'bg-white text-gray-800 rounded-bl-md shadow-sm border border-gray-100'
-                                                    }`}
-                                            >
-                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                                    {msg.content}
-                                                </p>
-                                                <p className={`text-[10px] mt-1 ${isMyMessage ? 'text-blue-200' : 'text-gray-400'
-                                                    }`}>
-                                                    {formatTime(msg.created_at)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))
-                    )}
-                    <div ref={messagesEndRef} />
-                </main>
-
-                {/* Input Area */}
-                <footer className="px-4 py-3 bg-white border-t border-gray-100 flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                            placeholder="پیام خود را بنویسید..."
-                            className="flex-1 bg-gray-100 rounded-full px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                        />
-                        <button
-                            onClick={handleSend}
-                            disabled={!newMessage.trim() || isSending}
-                            className="w-11 h-11 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSending ? (
-                                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
                             ) : (
-                                <Send className="w-5 h-5" />
+                                <div className="space-y-5">
+                                    {groupedMessages.map((group, groupIndex) => (
+                                        <div key={groupIndex}>
+                                            <div className="mb-4 flex items-center justify-center">
+                                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-400 shadow-sm">
+                                                    {group.date}
+                                                </span>
+                                            </div>
+
+                                            {group.messages.map((message) => {
+                                                const isMyMessage = message.sender_id === currentUserId;
+                                                return (
+                                                    <div
+                                                        key={message.id}
+                                                        className={cn('mb-3 flex', isMyMessage ? 'justify-start' : 'justify-end')}
+                                                    >
+                                                        <div
+                                                            className={cn(
+                                                                'max-w-[78%] rounded-[24px] px-4 py-3 shadow-sm sm:max-w-[68%]',
+                                                                isMyMessage
+                                                                    ? 'rounded-tr-md bg-gradient-to-r from-rose-500 to-orange-500 text-white'
+                                                                    : 'rounded-tl-md border border-slate-100 bg-white text-slate-800',
+                                                            )}
+                                                        >
+                                                            <p className="whitespace-pre-wrap text-sm leading-7">{message.content}</p>
+                                                            <p className={cn('mt-1 text-[10px]', isMyMessage ? 'text-white/70' : 'text-slate-400')}>
+                                                                {formatTime(message.created_at)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ))}
+                                    <div ref={messagesEndRef} />
+                                </div>
                             )}
-                        </button>
-                    </div>
-                </footer>
-            </div>
+                        </main>
+
+                        <footer className="border-t border-slate-100 bg-white p-3 sm:p-4">
+                            <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-3 py-2 transition focus-within:border-rose-300 focus-within:ring-4 focus-within:ring-rose-100">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(event) => setNewMessage(event.target.value)}
+                                    onKeyDown={(event) => event.key === 'Enter' && !event.shiftKey && handleSend()}
+                                    placeholder="پیام خود را بنویسید..."
+                                    className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleSend}
+                                    disabled={!newMessage.trim() || isSending}
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_12px_26px_rgba(244,63,94,0.22)] transition hover:from-rose-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {isSending ? (
+                                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    ) : (
+                                        <Send size={18} />
+                                    )}
+                                </button>
+                            </div>
+                        </footer>
+                    </>
+                )}
+            </Surface>
+        </div>
+    );
+}
+
+function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
+    return (
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+            {src ? (
+                <Image
+                    src={getMediaUrl(src)}
+                    alt={name || 'کاربر'}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                    unoptimized
+                />
+            ) : (
+                <UserIcon size={19} className="text-slate-400" />
+            )}
         </div>
     );
 }

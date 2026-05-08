@@ -9,6 +9,9 @@ import { contentAdminService } from "@/lib/content-admin";
 type JsonInput = string;
 
 const emptyJson = "{}";
+const fieldClass = "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100";
+const monoFieldClass = `${fieldClass} font-mono`;
+const panelClass = "rounded-[28px] border border-white/70 bg-white/85 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl";
 
 const parseJson = (value: JsonInput): Record<string, unknown> => {
     const trimmed = value.trim();
@@ -251,10 +254,10 @@ export default function ContentAdminPage() {
     };
 
     return (
-        <div className="min-h-full bg-gray-50" dir="rtl">
-            <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur">
+        <div className="min-h-full" dir="rtl">
+            <header className="sticky top-3 z-10 mx-4 rounded-[28px] border border-white/70 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
                 <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4">
-                    <Link href="/" className="text-gray-600">
+                    <Link href="/" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600">
                         <ArrowRight size={24} />
                     </Link>
                     <div>
@@ -264,8 +267,8 @@ export default function ContentAdminPage() {
                 </div>
             </header>
 
-            <main className="mx-auto max-w-6xl space-y-4 px-4 py-4">
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <main className="mx-auto max-w-6xl space-y-4 px-4 py-5">
+                <div className={panelClass}>
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                             <h2 className="text-sm font-semibold text-gray-900">شروع سریع</h2>
@@ -276,7 +279,7 @@ export default function ContentAdminPage() {
                         <button
                             type="button"
                             onClick={loadData}
-                            className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700"
+                            className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200"
                         >
                             <Loader2 size={14} />
                             تازه‌سازی
@@ -284,15 +287,15 @@ export default function ContentAdminPage() {
                     </div>
 
                     {message && (
-                        <div className="rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                        <div className="rounded-2xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
                             {message}
                         </div>
                     )}
                 </div>
 
-                <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <section className={panelClass}>
                     <div className="mb-4 flex items-center gap-2">
-                        <BookPlus size={18} className="text-blue-600" />
+                        <BookPlus size={18} className="text-rose-600" />
                         <h2 className="text-base font-semibold text-gray-900">ساخت Course</h2>
                     </div>
 
@@ -302,7 +305,7 @@ export default function ContentAdminPage() {
                             <select
                                 value={courseForm.subcategory_id}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             >
                                 <option value="">انتخاب کن</option>
                                 {categories.map((category) => (
@@ -322,7 +325,7 @@ export default function ContentAdminPage() {
                             <select
                                 value={courseForm.level}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, level: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             >
                                 <option value="beginner">beginner</option>
                                 <option value="intermediate">intermediate</option>
@@ -335,7 +338,7 @@ export default function ContentAdminPage() {
                             <input
                                 value={courseForm.title}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, title: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -344,7 +347,7 @@ export default function ContentAdminPage() {
                             <input
                                 value={courseForm.slug}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, slug: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -354,7 +357,7 @@ export default function ContentAdminPage() {
                                 value={courseForm.description}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, description: e.target.value }))}
                                 rows={3}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -363,7 +366,7 @@ export default function ContentAdminPage() {
                             <input
                                 value={courseForm.cover_image_url}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, cover_image_url: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -373,7 +376,7 @@ export default function ContentAdminPage() {
                                 value={courseForm.metadata_json}
                                 onChange={(e) => setCourseForm((current) => ({ ...current, metadata_json: e.target.value }))}
                                 rows={4}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500"
+                                className={monoFieldClass}
                             />
                         </label>
                     </div>
@@ -382,16 +385,16 @@ export default function ContentAdminPage() {
                         type="button"
                         onClick={handleCreateCourse}
                         disabled={saving === "course"}
-                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-70"
+                        className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-70"
                     >
                         {saving === "course" ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                         ساخت Course
                     </button>
                 </section>
 
-                <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <section className={panelClass}>
                     <div className="mb-4 flex items-center gap-2">
-                        <Layers3 size={18} className="text-blue-600" />
+                        <Layers3 size={18} className="text-rose-600" />
                         <h2 className="text-base font-semibold text-gray-900">ساخت Section</h2>
                     </div>
 
@@ -401,7 +404,7 @@ export default function ContentAdminPage() {
                             <select
                                 value={sectionForm.course_id}
                                 onChange={(e) => setSectionForm((current) => ({ ...current, course_id: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             >
                                 <option value="">انتخاب کن</option>
                                 {courses.map((course) => (
@@ -418,7 +421,7 @@ export default function ContentAdminPage() {
                                 type="number"
                                 value={sectionForm.order_index}
                                 onChange={(e) => setSectionForm((current) => ({ ...current, order_index: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -427,7 +430,7 @@ export default function ContentAdminPage() {
                             <input
                                 value={sectionForm.title}
                                 onChange={(e) => setSectionForm((current) => ({ ...current, title: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -437,7 +440,7 @@ export default function ContentAdminPage() {
                                 value={sectionForm.metadata_json}
                                 onChange={(e) => setSectionForm((current) => ({ ...current, metadata_json: e.target.value }))}
                                 rows={3}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500"
+                                className={monoFieldClass}
                             />
                         </label>
                     </div>
@@ -446,16 +449,16 @@ export default function ContentAdminPage() {
                         type="button"
                         onClick={handleCreateSection}
                         disabled={saving === "section"}
-                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-70"
+                        className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-70"
                     >
                         {saving === "section" ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                         ساخت Section
                     </button>
                 </section>
 
-                <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <section className={panelClass}>
                     <div className="mb-4 flex items-center gap-2">
-                        <Video size={18} className="text-blue-600" />
+                        <Video size={18} className="text-rose-600" />
                         <h2 className="text-base font-semibold text-gray-900">ساخت Lesson</h2>
                     </div>
 
@@ -473,7 +476,7 @@ export default function ContentAdminPage() {
                                         section_id: nextCourse?.sections?.[0]?.id ? String(nextCourse.sections[0].id) : "",
                                     }));
                                 }}
-                                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             >
                                 <option value="">انتخاب کن</option>
                                 {courses.map((course) => (
@@ -489,7 +492,7 @@ export default function ContentAdminPage() {
                             <select
                                 value={lessonForm.section_id}
                                 onChange={(e) => setLessonForm((current) => ({ ...current, section_id: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             >
                                 <option value="">انتخاب کن</option>
                                 {selectedSections.map((section) => (
@@ -505,7 +508,7 @@ export default function ContentAdminPage() {
                             <input
                                 value={lessonForm.title}
                                 onChange={(e) => setLessonForm((current) => ({ ...current, title: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -515,7 +518,7 @@ export default function ContentAdminPage() {
                                 type="number"
                                 value={lessonForm.duration_minutes}
                                 onChange={(e) => setLessonForm((current) => ({ ...current, duration_minutes: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
@@ -524,11 +527,11 @@ export default function ContentAdminPage() {
                             <input
                                 value={lessonForm.video_url}
                                 onChange={(e) => setLessonForm((current) => ({ ...current, video_url: e.target.value }))}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                                className={fieldClass}
                             />
                         </label>
 
-                        <label className="flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 md:col-span-2">
+                        <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 md:col-span-2">
                             <input
                                 type="checkbox"
                                 checked={lessonForm.is_free}
@@ -544,7 +547,7 @@ export default function ContentAdminPage() {
                                 value={lessonForm.metadata_json}
                                 onChange={(e) => setLessonForm((current) => ({ ...current, metadata_json: e.target.value }))}
                                 rows={4}
-                                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500"
+                                className={monoFieldClass}
                             />
                         </label>
                     </div>
@@ -553,7 +556,7 @@ export default function ContentAdminPage() {
                         type="button"
                         onClick={handleCreateLesson}
                         disabled={saving === "lesson"}
-                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-70"
+                        className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-70"
                     >
                         {saving === "lesson" ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                         ساخت Lesson
@@ -561,7 +564,7 @@ export default function ContentAdminPage() {
                 </section>
 
                 {loading && (
-                    <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
+                    <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/80 p-4 text-center text-sm text-slate-500">
                         در حال بارگذاری...
                     </div>
                 )}
