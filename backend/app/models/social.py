@@ -19,8 +19,8 @@ class UserFollow(Base, TimestampMixin):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    follower_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
-    followee_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    follower_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    followee_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     status: Mapped[FollowStatus] = mapped_column(String, default=FollowStatus.ACCEPTED)
 
     # Relationships
@@ -31,7 +31,7 @@ class Post(Base, TimestampMixin):
     __tablename__ = "posts"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Relationships
@@ -44,8 +44,8 @@ class PostMedia(Base, TimestampMixin):
     __tablename__ = "post_media"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    post_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("posts.id"), nullable=False)
-    media_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("media_assets.id"), nullable=False)
+    post_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("posts.id"), nullable=False, index=True)
+    media_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("media_assets.id"), nullable=False, index=True)
 
     # Relationships
     post: Mapped["Post"] = relationship(back_populates="media")
@@ -58,8 +58,8 @@ class PostLike(Base, TimestampMixin):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
-    post_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("posts.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    post_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("posts.id"), nullable=False, index=True)
 
     # Relationships
     user: Mapped["User"] = relationship()
@@ -69,9 +69,9 @@ class PostComment(Base, TimestampMixin):
     __tablename__ = "post_comments"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
-    post_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("posts.id"), nullable=False)
-    parent_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("post_comments.id"), nullable=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    post_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("posts.id"), nullable=False, index=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("post_comments.id"), nullable=True, index=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Relationships
@@ -84,7 +84,7 @@ class ForumQuestion(Base, TimestampMixin):
     __tablename__ = "forum_questions"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[ForumStatus] = mapped_column(String, default=ForumStatus.OPEN)
@@ -97,8 +97,8 @@ class ForumAnswer(Base, TimestampMixin):
     __tablename__ = "forum_answers"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    question_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("forum_questions.id"), nullable=False)
-    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    question_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("forum_questions.id"), nullable=False, index=True)
+    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Relationships
@@ -125,7 +125,7 @@ class SupportTicket(Base, TimestampMixin):
     __tablename__ = "support_tickets"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[SupportStatus] = mapped_column(String, default=SupportStatus.OPEN)
 

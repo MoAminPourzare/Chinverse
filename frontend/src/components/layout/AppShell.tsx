@@ -23,11 +23,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
     return (
-        <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-            <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${showBottomNav ? "pb-24" : ""}`}>
-                {children}
+        <div className="app-viewport">
+            <div className="app-frame">
+                <div className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
+                    {children}
+                </div>
+                {showBottomNav && <BottomNav />}
             </div>
-            {showBottomNav && <BottomNav />}
         </div>
     );
 }

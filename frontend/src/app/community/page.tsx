@@ -145,20 +145,22 @@ export default function CommunityPage() {
             <PageHeader title={activeTab === 'messages' ? 'پیام‌ها' : 'تالار گفتگو'} subtitle="پرسش، پاسخ و ارتباط در جامعه چین‌ورس" backHref="/profile" />
 
             <main className="mx-auto mt-5 flex w-full max-w-5xl flex-col gap-5">
-                <Surface className="overflow-hidden bg-slate-950 text-white">
+                <section className="overflow-hidden rounded-[28px] border border-slate-800 bg-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
                     <div className="relative p-5 sm:p-7">
-                        <div className="absolute -left-12 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
-                        <div className="absolute -bottom-20 right-20 h-52 w-52 rounded-full bg-emerald-400/15 blur-3xl" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_46%,#334155_100%)]" />
+                        <div className="absolute -left-12 top-0 h-44 w-44 rounded-full bg-rose-500/30 blur-3xl" />
+                        <div className="absolute -bottom-20 right-20 h-52 w-52 rounded-full bg-emerald-400/20 blur-3xl" />
+                        <div className="absolute left-16 bottom-0 h-32 w-32 rounded-full bg-amber-300/16 blur-3xl" />
                         <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                             <div>
-                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/75">
+                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/85">
                                     <Sparkles size={15} />
                                     ChinVerse Community
                                 </div>
                                 <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
                                     سوال بپرس، جواب بگیر، ارتباط بساز.
                                 </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70">
+                                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/74">
                                     تالار گفتگو و پیام‌ها کنار هم قرار گرفته‌اند تا یادگیری تنها و پراکنده نباشد.
                                 </p>
                             </div>
@@ -167,7 +169,7 @@ export default function CommunityPage() {
                             </PrimaryButton>
                         </div>
                     </div>
-                </Surface>
+                </section>
 
                 <Surface className="p-3">
                     <div className="grid gap-3 lg:grid-cols-[280px_1fr]">

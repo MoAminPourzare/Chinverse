@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-    BadgeCheck,
     BriefcaseBusiness,
     GraduationCap,
     ImageIcon,
@@ -93,20 +92,21 @@ export default function ShowcasePage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-                <Surface className="overflow-hidden bg-slate-950 text-white">
+                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
                     <div className="relative p-5 sm:p-7">
-                        <div className="absolute -left-10 -top-16 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
-                        <div className="absolute -bottom-20 right-16 h-52 w-52 rounded-full bg-amber-400/20 blur-3xl" />
+                        <div className="absolute -left-10 -top-16 h-44 w-44 rounded-full bg-rose-500/30 blur-3xl" />
+                        <div className="absolute -bottom-20 right-16 h-52 w-52 rounded-full bg-emerald-400/18 blur-3xl" />
+                        <div className="absolute left-20 bottom-0 h-32 w-32 rounded-full bg-amber-300/15 blur-3xl" />
                         <div className="relative grid gap-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
                             <div>
-                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
+                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/85">
                                     <Sparkles size={15} />
                                     جامعه چین‌ورس
                                 </div>
                                 <h1 className="text-2xl font-black tracking-tight sm:text-4xl">
                                     ویترین زبان‌آموزها و خدمات چینی
                                 </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70">
+                                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/74">
                                     پروفایل‌ها، نمونه‌کارها و خدمات مرتبط با زبان و فرهنگ چینی اینجا کنار هم دیده می‌شوند.
                                 </p>
                             </div>
@@ -204,77 +204,67 @@ function TalentCard({ user }: TalentCardProps) {
     const galleryImages = user.gallery_preview.slice(0, 3);
 
     return (
-        <Surface as="article" className="group overflow-hidden p-4 transition duration-200 hover:-translate-y-0.5">
-            <div className="grid gap-4 sm:grid-cols-[116px_1fr]">
-                <div className="grid h-32 grid-cols-2 gap-1 overflow-hidden rounded-[22px] bg-slate-100">
-                    {galleryImages.length > 0 ? (
-                        <>
-                            <GalleryPreview image={galleryImages[0]} className="row-span-2 h-full" />
-                            <GalleryPreview image={galleryImages[1]} />
-                            <GalleryPreview image={galleryImages[2]} />
-                        </>
-                    ) : (
-                        <>
-                            <FallbackTile label="汉" className="row-span-2" />
-                            <FallbackTile label="语" tone="jade" />
-                            <FallbackTile label="学" tone="gold" />
-                        </>
-                    )}
-                </div>
+        <Surface as="article" className="group p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+            <div className="flex items-start gap-4">
+                <Avatar src={user.avatar_url} name={user.display_name} size="lg" />
 
-                <div className="min-w-0">
-                    <div className="flex items-start gap-3">
-                        <Avatar src={user.avatar_url} name={user.display_name} />
-                        <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-base font-bold text-slate-950">
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                            <h3 className="truncate text-lg font-black tracking-tight text-slate-950">
                                 {user.display_name || "کاربر چین‌ورس"}
                             </h3>
-                            <p className="mt-1 line-clamp-2 text-xs font-medium leading-5 text-rose-600">
+                            <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-rose-600">
                                 {user.headline || "زبان‌آموز یا متخصص زبان چینی"}
                             </p>
                         </div>
-                    </div>
-
-                    <div className="mt-4 space-y-2 text-xs text-slate-500">
-                        {(user.city || user.country) && (
-                            <div className="flex items-center gap-2">
-                                <MapPin size={14} className="text-slate-400" />
-                                <span className="truncate">{[user.city, user.country].filter(Boolean).join("، ")}</span>
-                            </div>
-                        )}
-                        {user.education?.university && (
-                            <div className="flex items-center gap-2">
-                                <GraduationCap size={14} className="text-slate-400" />
-                                <span className="truncate">{user.education.university}</span>
-                            </div>
-                        )}
                         {user.hsk_level && (
-                            <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
-                                <BadgeCheck size={13} />
+                            <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
                                 {user.hsk_level}
-                            </div>
+                            </span>
                         )}
                     </div>
-
-                    <Link
-                        href={`/users/${user.id}`}
-                        className="mt-4 inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-                    >
-                        مشاهده پروفایل
-                    </Link>
                 </div>
             </div>
+
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
+                {(user.city || user.country) && (
+                    <div className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5">
+                        <MapPin size={13} className="shrink-0 text-slate-400" />
+                        <span className="truncate">{[user.city, user.country].filter(Boolean).join("، ")}</span>
+                    </div>
+                )}
+                {user.education?.university && (
+                    <div className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5">
+                        <GraduationCap size={13} className="shrink-0 text-slate-400" />
+                        <span className="truncate">{user.education.university}</span>
+                    </div>
+                )}
+            </div>
+
+            {galleryImages.length > 0 && (
+                <div className="mt-4 rounded-[24px] bg-slate-50 p-2">
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {galleryImages.map((image, index) => (
+                            <GalleryPreview key={`${image}-${index}`} image={image} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <Link
+                href={`/users/${user.id}`}
+                className="mt-4 flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+            >
+                مشاهده پروفایل
+            </Link>
         </Surface>
     );
 }
 
-function GalleryPreview({ image, className }: { image?: string; className?: string }) {
-    if (!image) {
-        return <FallbackTile label="文" tone="muted" className={className} />;
-    }
-
+function GalleryPreview({ image }: { image: string }) {
     return (
-        <div className={cn("relative min-h-0 bg-slate-100", className)}>
+        <div className="relative aspect-[4/3] overflow-hidden rounded-[18px] bg-slate-100">
             <Image
                 src={getMediaUrl(image)}
                 alt="نمونه گالری"
@@ -283,29 +273,6 @@ function GalleryPreview({ image, className }: { image?: string; className?: stri
                 sizes="120px"
                 unoptimized
             />
-        </div>
-    );
-}
-
-function FallbackTile({
-    label,
-    tone = "rose",
-    className,
-}: {
-    label: string;
-    tone?: "rose" | "jade" | "gold" | "muted";
-    className?: string;
-}) {
-    const tones = {
-        rose: "from-rose-100 to-orange-100 text-rose-500",
-        jade: "from-emerald-100 to-teal-100 text-emerald-600",
-        gold: "from-amber-100 to-yellow-100 text-amber-600",
-        muted: "from-slate-100 to-slate-200 text-slate-400",
-    };
-
-    return (
-        <div className={cn("flex items-center justify-center bg-gradient-to-br text-2xl font-black", tones[tone], className)}>
-            {label}
         </div>
     );
 }
@@ -371,20 +338,23 @@ function ServiceCard({ service }: ServiceCardProps) {
     );
 }
 
-function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string | null; size?: "sm" | "md" }) {
+function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string | null; size?: "sm" | "md" | "lg" }) {
+    const sizeClass = size === "lg" ? "h-20 w-20 rounded-[26px]" : size === "sm" ? "h-11 w-11" : "h-12 w-12";
+    const iconSize = size === "lg" ? 30 : size === "sm" ? 18 : 21;
+
     return (
-        <div className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100", size === "sm" ? "h-11 w-11" : "h-12 w-12")}>
+        <div className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-slate-100 shadow-[0_16px_34px_rgba(15,23,42,0.14)]", sizeClass)}>
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
                     alt={name || "کاربر"}
                     fill
                     className="object-cover"
-                    sizes="48px"
+                    sizes={size === "lg" ? "80px" : "48px"}
                     unoptimized
                 />
             ) : (
-                <UserIcon size={size === "sm" ? 18 : 21} className="text-slate-400" />
+                <UserIcon size={iconSize} className="text-slate-400" />
             )}
         </div>
     );
@@ -394,7 +364,7 @@ function ShowcaseSkeleton({ activeTab }: { activeTab: TabType }) {
     return (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: activeTab === "talents" ? 6 : 3 }).map((_, index) => (
-                <Surface key={index} className="h-56 animate-pulse p-4">
+                <Surface key={index} className="h-64 animate-pulse p-4">
                     <div className="h-full rounded-[22px] bg-slate-100" />
                 </Surface>
             ))}

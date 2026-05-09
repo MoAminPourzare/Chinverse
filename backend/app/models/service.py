@@ -9,7 +9,7 @@ class UserService(Base, TimestampMixin):
     __tablename__ = "user_services"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     banner_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

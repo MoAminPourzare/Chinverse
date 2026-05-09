@@ -39,7 +39,13 @@ class FlashcardRead(FlashcardBase):
 
 class LeitnerDashboardStats(BaseModel):
     box_counts: Dict[int, int]
+    due_by_box: Dict[int, int]
+    box_intervals: Dict[int, int]
+    total_cards: int
     total_due: int
+    upcoming_count: int
+    mastered_count: int
+    next_due_at: Optional[datetime] = None
     recent_cards: List[FlashcardRead]
 
 class LeitnerReviewResponse(BaseModel):

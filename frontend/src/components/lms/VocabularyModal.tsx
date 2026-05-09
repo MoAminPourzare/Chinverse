@@ -90,7 +90,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         return parts.map((part, i) => (
             <React.Fragment key={i}>
                 {part}
-                {i < parts.length - 1 && <span className="font-bold text-rose-600">{targetWord}</span>}
+                {i < parts.length - 1 && <span className="font-cjk font-bold text-rose-600" lang="zh-CN">{targetWord}</span>}
             </React.Fragment>
         ));
     };
@@ -117,7 +117,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
 
                     {/* Chinese Character */}
                     <div className="flex items-center justify-center gap-3 mb-2">
-                        <h2 className="text-4xl font-bold text-rose-600" dir="ltr">
+                        <h2 className="font-cjk text-[2.5rem] font-bold leading-tight text-rose-600 sm:text-4xl" dir="ltr" lang="zh-CN">
                             {word.chinese}
                         </h2>
                         <button
@@ -129,7 +129,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     </div>
 
                     {/* Pinyin */}
-                    <p className="text-lg text-gray-600" dir="ltr">
+                    <p className="font-latin text-base text-gray-600 sm:text-lg" dir="ltr" lang="en">
                         {word.pinyin}
                     </p>
                 </div>
@@ -155,7 +155,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     {activeTab === "chinese" && (
                         <div className="space-y-3">
                             {word.chinese_meaning?.split("\n").map((line, i) => (
-                                <p key={i} className="text-gray-800" dir="ltr">
+                                <p key={i} className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
                                     {i + 1}. {line}
                                 </p>
                             ))}
@@ -181,7 +181,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     {activeTab === "composition" && (
                         <div className="space-y-3">
                             {word.composition?.split("\n").map((line, i) => (
-                                <p key={i} className="text-gray-800" dir="ltr">
+                                <p key={i} className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
                                     {i + 1}. {highlightWord(line, word.chinese)}
                                 </p>
                             ))}
@@ -195,7 +195,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                         <div className="space-y-4">
                             {word.examples.map((example, i) => (
                                 <div key={example.id} className="space-y-1">
-                                    <p className="text-gray-800" dir="ltr">
+                                    <p className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
                                         {i + 1}. {highlightWord(example.zh_text, word.chinese)}
                                     </p>
                                 </div>

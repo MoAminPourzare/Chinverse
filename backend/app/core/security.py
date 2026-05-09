@@ -14,7 +14,7 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
     
     to_encode = {"exp": expire, "sub": str(subject)}
     # از HS256 به عنوان الگوریتم استاندارد استفاده می‌کنیم
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

@@ -13,7 +13,7 @@ class MediaAsset(Base, TimestampMixin):
     __tablename__ = "media_assets"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     media_type: Mapped[MediaType] = mapped_column(String, nullable=False)
     file_url: Mapped[str] = mapped_column(String, nullable=False)
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)

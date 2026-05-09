@@ -13,6 +13,7 @@ eggs/
 lib/
 !frontend/src/lib/
 frontend/src/lib/*
+!frontend/src/lib/api.ts
 !frontend/src/lib/http.ts
 !frontend/src/lib/media.ts
 !frontend/src/lib/courses.ts

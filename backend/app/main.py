@@ -1,40 +1,65 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.paths import STATIC_DIR, UPLOADS_DIR, ensure_upload_dirs
 
 app = FastAPI(
-    title="ChinVerse API",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=settings.PROJECT_NAME,
+    debug=settings.DEBUG,
+    docs_url="/docs" if settings.ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_API_DOCS else None,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.ENABLE_API_DOCS else None,
 )
 
-# تنظیمات CORS (برای اینکه بعداً فرانت‌اند بتونه وصل شه)
-# فعلاً همه رو مجاز می‌ذاریم
-if settings.BACKEND_CORS_ORIGINS:
+if settings.TRUSTED_HOSTS and "*" not in settings.TRUSTED_HOSTS:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.TRUSTED_HOSTS,
+    )
+
+if settings.CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-# ایجاد دایرکتوری آپلود در صورت عدم وجود
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+
+    if settings.SECURE_HEADERS_ENABLED:
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+
+    if settings.HSTS_ENABLED:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
+    return response
+
+
 ensure_upload_dirs()
 
-# ایجاد دایرکتوری static برای گالری و خدمات
-
-# Mount static files برای سرو کردن تصاویر آپلود شده
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# این خط طلاییه! اینجا تمام روت‌های ما (لاگین و...) به اپلیکیشن وصل میشن
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to ChinVerse API"}
 
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}

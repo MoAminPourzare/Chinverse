@@ -1,8 +1,7 @@
-const DEFAULT_API_URL = "http://localhost:8000/api/v1";
+import { API_BASE_URL } from "@/lib/api";
 
 export const getApiRootUrl = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
-    return apiUrl.replace(/\/api\/v\d+\/?$/, "").replace(/\/$/, "");
+    return API_BASE_URL.replace(/\/api\/v\d+\/?$/, "").replace(/\/$/, "");
 };
 
 export const getMediaUrl = (path: string | null | undefined): string => {

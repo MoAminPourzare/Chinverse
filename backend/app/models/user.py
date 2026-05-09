@@ -61,7 +61,7 @@ class UserSocialLink(Base, TimestampMixin):
     __tablename__ = "user_social_links"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     platform: Mapped[SocialPlatform] = mapped_column(String, nullable=False)
     handle_or_url: Mapped[str] = mapped_column(String, nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -73,7 +73,7 @@ class UserGalleryItem(Base, TimestampMixin):
     __tablename__ = "user_gallery_items"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     image_url: Mapped[str] = mapped_column(String, nullable=False)
     caption: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
