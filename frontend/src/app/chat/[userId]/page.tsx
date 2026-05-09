@@ -3,9 +3,8 @@
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageCircle, Send, User as UserIcon } from 'lucide-react';
+import { ArrowRight, MessageCircle, Send, User as UserIcon } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
-import PageHeader from '@/components/ui/PageHeader';
 import Surface from '@/components/ui/Surface';
 import { cn } from '@/lib/cn';
 import { getMediaUrl } from '@/lib/media';
@@ -107,13 +106,30 @@ export default function ChatRoomPage() {
 
     return (
         <div className="flex h-full min-h-full flex-col px-4 pb-4 pt-4" dir="rtl">
-            <PageHeader
-                title={otherUser?.display_name || 'گفت‌وگو'}
-                subtitle={isLoading ? 'در حال بارگذاری...' : 'پیام خصوصی'}
-                onBack={() => router.back()}
-                className="mx-0 shrink-0"
-                endContent={<Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />}
-            />
+            <header className="relative shrink-0 overflow-hidden rounded-[28px] border border-slate-800 bg-slate-950 px-4 py-3 text-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_48%,#334155_100%)]" />
+                <div className="absolute -left-12 top-0 h-28 w-28 rounded-full bg-rose-500/25 blur-3xl" />
+                <div className="absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-emerald-400/16 blur-3xl" />
+                <div className="relative flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+                        aria-label="بازگشت"
+                    >
+                        <ArrowRight size={19} />
+                    </button>
+                    <div className="min-w-0 flex-1 text-center">
+                        <h1 className="truncate text-base font-black tracking-tight">
+                            {otherUser?.display_name || 'گفت‌وگو'}
+                        </h1>
+                        <p className="mt-0.5 truncate text-xs text-white/60">
+                            {isLoading ? 'در حال بارگذاری...' : 'پیام خصوصی'}
+                        </p>
+                    </div>
+                    <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
+                </div>
+            </header>
 
             <Surface className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden p-0">
                 {isLoading ? (

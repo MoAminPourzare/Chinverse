@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import os
 import re
 import sys
@@ -753,35 +754,6 @@ COURSE_CATALOG: dict[str, list[dict[str, Any]]] = {
             "lessons": make_lessons("Part", 3, 30.0),
         },
     ],
-    "cooking": [
-        {
-            "title": "Chef Wang",
-            "description": "Chinese cooking videos for practical food vocabulary.",
-            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Chinese_cuisine_montage.png/220px-Chinese_cuisine_montage.png",
-            "level": "All Levels",
-            "metadata_json": {"content_kind": "cooking", "episodes_count": 120, "rating": 4.9, "year": 2017},
-            "section_title": "Recipes",
-            "lessons": make_lessons("Recipe", 3, 12.0),
-        },
-        {
-            "title": "A Bite of China",
-            "description": "Documentary-style cooking and culture videos.",
-            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/0/09/A_Bite_of_China.jpg/220px-A_Bite_of_China.jpg",
-            "level": "Intermediate",
-            "metadata_json": {"content_kind": "cooking", "episodes_count": 21, "rating": 4.8, "year": 2012},
-            "section_title": "Episodes",
-            "lessons": make_lessons("Episode", 3, 45.0),
-        },
-        {
-            "title": "Li Ziqi",
-            "description": "Calm food and rural life videos for immersive listening.",
-            "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Chinese_food.jpg/220px-Chinese_food.jpg",
-            "level": "Intermediate",
-            "metadata_json": {"content_kind": "cooking", "episodes_count": 80, "rating": 4.7, "year": 2016},
-            "section_title": "Episodes",
-            "lessons": make_lessons("Episode", 3, 18.0),
-        },
-    ],
     "podcasts": [
         {
             "title": "ChinesePod",
@@ -838,35 +810,6 @@ COURSE_CATALOG: dict[str, list[dict[str, Any]]] = {
             "metadata_json": {"content_kind": "music", "tracks_count": 15, "rating": 4.8, "year": 1996},
             "section_title": "Songs",
             "lessons": make_lessons("Song", 3, 5.0),
-        },
-    ],
-    "reality": [
-        {
-            "title": "Keep Running",
-            "description": "Reality show episodes for conversational Chinese listening.",
-            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a0/Keep_Running_%28Chinese_TV_series%29.jpg/220px-Keep_Running_%28Chinese_TV_series%29.jpg",
-            "level": "Intermediate",
-            "metadata_json": {"content_kind": "reality", "episodes_count": 72, "rating": 4.5, "year": 2014},
-            "section_title": "Episodes",
-            "lessons": make_lessons("Episode", 3, 60.0),
-        },
-        {
-            "title": "Go Fighting!",
-            "description": "Variety show clips for informal Mandarin and slang.",
-            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/0/06/Go_Fighting%21_Season_1.jpg/220px-Go_Fighting%21_Season_1.jpg",
-            "level": "Intermediate",
-            "metadata_json": {"content_kind": "reality", "episodes_count": 60, "rating": 4.6, "year": 2015},
-            "section_title": "Episodes",
-            "lessons": make_lessons("Episode", 3, 60.0),
-        },
-        {
-            "title": "Day Day Up",
-            "description": "Talk and variety show episodes for natural speech.",
-            "cover_image_url": "https://upload.wikimedia.org/wikipedia/en/thumb/7/7c/Day_Day_Up.jpg/220px-Day_Day_Up.jpg",
-            "level": "Intermediate",
-            "metadata_json": {"content_kind": "reality", "episodes_count": 200, "rating": 4.4, "year": 2008},
-            "section_title": "Episodes",
-            "lessons": make_lessons("Episode", 3, 60.0),
         },
     ],
     "topic-talks": [
@@ -930,65 +873,140 @@ SUBCATEGORIES = {
         {"name": "Series", "slug": "series"},
         {"name": "Movies", "slug": "movies"},
         {"name": "Cartoons & Animation", "slug": "cartoons"},
-        {"name": "Cooking", "slug": "cooking"},
         {"name": "Podcasts", "slug": "podcasts"},
         {"name": "Music", "slug": "music"},
-        {"name": "Reality Shows", "slug": "reality"},
         {"name": "Topic Talks", "slug": "topic-talks"},
     ],
 }
 
 
-async def seed_lms_data() -> None:
+CATEGORY_DEFINITIONS = {
+    "learning": {"name": "Chinese Learning", "slug": "chinese-learning"},
+    "entertainment": {"name": "Chinese Entertainment", "slug": "chinese-entertainment"},
+    "culture_and_thought": {"name": "Chinese Culture & Thought", "slug": "chinese-culture-thought"},
+    "art_and_skills": {"name": "Chinese Arts & Skills", "slug": "chinese-arts-skills"},
+}
+
+
+def validate_seed_catalog() -> None:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    missing_category_definitions = sorted(set(SUBCATEGORIES) - set(CATEGORY_DEFINITIONS))
+    if missing_category_definitions:
+        errors.append(
+            "Missing CATEGORY_DEFINITIONS entries for: "
+            + ", ".join(missing_category_definitions)
+        )
+
+    subcategory_slugs: list[str] = [
+        item["slug"]
+        for subcategory_items in SUBCATEGORIES.values()
+        for item in subcategory_items
+    ]
+    duplicate_subcategories = sorted(
+        {slug for slug in subcategory_slugs if subcategory_slugs.count(slug) > 1}
+    )
+    if duplicate_subcategories:
+        errors.append("Duplicate subcategory slugs: " + ", ".join(duplicate_subcategories))
+
+    known_subcategory_slugs = set(subcategory_slugs)
+    missing_subcategories = sorted(set(COURSE_CATALOG) - known_subcategory_slugs)
+    if missing_subcategories:
+        errors.append(
+            "COURSE_CATALOG references missing subcategory slugs: "
+            + ", ".join(missing_subcategories)
+        )
+
+    unused_subcategories = sorted(known_subcategory_slugs - set(COURSE_CATALOG))
+    if unused_subcategories:
+        warnings.append(
+            "Subcategories without seed courses: " + ", ".join(unused_subcategories)
+        )
+
+    required_course_fields = {
+        "title",
+        "description",
+        "cover_image_url",
+        "level",
+        "metadata_json",
+        "section_title",
+        "lessons",
+    }
+    course_slugs: dict[str, str] = {}
+
+    for subcategory_slug, courses in COURSE_CATALOG.items():
+        if not isinstance(courses, list) or not courses:
+            errors.append(f"{subcategory_slug} must include at least one course")
+            continue
+
+        for index, course in enumerate(courses, start=1):
+            title = str(course.get("title", "")).strip()
+            display_name = title or f"{subcategory_slug}[{index}]"
+            missing_fields = sorted(required_course_fields - set(course))
+            if missing_fields:
+                errors.append(f"{display_name} is missing fields: {', '.join(missing_fields)}")
+
+            if not title:
+                errors.append(f"{subcategory_slug}[{index}] has an empty title")
+            else:
+                slug = slugify(title)
+                if slug in course_slugs:
+                    errors.append(
+                        f"Duplicate generated course slug '{slug}' for "
+                        f"'{display_name}' and '{course_slugs[slug]}'"
+                    )
+                course_slugs[slug] = display_name
+
+            lessons = course.get("lessons")
+            if not isinstance(lessons, list) or not lessons:
+                errors.append(f"{display_name} must include at least one lesson")
+                continue
+
+            for lesson_index, lesson in enumerate(lessons, start=1):
+                lesson_title = str(lesson.get("title", "")).strip()
+                if not lesson_title:
+                    errors.append(f"{display_name} lesson {lesson_index} has an empty title")
+                if "duration_minutes" not in lesson:
+                    errors.append(f"{display_name} lesson {lesson_index} is missing duration_minutes")
+                if "is_free" not in lesson:
+                    errors.append(f"{display_name} lesson {lesson_index} is missing is_free")
+
+    if warnings:
+        for warning in warnings:
+            print(f"Seed warning: {warning}")
+
+    if errors:
+        raise ValueError("Invalid LMS seed catalog:\n- " + "\n- ".join(errors))
+
+
+async def seed_lms_data(*, validate_only: bool = False) -> None:
+    validate_seed_catalog()
+    if validate_only:
+        print("LMS seed catalog is valid.")
+        return
+
     async with SessionLocal() as db:
         print("Seeding LMS data...")
 
-        learning_category = await get_or_create_category(db, "Chinese Learning", "chinese-learning")
-        entertainment_category = await get_or_create_category(
-            db,
-            "Chinese Entertainment",
-            "chinese-entertainment",
-        )
-        culture_thought_category = await get_or_create_category(
-            db,
-            "Chinese Culture & Thought",
-            "chinese-culture-thought",
-        )
-        art_skills_category = await get_or_create_category(
-            db,
-            "Chinese Arts & Skills",
-            "chinese-arts-skills",
-        )
+        categories: dict[str, Category] = {}
+        for category_key, category_data in CATEGORY_DEFINITIONS.items():
+            categories[category_key] = await get_or_create_category(
+                db,
+                category_data["name"],
+                category_data["slug"],
+            )
 
         subcategories: dict[str, Subcategory] = {}
-        for item in SUBCATEGORIES["learning"]:
-            subcategories[item["slug"]] = await get_or_create_subcategory(
-                db,
-                name=item["name"],
-                slug=item["slug"],
-                category_id=learning_category.id,
-            )
-        for item in SUBCATEGORIES["entertainment"]:
-            subcategories[item["slug"]] = await get_or_create_subcategory(
-                db,
-                name=item["name"],
-                slug=item["slug"],
-                category_id=entertainment_category.id,
-            )
-        for item in SUBCATEGORIES["culture_and_thought"]:
-            subcategories[item["slug"]] = await get_or_create_subcategory(
-                db,
-                name=item["name"],
-                slug=item["slug"],
-                category_id=culture_thought_category.id,
-            )
-        for item in SUBCATEGORIES["art_and_skills"]:
-            subcategories[item["slug"]] = await get_or_create_subcategory(
-                db,
-                name=item["name"],
-                slug=item["slug"],
-                category_id=art_skills_category.id,
-            )
+        for category_key, subcategory_items in SUBCATEGORIES.items():
+            category = categories[category_key]
+            for item in subcategory_items:
+                subcategories[item["slug"]] = await get_or_create_subcategory(
+                    db,
+                    name=item["name"],
+                    slug=item["slug"],
+                    category_id=category.id,
+                )
 
         for subcategory_slug, courses in COURSE_CATALOG.items():
             subcategory = subcategories[subcategory_slug]
@@ -1025,6 +1043,14 @@ async def seed_lms_data() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Seed or validate ChinVerse LMS content.")
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Validate the seed catalog without writing to the database.",
+    )
+    args = parser.parse_args()
+
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(seed_lms_data())
+    asyncio.run(seed_lms_data(validate_only=args.validate_only))

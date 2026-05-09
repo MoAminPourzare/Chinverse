@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, type LucideIcon } from "lucide-react";
+import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, type LucideIcon } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
 import EditResumeModal from "@/components/profile/EditResumeModal";
@@ -16,14 +16,16 @@ import { getMediaUrl } from "@/lib/media";
 interface Tab {
     id: string;
     label: string;
+    helper: string;
+    icon: LucideIcon;
 }
 
 const tabs: Tab[] = [
-    { id: "about", label: "درباره من" },
-    { id: "collections", label: "مجموعه های منتخب" },
-    { id: "resume", label: "رزومه" },
-    { id: "gallery", label: "گالری" },
-    { id: "services", label: "خدمات" },
+    { id: "about", label: "درباره من", helper: "معرفی", icon: UserIcon },
+    { id: "resume", label: "رزومه", helper: "سوابق", icon: FileText },
+    { id: "gallery", label: "گالری", helper: "تصاویر", icon: ImageIcon },
+    { id: "services", label: "خدمات", helper: "همکاری", icon: Briefcase },
+    { id: "collections", label: "منتخب", helper: "آرشیو", icon: Globe },
 ];
 
 const socialIcons: Record<string, LucideIcon> = {
@@ -37,11 +39,13 @@ const socialIcons: Record<string, LucideIcon> = {
 
 export default function ProfilePage() {
     const router = useRouter();
+    const avatarInputRef = useRef<HTMLInputElement>(null);
     const [activeTab, setActiveTab] = useState<string>(tabs[0].id);
     const [user, setUser] = useState<User | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [followersCount, setFollowersCount] = useState<number>(0);
     const [followingCount, setFollowingCount] = useState<number>(0);
 
@@ -88,6 +92,34 @@ export default function ProfilePage() {
     useEffect(() => {
         fetchUser();
     }, []);
+
+    const handleAvatarFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!file || isUploadingAvatar) return;
+
+        if (!file.type.startsWith("image/")) {
+            alert("لطفا یک فایل تصویری انتخاب کن.");
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("حجم عکس نباید بیشتر از ۵ مگابایت باشد.");
+            return;
+        }
+
+        setIsUploadingAvatar(true);
+        try {
+            const updatedUser = await userService.uploadAvatar(file);
+            setUser(updatedUser);
+        } catch (error) {
+            console.error("Failed to upload avatar", error);
+            alert("آپلود عکس انجام نشد. لطفا دوباره امتحان کن.");
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    };
 
     const renderTabContent = () => {
         if (activeTab === "about") {
@@ -323,6 +355,13 @@ export default function ProfilePage() {
                         <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
                         <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl" />
                         <div className="relative flex flex-col items-center">
+                        <input
+                            ref={avatarInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarFileChange}
+                        />
                         <div className="relative mb-4">
                             <div className="h-32 w-32 rounded-[32px] border border-white/30 bg-white/10 p-1 shadow-2xl">
                                 <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
@@ -340,6 +379,19 @@ export default function ProfilePage() {
                                     )}
                                 </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => avatarInputRef.current?.click()}
+                                disabled={isUploadingAvatar}
+                                className="absolute -bottom-1 -left-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/40 bg-white text-rose-600 shadow-[0_14px_32px_rgba(15,23,42,0.22)] transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                                aria-label="تغییر عکس پروفایل"
+                            >
+                                {isUploadingAvatar ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <Camera className="h-5 w-5" />
+                                )}
+                            </button>
                         </div>
 
                         <h1 className="mb-1 text-2xl font-black tracking-tight text-white">
@@ -371,22 +423,39 @@ export default function ProfilePage() {
                     </section>
 
                     {/* Tab Navigation */}
-                    <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/90 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                        <div className="flex overflow-x-auto no-scrollbar gap-2">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "relative flex-shrink-0 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-bold transition-all",
-                                        activeTab === tab.id
-                                            ? "bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_12px_26px_rgba(244,63,94,0.18)]"
-                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
-                                    )}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
+                    <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/92 p-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                        <div className="grid grid-cols-2 gap-2">
+                            {tabs.map((tab, index) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.id;
+
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "flex min-h-[64px] items-center gap-2 rounded-[22px] border px-3 py-2 text-right transition-all",
+                                            index === tabs.length - 1 && "col-span-2",
+                                            isActive
+                                                ? "border-transparent bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_14px_30px_rgba(244,63,94,0.2)]"
+                                                : "border-slate-100 bg-slate-50/80 text-slate-600 hover:bg-white hover:text-slate-900",
+                                        )}
+                                    >
+                                        <span className={cn(
+                                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
+                                            isActive ? "bg-white/18 text-white" : "bg-white text-rose-500 shadow-sm",
+                                        )}>
+                                            <Icon className="h-5 w-5" />
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-black leading-5">{tab.label}</span>
+                                            <span className={cn("mt-0.5 block text-[11px]", isActive ? "text-white/70" : "text-slate-400")}>
+                                                {tab.helper}
+                                            </span>
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 

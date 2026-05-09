@@ -31,6 +31,7 @@ interface Word {
 interface Flashcard {
     id: number;
     box_number: number;
+    next_review_at: string;
     word: Word;
 }
 
@@ -40,6 +41,22 @@ const BOX_BORDER_COLORS: Record<number, string> = {
     3: "border-green-500",
     4: "border-blue-500",
     5: "border-blue-800",
+};
+
+const BOX_LABELS: Record<number, string> = {
+    1: "جعبه ۱",
+    2: "جعبه ۲",
+    3: "جعبه ۳",
+    4: "جعبه ۴",
+    5: "جعبه ۵",
+};
+
+const BOX_INTERVALS: Record<number, number> = {
+    1: 1,
+    2: 3,
+    3: 7,
+    4: 15,
+    5: 30,
 };
 
 type BackTabType = "examples" | "composition" | "persian" | "chinese";
@@ -114,7 +131,7 @@ export default function LeitnerReviewPage() {
         return parts.map((part, i) => (
             <React.Fragment key={i}>
                 {part}
-                {i < parts.length - 1 && <span className="font-bold text-rose-600">{keyword}</span>}
+                {i < parts.length - 1 && <span className="font-cjk font-bold text-rose-600" lang="zh-CN">{keyword}</span>}
             </React.Fragment>
         ));
     };
@@ -131,7 +148,7 @@ export default function LeitnerReviewPage() {
     if (sessionComplete) {
         return (
             <div className="flex min-h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
-                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-rose-50 to-amber-50 text-2xl font-black text-rose-500">完</div>
+                <div className="font-cjk mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-rose-50 to-amber-50 text-2xl font-black text-rose-500" lang="zh-CN">完</div>
                 <h2 className="mb-2 text-2xl font-black text-slate-950">آفرین! همه کارت‌ها مرور شدند!</h2>
                 <p className="mb-8 text-slate-500">برای امروز کارتی برای مرور نداری. فردا دوباره بیا!</p>
                 <button
@@ -146,6 +163,8 @@ export default function LeitnerReviewPage() {
 
     const currentCard = cards[currentIndex];
     const borderColor = BOX_BORDER_COLORS[currentCard.box_number] || "border-red-500";
+    const rememberedBox = Math.min(currentCard.box_number + 1, 5);
+    const rememberedInterval = BOX_INTERVALS[rememberedBox] || 1;
 
     const backTabs: { key: BackTabType; label: string }[] = [
         { key: "examples", label: "مثال‌ها" },
@@ -185,8 +204,12 @@ export default function LeitnerReviewPage() {
             <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center space-y-4 overflow-hidden pt-5">
                 {/* Intro Text */}
                 <div className="text-center space-y-1">
-                    <p className="text-sm font-medium text-slate-600">الان ممکنه فراموش کنی، اما یادت باشه تکرار امروز،</p>
-                    <p className="text-sm font-medium text-slate-600">حافظه فردات رو می‌سازه.</p>
+                    <div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
+                        <span>{BOX_LABELS[currentCard.box_number]}</span>
+                        <span className="h-1 w-1 rounded-full bg-slate-300" />
+                        <span>اگر بلد باشی: {BOX_LABELS[rememberedBox]}، مرور {rememberedInterval.toLocaleString("fa-IR")} روز بعد</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-600">اول معنی را از حافظه بگو، بعد پشت کارت را ببین.</p>
                 </div>
 
                 {/* Card Container */}
@@ -196,7 +219,7 @@ export default function LeitnerReviewPage() {
                         /* Front Side */
                         <div className="flex-1 flex flex-col items-center justify-center p-8">
                             <div className="flex items-center justify-center gap-4">
-                                <span className="text-5xl font-bold text-gray-800" dir="ltr">
+                                <span className="font-cjk text-[2.75rem] font-bold leading-tight text-gray-800 sm:text-5xl" dir="ltr" lang="zh-CN">
                                     {currentCard.word.chinese}
                                 </span>
                                 <button
@@ -218,11 +241,11 @@ export default function LeitnerReviewPage() {
                                 >
                                     <Volume2 size={20} />
                                 </button>
-                                <span className="text-3xl font-bold text-rose-600" dir="ltr">
+                                <span className="font-cjk text-3xl font-bold text-rose-600" dir="ltr" lang="zh-CN">
                                     {currentCard.word.chinese}
                                 </span>
                             </div>
-                            <p className="text-base text-gray-500 text-center py-2" dir="ltr">
+                            <p className="font-latin py-2 text-center text-base text-gray-500" dir="ltr" lang="en">
                                 {currentCard.word.pinyin}
                             </p>
 
@@ -259,7 +282,7 @@ export default function LeitnerReviewPage() {
                                                             className="w-full rounded-xl aspect-video bg-black"
                                                         />
                                                     )}
-                                                    <p className="text-gray-800 text-base" dir="ltr">
+                                                    <p className="font-cjk text-base text-gray-800" dir="ltr" lang="zh-CN">
                                                         {i + 1}. {highlightKeyword(example.sentence_ch || example.zh_text || "", currentCard.word.chinese)}
                                                     </p>
                                                     {(example.sentence_fa || example.target_text) && (
@@ -277,7 +300,7 @@ export default function LeitnerReviewPage() {
                                     <div className="space-y-3">
                                         {currentCard.word.composition ? (
                                             currentCard.word.composition.split("\n").map((line, i) => (
-                                                <p key={i} className="text-gray-800" dir="ltr">
+                                                <p key={i} className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
                                                     {i + 1}. {highlightKeyword(line, currentCard.word.chinese)}
                                                 </p>
                                             ))
@@ -305,7 +328,7 @@ export default function LeitnerReviewPage() {
                                     <div className="space-y-3">
                                         {currentCard.word.chinese_meaning ? (
                                             currentCard.word.chinese_meaning.split("\n").map((line, i) => (
-                                                <p key={i} className="text-gray-800" dir="ltr">
+                                                <p key={i} className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
                                                     {i + 1}. {line}
                                                 </p>
                                             ))
@@ -328,23 +351,33 @@ export default function LeitnerReviewPage() {
                                 دیدن پشت کارت
                             </button>
                         ) : (
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => handleReview(false)}
-                                    disabled={isSubmitting}
-                                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
-                                >
-                                    <X size={18} />
-                                    یادم نیست
-                                </button>
-                                <button
-                                    onClick={() => handleReview(true)}
-                                    disabled={isSubmitting}
-                                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
-                                >
-                                    <Check size={18} />
-                                    یادم هست
-                                </button>
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold">
+                                    <div className="rounded-2xl bg-red-50 px-3 py-2 text-red-600">
+                                        فراموش شد: جعبه ۱، مرور فردا
+                                    </div>
+                                    <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-emerald-700">
+                                        بلد بودی: {BOX_LABELS[rememberedBox]}، {rememberedInterval.toLocaleString("fa-IR")} روز بعد
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => handleReview(false)}
+                                        disabled={isSubmitting}
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+                                    >
+                                        <X size={18} />
+                                        یادم نیست
+                                    </button>
+                                    <button
+                                        onClick={() => handleReview(true)}
+                                        disabled={isSubmitting}
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+                                    >
+                                        <Check size={18} />
+                                        یادم هست
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

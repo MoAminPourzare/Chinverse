@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import BigInteger, ForeignKey, DateTime, Integer, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, DateTime, Integer, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base, TimestampMixin
@@ -23,6 +23,8 @@ class UserFlashcard(Base, TimestampMixin):
     # Constraint to ensure one flashcard per word per user
     __table_args__ = (
         UniqueConstraint('user_id', 'word_id', name='uq_user_word_flashcard'),
+        Index("ix_user_flashcards_user_next_review", "user_id", "next_review_at"),
+        Index("ix_user_flashcards_user_box", "user_id", "box_number"),
     )
 
 # Forward references

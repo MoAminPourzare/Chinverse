@@ -285,7 +285,8 @@ export default function SharedWatchPage() {
                     <button
                         key={key++}
                         onClick={() => handleWordClick(clickWord)}
-                        className="rounded-md bg-amber-200 px-1.5 text-slate-900 transition-colors hover:bg-amber-300"
+                        className="font-cjk rounded-md bg-amber-200 px-1.5 text-slate-900 transition-colors hover:bg-amber-300"
+                        lang="zh-CN"
                     >
                         {foundWord}
                     </button>,
@@ -346,7 +347,7 @@ export default function SharedWatchPage() {
                         <div className="min-w-0 flex-1 text-center">
                             <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${config.color}`}>{config.label}</p>
                             <h1 className="mt-1 truncate text-base font-bold text-slate-900">{headerTitle}</h1>
-                            <p className="truncate text-xs text-slate-500" dir="ltr">
+                            <p className="font-latin truncate text-xs text-slate-500" dir="ltr">
                                 {headerSubtitle}
                             </p>
                         </div>
@@ -459,7 +460,7 @@ export default function SharedWatchPage() {
                             <div className="mt-5 space-y-5">
                                 {lessonTranscript.map((item) => (
                                     <div key={item.id} className="space-y-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                                        <p className="text-xl font-bold leading-9 text-rose-600" dir="ltr">
+                                        <p className="font-cjk text-lg font-bold leading-9 text-rose-600 sm:text-xl" dir="ltr" lang="zh-CN">
                                             {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
                                         </p>
                                         <p className="text-sm leading-8 text-slate-700">{item.persian}</p>

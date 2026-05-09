@@ -40,8 +40,8 @@ export default function LessonPlayerPage() {
 
                 <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
                     <Surface className="p-5">
-                        <h2 className="text-3xl font-black text-slate-950" dir="ltr">你好！</h2>
-                        <p className="mt-2 text-sm text-slate-500" dir="ltr">Hello! - Lesson {id}</p>
+                        <h2 className="font-cjk text-3xl font-black text-slate-950" dir="ltr" lang="zh-CN">你好！</h2>
+                        <p className="font-latin mt-2 text-sm text-slate-500" dir="ltr" lang="en">Hello! - Lesson {id}</p>
                         <p className="mt-5 text-sm leading-8 text-slate-600">
                             در این درس با سلام و احوالپرسی‌های پایه در زبان چینی آشنا می‌شوی و چند عبارت کوتاه را تمرین می‌کنی.
                         </p>
@@ -56,11 +56,11 @@ export default function LessonPlayerPage() {
                         </div>
                         <ul className="space-y-3 text-sm" dir="ltr">
                             <li className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2">
-                                <span>你好 (nǐ hǎo)</span>
+                                <span><span className="font-cjk" lang="zh-CN">你好</span> <span className="font-latin" lang="en">(nǐ hǎo)</span></span>
                                 <span className="text-slate-500">Hello</span>
                             </li>
                             <li className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2">
-                                <span>谢谢 (xiè xie)</span>
+                                <span><span className="font-cjk" lang="zh-CN">谢谢</span> <span className="font-latin" lang="en">(xiè xie)</span></span>
                                 <span className="text-slate-500">Thank you</span>
                             </li>
                         </ul>

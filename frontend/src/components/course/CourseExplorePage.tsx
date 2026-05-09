@@ -159,7 +159,7 @@ export default function CourseExplorePage({
                                                 <div className="space-y-3">
                                                     <div className="text-center">
                                                         <div className="text-sm font-semibold uppercase tracking-[0.22em] text-white/75">HSK</div>
-                                                        <div className="mt-1 text-5xl font-black leading-none">HSK {hskLevel}</div>
+                                                        <div className="font-latin mt-1 text-[2.65rem] font-black leading-none sm:text-5xl" lang="en">HSK {hskLevel}</div>
                                                     </div>
                                                     <p className="text-center text-xs font-medium text-white/80">
                                                         {wordCount ? `${wordCount} واژه` : course.level}

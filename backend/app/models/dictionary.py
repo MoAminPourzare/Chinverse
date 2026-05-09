@@ -24,7 +24,7 @@ class WordDefinition(Base, TimestampMixin):
     __tablename__ = "word_definitions"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False)
+    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
     lang_code: Mapped[str] = mapped_column(String, nullable=False)
     definition_text: Mapped[str] = mapped_column(Text, nullable=False)
     part_of_speech: Mapped[str] = mapped_column(String, nullable=False)
@@ -36,7 +36,7 @@ class WordCollocation(Base, TimestampMixin):
     __tablename__ = "word_collocations"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False)
+    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
     phrase_zh: Mapped[str] = mapped_column(String, nullable=False)
     phrase_pinyin: Mapped[str] = mapped_column(String, nullable=False)
     translation_target: Mapped[str] = mapped_column(String, nullable=False)
@@ -48,8 +48,8 @@ class WordExample(Base, TimestampMixin):
     __tablename__ = "word_examples"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False)
-    media_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("media_assets.id"), nullable=True)
+    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
+    media_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("media_assets.id"), nullable=True, index=True)
     zh_text: Mapped[str] = mapped_column(String, nullable=False)
     pinyin: Mapped[str] = mapped_column(String, nullable=False)
     target_text: Mapped[str] = mapped_column(String, nullable=False)

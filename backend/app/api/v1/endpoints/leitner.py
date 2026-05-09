@@ -221,14 +221,39 @@ async def get_dashboard_stats(
     for box_num, count in result.all():
         box_counts[box_num] = count
 
+    total_cards = sum(box_counts.values())
+    mastered_count = box_counts.get(5, 0)
+
     # Total Due (cards ready to be reviewed right now)
+    now = datetime.utcnow()
     due_query = (
         select(func.count(UserFlashcard.id))
         .where(UserFlashcard.user_id == current_user.id)
-        .where(UserFlashcard.next_review_at <= datetime.utcnow())
+        .where(UserFlashcard.next_review_at <= now)
     )
     result = await db.execute(due_query)
     total_due = result.scalar() or 0
+
+    due_by_box = {i: 0 for i in range(1, 6)}
+    due_by_box_query = (
+        select(UserFlashcard.box_number, func.count(UserFlashcard.id))
+        .where(UserFlashcard.user_id == current_user.id)
+        .where(UserFlashcard.next_review_at <= now)
+        .group_by(UserFlashcard.box_number)
+    )
+    result = await db.execute(due_by_box_query)
+    for box_num, count in result.all():
+        due_by_box[box_num] = count
+
+    upcoming_count = max(total_cards - total_due, 0)
+
+    next_due_query = (
+        select(func.min(UserFlashcard.next_review_at))
+        .where(UserFlashcard.user_id == current_user.id)
+        .where(UserFlashcard.next_review_at > now)
+    )
+    result = await db.execute(next_due_query)
+    next_due_at = result.scalar_one_or_none()
 
     # Recent Cards (most recently added or reviewed)
     recent_query = (
@@ -243,7 +268,13 @@ async def get_dashboard_stats(
 
     return LeitnerDashboardStats(
         box_counts=box_counts,
+        due_by_box=due_by_box,
+        box_intervals=BOX_INTERVALS,
+        total_cards=total_cards,
         total_due=total_due,
+        upcoming_count=upcoming_count,
+        mastered_count=mastered_count,
+        next_due_at=next_due_at,
         recent_cards=recent_cards
     )
 

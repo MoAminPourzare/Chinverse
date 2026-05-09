@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, text
+from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, Index, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
@@ -19,7 +19,7 @@ class Subcategory(Base, TimestampMixin):
     __tablename__ = "subcategories"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    category_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("categories.id"), nullable=False)
+    category_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("categories.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
 
@@ -31,7 +31,7 @@ class Course(Base, TimestampMixin):
     __tablename__ = "courses"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    subcategory_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subcategories.id"), nullable=False)
+    subcategory_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subcategories.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String, index=True, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -50,9 +50,12 @@ class Course(Base, TimestampMixin):
 
 class CourseSection(Base, TimestampMixin):
     __tablename__ = "course_sections"
+    __table_args__ = (
+        Index("ix_course_sections_course_order", "course_id", "order_index"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id"), nullable=False)
+    course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0)
     metadata_json: Mapped[Dict[str, Any]] = mapped_column(
@@ -68,10 +71,13 @@ class CourseSection(Base, TimestampMixin):
 
 class Lesson(Base, TimestampMixin):
     __tablename__ = "lessons"
+    __table_args__ = (
+        Index("ix_lessons_section_order", "section_id", "id"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id"), nullable=False)
-    section_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("course_sections.id"), nullable=False)
+    course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id"), nullable=False, index=True)
+    section_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("course_sections.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     video_url: Mapped[str] = mapped_column(String, nullable=False)
     duration_minutes: Mapped[float] = mapped_column(Float, default=0.0)
@@ -93,7 +99,7 @@ class Content(Base, TimestampMixin):
     __tablename__ = "contents"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False)
+    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False, index=True)
     content_type: Mapped[str] = mapped_column(String, nullable=False) # video, text
     video_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     text_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -105,7 +111,7 @@ class LessonSubtitle(Base, TimestampMixin):
     __tablename__ = "lesson_subtitles"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False)
+    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False, index=True)
     lang_code: Mapped[str] = mapped_column(String, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False) # VTT/SRT content or JSON
     timestamp_start: Mapped[float] = mapped_column(Float, nullable=False)
@@ -118,8 +124,8 @@ class LessonWordMap(Base, TimestampMixin):
     __tablename__ = "lesson_word_maps"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False)
-    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False)
+    lesson_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lessons.id"), nullable=False, index=True)
+    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
     timestamp: Mapped[float] = mapped_column(Float, nullable=False)
 
     # Relationships

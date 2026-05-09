@@ -1,30 +1,48 @@
+"""
+Development-only full database wipe.
+
+This script drops and recreates the public schema.
+It is intentionally blocked unless ALLOW_DESTRUCTIVE_DB_ACTION=1 is set.
+Never run it against production.
+"""
+
 import asyncio
-import sys
 import os
+import sys
+
 from sqlalchemy import text
 
-# 1. اضافه کردن مسیر جاری به پایتون تا پوشه app را پیدا کند
 sys.path.append(os.getcwd())
 
-# 2. ایمپورت صحیح انجین (طبق ساختار پروژه شما)
-try:
-    from app.db.session import engine
-except ImportError:
-    # محض احتیاط اگر مسیر دیگری بود
-    from app.core.db import engine
+from app.db.safety import assert_destructive_db_action_allowed
+from app.db.session import engine
 
-async def nuke_database():
+
+async def nuke_database() -> None:
+    assert_destructive_db_action_allowed("nuke_db")
+
     async with engine.begin() as conn:
-        print("💣 Dropping ALL Tables & Schema...")
-        # پاک کردن کل اسکیما و ساخت مجدد آن
+        print("Dropping and recreating the public schema...")
         await conn.execute(text("DROP SCHEMA public CASCADE;"))
         await conn.execute(text("CREATE SCHEMA public;"))
         await conn.execute(text("GRANT ALL ON SCHEMA public TO public;"))
-        print("✅ Database is fresh and empty.")
+        print("Database schema is fresh and empty.")
+
+
+async def main() -> None:
+    print("Full Database Wipe")
+    print("This will DELETE every table and every row in the public schema.")
+    print("Required safety flag: ALLOW_DESTRUCTIVE_DB_ACTION=1")
+
+    confirmation = input("Type NUKE to continue: ")
+    if confirmation != "NUKE":
+        print("Nuke cancelled.")
+        return
+
+    await nuke_database()
+
 
 if __name__ == "__main__":
-    # فیکس مخصوص ویندوز برای ارورهای احتمالی async
-    if os.name == 'nt':
+    if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        
-    asyncio.run(nuke_database())
+    asyncio.run(main())

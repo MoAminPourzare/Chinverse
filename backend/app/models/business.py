@@ -18,7 +18,7 @@ class Service(Base, TimestampMixin):
     __tablename__ = "services"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    provider_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    provider_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     base_price: Mapped[float] = mapped_column(Float, nullable=False)
@@ -32,8 +32,8 @@ class ConsultationRequest(Base, TimestampMixin):
     __tablename__ = "consultation_requests"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    service_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("services.id"), nullable=False)
-    requester_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    service_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("services.id"), nullable=False, index=True)
+    requester_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     status: Mapped[ConsultationStatus] = mapped_column(String, default=ConsultationStatus.OPEN)
     initial_message: Mapped[str] = mapped_column(Text, nullable=False)
 
@@ -57,8 +57,8 @@ class UserSubscription(Base, TimestampMixin):
     __tablename__ = "user_subscriptions"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
-    plan_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subscription_plans.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    plan_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subscription_plans.id"), nullable=False, index=True)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
     status: Mapped[SubscriptionStatus] = mapped_column(String, default=SubscriptionStatus.ACTIVE)
