@@ -1,15 +1,15 @@
 from datetime import datetime
 from typing import List, Dict, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Schemas for API requests/responses
 
 class LeitnerAddRequest(BaseModel):
-    word_id: Optional[int] = None  # Can be None for mock vocabulary
-    chinese: Optional[str] = None  # Chinese characters to find/create word
-    pinyin: Optional[str] = None   # Pinyin for creating new word
-    persian_meaning: Optional[str] = None
-    chinese_meaning: Optional[str] = None
+    word_id: Optional[int] = Field(default=None, ge=0)  # Can be None or 0 for mock vocabulary
+    chinese: Optional[str] = Field(default=None, max_length=80)  # Chinese characters to find/create word
+    pinyin: Optional[str] = Field(default=None, max_length=160)   # Pinyin for creating new word
+    persian_meaning: Optional[str] = Field(default=None, max_length=2000)
+    chinese_meaning: Optional[str] = Field(default=None, max_length=4000)
 
 class FlashcardBase(BaseModel):
     id: int

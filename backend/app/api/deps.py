@@ -1,5 +1,5 @@
-from typing import Generator, Optional
-from fastapi import Depends, HTTPException, status
+from typing import Generator
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pydantic import ValidationError
@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.api.errors import forbidden, unauthorized
 from app.core.config import settings
-from app.core import security
-from app.models.user import User
+from app.models.user import User, UserStatus
 from app.schemas.token import TokenPayload
 from app.db.session import SessionLocal
 
@@ -30,19 +30,19 @@ async def get_current_user(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (JWTError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        )
+        user_id = int(token_data.sub)
+    except (JWTError, ValidationError, TypeError, ValueError):
+        raise unauthorized()
     
     result = await session.execute(
-        select(User).options(selectinload(User.profile)).where(User.id == int(token_data.sub))
+        select(User).options(selectinload(User.profile)).where(User.id == user_id)
     )
-    user = result.scalars().first()
+    user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise unauthorized("User account no longer exists")
+    if user.status != UserStatus.ACTIVE:
+        raise forbidden("Inactive user")
     return user
 
 
@@ -59,15 +59,9 @@ async def get_current_admin_user(
 ) -> User:
     admin_emails = _get_admin_emails()
     if not admin_emails:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access is not configured",
-        )
+        raise forbidden("Admin access is not configured")
 
     if current_user.email.lower() not in admin_emails:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
+        raise forbidden()
 
     return current_user

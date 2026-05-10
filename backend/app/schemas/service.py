@@ -1,12 +1,12 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ServiceBase(BaseModel):
     """Base service schema"""
-    title: str
-    description: str
-    price_label: Optional[str] = None
+    title: str = Field(min_length=1, max_length=160)
+    description: str = Field(min_length=1, max_length=4000)
+    price_label: Optional[str] = Field(default=None, max_length=80)
 
 
 class ServiceCreate(ServiceBase):
@@ -16,9 +16,9 @@ class ServiceCreate(ServiceBase):
 
 class ServiceUpdate(BaseModel):
     """Schema for updating a service"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    price_label: Optional[str] = None
+    title: Optional[str] = Field(default=None, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=4000)
+    price_label: Optional[str] = Field(default=None, max_length=80)
 
 
 class Service(ServiceBase):

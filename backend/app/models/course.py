@@ -80,7 +80,9 @@ class Lesson(Base, TimestampMixin):
     section_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("course_sections.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     video_url: Mapped[str] = mapped_column(String, nullable=False)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     duration_minutes: Mapped[float] = mapped_column(Float, default=0.0)
+    media_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("media_assets.id"), nullable=True, index=True)
     is_free: Mapped[bool] = mapped_column(Boolean, default=False)
     metadata_json: Mapped[Dict[str, Any]] = mapped_column(
         JSONB,
@@ -91,6 +93,7 @@ class Lesson(Base, TimestampMixin):
 
     # Relationships
     section: Mapped["CourseSection"] = relationship(back_populates="lessons")
+    media: Mapped[Optional["MediaAsset"]] = relationship()
     content: Mapped[List["Content"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
     subtitles: Mapped[List["LessonSubtitle"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
     word_maps: Mapped[List["LessonWordMap"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
@@ -132,5 +135,6 @@ class LessonWordMap(Base, TimestampMixin):
     lesson: Mapped["Lesson"] = relationship(back_populates="word_maps")
     word: Mapped["DictionaryWord"] = relationship()
 
-# Forward reference for DictionaryWord
+# Forward reference for DictionaryWord and MediaAsset
 from app.models.dictionary import DictionaryWord
+from app.models.media import MediaAsset

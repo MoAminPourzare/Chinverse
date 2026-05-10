@@ -1,14 +1,16 @@
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app import schemas
 from app.api import deps
+from app.api.errors import bad_request, conflict, forbidden, unauthorized
+from app.api.rate_limit import auth_login_rate_limit, auth_signup_rate_limit
 from app.core import security
 from app.core.config import settings
 from app.models.user import User, UserProfile, UserStatus
@@ -18,20 +20,21 @@ router = APIRouter()
 @router.post("/login/access-token", response_model=schemas.Token)
 async def login_access_token(
     db: AsyncSession = Depends(deps.get_db),
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    _rate_limit: None = Depends(auth_login_rate_limit),
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    # Authenticate user
-    result = await db.execute(select(User).where(User.email == form_data.username))
-    user = result.scalars().first()
+    email = form_data.username.strip().lower()
+    result = await db.execute(select(User).where(func.lower(User.email) == email))
+    user = result.scalar_one_or_none()
     
     if not user or not security.verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        raise unauthorized("Incorrect email or password")
     
     if user.status != UserStatus.ACTIVE:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise forbidden("Inactive user")
         
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
@@ -46,31 +49,30 @@ async def create_user_signup(
     *,
     db: AsyncSession = Depends(deps.get_db),
     user_in: schemas.UserCreate,
+    _rate_limit: None = Depends(auth_signup_rate_limit),
 ) -> Any:
     """
     Create new user without the need to be logged in
     """
-    # Check if user exists
-    result = await db.execute(select(User).where(User.email == user_in.email))
-    user = result.scalars().first()
+    email = str(user_in.email).strip().lower()
+    phone = user_in.phone.strip()
+    display_name = user_in.display_name.strip()
+    if not phone or not display_name:
+        raise bad_request("Phone and display name cannot be empty")
+
+    result = await db.execute(select(User).where(func.lower(User.email) == email))
+    user = result.scalar_one_or_none()
     if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system",
-        )
+        raise conflict("The user with this email already exists in the system")
     
-    result = await db.execute(select(User).where(User.phone == user_in.phone))
-    user = result.scalars().first()
+    result = await db.execute(select(User).where(User.phone == phone))
+    user = result.scalar_one_or_none()
     if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this phone number already exists in the system",
-        )
+        raise conflict("The user with this phone number already exists in the system")
         
-    # Create user
     user = User(
-        email=user_in.email,
-        phone=user_in.phone,
+        email=email,
+        phone=phone,
         password_hash=security.get_password_hash(user_in.password),
         is_verified=False,
         status=UserStatus.ACTIVE
@@ -81,7 +83,7 @@ async def create_user_signup(
     # Create profile
     profile = UserProfile(
         user_id=user.id,
-        display_name=user_in.display_name
+        display_name=display_name
     )
     db.add(profile)
     

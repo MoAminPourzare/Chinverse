@@ -1,22 +1,22 @@
+from datetime import datetime
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-import uuid
-import shutil
 
 from app.api import deps
+from app.api.errors import bad_request, conflict, not_found
+from app.api.pagination import PaginationParams, pagination_params
+from app.api.rate_limit import upload_rate_limit, write_rate_limit
 from app.core.paths import AVATARS_DIR, resolve_backend_file_url, safe_unlink
+from app.core.storage import delete_public_file
+from app.core.uploads import save_image_upload
 from app.models.user import User, UserProfile, UserGalleryItem
 from app.schemas import user as schemas
 from app.schemas.showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic, EducationSummary
 
 router = APIRouter()
-
-# مجاز فایل‌های تصویری
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 async def get_user_with_profile(db: AsyncSession, user_id: int) -> User:
@@ -25,7 +25,7 @@ async def get_user_with_profile(db: AsyncSession, user_id: int) -> User:
     )
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise not_found("User")
     return user
 
 @router.get("/me", response_model=schemas.User)
@@ -42,6 +42,7 @@ async def read_user_me(
 async def delete_user_account(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
     Delete current user account and all related data.
@@ -70,9 +71,17 @@ async def delete_user_account(
     service_files = await db.execute(
         select(UserService.banner_url).where(UserService.user_id == user_id)
     )
+    media_files = await db.execute(
+        select(MediaAsset.file_url, MediaAsset.thumbnail_url).where(MediaAsset.user_id == user_id)
+    )
     file_urls = list(gallery_files.scalars().all()) + [
         url for url in service_files.scalars().all() if url
     ]
+    for file_url, thumbnail_url in media_files.all():
+        if file_url:
+            file_urls.append(file_url)
+        if thumbnail_url:
+            file_urls.append(thumbnail_url)
     if current_user.profile and current_user.profile.avatar_url:
         file_urls.append(current_user.profile.avatar_url)
 
@@ -150,12 +159,15 @@ async def update_user_profile(
     db: AsyncSession = Depends(deps.get_db),
     profile_in: schemas.UserProfileUpdate,
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
     Update current user profile.
     """
     update_data = profile_in.model_dump(exclude_unset=True)
-    if update_data.get("display_name") is None:
+    if "display_name" in update_data and isinstance(update_data["display_name"], str):
+        update_data["display_name"] = update_data["display_name"].strip()
+    if update_data.get("display_name") is None or update_data.get("display_name") == "":
         update_data.pop("display_name", None)
 
     # Check if profile exists
@@ -180,70 +192,47 @@ async def upload_avatar(
     db: AsyncSession = Depends(deps.get_db),
     file: UploadFile = File(...),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(upload_rate_limit),
 ) -> Any:
     """
     Upload user avatar image.
     """
-    # بررسی فرمت فایل
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="فایل نامعتبر است")
-    
-    file_ext = file.filename.split(".")[-1].lower()
-    if file_ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"فرمت فایل باید یکی از این‌ها باشد: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-    
-    # بررسی حجم فایل
-    file.file.seek(0, 2)  # به انتهای فایل برو
-    file_size = file.file.tell()  # حجم فایل
-    file.file.seek(0)  # برگرد به اول فایل
-    
-    if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="حجم فایل نباید بیشتر از ۵ مگابایت باشد")
-    
-    # ایجاد نام یونیک برای فایل
-    unique_filename = f"{uuid.uuid4()}.{file_ext}"
-    
-    # مسیر ذخیره‌سازی
-    AVATARS_DIR.mkdir(parents=True, exist_ok=True)
-    file_path = AVATARS_DIR / unique_filename
-    
-    # ذخیره فایل
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"خطا در ذخیره فایل: {str(e)}")
-    finally:
-        file.file.close()
-    
-    # آدرس URL برای دسترسی به فایل
-    avatar_url = f"/uploads/avatars/{unique_filename}"
-    
-    # به‌روزرسانی پروفایل کاربر
+    avatar_url = await save_image_upload(
+        file,
+        destination_dir=AVATARS_DIR,
+        public_url_prefix="/uploads/avatars",
+    )
+    old_avatar_url = None
+
     if not current_user.profile:
-        # ایجاد پروفایل جدید
-        profile = UserProfile(user_id=current_user.id, avatar_url=avatar_url, display_name="کاربر")
+        profile = UserProfile(
+            user_id=current_user.id,
+            avatar_url=avatar_url,
+            display_name="User",
+        )
         db.add(profile)
     else:
-        # به‌روزرسانی پروفایل موجود
-        safe_unlink(resolve_backend_file_url(current_user.profile.avatar_url))
+        old_avatar_url = current_user.profile.avatar_url
         current_user.profile.avatar_url = avatar_url
         db.add(current_user.profile)
-    
-    await db.commit()
-    return await get_user_with_profile(db, current_user.id)
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        delete_public_file(avatar_url)
+        raise
 
+    if old_avatar_url:
+        delete_public_file(old_avatar_url)
+
+    return await get_user_with_profile(db, current_user.id)
 
 # ===== PUBLIC ENDPOINTS (No auth required) =====
 
 @router.get("/showcase", response_model=List[ShowcaseUser])
 async def get_showcase_users(
     db: AsyncSession = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 20,
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get list of users for showcase directory.
@@ -255,8 +244,9 @@ async def get_showcase_users(
             selectinload(User.profile),
             selectinload(User.gallery_items)
         )
-        .offset(skip)
-        .limit(limit)
+        .order_by(User.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     users = result.scalars().all()
     
@@ -278,7 +268,14 @@ async def get_showcase_users(
                 )
         
         # Get first 3 gallery images for preview
-        gallery_preview = [item.image_url for item in user.gallery_items[:3]]
+        gallery_preview = [
+            item.image_url
+            for item in sorted(
+                user.gallery_items,
+                key=lambda item: item.created_at or datetime.min,
+                reverse=True,
+            )[:3]
+        ]
         
         # Extract HSK level from skills if available
         hsk_level = None
@@ -323,7 +320,7 @@ async def get_public_user_profile(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise not_found("User")
     
     # Build public profile
     public_profile = None
@@ -347,7 +344,11 @@ async def get_public_user_profile(
             image_url=item.image_url,
             caption=item.caption
         )
-        for item in user.gallery_items
+        for item in sorted(
+            user.gallery_items,
+            key=lambda item: item.created_at or datetime.min,
+            reverse=True,
+        )
     ]
     
     return PublicUser(
@@ -361,15 +362,24 @@ async def get_public_user_profile(
 async def get_user_services(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get public services for a user.
     Endpoint: GET /users/{user_id}/services
     """
     from app.models.service import UserService
+
+    target_user = await db.get(User, user_id)
+    if not target_user:
+        raise not_found("User")
     
     result = await db.execute(
-        select(UserService).where(UserService.user_id == user_id)
+        select(UserService)
+        .where(UserService.user_id == user_id)
+        .order_by(UserService.created_at.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     services = result.scalars().all()
     
@@ -391,6 +401,7 @@ async def get_user_services(
 async def get_my_network(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get list of users in current user's network.
@@ -404,6 +415,9 @@ async def get_my_network(
         .join(UserFollow, User.id == UserFollow.followee_id)
         .where(UserFollow.follower_id == current_user.id)
         .options(selectinload(User.profile))
+        .order_by(User.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     following = following_result.scalars().all()
     
@@ -445,6 +459,7 @@ async def follow_user(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
     Follow a user.
@@ -453,18 +468,12 @@ async def follow_user(
     
     # Prevent self-following
     if user_id == current_user.id:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot follow yourself"
-        )
+        raise bad_request("Cannot follow yourself")
     
     # Check if user exists
     target_user = await db.get(User, user_id)
     if not target_user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found"
-        )
+        raise not_found("User")
     
     # Check if already following
     existing = await db.execute(
@@ -475,10 +484,7 @@ async def follow_user(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Already following this user"
-        )
+        raise conflict("Already following this user")
     
     # Create follow
     follow = UserFollow(
@@ -496,6 +502,7 @@ async def unfollow_user(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
     Unfollow a user.
@@ -513,10 +520,7 @@ async def unfollow_user(
     follow = result.scalar_one_or_none()
     
     if not follow:
-        raise HTTPException(
-            status_code=400,
-            detail="Not following this user"
-        )
+        raise bad_request("Not following this user")
     
     # Remove follow
     await db.delete(follow)
@@ -594,6 +598,7 @@ async def get_my_following_count(
 async def get_my_followers(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get list of users who follow me.
@@ -606,6 +611,9 @@ async def get_my_followers(
         .join(UserFollow, User.id == UserFollow.follower_id)
         .where(UserFollow.followee_id == current_user.id)
         .options(selectinload(User.profile))
+        .order_by(User.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     followers = followers_result.scalars().all()
     
@@ -625,6 +633,7 @@ async def get_my_followers(
 async def get_my_following(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get list of users I am following.
@@ -637,6 +646,9 @@ async def get_my_following(
         .join(UserFollow, User.id == UserFollow.followee_id)
         .where(UserFollow.follower_id == current_user.id)
         .options(selectinload(User.profile))
+        .order_by(User.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     following = following_result.scalars().all()
     
@@ -656,6 +668,7 @@ async def get_my_following(
 async def get_user_followers(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get list of users who follow a specific user.
@@ -667,6 +680,9 @@ async def get_user_followers(
         .join(UserFollow, User.id == UserFollow.follower_id)
         .where(UserFollow.followee_id == user_id)
         .options(selectinload(User.profile))
+        .order_by(User.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     followers = followers_result.scalars().all()
     
@@ -686,6 +702,7 @@ async def get_user_followers(
 async def get_user_following(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get list of users a specific user is following.
@@ -697,6 +714,9 @@ async def get_user_following(
         .join(UserFollow, User.id == UserFollow.followee_id)
         .where(UserFollow.follower_id == user_id)
         .options(selectinload(User.profile))
+        .order_by(User.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     following = following_result.scalars().all()
     

@@ -1,10 +1,14 @@
 from typing import List
-from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import uuid
 
 from app.api import deps
+from app.api.errors import not_found
+from app.api.pagination import PaginationParams, pagination_params
+from app.api.rate_limit import upload_rate_limit, write_rate_limit
+from app.core.storage import delete_public_file
+from app.core.uploads import save_image_upload
 from app.models.user import User, UserGalleryItem
 from app.core.paths import GALLERY_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
 from app.schemas.gallery import GalleryItem
@@ -17,13 +21,14 @@ async def get_user_gallery(
     *,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
 ):
     """
     Get all gallery items for the current user.
     """
     stmt = select(UserGalleryItem).filter(
         UserGalleryItem.user_id == current_user.id
-    ).order_by(UserGalleryItem.created_at.desc())
+    ).order_by(UserGalleryItem.created_at.desc()).offset(pagination.skip).limit(pagination.limit)
     
     result = await db.execute(stmt)
     gallery_items = result.scalars().all()
@@ -36,31 +41,19 @@ async def upload_gallery_image(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
     file: UploadFile = File(...),
-    caption: str = Form(None),
+    caption: str | None = Form(None, max_length=500),
+    _rate_limit: None = Depends(upload_rate_limit),
 ):
     """
     Upload a new image to the user's gallery.
     """
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only image files are allowed"
-        )
-    
-    # Generate unique filename
-    file_extension = "." + file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    GALLERY_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    file_path = GALLERY_UPLOAD_DIR / unique_filename
-    
-    # Save file
-    with open(file_path, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-    
-    # Create database entry
-    image_url = f"/uploads/gallery/{unique_filename}"
+    image_url = await save_image_upload(
+        file,
+        destination_dir=GALLERY_UPLOAD_DIR,
+        public_url_prefix="/uploads/gallery",
+    )
+    if caption is not None:
+        caption = caption.strip() or None
     gallery_item = UserGalleryItem(
         user_id=current_user.id,
         image_url=image_url,
@@ -68,8 +61,13 @@ async def upload_gallery_image(
     )
     
     db.add(gallery_item)
-    await db.commit()
-    await db.refresh(gallery_item)
+    try:
+        await db.commit()
+        await db.refresh(gallery_item)
+    except Exception:
+        await db.rollback()
+        delete_public_file(image_url)
+        raise
     
     return gallery_item
 
@@ -79,6 +77,7 @@ async def delete_gallery_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_user),
     item_id: int,
+    _rate_limit: None = Depends(write_rate_limit),
 ):
     """
     Delete a gallery item.
@@ -92,10 +91,7 @@ async def delete_gallery_item(
     gallery_item = result.scalar_one_or_none()
     
     if not gallery_item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Gallery item not found"
-        )
+        raise not_found("Gallery item")
     
     # Delete file from filesystem
     safe_unlink(resolve_backend_file_url(gallery_item.image_url))

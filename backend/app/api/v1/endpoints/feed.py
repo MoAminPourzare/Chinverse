@@ -5,6 +5,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
+from app.api.pagination import PaginationParams, pagination_params
 from app.models.user import User, UserProfile, UserGalleryItem
 from app.models.service import UserService
 
@@ -14,19 +15,20 @@ router = APIRouter()
 @router.get("", response_model=List[dict])
 async def get_feed(
     db: AsyncSession = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 20,
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Get unified activity feed combining gallery items and services.
     Returns items sorted by creation date (newest first).
     """
     # Fetch latest gallery items with user info
+    fetch_limit = max(pagination.skip + pagination.limit, pagination.limit)
+
     gallery_result = await db.execute(
         select(UserGalleryItem)
         .options(selectinload(UserGalleryItem.user).selectinload(User.profile))
         .order_by(desc(UserGalleryItem.created_at))
-        .limit(limit)
+        .limit(fetch_limit)
     )
     gallery_items = gallery_result.scalars().all()
 
@@ -35,7 +37,7 @@ async def get_feed(
         select(UserService)
         .options(selectinload(UserService.user).selectinload(User.profile))
         .order_by(desc(UserService.created_at))
-        .limit(limit)
+        .limit(fetch_limit)
     )
     services = service_result.scalars().all()
 
@@ -111,4 +113,4 @@ async def get_feed(
     )
 
     # Apply pagination
-    return feed_items[skip:skip + limit]
+    return feed_items[pagination.skip:pagination.skip + pagination.limit]

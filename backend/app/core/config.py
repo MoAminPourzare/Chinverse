@@ -48,6 +48,24 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     API_V1_STR: str = "/api/v1"
+    API_DEFAULT_PAGE_SIZE: int = 20
+    API_MAX_PAGE_SIZE: int = 100
+
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_AUTH_REQUESTS: int = 10
+    RATE_LIMIT_AUTH_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_WRITE_REQUESTS: int = 60
+    RATE_LIMIT_WRITE_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_UPLOAD_REQUESTS: int = 20
+    RATE_LIMIT_UPLOAD_WINDOW_SECONDS: int = 300
+
+    MAX_IMAGE_UPLOAD_SIZE_BYTES: int = 5 * 1024 * 1024
+    ALLOWED_IMAGE_EXTENSIONS: str = "jpg,jpeg,png,webp"
+    ALLOWED_IMAGE_CONTENT_TYPES: str = "image/jpeg,image/png,image/webp"
+    MAX_VIDEO_UPLOAD_SIZE_BYTES: int = 500 * 1024 * 1024
+    ALLOWED_VIDEO_EXTENSIONS: str = "mp4,webm,mov,m4v"
+    ALLOWED_VIDEO_CONTENT_TYPES: str = "video/mp4,video/webm,video/quicktime,video/x-m4v"
+    FILE_STORAGE_MODE: str = "local"
 
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
     ALLOWED_HOSTS: str = "*"
@@ -108,6 +126,26 @@ class Settings(BaseSettings):
     @property
     def TRUSTED_HOSTS(self) -> list[str]:
         return parse_setting_list(self.ALLOWED_HOSTS)
+
+    @computed_field
+    @property
+    def IMAGE_EXTENSIONS(self) -> list[str]:
+        return [item.lower().lstrip(".") for item in parse_setting_list(self.ALLOWED_IMAGE_EXTENSIONS)]
+
+    @computed_field
+    @property
+    def IMAGE_CONTENT_TYPES(self) -> list[str]:
+        return [item.lower() for item in parse_setting_list(self.ALLOWED_IMAGE_CONTENT_TYPES)]
+
+    @computed_field
+    @property
+    def VIDEO_EXTENSIONS(self) -> list[str]:
+        return [item.lower().lstrip(".") for item in parse_setting_list(self.ALLOWED_VIDEO_EXTENSIONS)]
+
+    @computed_field
+    @property
+    def VIDEO_CONTENT_TYPES(self) -> list[str]:
+        return [item.lower() for item in parse_setting_list(self.ALLOWED_VIDEO_CONTENT_TYPES)]
 
     @computed_field
     @property

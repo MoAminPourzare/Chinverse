@@ -1,12 +1,12 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 # ===== FORUM QUESTION SCHEMAS =====
 
 class ForumQuestionBase(BaseModel):
-    title: str
-    content: str
+    title: str = Field(min_length=3, max_length=180)
+    content: str = Field(min_length=3, max_length=8000)
 
 class ForumQuestionCreate(ForumQuestionBase):
     pass
@@ -33,10 +33,10 @@ class ForumQuestionRead(ForumQuestionBase):
 # ===== FORUM ANSWER SCHEMAS =====
 
 class ForumAnswerBase(BaseModel):
-    content: str
+    content: str = Field(min_length=1, max_length=8000)
 
 class ForumAnswerCreate(ForumAnswerBase):
-    question_id: int
+    question_id: int = Field(gt=0)
 
 class ForumAnswerRead(ForumAnswerBase):
     id: int
@@ -51,10 +51,10 @@ class ForumAnswerRead(ForumAnswerBase):
 # ===== ARTICLE SCHEMAS =====
 
 class ArticleBase(BaseModel):
-    title: str
-    summary: Optional[str] = None
-    content: str
-    cover_image: Optional[str] = None
+    title: str = Field(min_length=3, max_length=180)
+    summary: Optional[str] = Field(default=None, max_length=500)
+    content: str = Field(min_length=3, max_length=50000)
+    cover_image: Optional[str] = Field(default=None, max_length=500)
 
 class ArticleCreate(ArticleBase):
     pass
@@ -69,7 +69,7 @@ class ArticleRead(ArticleBase):
 # ===== SUPPORT TICKET SCHEMAS =====
 
 class SupportTicketCreate(BaseModel):
-    message: str
+    message: str = Field(min_length=1, max_length=4000)
 
 class SupportTicketRead(BaseModel):
     id: int

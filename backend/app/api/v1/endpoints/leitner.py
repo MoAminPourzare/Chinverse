@@ -1,12 +1,15 @@
 from typing import Any, List
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api import deps
+from app.api.errors import bad_request, not_found
+from app.api.pagination import PaginationParams, pagination_params
+from app.api.rate_limit import write_rate_limit
 from app.models.leitner import UserFlashcard
 from app.models.dictionary import DictionaryWord
 from app.models.user import User
@@ -79,7 +82,7 @@ def get_mock_data(chinese: str) -> dict:
 
 
 class ReviewRequest(BaseModel):
-    card_id: int
+    card_id: int = Field(gt=0)
     remembered: bool
 
 
@@ -88,6 +91,7 @@ async def add_card_to_leitner(
     request: LeitnerAddRequest,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
     Add a word to Leitner Box 1.
@@ -142,10 +146,7 @@ async def add_card_to_leitner(
                 await db.refresh(word)
     
     if not word:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either word_id or chinese text must be provided",
-        )
+        raise bad_request("Either word_id or chinese text must be provided")
 
     # Check if flashcard already exists
     result = await db.execute(
@@ -283,6 +284,7 @@ async def get_dashboard_stats(
 async def get_review_cards(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
 ) -> Any:
     """
     Get cards due for review.
@@ -294,6 +296,8 @@ async def get_review_cards(
         .where(UserFlashcard.next_review_at <= datetime.utcnow())
         .options(selectinload(UserFlashcard.word))
         .order_by(UserFlashcard.next_review_at)
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     result = await db.execute(query)
     cards = result.scalars().all()
@@ -306,6 +310,7 @@ async def submit_review(
     request: ReviewRequest,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
     Submit a review result for a card.
@@ -322,10 +327,7 @@ async def submit_review(
     card = result.scalar_one_or_none()
 
     if not card:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Card not found",
-        )
+        raise not_found("Card")
 
     now = datetime.utcnow()
 
