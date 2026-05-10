@@ -1,10 +1,13 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, desc
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
+from app.api.errors import bad_request, not_found
+from app.api.pagination import PaginationParams, pagination_params
+from app.api.rate_limit import write_rate_limit
 from app.models.social import Message
 from app.models.user import User, UserProfile
 from app.schemas import chat as schemas
@@ -17,25 +20,30 @@ async def send_message(
     message_in: schemas.MessageCreate,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ):
     """
     Send a message to another user.
     """
+    content = message_in.content.strip()
+    if not content:
+        raise bad_request("Message cannot be empty")
+
     if message_in.receiver_id == current_user.id:
-        raise HTTPException(status_code=400, detail="نمی‌توانی به خودت پیام بدی")
+        raise bad_request("You cannot message yourself")
     
     # Check if receiver exists
     receiver_query = select(User).where(User.id == message_in.receiver_id)
     result = await db.execute(receiver_query)
     receiver = result.scalar_one_or_none()
     if not receiver:
-        raise HTTPException(status_code=404, detail="کاربر مورد نظر یافت نشد")
+        raise not_found("User")
     
     # Create message
     message = Message(
         sender_id=current_user.id,
         receiver_id=message_in.receiver_id,
-        content=message_in.content.strip(),
+        content=content,
     )
     db.add(message)
     await db.commit()
@@ -66,12 +74,14 @@ async def send_message(
 async def get_conversations(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ):
     """
     Get list of active conversations (users I have chatted with).
     Returns the other user's info and last message preview.
     """
-    # Get all messages where current user is sender or receiver
+    scan_limit = max(100, min(1000, (pagination.skip + pagination.limit) * 20))
+
     query = (
         select(Message)
         .options(
@@ -85,12 +95,18 @@ async def get_conversations(
             )
         )
         .order_by(desc(Message.created_at))
+        .limit(scan_limit)
     )
     
     result = await db.execute(query)
     messages = result.scalars().all()
     
     # Group by conversation partner and get the last message
+    unread_counts: dict[int, int] = {}
+    for msg in messages:
+        if msg.sender_id != current_user.id and msg.receiver_id == current_user.id and not msg.is_read:
+            unread_counts[msg.sender_id] = unread_counts.get(msg.sender_id, 0) + 1
+
     conversations_dict: dict = {}
     for msg in messages:
         # Determine the other user
@@ -105,14 +121,6 @@ async def get_conversations(
         other_user_id = other_user.id
         
         if other_user_id not in conversations_dict:
-            # Count unread messages from this user
-            unread_count = sum(
-                1 for m in messages 
-                if m.sender_id == other_user_id 
-                and m.receiver_id == current_user.id 
-                and not m.is_read
-            )
-            
             conversations_dict[other_user_id] = schemas.ConversationPreview(
                 user=schemas.ChatUserSummary(
                     id=other_user.id,
@@ -121,10 +129,15 @@ async def get_conversations(
                 ),
                 last_message=msg.content[:100] if msg.content else "",
                 last_message_time=msg.created_at,
-                unread_count=unread_count
+                unread_count=unread_counts.get(other_user_id, 0)
             )
     
-    return list(conversations_dict.values())
+    conversations = sorted(
+        conversations_dict.values(),
+        key=lambda item: item.last_message_time,
+        reverse=True,
+    )
+    return conversations[pagination.skip:pagination.skip + pagination.limit]
 
 
 @router.get("/{user_id}/messages", response_model=List[schemas.MessageRead])
@@ -132,13 +145,16 @@ async def get_message_history(
     user_id: int,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
-    skip: int = 0,
-    limit: int = 50,
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
 ):
     """
     Get the full message history between current user and another user.
     Messages are sorted by time (oldest first for chat display).
     """
+    target_user = await db.get(User, user_id)
+    if not target_user:
+        raise not_found("User")
+
     # Get messages between the two users
     query = (
         select(Message)
@@ -153,8 +169,8 @@ async def get_message_history(
             )
         )
         .order_by(Message.created_at.asc())
-        .offset(skip)
-        .limit(limit)
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
 
     result = await db.execute(query)

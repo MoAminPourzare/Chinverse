@@ -1,10 +1,10 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Gallery Item Schemas
 class GalleryItemBase(BaseModel):
-    caption: Optional[str] = None
+    caption: Optional[str] = Field(default=None, max_length=500)
 
 class GalleryItemCreate(GalleryItemBase):
     pass

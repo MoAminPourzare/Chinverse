@@ -1,11 +1,12 @@
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field
 
 from app.api import deps
+from app.api.pagination import PaginationParams, pagination_params
 from app.models.dictionary import DictionaryWord, WordExample, WordCollocation
 
 router = APIRouter()
@@ -135,10 +136,9 @@ async def get_vocabulary_word(
 
 @router.get("/", response_model=List[VocabularyWordResponse])
 async def search_vocabulary(
-    q: str,
+    q: str = Query(..., min_length=1, max_length=80),
     db: AsyncSession = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 20,
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
     Search vocabulary words.
@@ -149,9 +149,9 @@ async def search_vocabulary(
             selectinload(DictionaryWord.examples),
             selectinload(DictionaryWord.collocations)
         )
-        .where(DictionaryWord.chinese.contains(q))
-        .offset(skip)
-        .limit(limit)
+        .where(DictionaryWord.chinese.ilike(f"%{q}%"))
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     words = result.scalars().all()
     return words

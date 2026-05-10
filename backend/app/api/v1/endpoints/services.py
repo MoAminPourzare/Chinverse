@@ -1,11 +1,15 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import uuid
 
 from app.api import deps
+from app.api.errors import bad_request, not_found
+from app.api.pagination import PaginationParams, pagination_params
+from app.api.rate_limit import upload_rate_limit, write_rate_limit
 from app.core.paths import SERVICE_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
+from app.core.storage import delete_public_file
+from app.core.uploads import save_image_upload
 from app.models.user import User
 from app.models.service import UserService
 from app.schemas.service import Service
@@ -17,12 +21,17 @@ router = APIRouter()
 async def get_my_services(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
 ) -> Any:
     """
     Get current user's services.
     """
     result = await db.execute(
-        select(UserService).where(UserService.user_id == current_user.id)
+        select(UserService)
+        .where(UserService.user_id == current_user.id)
+        .order_by(UserService.created_at.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     services = result.scalars().all()
     return services
@@ -32,37 +41,30 @@ async def get_my_services(
 async def create_service(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
-    title: str = Form(...),
-    description: str = Form(...),
-    price_label: str = Form(None),
+    title: str = Form(..., min_length=1, max_length=160),
+    description: str = Form(..., min_length=1, max_length=4000),
+    price_label: str | None = Form(None, max_length=80),
     banner: UploadFile = File(None),
+    _rate_limit: None = Depends(upload_rate_limit),
 ) -> Any:
     """
     Create a new service with optional banner image.
     """
+    title = title.strip()
+    description = description.strip()
+    if not title or not description:
+        raise bad_request("Title and description cannot be empty")
+    if price_label is not None:
+        price_label = price_label.strip() or None
+
     banner_url = None
     
-    # Handle banner upload
     if banner and banner.filename:
-        # Validate file type
-        if not banner.content_type or not banner.content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only image files are allowed for banner"
-            )
-        
-        # Generate unique filename
-        file_extension = "." + banner.filename.rsplit(".", 1)[-1].lower() if "." in banner.filename else ""
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        SERVICE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        file_path = SERVICE_UPLOAD_DIR / unique_filename
-        
-        # Save file
-        with open(file_path, "wb") as buffer:
-            content = await banner.read()
-            buffer.write(content)
-        
-        banner_url = f"/uploads/services/{unique_filename}"
+        banner_url = await save_image_upload(
+            banner,
+            destination_dir=SERVICE_UPLOAD_DIR,
+            public_url_prefix="/uploads/services",
+        )
     
     # Create service
     service = UserService(
@@ -74,8 +76,14 @@ async def create_service(
     )
     
     db.add(service)
-    await db.commit()
-    await db.refresh(service)
+    try:
+        await db.commit()
+        await db.refresh(service)
+    except Exception:
+        await db.rollback()
+        if banner_url:
+            delete_public_file(banner_url)
+        raise
     
     return service
 
@@ -85,6 +93,7 @@ async def delete_service(
     service_id: int,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
 ) -> None:
     """
     Delete a service.
@@ -98,10 +107,7 @@ async def delete_service(
     service = result.scalar_one_or_none()
     
     if not service:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Service not found"
-        )
+        raise not_found("Service")
     
     # Delete banner file if exists
     if service.banner_url:
@@ -116,8 +122,7 @@ async def delete_service(
 @router.get("/public", response_model=List[dict])
 async def get_public_services(
     db: AsyncSession = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 50,
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
 ) -> Any:
     """
     Get all public services for the showcase marketplace.
@@ -129,8 +134,9 @@ async def get_public_services(
     result = await db.execute(
         select(UserService)
         .options(selectinload(UserService.user).selectinload(User.profile))
-        .offset(skip)
-        .limit(limit)
+        .order_by(UserService.created_at.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     services = result.scalars().all()
     

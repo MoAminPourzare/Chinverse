@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 # ===== USER SUMMARY =====
@@ -16,8 +16,8 @@ class ChatUserSummary(BaseModel):
 # ===== MESSAGE SCHEMAS =====
 
 class MessageCreate(BaseModel):
-    receiver_id: int
-    content: str
+    receiver_id: int = Field(gt=0)
+    content: str = Field(min_length=1, max_length=2000)
 
 class MessageRead(BaseModel):
     id: int
