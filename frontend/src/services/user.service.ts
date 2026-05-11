@@ -151,6 +151,11 @@ export const userService = {
         return response.data;
     },
 
+    async getPublicService(serviceId: number): Promise<ServiceWithProvider> {
+        const response = await api.get<ServiceWithProvider>(`/users/me/services/public/${serviceId}`);
+        return response.data;
+    },
+
     // ===== NETWORKING / FOLLOWING =====
 
     // دریافت لیست شبکه من (افرادی که دنبال می‌کنم)
@@ -253,6 +258,7 @@ export interface UserService {
     description: string;
     banner_url?: string;
     price_label?: string;
+    created_at?: string;
 }
 
 export interface ServiceProvider {
@@ -268,6 +274,7 @@ export interface ServiceWithProvider {
     description: string;
     banner_url?: string;
     price_label?: string;
+    created_at?: string;
     provider?: ServiceProvider;
 }
 

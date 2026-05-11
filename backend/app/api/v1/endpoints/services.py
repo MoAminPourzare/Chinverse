@@ -165,7 +165,54 @@ async def get_public_services(
             "description": service.description,
             "banner_url": service.banner_url,
             "price_label": service.price_label,
+            "created_at": service.created_at,
             "provider": provider_info
         })
     
     return public_services
+
+
+@router.get("/public/{service_id}", response_model=dict)
+async def get_public_service(
+    service_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+) -> Any:
+    """
+    Get a single public service with provider info.
+    """
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(UserService)
+        .options(selectinload(UserService.user).selectinload(User.profile))
+        .where(UserService.id == service_id)
+    )
+    service = result.scalar_one_or_none()
+    if not service:
+        raise not_found("Service")
+
+    provider_info = None
+    if service.user and service.user.profile:
+        provider_info = {
+            "id": service.user.id,
+            "display_name": service.user.profile.display_name,
+            "avatar_url": service.user.profile.avatar_url,
+            "headline": service.user.profile.headline,
+        }
+    elif service.user:
+        provider_info = {
+            "id": service.user.id,
+            "display_name": None,
+            "avatar_url": None,
+            "headline": None,
+        }
+
+    return {
+        "id": service.id,
+        "title": service.title,
+        "description": service.description,
+        "banner_url": service.banner_url,
+        "price_label": service.price_label,
+        "created_at": service.created_at,
+        "provider": provider_info,
+    }

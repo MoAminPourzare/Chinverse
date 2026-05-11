@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -51,6 +52,44 @@ class UserProfileBase(BaseModel):
     websites: Optional[list[str]] = None
     socials: Optional[list[dict]] = None
     resume: Optional[dict] = None
+
+    @field_validator("socials")
+    @classmethod
+    def validate_socials(cls, value: Optional[list[dict]]) -> Optional[list[dict]]:
+        if value is None:
+            return value
+
+        platform_patterns = {
+            "instagram": re.compile(r"^[A-Za-z0-9._]{1,30}$"),
+            "twitter": re.compile(r"^[A-Za-z0-9_]{1,15}$"),
+            "linkedin": re.compile(r"^(in/)?[A-Za-z0-9-]{3,100}$"),
+            "telegram": re.compile(r"^[A-Za-z0-9_]{5,32}$"),
+            "whatsapp": re.compile(r"^[1-9][0-9]{7,14}$"),
+            "facebook": re.compile(r"^[A-Za-z0-9.]{5,50}$"),
+        }
+
+        normalized_socials = []
+        for item in value:
+            platform = str(item.get("platform", "")).strip().lower()
+            handle = str(item.get("handle", "")).strip()
+
+            if not platform or not handle:
+                continue
+
+            platform = "twitter" if platform == "x" else platform
+            handle = handle.lstrip("@").rstrip("/")
+            if platform == "whatsapp":
+                handle = re.sub(r"\D", "", handle)
+
+            pattern = platform_patterns.get(platform)
+            if not pattern:
+                raise ValueError(f"Unsupported social platform: {platform}")
+            if not pattern.fullmatch(handle):
+                raise ValueError(f"Invalid handle for {platform}")
+
+            normalized_socials.append({"platform": platform, "handle": handle})
+
+        return normalized_socials
 
 class UserProfileUpdate(UserProfileBase):
     pass

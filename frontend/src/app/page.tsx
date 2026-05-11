@@ -333,11 +333,6 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
 
                         <h3 className="mt-4 text-lg font-bold tracking-tight text-slate-900">{service.title}</h3>
                         <p className="mt-2 line-clamp-3 text-sm leading-7 text-slate-500">{service.description}</p>
-                        {service.price_label && (
-                            <div className="mt-4 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
-                                {service.price_label}
-                            </div>
-                        )}
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

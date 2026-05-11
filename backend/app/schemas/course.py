@@ -83,10 +83,25 @@ class CourseBase(BaseModel):
 class CourseCreate(CourseBase):
     subcategory_id: int = Field(gt=0)
 
+
+class CourseSummary(CourseBase):
+    id: int
+    subcategory_id: int
+    subcategory_slug: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class Course(CourseBase):
     id: int
     subcategory_id: int
+    subcategory_slug: Optional[str] = None
     sections: List[CourseSection] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
+
+
+class SavedCourseState(BaseModel):
+    saved: bool

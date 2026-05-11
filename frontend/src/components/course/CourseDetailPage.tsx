@@ -6,8 +6,9 @@ import Image from "next/image";
 import {
     ArrowRight,
     Bookmark,
+    BookmarkCheck,
     BookOpen,
-    MoreVertical,
+    Loader2,
     Play,
     Star,
 } from "lucide-react";
@@ -16,10 +17,13 @@ import api from "@/lib/api";
 import { isHttpStatus } from "@/lib/http";
 import {
     Course,
+    checkCourseSaved,
     getCourseMetaNumber,
     getCourseMetaString,
     getDisplayCount,
     mergeCourseMetadata,
+    saveCourse,
+    unsaveCourse,
 } from "@/lib/courses";
 import Surface from "@/components/ui/Surface";
 import SectionHeader from "@/components/ui/SectionHeader";
@@ -60,6 +64,8 @@ export default function CourseDetailPage({
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+    const [savingBookmark, setSavingBookmark] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -96,6 +102,34 @@ export default function CourseDetailPage({
             cancelled = true;
         };
     }, [domain, id]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const fetchSavedState = async () => {
+            if (!course?.id) {
+                setIsSaved(false);
+                return;
+            }
+
+            try {
+                const saved = await checkCourseSaved(course.id);
+                if (!cancelled) {
+                    setIsSaved(saved);
+                }
+            } catch {
+                if (!cancelled) {
+                    setIsSaved(false);
+                }
+            }
+        };
+
+        fetchSavedState();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [course?.id]);
 
     const lessons = useMemo(() => {
         return course?.sections?.flatMap((section) => section.lessons || []) || [];
@@ -143,6 +177,26 @@ export default function CourseDetailPage({
     const hasPosterLayout = ["series", "movies", "cartoons", "reality"].includes(domain);
     const sections = course.sections || [];
 
+    const handleToggleSaved = async () => {
+        if (!course || savingBookmark) return;
+
+        setSavingBookmark(true);
+        try {
+            if (isSaved) {
+                await unsaveCourse(course.id);
+                setIsSaved(false);
+            } else {
+                await saveCourse(course.id);
+                setIsSaved(true);
+            }
+        } catch (error) {
+            console.error("Failed to update saved course:", error);
+            alert("برای ذخیره کردن دوره باید وارد حساب کاربری شوی.");
+        } finally {
+            setSavingBookmark(false);
+        }
+    };
+
     return (
         <div className="min-h-full pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
@@ -155,8 +209,24 @@ export default function CourseDetailPage({
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-500">{eyebrow}</p>
                             <h1 className="mt-1 truncate text-base font-bold text-slate-900">{course.title}</h1>
                         </div>
-                        <button className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
-                            <MoreVertical size={20} />
+                        <button
+                            type="button"
+                            onClick={handleToggleSaved}
+                            disabled={savingBookmark}
+                            aria-label={isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها"}
+                            className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                isSaved
+                                    ? "bg-slate-900 text-white hover:bg-slate-800"
+                                    : "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                            }`}
+                        >
+                            {savingBookmark ? (
+                                <Loader2 size={20} className="animate-spin" />
+                            ) : isSaved ? (
+                                <BookmarkCheck size={20} />
+                            ) : (
+                                <Bookmark size={20} />
+                            )}
                         </button>
                     </Surface>
                 </header>
@@ -226,8 +296,22 @@ export default function CourseDetailPage({
                                         شروع
                                     </PrimaryButton>
                                 )}
-                                <PrimaryButton variant="ghost" leadingIcon={<Bookmark size={16} />}>
-                                    ذخیره
+                                <PrimaryButton
+                                    type="button"
+                                    variant={isSaved ? "secondary" : "ghost"}
+                                    leadingIcon={
+                                        savingBookmark ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : isSaved ? (
+                                            <BookmarkCheck size={16} />
+                                        ) : (
+                                            <Bookmark size={16} />
+                                        )
+                                    }
+                                    onClick={handleToggleSaved}
+                                    disabled={savingBookmark}
+                                >
+                                    {isSaved ? "ذخیره شد" : "ذخیره"}
                                 </PrimaryButton>
                             </div>
                         </div>

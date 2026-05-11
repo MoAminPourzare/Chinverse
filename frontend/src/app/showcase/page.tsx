@@ -80,7 +80,6 @@ export default function ShowcasePage() {
             [
                 service.title,
                 service.description,
-                service.price_label,
                 service.provider?.display_name,
                 service.provider?.headline,
             ]
@@ -284,30 +283,29 @@ interface ServiceCardProps {
 function ServiceCard({ service }: ServiceCardProps) {
     return (
         <Surface as="article" className="group flex h-full flex-col overflow-hidden transition duration-200 hover:-translate-y-0.5">
-            <div className="relative h-44 bg-gradient-to-br from-slate-100 to-rose-50">
-                {service.banner_url ? (
-                    <Image
-                        src={getMediaUrl(service.banner_url)}
-                        alt={service.title}
-                        fill
-                        className="object-cover"
-                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                        unoptimized
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-rose-300">
-                        <ImageIcon size={44} />
-                    </div>
-                )}
-                {service.price_label && (
-                    <span className="absolute bottom-3 right-3 rounded-full border border-white/70 bg-white/90 px-3 py-1 text-xs font-bold text-slate-700 shadow-sm backdrop-blur">
-                        {service.price_label}
-                    </span>
-                )}
-            </div>
+            <Link href={`/services/${service.id}`} className="block">
+                <div className="relative h-44 bg-gradient-to-br from-slate-100 to-rose-50">
+                    {service.banner_url ? (
+                        <Image
+                            src={getMediaUrl(service.banner_url)}
+                            alt={service.title}
+                            fill
+                            className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                            sizes="430px"
+                            unoptimized
+                        />
+                    ) : (
+                        <div className="flex h-full items-center justify-center text-rose-300">
+                            <ImageIcon size={44} />
+                        </div>
+                    )}
+                </div>
+            </Link>
 
             <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-lg font-black tracking-tight text-slate-950">{service.title}</h3>
+                <Link href={`/services/${service.id}`} className="block">
+                    <h3 className="text-lg font-black leading-8 tracking-tight text-slate-950">{service.title}</h3>
+                </Link>
                 <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
                     {service.description}
                 </p>
@@ -326,13 +324,18 @@ function ServiceCard({ service }: ServiceCardProps) {
                     </div>
                 )}
 
-                <PrimaryButton
-                    href={`/chat/${service.provider?.id || 0}`}
-                    className="mt-5 w-full"
-                    leadingIcon={<MessageCircle size={18} />}
-                >
-                    درخواست مشاوره
-                </PrimaryButton>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                    <PrimaryButton href={`/services/${service.id}`} variant="ghost" className="w-full">
+                        جزئیات
+                    </PrimaryButton>
+                    <PrimaryButton
+                        href={`/chat/${service.provider?.id || 0}`}
+                        className="w-full"
+                        leadingIcon={<MessageCircle size={18} />}
+                    >
+                        مشاوره
+                    </PrimaryButton>
+                </div>
             </div>
         </Surface>
     );

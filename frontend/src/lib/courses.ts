@@ -24,6 +24,7 @@ export interface Course {
     description: string;
     cover_image_url: string;
     level: string;
+    subcategory_slug?: string | null;
     metadata_json?: Record<string, unknown>;
     sections?: CourseSectionSummary[];
 }
@@ -51,6 +52,26 @@ export const fetchCoursesBySubcategory = async (subcategorySlug: string): Promis
 export const fetchAllCourses = async (): Promise<Course[]> => {
     const response = await api.get('/courses', { params: { limit: 1000 } });
     return Array.isArray(response.data) ? response.data : [];
+};
+
+export const fetchSavedCourses = async (): Promise<Course[]> => {
+    const response = await api.get('/courses/saved', { params: { limit: 100 } });
+    return Array.isArray(response.data) ? response.data : [];
+};
+
+export const checkCourseSaved = async (courseId: number): Promise<boolean> => {
+    const response = await api.get<{ saved: boolean }>(`/courses/${courseId}/saved`);
+    return Boolean(response.data?.saved);
+};
+
+export const saveCourse = async (courseId: number): Promise<boolean> => {
+    const response = await api.post<{ saved: boolean }>(`/courses/${courseId}/save`);
+    return Boolean(response.data?.saved);
+};
+
+export const unsaveCourse = async (courseId: number): Promise<boolean> => {
+    const response = await api.delete<{ saved: boolean }>(`/courses/${courseId}/save`);
+    return Boolean(response.data?.saved);
 };
 
 export const fetchCourseTaxonomy = async (): Promise<CategorySummary[]> => {
@@ -107,4 +128,39 @@ export const mergeCourseMetadata = <T extends { metadata_json?: Record<string, u
         ...metadata,
         episodes_count: metadata.episodes_count ?? metadata.tracks_count ?? (course as { episodes_count?: unknown }).episodes_count,
     };
+};
+
+export const COURSE_DETAIL_PATHS: Record<string, string> = {
+    hsk: "/hsk",
+    pronunciation: "/pronunciation",
+    characters: "/characters",
+    grammar: "/grammar",
+    idioms: "/idioms",
+    practical: "/practical",
+    vlogs: "/vlogs",
+    synonyms: "/synonyms",
+    classical: "/classical",
+    series: "/series",
+    movies: "/movies",
+    cartoons: "/cartoons",
+    cooking: "/cooking",
+    podcasts: "/podcasts",
+    music: "/music",
+    reality: "/reality",
+    "topic-talks": "/topic-talks",
+    "arts-cooking": "/arts-cooking",
+    "martial-arts": "/martial-arts",
+    "energy-health": "/energy-health",
+    calligraphy: "/calligraphy",
+    "tea-culture": "/tea-culture",
+    "culture-texts": "/culture-texts",
+    "historical-stories": "/historical-stories",
+    "classical-poetry": "/classical-poetry",
+    "festivals-customs": "/festivals-customs",
+};
+
+export const getCourseDetailHref = (course: Course): string => {
+    const subcategorySlug = course.subcategory_slug || "";
+    const basePath = COURSE_DETAIL_PATHS[subcategorySlug];
+    return basePath ? `${basePath}/${course.id}` : `/explore`;
 };

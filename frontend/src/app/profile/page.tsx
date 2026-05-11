@@ -5,12 +5,14 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, type LucideIcon } from "lucide-react";
+import { Settings, Bell, BookmarkCheck, BookOpen, Compass, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, PlayCircle, type LucideIcon } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount, unsaveCourse } from "@/lib/courses";
 
 const EditAboutMeModal = dynamic(() => import("@/components/profile/EditAboutMeModal"), {
     ssr: false,
@@ -33,15 +35,6 @@ const tabs: Tab[] = [
     { id: "services", label: "خدمات", helper: "همکاری", icon: Briefcase },
     { id: "collections", label: "منتخب", helper: "آرشیو", icon: Globe },
 ];
-
-const socialIcons: Record<string, LucideIcon> = {
-    instagram: Instagram,
-    linkedin: Linkedin,
-    twitter: Twitter,
-    telegram: MessageCircle,
-    whatsapp: MessageCircle,
-    wechat: MessageCircle,
-};
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -193,14 +186,25 @@ export default function ProfilePage() {
                     {(user?.profile?.socials?.length ?? 0) > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-3 text-sm">شبکه‌های اجتماعی</h3>
-                            <div className="flex gap-4 flex-wrap">
+                            <div className="grid gap-2">
                                 {user?.profile?.socials?.map((social, idx) => {
-                                    const Icon = socialIcons[social.platform] || MessageCircle;
+                                    const platform = getSocialPlatform(social.platform);
+                                    const Icon = platform.icon;
+                                    const href = getSocialProfileUrl(social.platform, social.handle);
                                     return (
-                                        <div key={idx} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg text-gray-600 text-sm">
-                                            <Icon className="w-4 h-4" />
-                                            <span className="dir-ltr">{social.handle}</span>
-                                        </div>
+                                        <a
+                                            key={idx}
+                                            href={href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
+                                        >
+                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm">
+                                                <Icon className="h-4 w-4" />
+                                            </span>
+                                            <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
+                                            <span className="dir-ltr truncate text-left text-xs text-slate-500">{social.handle}</span>
+                                        </a>
                                     );
                                 })}
                             </div>
@@ -329,6 +333,10 @@ export default function ProfilePage() {
 
         if (activeTab === "services") {
             return <ServicesTab />;
+        }
+
+        if (activeTab === "collections") {
+            return <SavedCoursesTab />;
         }
 
         const tab = tabs.find((t) => t.id === activeTab);
@@ -577,6 +585,202 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function SavedCoursesTab() {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [removingId, setRemovingId] = useState<number | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadSavedCourses = async () => {
+            setLoading(true);
+            setError(false);
+
+            try {
+                const data = await fetchSavedCourses();
+                if (!cancelled) {
+                    setCourses(data);
+                }
+            } catch (loadError) {
+                console.error("Failed to fetch saved courses:", loadError);
+                if (!cancelled) {
+                    setCourses([]);
+                    setError(true);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadSavedCourses();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const handleRemoveCourse = async (courseId: number) => {
+        if (removingId) return;
+
+        setRemovingId(courseId);
+        try {
+            await unsaveCourse(courseId);
+            setCourses((currentCourses) => currentCourses.filter((course) => course.id !== courseId));
+        } catch (removeError) {
+            console.error("Failed to remove saved course:", removeError);
+            alert("حذف این دوره از منتخب‌ها انجام نشد. دوباره تلاش کن.");
+        } finally {
+            setRemovingId(null);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex min-h-[260px] items-center justify-center p-8 text-sm text-slate-500">
+                <div className="flex items-center gap-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-rose-500" />
+                    <span>در حال بارگذاری منتخب‌ها...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex min-h-[260px] flex-col items-center justify-center p-8 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-rose-50 text-rose-500">
+                    <BookmarkCheck className="h-7 w-7" />
+                </div>
+                <h3 className="mt-5 text-lg font-black text-slate-900">منتخب‌ها بارگذاری نشد</h3>
+                <p className="mt-2 max-w-xs text-sm leading-7 text-slate-500">
+                    اتصال به سرور یا حساب کاربری را بررسی کن و دوباره وارد پروفایل شو.
+                </p>
+            </div>
+        );
+    }
+
+    if (courses.length === 0) {
+        return (
+            <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="relative mb-6">
+                    <div className="flex h-28 w-28 items-center justify-center rounded-[34px] bg-gradient-to-br from-sky-50 via-white to-rose-50 text-blue-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                        <BookmarkCheck className="h-14 w-14" strokeWidth={1.6} />
+                    </div>
+                    <span className="absolute -bottom-2 -left-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-[0_14px_30px_rgba(37,99,235,0.25)]">
+                        <Compass className="h-5 w-5" />
+                    </span>
+                </div>
+
+                <h3 className="text-xl font-black tracking-tight text-slate-950">اولین مجموعه‌ات رو انتخاب کن!</h3>
+                <p className="mt-3 max-w-xs text-sm leading-7 text-slate-500">
+                    هر course را از صفحه کاوش ذخیره کنی، اینجا برای دسترسی سریع نگه داشته می‌شود.
+                </p>
+
+                <Link
+                    href="/explore"
+                    className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_46px_rgba(37,99,235,0.34)]"
+                >
+                    <Compass className="h-4 w-4" />
+                    کاوش کن
+                </Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <h3 className="text-lg font-black text-slate-950">مجموعه‌های منتخب</h3>
+                    <p className="mt-1 text-xs leading-6 text-slate-500">
+                        courseهایی که ذخیره کردی برای برگشت سریع اینجا هستند.
+                    </p>
+                </div>
+                <Link
+                    href="/explore"
+                    className="shrink-0 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100"
+                >
+                    کاوش
+                </Link>
+            </div>
+
+            <div className="space-y-3">
+                {courses.map((course) => {
+                    const href = getCourseDetailHref(course);
+                    const lessonsCount = getLessonCount(course);
+                    const countText = lessonsCount > 0
+                        ? `${lessonsCount} درس`
+                        : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "بخش");
+
+                    return (
+                        <div
+                            key={course.id}
+                            className="flex gap-3 rounded-[26px] border border-slate-100 bg-slate-50/80 p-3 transition hover:bg-white hover:shadow-[0_16px_38px_rgba(15,23,42,0.08)]"
+                        >
+                            <Link href={href} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[22px] bg-slate-100">
+                                {course.cover_image_url ? (
+                                    <Image
+                                        src={course.cover_image_url}
+                                        alt={course.title}
+                                        fill
+                                        sizes="96px"
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-rose-500 to-orange-500 text-white">
+                                        <BookOpen className="h-7 w-7" />
+                                    </div>
+                                )}
+                            </Link>
+
+                            <div className="min-w-0 flex-1">
+                                <Link href={href} className="block">
+                                    <h4 className="line-clamp-1 text-sm font-black text-slate-950">{course.title}</h4>
+                                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{course.description}</p>
+                                </Link>
+
+                                <div className="mt-3 flex items-center justify-between gap-2">
+                                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500 shadow-sm">
+                                        {countText}
+                                    </span>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <Link
+                                            href={href}
+                                            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-white transition hover:bg-slate-800"
+                                            aria-label="ادامه دوره"
+                                        >
+                                            <PlayCircle className="h-4 w-4" />
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveCourse(course.id)}
+                                            disabled={removingId === course.id}
+                                            className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                            aria-label="حذف از منتخب‌ها"
+                                        >
+                                            {removingId === course.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

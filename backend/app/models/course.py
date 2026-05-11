@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, Index, text
+from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, Index, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
@@ -47,6 +47,26 @@ class Course(Base, TimestampMixin):
     # Relationships
     subcategory: Mapped["Subcategory"] = relationship(back_populates="courses")
     sections: Mapped[List["CourseSection"]] = relationship(back_populates="course", cascade="all, delete-orphan")
+    saved_by_users: Mapped[List["UserSavedCourse"]] = relationship(back_populates="course", cascade="all, delete-orphan")
+
+    @property
+    def subcategory_slug(self) -> Optional[str]:
+        subcategory = self.__dict__.get("subcategory")
+        return subcategory.slug if subcategory else None
+
+
+class UserSavedCourse(Base, TimestampMixin):
+    __tablename__ = "user_saved_courses"
+    __table_args__ = (
+        UniqueConstraint("user_id", "course_id", name="uq_user_saved_courses_user_course"),
+        Index("ix_user_saved_courses_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    course: Mapped["Course"] = relationship(back_populates="saved_by_users")
 
 class CourseSection(Base, TimestampMixin):
     __tablename__ = "course_sections"

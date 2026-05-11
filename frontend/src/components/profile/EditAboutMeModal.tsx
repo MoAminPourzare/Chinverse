@@ -1,10 +1,16 @@
 'use client';
 
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Plus, Trash2, Instagram, Linkedin, Twitter, MessageCircle } from 'lucide-react';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { User, userService } from '@/services/user.service';
+import {
+    getSocialPlatform,
+    normalizeSocialHandle,
+    socialPlatforms,
+    validateSocialHandle,
+} from '@/lib/socialLinks';
 
 interface EditAboutMeModalProps {
     isOpen: boolean;
@@ -24,17 +30,16 @@ interface FormValues {
     socials: SocialLink[];
 }
 
-const socialPlatforms = [
-    { id: 'instagram', name: 'Instagram', icon: Instagram },
-    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
-    { id: 'twitter', name: 'Twitter (X)', icon: Twitter },
-    { id: 'telegram', name: 'Telegram', icon: MessageCircle },
-    { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle },
-    { id: 'wechat', name: 'WeChat', icon: MessageCircle },
-];
-
 export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: EditAboutMeModalProps) {
-    const { register, control, handleSubmit, reset } = useForm<FormValues>({
+    const {
+        register,
+        control,
+        handleSubmit,
+        reset,
+        setError,
+        clearErrors,
+        formState: { errors },
+    } = useForm<FormValues>({
         defaultValues: {
             bio: '',
             websites: [],
@@ -55,29 +60,50 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
     const [showSocialDropdown, setShowSocialDropdown] = useState(false);
 
     useEffect(() => {
-        if (user?.profile) {
-            reset({
-                bio: user.profile.bio || '',
-                websites: user.profile.websites?.map((url: string) => ({ url })) || [],
-                socials: user.profile.socials || [],
-            });
-        }
+        reset({
+            bio: user?.profile?.bio || '',
+            websites: user?.profile?.websites?.map((url: string) => ({ url })) || [],
+            socials: user?.profile?.socials || [],
+        });
     }, [user, reset]);
 
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         try {
-            const websites = data.websites.map((w) => w.url).filter((url) => url.trim() !== '');
-            const socials = data.socials.filter((s) => s.handle.trim() !== '');
+            const websites = data.websites
+                .map((website) => website.url.trim())
+                .filter(Boolean);
+            const socials: SocialLink[] = [];
+
+            data.socials.forEach((social, index) => {
+                const handle = normalizeSocialHandle(social.platform, social.handle);
+                if (!handle) return;
+
+                if (!validateSocialHandle(social.platform, handle)) {
+                    const platform = getSocialPlatform(social.platform);
+                    setError(`socials.${index}.handle`, {
+                        type: 'manual',
+                        message: platform.errorMessage,
+                    });
+                    throw new Error('Invalid social handle');
+                }
+
+                socials.push({
+                    platform: social.platform === 'x' ? 'twitter' : social.platform,
+                    handle,
+                });
+            });
 
             await userService.updateProfile({
                 bio: data.bio,
-                websites: websites,
-                socials: socials,
+                websites,
+                socials,
             });
             onUpdate();
             onClose();
         } catch (error) {
-            console.error('Failed to update profile', error);
+            if ((error as Error).message !== 'Invalid social handle') {
+                console.error('Failed to update profile', error);
+            }
         }
     };
 
@@ -98,7 +124,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                    <div className="fixed inset-0 bg-black/35 backdrop-blur-sm" />
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
@@ -112,132 +138,158 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-right align-middle shadow-xl transition-all">
-                                <Dialog.Title as="h3" className="text-lg font-bold leading-6 text-gray-900 mb-4 text-center">
-                                    نوشتن درباره من
-                                </Dialog.Title>
+                            <Dialog.Panel className="max-h-[90vh] w-full max-w-md transform overflow-hidden rounded-[30px] bg-white text-right align-middle shadow-xl transition-all">
+                                <div className="max-h-[90vh] overflow-y-auto p-6">
+                                    <Dialog.Title as="h3" className="mb-1 text-center text-lg font-black leading-6 text-slate-900">
+                                        ویرایش درباره من
+                                    </Dialog.Title>
+                                    <p className="mb-5 text-center text-xs leading-6 text-slate-500">
+                                        معرفی کوتاه، وب‌سایت‌ها و شبکه‌های اجتماعی‌ات را مرتب و قابل کلیک ثبت کن.
+                                    </p>
 
-                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                                    {/* Bio Section */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            در این بخش می‌تونی به سابقه کاری، مهارت‌ها، تخصص‌ها یا دستاوردهای مهمت اشاره کنی.
-                                        </label>
-                                        <textarea
-                                            {...register('bio')}
-                                            rows={6}
-                                            className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                                            placeholder="بنویس..."
-                                        />
-                                    </div>
-
-                                    {/* Websites Section */}
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => appendWebsite({ url: '' })}
-                                                className="flex items-center text-sm font-bold text-rose-600 hover:text-rose-700"
-                                            >
-                                                <Plus className="w-4 h-4 ml-1" />
-                                                اضافه کردن وبسایت
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {websiteFields.map((field, index) => (
-                                                <div key={field.id} className="flex gap-2">
-                                                    <input
-                                                        {...register(`websites.${index}.url` as const)}
-                                                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                                                        placeholder="https://example.com"
-                                                        dir="ltr"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeWebsite(index)}
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        <Trash2 className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Socials Section */}
-                                    <div className="relative">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowSocialDropdown(!showSocialDropdown)}
-                                                className="flex items-center text-sm font-bold text-rose-600 hover:text-rose-700"
-                                            >
-                                                <Plus className="w-4 h-4 ml-1" />
-                                                اضافه کردن شبکه های اجتماعی
-                                            </button>
+                                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                        <div>
+                                            <label className="mb-2 block text-sm font-bold text-slate-700">
+                                                درباره من
+                                            </label>
+                                            <textarea
+                                                {...register('bio')}
+                                                rows={6}
+                                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+                                                placeholder="کمی درباره خودت، مهارت‌ها، علاقه‌ها یا تجربه‌هایت بنویس..."
+                                            />
                                         </div>
 
-                                        {showSocialDropdown && (
-                                            <div className="absolute top-8 right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10">
-                                                {socialPlatforms.map((platform) => (
-                                                    <button
-                                                        key={platform.id}
-                                                        type="button"
-                                                        onClick={() => addSocial(platform.id)}
-                                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                                    >
-                                                        <platform.icon className="w-4 h-4 ml-2" />
-                                                        {platform.name}
-                                                    </button>
-                                                ))}
+                                        <div>
+                                            <div className="mb-2 flex items-center justify-between">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => appendWebsite({ url: '' })}
+                                                    className="flex items-center gap-1 text-sm font-bold text-rose-600 hover:text-rose-700"
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                    اضافه کردن وب‌سایت
+                                                </button>
                                             </div>
-                                        )}
-
-                                        <div className="space-y-2">
-                                            {socialFields.map((field, index) => {
-                                                const platform = socialPlatforms.find(p => p.id === field.platform);
-                                                const Icon = platform?.icon || MessageCircle;
-                                                return (
-                                                    <div key={field.id} className="flex gap-2 items-center">
-                                                        <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-600">
-                                                            <Icon className="w-4 h-4" />
-                                                        </div>
+                                            <div className="space-y-2">
+                                                {websiteFields.map((field, index) => (
+                                                    <div key={field.id} className="flex gap-2">
                                                         <input
-                                                            {...register(`socials.${index}.handle` as const)}
-                                                            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                                                            placeholder={`${platform?.name} ID/Link`}
+                                                            {...register(`websites.${index}.url` as const)}
+                                                            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+                                                            placeholder="https://example.com"
                                                             dir="ltr"
                                                         />
                                                         <button
                                                             type="button"
-                                                            onClick={() => removeSocial(index)}
-                                                            className="text-red-500 hover:text-red-700"
+                                                            onClick={() => removeWebsite(index)}
+                                                            className="rounded-xl p-2 text-red-500 hover:bg-red-50 hover:text-red-700"
                                                         >
-                                                            <Trash2 className="w-5 h-5" />
+                                                            <Trash2 className="h-5 w-5" />
                                                         </button>
                                                     </div>
-                                                );
-                                            })}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Footer Buttons */}
-                                    <div className="flex gap-3 mt-8 pt-4">
-                                        <button
-                                            type="submit"
-                                            className="flex-1 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white transition hover:from-rose-600 hover:to-orange-600"
-                                        >
-                                            ذخیره کردن
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={onClose}
-                                            className="flex-1 rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 transition hover:bg-slate-200"
-                                        >
-                                            لغو کردن
-                                        </button>
-                                    </div>
-                                </form>
+                                        <div>
+                                            <div className="mb-2 flex items-center justify-between">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowSocialDropdown((value) => !value)}
+                                                    className="flex items-center gap-1 text-sm font-bold text-rose-600 hover:text-rose-700"
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                    اضافه کردن شبکه اجتماعی
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </button>
+                                            </div>
+
+                                            {showSocialDropdown && (
+                                                <div className="mb-3 grid max-h-60 grid-cols-2 gap-2 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                                                    {socialPlatforms.map((platform) => (
+                                                        <button
+                                                            key={platform.id}
+                                                            type="button"
+                                                            onClick={() => addSocial(platform.id)}
+                                                            className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-rose-50 hover:text-rose-600"
+                                                        >
+                                                            <platform.icon className="h-4 w-4" />
+                                                            {platform.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-3">
+                                                {socialFields.map((field, index) => {
+                                                    const platform = getSocialPlatform(field.platform);
+                                                    const Icon = platform.icon;
+                                                    const fieldError = errors.socials?.[index]?.handle?.message;
+
+                                                    return (
+                                                        <div key={field.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                                            <div className="mb-2 flex items-center gap-2">
+                                                                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm">
+                                                                    <Icon className="h-4 w-4" />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="text-sm font-black text-slate-800">{platform.name}</p>
+                                                                    <p className="text-[11px] leading-5 text-slate-400">{platform.hint}</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeSocial(index)}
+                                                                    className="rounded-xl p-2 text-red-500 hover:bg-red-50 hover:text-red-700"
+                                                                >
+                                                                    <Trash2 className="h-5 w-5" />
+                                                                </button>
+                                                            </div>
+                                                            <input
+                                                                {...register(`socials.${index}.handle` as const, {
+                                                                    onChange: (event) => {
+                                                                        const handle = normalizeSocialHandle(field.platform, event.target.value);
+                                                                        if (!handle || validateSocialHandle(field.platform, handle)) {
+                                                                            clearErrors(`socials.${index}.handle`);
+                                                                            return;
+                                                                        }
+
+                                                                        setError(`socials.${index}.handle`, {
+                                                                            type: 'manual',
+                                                                            message: platform.errorMessage,
+                                                                        });
+                                                                    },
+                                                                })}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+                                                                placeholder={platform.placeholder}
+                                                                dir="ltr"
+                                                            />
+                                                            {fieldError && (
+                                                                <p className="mt-2 text-xs leading-5 text-red-500">{fieldError}</p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="submit"
+                                                className="flex-1 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white transition hover:from-rose-600 hover:to-orange-600"
+                                            >
+                                                ذخیره کردن
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={onClose}
+                                                className="flex-1 rounded-2xl bg-slate-100 py-3 font-bold text-slate-700 transition hover:bg-slate-200"
+                                            >
+                                                لغو
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>
