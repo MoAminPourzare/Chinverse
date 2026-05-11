@@ -1,5 +1,6 @@
-from typing import List
-from fastapi import APIRouter, Depends
+from typing import Any, List
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
+from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, desc
 from sqlalchemy.orm import selectinload
@@ -8,11 +9,115 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
+from app.core.config import settings
+from app.db.session import SessionLocal
 from app.models.social import Message
-from app.models.user import User, UserProfile
+from app.models.user import User, UserStatus
 from app.schemas import chat as schemas
+from app.schemas.token import TokenPayload
 
 router = APIRouter()
+
+
+class ChatConnectionManager:
+    def __init__(self) -> None:
+        self.active_connections: dict[int, set[WebSocket]] = {}
+
+    async def connect(self, user_id: int, websocket: WebSocket) -> None:
+        await websocket.accept()
+        self.active_connections.setdefault(user_id, set()).add(websocket)
+
+    def disconnect(self, user_id: int, websocket: WebSocket) -> None:
+        connections = self.active_connections.get(user_id)
+        if not connections:
+            return
+        connections.discard(websocket)
+        if not connections:
+            self.active_connections.pop(user_id, None)
+
+    async def send_to_user(self, user_id: int, payload: dict[str, Any]) -> None:
+        connections = list(self.active_connections.get(user_id, set()))
+        for websocket in connections:
+            try:
+                await websocket.send_json(payload)
+            except RuntimeError:
+                self.disconnect(user_id, websocket)
+
+    def is_online(self, user_id: int) -> bool:
+        return bool(self.active_connections.get(user_id))
+
+
+chat_manager = ChatConnectionManager()
+
+
+async def _get_user_from_ws_token(token: str) -> User | None:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        token_data = TokenPayload(**payload)
+        user_id = int(token_data.sub)
+    except (JWTError, TypeError, ValueError):
+        return None
+
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(User)
+            .options(selectinload(User.profile))
+            .where(User.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+        if not user or user.status != UserStatus.ACTIVE:
+            return None
+        return user
+
+
+def _user_summary(user: User | None) -> schemas.ChatUserSummary | None:
+    if not user:
+        return None
+    return schemas.ChatUserSummary(
+        id=user.id,
+        display_name=user.profile.display_name if user.profile else None,
+        avatar_url=user.profile.avatar_url if user.profile else None,
+    )
+
+
+def _message_read(message: Message) -> schemas.MessageRead:
+    return schemas.MessageRead(
+        id=message.id,
+        sender_id=message.sender_id,
+        receiver_id=message.receiver_id,
+        content=message.content,
+        is_read=message.is_read,
+        created_at=message.created_at,
+        sender=_user_summary(message.sender),
+        receiver=_user_summary(message.receiver),
+    )
+
+
+async def _broadcast_message(message: Message) -> None:
+    payload = {
+        "type": "message:new",
+        "message": _message_read(message).model_dump(mode="json"),
+    }
+    await chat_manager.send_to_user(message.receiver_id, payload)
+    await chat_manager.send_to_user(message.sender_id, payload)
+
+
+@router.websocket("/ws")
+async def chat_websocket(websocket: WebSocket, token: str = Query("")):
+    user = await _get_user_from_ws_token(token)
+    if not user:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    await chat_manager.connect(user.id, websocket)
+    try:
+        await websocket.send_json({"type": "connection:ready", "user_id": user.id})
+        while True:
+            data = await websocket.receive_json()
+            if data.get("type") == "ping":
+                await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        chat_manager.disconnect(user.id, websocket)
 
 
 @router.post("", response_model=schemas.MessageRead)
@@ -47,27 +152,18 @@ async def send_message(
     )
     db.add(message)
     await db.commit()
-    await db.refresh(message)
-
-    # Build response with user info
-    sender_summary = None
-    if current_user.profile:
-        sender_summary = schemas.ChatUserSummary(
-            id=current_user.id,
-            display_name=current_user.profile.display_name,
-            avatar_url=current_user.profile.avatar_url
+    result = await db.execute(
+        select(Message)
+        .options(
+            selectinload(Message.sender).selectinload(User.profile),
+            selectinload(Message.receiver).selectinload(User.profile),
         )
-
-    return schemas.MessageRead(
-        id=message.id,
-        sender_id=message.sender_id,
-        receiver_id=message.receiver_id,
-        content=message.content,
-        is_read=message.is_read,
-        created_at=message.created_at,
-        sender=sender_summary,
-        receiver=None  # Could add receiver info if needed
+        .where(Message.id == message.id)
     )
+    message = result.scalar_one()
+    await _broadcast_message(message)
+
+    return _message_read(message)
 
 
 @router.get("/conversations", response_model=List[schemas.ConversationPreview])
@@ -129,7 +225,8 @@ async def get_conversations(
                 ),
                 last_message=msg.content[:100] if msg.content else "",
                 last_message_time=msg.created_at,
-                unread_count=unread_counts.get(other_user_id, 0)
+                unread_count=unread_counts.get(other_user_id, 0),
+                is_online=chat_manager.is_online(other_user_id),
             )
     
     conversations = sorted(
@@ -143,6 +240,7 @@ async def get_conversations(
 @router.get("/{user_id}/messages", response_model=List[schemas.MessageRead])
 async def get_message_history(
     user_id: int,
+    after_id: int | None = Query(default=None, ge=1),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
@@ -156,18 +254,22 @@ async def get_message_history(
         raise not_found("User")
 
     # Get messages between the two users
+    filters = [
+        or_(
+            and_(Message.sender_id == current_user.id, Message.receiver_id == user_id),
+            and_(Message.sender_id == user_id, Message.receiver_id == current_user.id),
+        )
+    ]
+    if after_id is not None:
+        filters.append(Message.id > after_id)
+
     query = (
         select(Message)
         .options(
             selectinload(Message.sender).selectinload(User.profile),
             selectinload(Message.receiver).selectinload(User.profile)
         )
-        .where(
-            or_(
-                and_(Message.sender_id == current_user.id, Message.receiver_id == user_id),
-                and_(Message.sender_id == user_id, Message.receiver_id == current_user.id)
-            )
-        )
+        .where(*filters)
         .order_by(Message.created_at.asc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -182,34 +284,4 @@ async def get_message_history(
             msg.is_read = True
     await db.commit()
 
-    # Build response
-    response = []
-    for msg in messages:
-        sender_summary = None
-        receiver_summary = None
-
-        if msg.sender and msg.sender.profile:
-            sender_summary = schemas.ChatUserSummary(
-                id=msg.sender.id,
-                display_name=msg.sender.profile.display_name,
-                avatar_url=msg.sender.profile.avatar_url
-            )
-        if msg.receiver and msg.receiver.profile:
-            receiver_summary = schemas.ChatUserSummary(
-                id=msg.receiver.id,
-                display_name=msg.receiver.profile.display_name,
-                avatar_url=msg.receiver.profile.avatar_url
-            )
-
-        response.append(schemas.MessageRead(
-            id=msg.id,
-            sender_id=msg.sender_id,
-            receiver_id=msg.receiver_id,
-            content=msg.content,
-            is_read=msg.is_read,
-            created_at=msg.created_at,
-            sender=sender_summary,
-            receiver=receiver_summary
-        ))
-
-    return response
+    return [_message_read(msg) for msg in messages]

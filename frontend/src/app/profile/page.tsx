@@ -2,16 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Settings, Bell, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, Instagram, Linkedin, Twitter, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, type LucideIcon } from "lucide-react";
 import { userService, User } from "@/services/user.service";
-import EditAboutMeModal from "@/components/profile/EditAboutMeModal";
-import EditResumeModal from "@/components/profile/EditResumeModal";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+
+const EditAboutMeModal = dynamic(() => import("@/components/profile/EditAboutMeModal"), {
+    ssr: false,
+});
+const EditResumeModal = dynamic(() => import("@/components/profile/EditResumeModal"), {
+    ssr: false,
+});
 
 interface Tab {
     id: string;

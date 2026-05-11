@@ -2,14 +2,18 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Maximize, Minimize, MoreVertical, Pause, Play, Rewind, FastForward, RotateCcw, SkipForward, X } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
-import VocabularyModal from "@/components/lms/VocabularyModal";
 import { isHttpStatus } from "@/lib/http";
 import { lessonChineseTitles, persianNumbers } from "@/lib/videoUtils";
 import Surface from "@/components/ui/Surface";
 import SectionHeader from "@/components/ui/SectionHeader";
+
+const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), {
+    ssr: false,
+});
 
 interface Lesson {
     id: number;

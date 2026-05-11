@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+import api, { API_BASE_URL } from '@/lib/api';
 
 // ===== TYPES =====
 
@@ -24,6 +24,7 @@ export interface ConversationPreview {
     last_message: string;
     last_message_time: string;
     unread_count: number;
+    is_online?: boolean;
 }
 
 export interface SendMessageRequest {
@@ -49,5 +50,22 @@ export const chatService = {
             params: { skip, limit }
         });
         return response.data;
+    },
+
+    async getNewMessages(userId: number, afterId: number): Promise<ChatMessage[]> {
+        const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
+            params: { after_id: afterId, limit: 100 }
+        });
+        return response.data;
+    },
+
+    getWebSocketUrl(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+
+        const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
+        return `${wsBaseUrl}/chat/ws?token=${encodeURIComponent(token)}`;
     },
 };
