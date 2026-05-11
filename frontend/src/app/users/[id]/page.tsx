@@ -11,9 +11,6 @@ import {
     MapPin,
     User as UserIcon,
     Globe,
-    Instagram,
-    Linkedin,
-    Twitter,
     MessageCircle,
     Briefcase,
     GraduationCap,
@@ -21,11 +18,11 @@ import {
     Wrench,
     Languages,
     X,
-    type LucideIcon
 } from "lucide-react";
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
 import ServicesTab from "@/components/profile/ServicesTab";
 import { getMediaUrl } from "@/lib/media";
+import { getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 
 interface Tab {
     id: string;
@@ -38,16 +35,6 @@ const tabs: Tab[] = [
     { id: "gallery", label: "گالری" },
     { id: "services", label: "خدمات" },
 ];
-
-const socialIcons: Record<string, LucideIcon> = {
-    instagram: Instagram,
-    linkedin: Linkedin,
-    twitter: Twitter,
-    telegram: MessageCircle,
-    whatsapp: MessageCircle,
-    wechat: MessageCircle,
-    x: X,
-};
 
 export default function PublicProfilePage() {
     const params = useParams();
@@ -162,15 +149,25 @@ export default function PublicProfilePage() {
                             <h3 className="font-bold text-gray-900 mb-3 text-sm flex items-center gap-2">
                                 ✏️ شبکه‌های اجتماعی
                             </h3>
-                            <div className="space-y-2">
+                            <div className="grid gap-2">
                                 {user.profile.socials?.map((social, idx) => {
-                                    const Icon = socialIcons[social.platform] || MessageCircle;
+                                    const platform = getSocialPlatform(social.platform);
+                                    const Icon = platform.icon;
+                                    const href = getSocialProfileUrl(social.platform, social.handle);
                                     return (
-                                        <div key={idx} className="flex items-center gap-2 text-gray-600 text-sm">
-                                            <Icon className="w-4 h-4 text-rose-500" />
-                                            <span className="dir-ltr">{social.handle}</span>
-                                            <span className="text-gray-400">🔗</span>
-                                        </div>
+                                        <a
+                                            key={idx}
+                                            href={href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
+                                        >
+                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm">
+                                                <Icon className="h-4 w-4" />
+                                            </span>
+                                            <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
+                                            <span className="dir-ltr truncate text-left text-xs text-slate-500">{social.handle}</span>
+                                        </a>
                                     );
                                 })}
                             </div>

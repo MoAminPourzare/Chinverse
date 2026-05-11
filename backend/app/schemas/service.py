@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
@@ -26,6 +27,7 @@ class Service(ServiceBase):
     id: int
     user_id: int
     banner_url: Optional[str] = None
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -38,6 +40,7 @@ class ServicePublic(BaseModel):
     description: str
     banner_url: Optional[str] = None
     price_label: Optional[str] = None
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -63,6 +66,7 @@ class ServiceWithProvider(BaseModel):
     description: str
     banner_url: Optional[str] = None
     price_label: Optional[str] = None
+    created_at: datetime
     provider: Optional[ServiceProviderInfo] = None
 
     class Config:
