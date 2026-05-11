@@ -40,3 +40,4 @@ class ConversationPreview(BaseModel):
     last_message: str
     last_message_time: datetime
     unread_count: int = 0
+    is_online: bool = False

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -14,6 +15,8 @@ app = FastAPI(
     redoc_url="/redoc" if settings.ENABLE_API_DOCS else None,
     openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.ENABLE_API_DOCS else None,
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 if settings.TRUSTED_HOSTS and "*" not in settings.TRUSTED_HOSTS:
     app.add_middleware(
@@ -43,6 +46,9 @@ async def add_security_headers(request, call_next):
 
     if settings.HSTS_ENABLED:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
+    if request.url.path.startswith("/uploads/") or request.url.path.startswith("/static/"):
+        response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
 
     return response
 

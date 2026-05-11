@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, MessageCircle, Send, User as UserIcon } from 'lucide-react';
+import { ArrowRight, CheckCheck, MessageCircle, Send, User as UserIcon, Wifi } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import Surface from '@/components/ui/Surface';
 import { cn } from '@/lib/cn';
@@ -20,11 +20,14 @@ export default function ChatRoomPage() {
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+    const [connectionState, setConnectionState] = useState<'connecting' | 'live' | 'polling'>('connecting');
     const [otherUser, setOtherUser] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const lastMessageIdRef = useRef<number>(0);
+    const socketRef = useRef<WebSocket | null>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,6 +36,24 @@ export default function ChatRoomPage() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    useEffect(() => {
+        lastMessageIdRef.current = messages.reduce((maxId, message) => Math.max(maxId, message.id), 0);
+    }, [messages]);
+
+    const appendMessages = useCallback((incomingMessages: ChatMessage[]) => {
+        if (incomingMessages.length === 0) return;
+
+        setMessages((previousMessages) => {
+            const existingIds = new Set(previousMessages.map((message) => message.id));
+            const uniqueMessages = incomingMessages.filter((message) => !existingIds.has(message.id));
+            if (uniqueMessages.length === 0) return previousMessages;
+
+            return [...previousMessages, ...uniqueMessages].sort(
+                (first, second) => new Date(first.created_at).getTime() - new Date(second.created_at).getTime(),
+            );
+        });
+    }, []);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -59,6 +80,84 @@ export default function ChatRoomPage() {
         fetchData();
     }, [fetchData]);
 
+    useEffect(() => {
+        const socketUrl = chatService.getWebSocketUrl();
+        let reconnectTimer: number | undefined;
+        let isActive = true;
+
+        const connect = () => {
+            if (!socketUrl || !isActive) {
+                setConnectionState('polling');
+                return;
+            }
+
+            setConnectionState('connecting');
+            const socket = new WebSocket(socketUrl);
+            socketRef.current = socket;
+
+            socket.onopen = () => {
+                setConnectionState('live');
+                socket.send(JSON.stringify({ type: 'ping' }));
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    if (payload.type !== 'message:new') return;
+
+                    const message = payload.message as ChatMessage;
+                    if (message.sender_id === userId || message.receiver_id === userId) {
+                        appendMessages([message]);
+                    }
+                } catch (error) {
+                    console.error('Failed to parse chat websocket event', error);
+                }
+            };
+
+            socket.onerror = () => {
+                setConnectionState('polling');
+            };
+
+            socket.onclose = () => {
+                if (!isActive) return;
+                setConnectionState('polling');
+                reconnectTimer = window.setTimeout(connect, 3000);
+            };
+        };
+
+        connect();
+
+        return () => {
+            isActive = false;
+            if (reconnectTimer) window.clearTimeout(reconnectTimer);
+            socketRef.current?.close();
+            socketRef.current = null;
+        };
+    }, [appendMessages, userId]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        const pollNewMessages = async () => {
+            try {
+                const afterId = lastMessageIdRef.current;
+                if (!afterId) return;
+                const latest = await chatService.getNewMessages(userId, afterId);
+                if (isActive) {
+                    appendMessages(latest);
+                }
+            } catch (error) {
+                console.error('Failed to poll chat messages', error);
+            }
+        };
+
+        const interval = window.setInterval(pollNewMessages, connectionState === 'live' ? 15_000 : 4_000);
+        return () => {
+            isActive = false;
+            window.clearInterval(interval);
+        };
+    }, [appendMessages, connectionState, userId]);
+
     const handleSend = async () => {
         if (!newMessage.trim() || isSending) return;
 
@@ -71,7 +170,7 @@ export default function ChatRoomPage() {
                 receiver_id: userId,
                 content: messageContent,
             });
-            setMessages([...messages, sent]);
+            appendMessages([sent]);
         } catch (error) {
             console.error('Failed to send message:', error);
             setNewMessage(messageContent);
@@ -123,8 +222,9 @@ export default function ChatRoomPage() {
                         <h1 className="truncate text-base font-black tracking-tight">
                             {otherUser?.display_name || 'گفت‌وگو'}
                         </h1>
-                        <p className="mt-0.5 truncate text-xs text-white/60">
-                            {isLoading ? 'در حال بارگذاری...' : 'پیام خصوصی'}
+                        <p className="mt-0.5 inline-flex items-center justify-center gap-1 truncate text-xs text-white/60">
+                            {!isLoading && <Wifi size={12} className={connectionState === 'live' ? 'text-emerald-300' : 'text-amber-300'} />}
+                            {isLoading ? 'در حال بارگذاری...' : connectionState === 'live' ? 'اتصال زنده' : 'همگام سازی خودکار'}
                         </p>
                     </div>
                     <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
@@ -174,8 +274,11 @@ export default function ChatRoomPage() {
                                                             )}
                                                         >
                                                             <p className="whitespace-pre-wrap text-sm leading-7">{message.content}</p>
-                                                            <p className={cn('mt-1 text-[10px]', isMyMessage ? 'text-white/70' : 'text-slate-400')}>
-                                                                {formatTime(message.created_at)}
+                                                            <p className={cn('mt-1 flex items-center gap-1 text-[10px]', isMyMessage ? 'justify-start text-white/70' : 'justify-end text-slate-400')}>
+                                                                <span>{formatTime(message.created_at)}</span>
+                                                                {isMyMessage && (
+                                                                    <CheckCheck size={13} className={message.is_read ? 'text-emerald-100' : 'text-white/55'} />
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </div>

@@ -1,12 +1,18 @@
 'use client';
 
+import dynamic from "next/dynamic";
 import { useState, useEffect } from 'react';
 import { Plus, ImageIcon } from 'lucide-react';
 import { galleryService, GalleryItem } from '@/services/gallery.service';
 import Image from 'next/image';
-import AddPhotoModal from '@/components/gallery/AddPhotoModal';
-import ImageDetailModal from '@/components/gallery/ImageDetailModal';
 import { getMediaUrl } from '@/lib/media';
+
+const AddPhotoModal = dynamic(() => import('@/components/gallery/AddPhotoModal'), {
+    ssr: false,
+});
+const ImageDetailModal = dynamic(() => import('@/components/gallery/ImageDetailModal'), {
+    ssr: false,
+});
 
 export default function GalleryTab() {
     const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
