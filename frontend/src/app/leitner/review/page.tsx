@@ -4,6 +4,12 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, Volume2, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import {
+    getChineseTextStyle,
+    getHighlightStyle,
+    getPersianTextStyle,
+    useLearningPreferences,
+} from "@/lib/learningPreferences";
 
 interface Example {
     id?: number;
@@ -63,6 +69,7 @@ type BackTabType = "examples" | "composition" | "persian" | "chinese";
 
 export default function LeitnerReviewPage() {
     const router = useRouter();
+    const { preferences } = useLearningPreferences();
     const [cards, setCards] = useState<Flashcard[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -131,7 +138,15 @@ export default function LeitnerReviewPage() {
         return parts.map((part, i) => (
             <React.Fragment key={i}>
                 {part}
-                {i < parts.length - 1 && <span className="font-cjk font-bold text-rose-600" lang="zh-CN">{keyword}</span>}
+                {i < parts.length - 1 && (
+                    <span
+                        className="font-cjk px-1 font-bold"
+                        style={getHighlightStyle(preferences.leitnerHighlightColor)}
+                        lang="zh-CN"
+                    >
+                        {keyword}
+                    </span>
+                )}
             </React.Fragment>
         ));
     };
@@ -165,6 +180,8 @@ export default function LeitnerReviewPage() {
     const borderColor = BOX_BORDER_COLORS[currentCard.box_number] || "border-red-500";
     const rememberedBox = Math.min(currentCard.box_number + 1, 5);
     const rememberedInterval = BOX_INTERVALS[rememberedBox] || 1;
+    const chineseTextStyle = getChineseTextStyle(preferences);
+    const persianTextStyle = getPersianTextStyle(preferences);
 
     const backTabs: { key: BackTabType; label: string }[] = [
         { key: "examples", label: "مثال‌ها" },
@@ -245,9 +262,11 @@ export default function LeitnerReviewPage() {
                                     {currentCard.word.chinese}
                                 </span>
                             </div>
-                            <p className="font-latin py-2 text-center text-base text-gray-500" dir="ltr" lang="en">
-                                {currentCard.word.pinyin}
-                            </p>
+                            {preferences.showPinyin && (
+                                <p className="font-latin py-2 text-center text-base text-gray-500" dir="ltr" lang="en">
+                                    {currentCard.word.pinyin}
+                                </p>
+                            )}
 
                             {/* Tab Bar */}
                             <div className="flex border-b border-slate-200 px-2" dir="rtl">
@@ -282,11 +301,11 @@ export default function LeitnerReviewPage() {
                                                             className="w-full rounded-xl aspect-video bg-black"
                                                         />
                                                     )}
-                                                    <p className="font-cjk text-base text-gray-800" dir="ltr" lang="zh-CN">
+                                                    <p className="font-cjk text-gray-800" style={chineseTextStyle} dir="ltr" lang="zh-CN">
                                                         {i + 1}. {highlightKeyword(example.sentence_ch || example.zh_text || "", currentCard.word.chinese)}
                                                     </p>
                                                     {(example.sentence_fa || example.target_text) && (
-                                                        <p className="text-gray-500 text-sm">
+                                                        <p className="text-gray-500" style={persianTextStyle}>
                                                             {example.sentence_fa || example.target_text}
                                                         </p>
                                                     )}
@@ -300,7 +319,7 @@ export default function LeitnerReviewPage() {
                                     <div className="space-y-3">
                                         {currentCard.word.composition ? (
                                             currentCard.word.composition.split("\n").map((line, i) => (
-                                                <p key={i} className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
+                                                <p key={i} className="font-cjk text-gray-800" style={chineseTextStyle} dir="ltr" lang="zh-CN">
                                                     {i + 1}. {highlightKeyword(line, currentCard.word.chinese)}
                                                 </p>
                                             ))
@@ -314,7 +333,7 @@ export default function LeitnerReviewPage() {
                                     <div className="space-y-3">
                                         {currentCard.word.persian_meaning ? (
                                             currentCard.word.persian_meaning.split("\n").map((line, i) => (
-                                                <p key={i} className="text-gray-800">
+                                                <p key={i} className="text-gray-800" style={persianTextStyle}>
                                                     {i + 1}. {line}
                                                 </p>
                                             ))
@@ -328,7 +347,7 @@ export default function LeitnerReviewPage() {
                                     <div className="space-y-3">
                                         {currentCard.word.chinese_meaning ? (
                                             currentCard.word.chinese_meaning.split("\n").map((line, i) => (
-                                                <p key={i} className="font-cjk text-gray-800" dir="ltr" lang="zh-CN">
+                                                <p key={i} className="font-cjk text-gray-800" style={chineseTextStyle} dir="ltr" lang="zh-CN">
                                                     {i + 1}. {line}
                                                 </p>
                                             ))

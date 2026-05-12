@@ -15,6 +15,7 @@ from app.models.social import Message
 from app.models.user import User, UserStatus
 from app.schemas import chat as schemas
 from app.schemas.token import TokenPayload
+from app.services.notifications import create_notification
 
 router = APIRouter()
 
@@ -161,6 +162,20 @@ async def send_message(
         .where(Message.id == message.id)
     )
     message = result.scalar_one()
+    try:
+        sender_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
+        await create_notification(
+            db,
+            user_id=message.receiver_id,
+            actor_user_id=current_user.id,
+            type="message",
+            title="پیام جدید",
+            body=f"{sender_name}: {content[:120]}",
+            target_url=f"/chat/{current_user.id}",
+            metadata={"message_id": message.id},
+        )
+    except Exception:
+        await db.rollback()
     await _broadcast_message(message)
 
     return _message_read(message)

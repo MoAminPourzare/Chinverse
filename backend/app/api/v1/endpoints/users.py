@@ -493,6 +493,22 @@ async def follow_user(
     )
     db.add(follow)
     await db.commit()
+    from app.services.notifications import create_notification
+
+    try:
+        follower_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
+        await create_notification(
+            db,
+            user_id=user_id,
+            actor_user_id=current_user.id,
+            type="follow",
+            title="دنبال کننده جدید",
+            body=f"{follower_name} شما را دنبال کرد.",
+            target_url=f"/users/{current_user.id}",
+            metadata={"follower_id": current_user.id},
+        )
+    except Exception:
+        await db.rollback()
     
     return {"message": "Successfully followed user"}
 

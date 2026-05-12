@@ -13,6 +13,7 @@ from app.models.user import User, UserGalleryItem
 from app.core.paths import GALLERY_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
 from app.schemas.gallery import GalleryItem
 from app.db.session import get_db
+from app.services.notifications import notify_followers
 
 router = APIRouter()
 
@@ -68,6 +69,20 @@ async def upload_gallery_image(
         await db.rollback()
         delete_public_file(image_url)
         raise
+
+    try:
+        display_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
+        await notify_followers(
+            db,
+            actor_user_id=current_user.id,
+            type="post",
+            title="اثر جدید در ویترین",
+            body=f"{display_name} یک تصویر جدید در گالری منتشر کرد.",
+            target_url=f"/users/{current_user.id}",
+            metadata={"gallery_item_id": gallery_item.id},
+        )
+    except Exception:
+        await db.rollback()
     
     return gallery_item
 
