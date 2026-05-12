@@ -13,6 +13,7 @@ from app.core.uploads import save_image_upload
 from app.models.user import User
 from app.models.service import UserService
 from app.schemas.service import Service
+from app.services.notifications import notify_followers
 
 router = APIRouter()
 
@@ -84,6 +85,20 @@ async def create_service(
         if banner_url:
             delete_public_file(banner_url)
         raise
+
+    try:
+        display_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
+        await notify_followers(
+            db,
+            actor_user_id=current_user.id,
+            type="service",
+            title="خدمت جدید",
+            body=f"{display_name} یک خدمت جدید اضافه کرد: {service.title}",
+            target_url=f"/services/{service.id}",
+            metadata={"service_id": service.id},
+        )
+    except Exception:
+        await db.rollback()
     
     return service
 

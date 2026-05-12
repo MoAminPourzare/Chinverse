@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Bell, BookmarkCheck, BookOpen, Compass, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, PlayCircle, type LucideIcon } from "lucide-react";
+import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, PlayCircle, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount, unsaveCourse } from "@/lib/courses";
+import NotificationBellLink from "@/components/notifications/NotificationBellLink";
 
 const EditAboutMeModal = dynamic(() => import("@/components/profile/EditAboutMeModal"), {
     ssr: false,
@@ -358,7 +359,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex gap-2 text-slate-500">
                         <Link href="/community" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><MessageCircle className="w-5 h-5" /></Link>
-                        <Link href="/notifications" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><Bell className="w-5 h-5" /></Link>
+                        <NotificationBellLink />
                         <button onClick={() => setIsSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><Settings className="w-5 h-5" /></button>
                     </div>
                 </header>
@@ -522,6 +523,20 @@ export default function ProfilePage() {
                                         <UserIcon className="w-5 h-5 text-rose-600" />
                                     </div>
                                     <span className="font-medium text-gray-800">حساب کاربری</span>
+                                </Link>
+
+                                <Link
+                                    href="/settings"
+                                    className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-blue-50"
+                                    onClick={() => setIsSettingsOpen(false)}
+                                >
+                                    <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                                        <SlidersHorizontal className="w-5 h-5 text-blue-700" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="block font-medium text-gray-800">تنظیمات دلخواه</span>
+                                        <span className="mt-0.5 block text-xs text-slate-400">متن، پین‌یین، هایلایت و سرعت پخش</span>
+                                    </div>
                                 </Link>
 
                                 {/* 2. درباره چین‌ورس */}

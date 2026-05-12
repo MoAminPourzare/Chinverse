@@ -9,6 +9,7 @@ import {
     BookmarkCheck,
     BookOpen,
     Loader2,
+    MoreVertical,
     Play,
     Star,
 } from "lucide-react";
@@ -228,6 +229,13 @@ export default function CourseDetailPage({
                                 <Bookmark size={20} />
                             )}
                         </button>
+                        <Link
+                            href="/settings"
+                            aria-label="تنظیمات نمایش درس"
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                        >
+                            <MoreVertical size={20} />
+                        </Link>
                     </Surface>
                 </header>
 

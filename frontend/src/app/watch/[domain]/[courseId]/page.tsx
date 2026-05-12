@@ -4,10 +4,16 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Maximize, Minimize, MoreVertical, Pause, Play, Rewind, FastForward, RotateCcw, SkipForward, X } from "lucide-react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { isHttpStatus } from "@/lib/http";
 import { lessonChineseTitles, persianNumbers } from "@/lib/videoUtils";
+import {
+    getChineseTextStyle,
+    getHighlightStyle,
+    getPersianTextStyle,
+    useLearningPreferences,
+} from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
 import SectionHeader from "@/components/ui/SectionHeader";
 
@@ -144,7 +150,9 @@ const getTranscriptEntries = (meta: Record<string, unknown> | undefined): Transc
 
 export default function SharedWatchPage() {
     const params = useParams();
+    const router = useRouter();
     const searchParams = useSearchParams();
+    const { preferences } = useLearningPreferences();
 
     const domain = params?.domain as string;
     const courseId = params?.courseId as string;
@@ -200,6 +208,12 @@ export default function SharedWatchPage() {
         return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
     }, []);
 
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = preferences.playbackSpeed;
+        }
+    }, [preferences.playbackSpeed, currentLesson?.id]);
+
     const handlePlayPause = () => {
         if (videoRef.current) {
             if (isPlaying) {
@@ -220,6 +234,7 @@ export default function SharedWatchPage() {
     const handleLoadedMetadata = () => {
         if (videoRef.current) {
             setDuration(videoRef.current.duration);
+            videoRef.current.playbackRate = preferences.playbackSpeed;
         }
     };
 
@@ -289,7 +304,8 @@ export default function SharedWatchPage() {
                     <button
                         key={key++}
                         onClick={() => handleWordClick(clickWord)}
-                        className="font-cjk rounded-md bg-amber-200 px-1.5 text-slate-900 transition-colors hover:bg-amber-300"
+                        className="font-cjk px-1.5 transition brightness-100 hover:brightness-95"
+                        style={getHighlightStyle(preferences.newWordHighlightColor)}
                         lang="zh-CN"
                     >
                         {foundWord}
@@ -339,6 +355,21 @@ export default function SharedWatchPage() {
     const lessonNotes = getMetaArray(lessonMeta, "key_points");
     const lessonTranscript = getTranscriptEntries(lessonMeta);
     const headerSubtitle = isEntertainment ? `${course.title} - ${isMusic ? "Track" : "EP"} ${lessonNumber}` : lessonSubtitle || chineseTitle;
+    const showChineseText = preferences.textDisplayMode !== "persian";
+    const showPersianText = preferences.textDisplayMode !== "chinese";
+    const chineseTextStyle = getChineseTextStyle(preferences);
+    const persianTextStyle = getPersianTextStyle(preferences);
+
+    const handleVideoEnded = () => {
+        setIsPlaying(false);
+
+        if (!preferences.autoplayNext) return;
+
+        const nextLesson = allLessons[lessonIndex + 1];
+        if (nextLesson) {
+            router.push(`/watch/${domain}/${course.id}?lesson=${nextLesson.id}`);
+        }
+    };
 
     return (
         <div className="min-h-full pb-28" dir="rtl">
@@ -355,9 +386,13 @@ export default function SharedWatchPage() {
                                 {headerSubtitle}
                             </p>
                         </div>
-                        <button className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+                        <Link
+                            href="/settings"
+                            aria-label="تنظیمات نمایش درس"
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                        >
                             <MoreVertical size={20} />
-                        </button>
+                        </Link>
                     </div>
                 </Surface>
 
@@ -373,6 +408,7 @@ export default function SharedWatchPage() {
                                     onLoadedMetadata={handleLoadedMetadata}
                                     onPlay={() => setIsPlaying(true)}
                                     onPause={() => setIsPlaying(false)}
+                                    onEnded={handleVideoEnded}
                                 >
                                     Your browser does not support the video tag.
                                 </video>
@@ -424,6 +460,11 @@ export default function SharedWatchPage() {
                                 />
                                 <span>{formatTime(duration)}</span>
                             </div>
+                            <div className="mt-3 flex items-center justify-center">
+                                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-500">
+                                    سرعت {preferences.playbackSpeed}x
+                                </span>
+                            </div>
                             <div className="mt-4 flex items-center justify-center gap-5">
                                 <button className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
                                     <RotateCcw size={20} />
@@ -464,10 +505,21 @@ export default function SharedWatchPage() {
                             <div className="mt-5 space-y-5">
                                 {lessonTranscript.map((item) => (
                                     <div key={item.id} className="space-y-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                                        <p className="font-cjk text-lg font-bold leading-9 text-rose-600 sm:text-xl" dir="ltr" lang="zh-CN">
-                                            {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
-                                        </p>
-                                        <p className="text-sm leading-8 text-slate-700">{item.persian}</p>
+                                        {showChineseText && (
+                                            <p
+                                                className="font-cjk font-bold text-rose-600"
+                                                style={chineseTextStyle}
+                                                dir="ltr"
+                                                lang="zh-CN"
+                                            >
+                                                {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
+                                            </p>
+                                        )}
+                                        {showPersianText && (
+                                            <p className="text-slate-700" style={persianTextStyle}>
+                                                {item.persian}
+                                            </p>
+                                        )}
                                     </div>
                                 ))}
                             </div>

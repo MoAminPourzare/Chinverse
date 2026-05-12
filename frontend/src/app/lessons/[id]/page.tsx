@@ -1,14 +1,26 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { BookOpenText, MoreVertical } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import Surface from "@/components/ui/Surface";
+import { getChineseTextStyle, getPersianTextStyle, useLearningPreferences } from "@/lib/learningPreferences";
 
 export default function LessonPlayerPage() {
     const params = useParams();
     const router = useRouter();
+    const { preferences } = useLearningPreferences();
+    const videoRef = useRef<HTMLVideoElement>(null);
     const id = params?.id;
+    const chineseTextStyle = getChineseTextStyle(preferences);
+    const persianTextStyle = getPersianTextStyle(preferences);
+
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = preferences.playbackSpeed;
+        }
+    }, [preferences.playbackSpeed]);
 
     return (
         <div className="flex min-h-full flex-col px-4 pb-5 pt-4" dir="rtl">
@@ -28,6 +40,7 @@ export default function LessonPlayerPage() {
                 <Surface className="overflow-hidden p-0">
                     <div className="aspect-video w-full bg-slate-950">
                         <video
+                            ref={videoRef}
                             controls
                             className="h-full w-full"
                             poster="/placeholder_video_poster.jpg"
@@ -40,11 +53,17 @@ export default function LessonPlayerPage() {
 
                 <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
                     <Surface className="p-5">
-                        <h2 className="font-cjk text-3xl font-black text-slate-950" dir="ltr" lang="zh-CN">你好！</h2>
-                        <p className="font-latin mt-2 text-sm text-slate-500" dir="ltr" lang="en">Hello! - Lesson {id}</p>
-                        <p className="mt-5 text-sm leading-8 text-slate-600">
+                        {preferences.textDisplayMode !== "persian" && (
+                            <h2 className="font-cjk font-black text-slate-950" style={chineseTextStyle} dir="ltr" lang="zh-CN">你好！</h2>
+                        )}
+                        {preferences.showPinyin && preferences.textDisplayMode !== "persian" && (
+                            <p className="font-latin mt-2 text-sm text-slate-500" dir="ltr" lang="en">Hello! - Lesson {id}</p>
+                        )}
+                        {preferences.textDisplayMode !== "chinese" && (
+                        <p className="mt-5 text-slate-600" style={persianTextStyle}>
                             در این درس با سلام و احوالپرسی‌های پایه در زبان چینی آشنا می‌شوی و چند عبارت کوتاه را تمرین می‌کنی.
                         </p>
+                        )}
                     </Surface>
 
                     <Surface className="p-5">
@@ -56,11 +75,11 @@ export default function LessonPlayerPage() {
                         </div>
                         <ul className="space-y-3 text-sm" dir="ltr">
                             <li className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2">
-                                <span><span className="font-cjk" lang="zh-CN">你好</span> <span className="font-latin" lang="en">(nǐ hǎo)</span></span>
+                                <span><span className="font-cjk" style={chineseTextStyle} lang="zh-CN">你好</span> {preferences.showPinyin && <span className="font-latin" lang="en">(nǐ hǎo)</span>}</span>
                                 <span className="text-slate-500">Hello</span>
                             </li>
                             <li className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2">
-                                <span><span className="font-cjk" lang="zh-CN">谢谢</span> <span className="font-latin" lang="en">(xiè xie)</span></span>
+                                <span><span className="font-cjk" style={chineseTextStyle} lang="zh-CN">谢谢</span> {preferences.showPinyin && <span className="font-latin" lang="en">(xiè xie)</span>}</span>
                                 <span className="text-slate-500">Thank you</span>
                             </li>
                         </ul>

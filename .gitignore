@@ -17,6 +17,7 @@ frontend/src/lib/*
 !frontend/src/lib/http.ts
 !frontend/src/lib/media.ts
 !frontend/src/lib/courses.ts
+!frontend/src/lib/learningPreferences.ts
 lib64/
 parts/
 sdist/

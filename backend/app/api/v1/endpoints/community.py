@@ -11,6 +11,7 @@ from app.api.rate_limit import write_rate_limit
 from app.models.social import ForumQuestion, ForumAnswer, Article, SupportTicket
 from app.models.user import User, UserProfile
 from app.schemas import community as schemas
+from app.services.notifications import notify_followers
 
 router = APIRouter()
 
@@ -91,6 +92,19 @@ async def create_forum_question(
     db.add(question)
     await db.commit()
     await db.refresh(question)
+    try:
+        display_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
+        await notify_followers(
+            db,
+            actor_user_id=current_user.id,
+            type="forum",
+            title="بحث جدید در تالار",
+            body=f"{display_name} یک سؤال جدید پرسید: {question.title}",
+            target_url="/community",
+            metadata={"question_id": question.id},
+        )
+    except Exception:
+        await db.rollback()
 
     # Get author info
     author_summary = None
