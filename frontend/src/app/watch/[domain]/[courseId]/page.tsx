@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Maximize, Minimize, MoreVertical, Pause, Play, Rewind, FastForward, RotateCcw, SkipForward, X } from "lucide-react";
@@ -16,6 +16,7 @@ import {
 } from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { dailyActivityService } from "@/services/dailyActivity.service";
 
 const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), {
     ssr: false,
@@ -171,6 +172,34 @@ export default function SharedWatchPage() {
     const [showVocabModal, setShowVocabModal] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const videoContainerRef = useRef<HTMLDivElement>(null);
+    const pendingWatchSecondsRef = useRef(0);
+    const lastWatchTickRef = useRef<number | null>(null);
+    const isFlushingWatchRef = useRef(false);
+    const currentTimeRef = useRef(0);
+    const durationRef = useRef(0);
+    const lessonIdRef = useRef<number | null>(null);
+
+    const flushWatchProgress = useCallback(async (force = false) => {
+        const lessonId = lessonIdRef.current;
+        const secondsDelta = Math.floor(pendingWatchSecondsRef.current);
+        if (!lessonId || isFlushingWatchRef.current || secondsDelta <= 0) return;
+        if (!force && secondsDelta < 15) return;
+
+        pendingWatchSecondsRef.current = Math.max(0, pendingWatchSecondsRef.current - secondsDelta);
+        isFlushingWatchRef.current = true;
+        try {
+            await dailyActivityService.recordVideoProgress({
+                lesson_id: lessonId,
+                seconds_delta: Math.min(secondsDelta, 300),
+                position_seconds: Math.floor(currentTimeRef.current || 0),
+                duration_seconds: Math.floor(durationRef.current || 0),
+            });
+        } catch (error) {
+            console.error("Failed to record video progress", error);
+        } finally {
+            isFlushingWatchRef.current = false;
+        }
+    }, []);
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -214,6 +243,53 @@ export default function SharedWatchPage() {
         }
     }, [preferences.playbackSpeed, currentLesson?.id]);
 
+    useEffect(() => {
+        lessonIdRef.current = currentLesson?.id || null;
+        pendingWatchSecondsRef.current = 0;
+        lastWatchTickRef.current = null;
+        return () => {
+            void flushWatchProgress(true);
+        };
+    }, [flushWatchProgress, currentLesson?.id]);
+
+    useEffect(() => {
+        if (!isPlaying || !currentLesson?.id) {
+            lastWatchTickRef.current = null;
+            return;
+        }
+
+        lastWatchTickRef.current = Date.now();
+        const interval = window.setInterval(() => {
+            const now = Date.now();
+            const lastTick = lastWatchTickRef.current || now;
+            const elapsedSeconds = Math.min(Math.max((now - lastTick) / 1000, 0), 2);
+            pendingWatchSecondsRef.current += elapsedSeconds;
+            lastWatchTickRef.current = now;
+
+            if (pendingWatchSecondsRef.current >= 15) {
+                void flushWatchProgress();
+            }
+        }, 1000);
+
+        return () => {
+            window.clearInterval(interval);
+        };
+    }, [flushWatchProgress, isPlaying, currentLesson?.id]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                void flushWatchProgress(true);
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            void flushWatchProgress(true);
+        };
+    }, [flushWatchProgress]);
+
     const handlePlayPause = () => {
         if (videoRef.current) {
             if (isPlaying) {
@@ -228,12 +304,14 @@ export default function SharedWatchPage() {
     const handleTimeUpdate = () => {
         if (videoRef.current) {
             setCurrentTime(videoRef.current.currentTime);
+            currentTimeRef.current = videoRef.current.currentTime;
         }
     };
 
     const handleLoadedMetadata = () => {
         if (videoRef.current) {
             setDuration(videoRef.current.duration);
+            durationRef.current = videoRef.current.duration;
             videoRef.current.playbackRate = preferences.playbackSpeed;
         }
     };
@@ -362,6 +440,7 @@ export default function SharedWatchPage() {
 
     const handleVideoEnded = () => {
         setIsPlaying(false);
+        void flushWatchProgress(true);
 
         if (!preferences.autoplayNext) return;
 
@@ -407,7 +486,10 @@ export default function SharedWatchPage() {
                                     onTimeUpdate={handleTimeUpdate}
                                     onLoadedMetadata={handleLoadedMetadata}
                                     onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
+                                    onPause={() => {
+                                        setIsPlaying(false);
+                                        void flushWatchProgress(true);
+                                    }}
                                     onEnded={handleVideoEnded}
                                 >
                                     Your browser does not support the video tag.

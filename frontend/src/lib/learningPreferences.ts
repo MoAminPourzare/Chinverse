@@ -18,6 +18,8 @@ export interface LearningPreferences {
     leitnerHighlightColor: HighlightColor;
     showPinyin: boolean;
     autoplayNext: boolean;
+    dailyGoalMinutes: number;
+    dailyGoalWords: number;
 }
 
 export const LEARNING_PREFERENCES_STORAGE_KEY = "chinverse.learningPreferences.v1";
@@ -34,6 +36,8 @@ export const defaultLearningPreferences: LearningPreferences = {
     leitnerHighlightColor: "sky",
     showPinyin: true,
     autoplayNext: true,
+    dailyGoalMinutes: 15,
+    dailyGoalWords: 5,
 };
 
 export const fontSizeOptions: Array<{ value: FontSizeLevel; label: string }> = [
@@ -76,6 +80,25 @@ export const textDisplayModeOptions: Array<{ value: TextDisplayMode; label: stri
     { value: "mixed", label: "فارسی و چینی" },
     { value: "chinese", label: "فقط چینی" },
     { value: "persian", label: "فقط فارسی" },
+];
+
+export const dailyGoalMinuteOptions = [
+    { value: 5, label: "۵ دقیقه" },
+    { value: 10, label: "۱۰ دقیقه" },
+    { value: 15, label: "۱۵ دقیقه" },
+    { value: 20, label: "۲۰ دقیقه" },
+    { value: 30, label: "۳۰ دقیقه" },
+    { value: 45, label: "۴۵ دقیقه" },
+    { value: 60, label: "۶۰ دقیقه" },
+];
+
+export const dailyGoalWordOptions = [
+    { value: 3, label: "۳ لغت" },
+    { value: 5, label: "۵ لغت" },
+    { value: 8, label: "۸ لغت" },
+    { value: 10, label: "۱۰ لغت" },
+    { value: 15, label: "۱۵ لغت" },
+    { value: 20, label: "۲۰ لغت" },
 ];
 
 export const highlightColorOptions: Array<{ value: HighlightColor; label: string; swatch: string }> = [
@@ -153,6 +176,12 @@ const sanitizePreferences = (value: unknown): LearningPreferences => {
             : defaultLearningPreferences.leitnerHighlightColor,
         showPinyin: typeof input.showPinyin === "boolean" ? input.showPinyin : defaultLearningPreferences.showPinyin,
         autoplayNext: typeof input.autoplayNext === "boolean" ? input.autoplayNext : defaultLearningPreferences.autoplayNext,
+        dailyGoalMinutes: dailyGoalMinuteOptions.some((option) => option.value === input.dailyGoalMinutes)
+            ? Number(input.dailyGoalMinutes)
+            : defaultLearningPreferences.dailyGoalMinutes,
+        dailyGoalWords: dailyGoalWordOptions.some((option) => option.value === input.dailyGoalWords)
+            ? Number(input.dailyGoalWords)
+            : defaultLearningPreferences.dailyGoalWords,
     };
 };
 

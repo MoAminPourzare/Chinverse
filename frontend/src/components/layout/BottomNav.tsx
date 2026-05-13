@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, User, Users, Brain } from "lucide-react";
+import { Home, Compass, User, Users, Brain, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export default function BottomNav() {
     const pathname = usePathname();
 
     const navItems = [
+        { name: "روزانه", href: "/daily-practice", icon: CalendarDays },
         { name: "خانه", href: "/", icon: Home },
         { name: "کاوش", href: "/explore", icon: Compass },
         { name: "ویترین", href: "/showcase", icon: Users },

@@ -13,6 +13,7 @@ from app.api.rate_limit import write_rate_limit
 from app.models.leitner import UserFlashcard
 from app.models.dictionary import DictionaryWord
 from app.models.user import User
+from app.services.daily_activity import record_words_learned
 from app.schemas.leitner import (
     LeitnerAddRequest,
     LeitnerDashboardStats,
@@ -345,6 +346,8 @@ async def submit_review(
         card.next_review_at = now + timedelta(days=1)
 
     card.last_reviewed_at = now
+    if request.remembered:
+        await record_words_learned(db, user_id=current_user.id, count=1, commit=False)
     await db.commit()
     await db.refresh(card)
 

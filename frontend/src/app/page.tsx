@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
     BookOpen,
+    CalendarDays,
     Compass,
     Flame,
     Headphones,
@@ -53,6 +54,7 @@ interface FeedItem {
 }
 
 const quickPaths = [
+    { title: "روزانه", subtitle: "استریک، تقویم و تمرین امروز", href: "/daily-practice", accent: "from-amber-500 to-orange-500", icon: CalendarDays },
     { title: "HSK", subtitle: "سطح‌ها و درس‌های اصلی", href: "/explore/hsk", accent: "from-rose-500 to-orange-500", icon: BookOpen },
     { title: "تلفظ", subtitle: "صداها و لحن‌ها", href: "/explore/pronunciation", accent: "from-sky-500 to-cyan-500", icon: Play },
     { title: "گرامر", subtitle: "ساختار جمله‌ها", href: "/explore/grammar", accent: "from-emerald-500 to-teal-500", icon: Sparkles },
@@ -105,10 +107,10 @@ export default function HomePage() {
                             </p>
 
                             <div className="mt-5 flex flex-wrap gap-2">
-                                <PrimaryButton variant="light" leadingIcon={<Compass size={16} />}>
+                                <PrimaryButton href="/explore" variant="light" leadingIcon={<Compass size={16} />}>
                                     رفتن به کاوش
                                 </PrimaryButton>
-                                <PrimaryButton variant="ghost" className="!border-white/15 !bg-white/10 !text-white hover:!bg-white/15" leadingIcon={<Flame size={16} />}>
+                                <PrimaryButton href="/daily-practice" variant="ghost" className="!border-white/15 !bg-white/10 !text-white hover:!bg-white/15" leadingIcon={<Flame size={16} />}>
                                     ادامه یادگیری
                                 </PrimaryButton>
                             </div>
@@ -125,7 +127,7 @@ export default function HomePage() {
                             />
                             <StatCard
                                 label="مسیرهای سریع"
-                                value="4"
+                                value="5"
                                 helper="موضوعات اصلی برای شروع"
                                 icon={<Compass className="h-5 w-5" />}
                                 accent="from-emerald-500 to-teal-500"
