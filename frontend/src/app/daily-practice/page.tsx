@@ -201,7 +201,7 @@ export default function DailyPracticePage() {
                         />
                     </div>
                     <Link
-                        href="/settings"
+                        href="/settings/daily"
                         className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50"
                     >
                         <Settings size={17} />

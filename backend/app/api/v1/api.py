@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, gallery, courses, course_admin, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity
+from app.api.v1.endpoints import auth, users, gallery, courses, course_admin, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions
 
 api_router = APIRouter()
 
@@ -33,6 +33,12 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 
 # ===== DAILY ACTIVITY =====
 api_router.include_router(daily_activity.router, prefix="/daily-activity", tags=["daily-activity"])
+
+# ===== REFERRALS =====
+api_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+
+# ===== SUBSCRIPTIONS =====
+api_router.include_router(subscriptions.router, prefix="/subscriptions", tags=["subscriptions"])
 
 # ===== VOCABULARY =====
 api_router.include_router(vocabulary.router, prefix="/vocabulary", tags=["vocabulary"])

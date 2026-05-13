@@ -7,12 +7,16 @@ import {
     BookOpen,
     CalendarDays,
     Compass,
+    CreditCard,
+    Crown,
     Flame,
+    Gift,
     Headphones,
     Loader2,
     Play,
     Sparkles,
     User as UserIcon,
+    UserPlus,
 } from "lucide-react";
 import api from "@/lib/api";
 import { getMediaUrl } from "@/lib/media";
@@ -144,6 +148,50 @@ export default function HomePage() {
                         </div>
                     </div>
                 </Surface>
+
+                <section className="grid gap-3 sm:grid-cols-2">
+                    <Link href="/settings/referrals" className="group">
+                        <div className="relative h-full overflow-hidden rounded-[30px] bg-[linear-gradient(135deg,#3f1231_0%,#a1193c_52%,#dc4a25_100%)] p-5 text-white shadow-[0_22px_60px_rgba(159,18,57,0.22)] transition group-hover:-translate-y-0.5">
+                            <div className="absolute -left-12 bottom-0 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl" />
+                            <div className="relative flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-white text-slate-950">
+                                    <UserPlus size={21} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-100">Invite</p>
+                                    <h2 className="mt-1 text-base font-black">دعوت دوستان و کد رفرال</h2>
+                                    <p className="mt-1 line-clamp-2 text-xs leading-6 text-white/72">
+                                        لینک دعوت اختصاصی بساز، کپی کن و بعدا پاداش‌های دعوت را همین‌جا دنبال کن.
+                                    </p>
+                                </div>
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] border border-white/15 bg-white/[0.12]">
+                                    <Gift size={22} />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+
+                    <Link href="/settings/subscription" className="group">
+                        <div className="relative h-full overflow-hidden rounded-[30px] border border-white bg-white p-5 shadow-[0_20px_58px_rgba(15,23,42,0.10)] transition group-hover:-translate-y-0.5">
+                            <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-rose-100 via-amber-50 to-transparent" />
+                            <div className="relative flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-rose-50 text-rose-600">
+                                    <CreditCard size={21} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-rose-500">VIP</p>
+                                    <h2 className="mt-1 text-base font-black text-slate-950">خرید و مدیریت اشتراک</h2>
+                                    <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-500">
+                                        پلن ماهانه، سه‌ماهه یا سالانه را انتخاب کن؛ ساختار پرداخت آماده است.
+                                    </p>
+                                </div>
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-slate-950 to-rose-950 text-amber-100">
+                                    <Crown size={23} />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+                </section>
 
                 <Surface className="p-5 sm:p-6">
                     <div className="flex items-center justify-between gap-3">

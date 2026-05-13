@@ -14,6 +14,7 @@ from app.api.rate_limit import auth_login_rate_limit, auth_signup_rate_limit
 from app.core import security
 from app.core.config import settings
 from app.models.user import User, UserProfile, UserStatus
+from app.services.referrals import apply_referral_code, ensure_referral_storage, get_or_create_referral_code, get_referrer_id_by_code
 
 router = APIRouter()
 
@@ -57,8 +58,15 @@ async def create_user_signup(
     email = str(user_in.email).strip().lower()
     phone = user_in.phone.strip()
     display_name = user_in.display_name.strip()
+    referral_code = user_in.referral_code
     if not phone or not display_name:
         raise bad_request("Phone and display name cannot be empty")
+
+    if referral_code:
+        await ensure_referral_storage(db)
+        referrer_user_id = await get_referrer_id_by_code(db, code=referral_code)
+        if not referrer_user_id:
+            raise bad_request("Referral code is invalid")
 
     result = await db.execute(select(User).where(func.lower(User.email) == email))
     user = result.scalar_one_or_none()
@@ -86,6 +94,14 @@ async def create_user_signup(
         display_name=display_name
     )
     db.add(profile)
+    await get_or_create_referral_code(db, user_id=user.id, commit=False)
+    if referral_code:
+        await apply_referral_code(
+            db,
+            referred_user_id=user.id,
+            code=referral_code,
+            commit=False,
+        )
     
     await db.commit()
     

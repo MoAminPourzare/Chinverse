@@ -8,6 +8,7 @@ export interface LoginRequest {
 export interface SignupRequest {
     email: string;
     password: string;
+    referral_code?: string;
     phone: string;        // اضافه شد: چون در بک‌ند اجباری است
     display_name?: string; // اصلاح شد: در بک‌ند نامش display_name است
 }

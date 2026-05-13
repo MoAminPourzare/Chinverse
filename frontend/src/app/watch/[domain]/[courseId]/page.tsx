@@ -466,7 +466,7 @@ export default function SharedWatchPage() {
                             </p>
                         </div>
                         <Link
-                            href="/settings"
+                            href="/settings/appearance"
                             aria-label="تنظیمات نمایش درس"
                             className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
                         >
@@ -557,9 +557,9 @@ export default function SharedWatchPage() {
                                 >
                                     {isPlaying ? <Pause size={24} /> : <SkipForward size={24} className="mr-0.5" />}
                                 </button>
-                                <button className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+                                <Link href="/settings/appearance" className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200" aria-label="تنظیمات نمایش درس">
                                     <MoreVertical size={20} />
-                                </button>
+                                </Link>
                             </div>
                         </Surface>
 

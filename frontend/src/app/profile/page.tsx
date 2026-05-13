@@ -360,7 +360,7 @@ export default function ProfilePage() {
                     <div className="flex gap-2 text-slate-500">
                         <Link href="/community" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><MessageCircle className="w-5 h-5" /></Link>
                         <NotificationBellLink />
-                        <button onClick={() => setIsSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><Settings className="w-5 h-5" /></button>
+                        <Link href="/settings" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600" aria-label="تنظیمات"><Settings className="w-5 h-5" /></Link>
                     </div>
                 </header>
 
