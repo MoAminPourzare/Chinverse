@@ -14,6 +14,7 @@ class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=72)
     phone: str = Field(min_length=5, max_length=32)
     display_name: str = Field(min_length=1, max_length=120)
+    referral_code: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
     @field_validator("password")
     @classmethod
@@ -21,6 +22,14 @@ class UserCreate(UserBase):
         if len(value.encode("utf-8")) > 72:
             raise ValueError("Password is too long")
         return value
+
+    @field_validator("referral_code")
+    @classmethod
+    def normalize_referral_code(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        normalized = value.strip().upper().replace("-", "").replace(" ", "")
+        return normalized or None
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):

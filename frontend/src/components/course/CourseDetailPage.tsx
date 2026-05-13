@@ -230,7 +230,7 @@ export default function CourseDetailPage({
                             )}
                         </button>
                         <Link
-                            href="/settings"
+                            href="/settings/appearance"
                             aria-label="تنظیمات نمایش درس"
                             className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
                         >

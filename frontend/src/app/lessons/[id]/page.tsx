@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { BookOpenText, MoreVertical } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
@@ -30,9 +31,9 @@ export default function LessonPlayerPage() {
                 onBack={() => router.back()}
                 className="mx-0 shrink-0"
                 endContent={
-                    <button className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600">
+                    <Link href="/settings/appearance" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600" aria-label="تنظیمات نمایش درس">
                         <MoreVertical size={20} />
-                    </button>
+                    </Link>
                 }
             />
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Mail, Lock, Phone, User } from "lucide-react";
+import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { authService } from "@/services/auth.service";
@@ -16,12 +16,28 @@ export default function SignupPage() {
         password: "",
         phone: "",
         display_name: "",
+        referral_code: "",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const referralCode = params.get("ref") || params.get("invite") || params.get("code") || "";
+        if (!referralCode) return;
+
+        setFormData((current) => ({
+            ...current,
+            referral_code: referralCode.toUpperCase().replace(/[-\s]/g, ""),
+        }));
+    }, []);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const value = e.target.name === "referral_code"
+            ? e.target.value.toUpperCase().replace(/[-\s]/g, "")
+            : e.target.value;
+
+        setFormData({ ...formData, [e.target.name]: value });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +46,10 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            await authService.signup(formData);
+            await authService.signup({
+                ...formData,
+                referral_code: formData.referral_code.trim() || undefined,
+            });
             router.push("/login");
         } catch (err: unknown) {
             const apiError = err as { response?: { data?: { detail?: string } } };
@@ -150,6 +169,29 @@ export default function SignupPage() {
                             )}
                         />
                     </div>
+                </label>
+
+                <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">کد دعوت دوستان</span>
+                    <div className="relative">
+                        <Gift className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            name="referral_code"
+                            value={formData.referral_code}
+                            onChange={handleChange}
+                            dir="ltr"
+                            placeholder="اختیاری، مثلا CH12AB"
+                            maxLength={32}
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-left font-latin text-sm font-black uppercase tracking-[0.10em] text-slate-900 outline-none transition-all placeholder:text-right placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400",
+                                "focus:border-rose-400 focus:ring-4 focus:ring-rose-100",
+                            )}
+                        />
+                    </div>
+                    <p className="text-xs leading-5 text-slate-500">
+                        اگر با دعوت دوستت وارد شدی، فقط کد را بدون فاصله وارد کن. لینک‌های دعوت این بخش را خودکار پر می‌کنند.
+                    </p>
                 </label>
 
                 <PrimaryButton type="submit" className="mt-2 w-full" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
