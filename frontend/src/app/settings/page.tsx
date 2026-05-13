@@ -7,6 +7,8 @@ import Surface from "@/components/ui/Surface";
 import {
     chineseFontSizeOptions,
     chineseLineSpacingOptions,
+    dailyGoalMinuteOptions,
+    dailyGoalWordOptions,
     fontSizeOptions,
     highlightColorOptions,
     lineSpacingOptions,
@@ -64,6 +66,52 @@ export default function SettingsPage() {
             </header>
 
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+                <Surface className="overflow-hidden border-white bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+                    <div className="border-b border-slate-100 px-4 py-4">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-rose-500">Daily Goal</p>
+                        <h2 className="mt-1 text-sm font-black text-slate-950">هدف تمرین روزانه</h2>
+                        <p className="mt-1 text-xs leading-6 text-slate-500">
+                            این مقدارها در صفحه آموزش روزانه برای محاسبه تکمیل تمرین استفاده می‌شوند.
+                        </p>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                        <SelectSettingRow
+                            label="زمان هدف روزانه"
+                            value={String(preferences.dailyGoalMinutes)}
+                            options={dailyGoalMinuteOptions.map((option) => ({
+                                value: String(option.value),
+                                label: option.label,
+                                description: "میزان زمانی که می‌خواهی روزانه ویدیو ببینی",
+                            }))}
+                            onOpen={(value, options) => openSheet({
+                                id: "dailyGoalMinutes",
+                                title: "زمان هدف روزانه",
+                                subtitle: "انتخاب کن هر روز چه مقدار زمان برای یادگیری و دیدن ویدیو هدف‌گذاری شود",
+                                value,
+                                options,
+                                onSelect: (nextValue) => setPreference("dailyGoalMinutes", Number(nextValue)),
+                            })}
+                        />
+                        <SelectSettingRow
+                            label="هدف لغات روزانه"
+                            value={String(preferences.dailyGoalWords)}
+                            options={dailyGoalWordOptions.map((option) => ({
+                                value: String(option.value),
+                                label: option.label,
+                                description: "تعداد لغاتی که با لایتنر می‌خواهی روزانه جلو ببری",
+                            }))}
+                            onOpen={(value, options) => openSheet({
+                                id: "dailyGoalWords",
+                                title: "هدف لغات روزانه",
+                                subtitle: "اگر با لایتنر تمرین می‌کنی، این مقدار برای تکمیل هدف روزانه حساب می‌شود",
+                                value,
+                                options,
+                                onSelect: (nextValue) => setPreference("dailyGoalWords", Number(nextValue)),
+                            })}
+                        />
+                    </div>
+                </Surface>
+
                 <Surface className="overflow-hidden border-white bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
                     <div className="divide-y divide-slate-100">
                         <SelectSettingRow

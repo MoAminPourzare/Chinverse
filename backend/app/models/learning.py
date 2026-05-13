@@ -33,6 +33,8 @@ class StudySession(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     minutes: Mapped[int] = mapped_column(Integer, default=0)
     learned_words_count: Mapped[int] = mapped_column(Integer, default=0)
+    watched_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    reviewed_words_count: Mapped[int] = mapped_column(Integer, default=0)
     date: Mapped[date] = mapped_column(Date, nullable=False)
 
     # Relationships
