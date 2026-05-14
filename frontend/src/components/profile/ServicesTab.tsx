@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, Plus, Trash2, Upload, X } from "lucide-react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { getMediaUrl } from "@/lib/media";
 import { userService, UserService } from "@/services/user.service";
 
@@ -24,6 +25,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     const [description, setDescription] = useState("");
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+    const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isOwner = !userId && !readOnly;
@@ -49,6 +51,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         setDescription("");
         setBannerFile(null);
         setBannerPreview(null);
+        setPendingBannerFile(null);
         setError("");
     };
 
@@ -73,10 +76,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         }
 
         setError("");
-        setBannerFile(file);
-        const reader = new FileReader();
-        reader.onloadend = () => setBannerPreview(reader.result as string);
-        reader.readAsDataURL(file);
+        setPendingBannerFile(file);
     };
 
     const handleSubmit = async (event: React.FormEvent) => {
@@ -278,6 +278,19 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                     </div>
                 </Dialog>
             </Transition>
+
+            <ImageAdjustModal
+                file={pendingBannerFile}
+                isOpen={!!pendingBannerFile}
+                title="تنظیم تصویر خدمت"
+                aspectRatio={16 / 9}
+                onCancel={() => setPendingBannerFile(null)}
+                onConfirm={(file, previewUrl) => {
+                    setBannerFile(file);
+                    setBannerPreview(previewUrl);
+                    setPendingBannerFile(null);
+                }}
+            />
         </div>
     );
 }

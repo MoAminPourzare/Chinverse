@@ -5,6 +5,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { ArrowLeft } from 'lucide-react';
 import { galleryService } from '@/services/gallery.service';
 import Image from 'next/image';
+import ImageAdjustModal from '@/components/ui/ImageAdjustModal';
 
 interface AddPhotoModalProps {
     isOpen: boolean;
@@ -15,18 +16,15 @@ interface AddPhotoModalProps {
 export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddPhotoModalProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
     const [caption, setCaption] = useState('');
     const [uploading, setUploading] = useState(false);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        event.target.value = "";
         if (file && file.type.startsWith('image/')) {
-            setSelectedFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+            setPendingFile(file);
         }
     };
 
@@ -48,6 +46,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
     const handleClose = () => {
         setSelectedFile(null);
         setPreview(null);
+        setPendingFile(null);
         setCaption('');
         onClose();
     };
@@ -155,6 +154,19 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                         </Transition.Child>
                     </div>
                 </div>
+
+                <ImageAdjustModal
+                    file={pendingFile}
+                    isOpen={!!pendingFile}
+                    title="تنظیم عکس گالری"
+                    aspectRatio={1}
+                    onCancel={() => setPendingFile(null)}
+                    onConfirm={(file, previewUrl) => {
+                        setSelectedFile(file);
+                        setPreview(previewUrl);
+                        setPendingFile(null);
+                    }}
+                />
             </Dialog>
         </Transition>
     );
