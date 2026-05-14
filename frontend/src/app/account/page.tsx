@@ -9,6 +9,7 @@ import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
 import Surface from "@/components/ui/Surface";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 
 interface AccountFormState extends UserProfile {
@@ -23,6 +24,7 @@ export default function AccountPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
@@ -67,6 +69,7 @@ export default function AccountPage() {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        e.target.value = "";
         if (!file) return;
 
         if (!file.type.startsWith("image/")) {
@@ -74,12 +77,7 @@ export default function AccountPage() {
             return;
         }
 
-        setAvatarFile(file);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setAvatarPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        setPendingAvatarFile(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -287,6 +285,20 @@ export default function AccountPage() {
                     </div>
                 </Surface>
             </main>
+
+            <ImageAdjustModal
+                file={pendingAvatarFile}
+                isOpen={!!pendingAvatarFile}
+                title="تنظیم عکس پروفایل"
+                aspectRatio={1}
+                frameClassName="rounded-full"
+                onCancel={() => setPendingAvatarFile(null)}
+                onConfirm={(file, previewUrl) => {
+                    setAvatarFile(file);
+                    setAvatarPreview(previewUrl);
+                    setPendingAvatarFile(null);
+                }}
+            />
         </div>
     );
 }

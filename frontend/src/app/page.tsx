@@ -4,29 +4,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-    BookOpen,
-    CalendarDays,
-    Compass,
-    CreditCard,
-    Crown,
-    Flame,
-    Gift,
+    Briefcase,
+    Camera,
+    Heart,
     Headphones,
+    ImageIcon,
     Loader2,
-    Play,
+    MessageCircle,
+    RefreshCw,
     Sparkles,
     User as UserIcon,
-    UserPlus,
+    Users,
 } from "lucide-react";
 import api from "@/lib/api";
 import { getMediaUrl } from "@/lib/media";
 import Surface from "@/components/ui/Surface";
-import SectionHeader from "@/components/ui/SectionHeader";
-import StatCard from "@/components/ui/StatCard";
-import ProgressBar from "@/components/ui/ProgressBar";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-
-type TabType = "activities" | "learning";
 
 interface FeedProvider {
     id: number;
@@ -57,239 +50,92 @@ interface FeedItem {
     provider?: FeedProvider;
 }
 
-const quickPaths = [
-    { title: "روزانه", subtitle: "استریک، تقویم و تمرین امروز", href: "/daily-practice", accent: "from-amber-500 to-orange-500", icon: CalendarDays },
-    { title: "HSK", subtitle: "سطح‌ها و درس‌های اصلی", href: "/explore/hsk", accent: "from-rose-500 to-orange-500", icon: BookOpen },
-    { title: "تلفظ", subtitle: "صداها و لحن‌ها", href: "/explore/pronunciation", accent: "from-sky-500 to-cyan-500", icon: Play },
-    { title: "گرامر", subtitle: "ساختار جمله‌ها", href: "/explore/grammar", accent: "from-emerald-500 to-teal-500", icon: Sparkles },
-    { title: "کاوش همه", subtitle: "تمام دسته‌ها", href: "/explore", accent: "from-slate-900 to-slate-600", icon: Compass },
-];
-
 export default function HomePage() {
-    const [activeTab, setActiveTab] = useState<TabType>("activities");
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadFeed = async (mode: "initial" | "refresh" = "initial") => {
+        if (mode === "initial") {
+            setLoading(true);
+        } else {
+            setRefreshing(true);
+        }
+
+        try {
+            const response = await api.get<FeedItem[]>("/feed");
+            setFeedItems(response.data);
+        } catch (error) {
+            console.error("Failed to fetch feed", error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchFeed = async () => {
-            if (activeTab !== "activities") {
-                setLoading(false);
-                return;
-            }
+        void loadFeed();
+    }, []);
 
-            setLoading(true);
-            try {
-                const response = await api.get<FeedItem[]>("/feed");
-                setFeedItems(response.data);
-            } catch (error) {
-                console.error("Failed to fetch feed", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchFeed();
-    }, [activeTab]);
-
-    const activityCount = feedItems.length;
-    const highlightedFeed = useMemo(() => feedItems.slice(0, 3), [feedItems]);
+    const galleryCount = useMemo(() => feedItems.filter((item) => item.type === "gallery").length, [feedItems]);
+    const serviceCount = useMemo(() => feedItems.filter((item) => item.type === "service").length, [feedItems]);
 
     return (
-        <div className="min-h-full pb-28" dir="rtl">
+        <div className="min-h-full bg-[#f7f8fb] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
-                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
-                    <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-                        <div>
-                            <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
-                                ChinVerse
-                            </div>
-                            <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                                مسیر یادگیری چینی، تمیزتر و حرفه‌ای‌تر
-                            </h1>
-                            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-                                روی درس بعدی، دسته‌های محبوب و فعالیت‌های تازه تمرکز کن. همه‌چیز در یک داشبورد سبک و منظم کنار هم قرار گرفته.
-                            </p>
-
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                <PrimaryButton href="/explore" variant="light" leadingIcon={<Compass size={16} />}>
-                                    رفتن به کاوش
-                                </PrimaryButton>
-                                <PrimaryButton href="/daily-practice" variant="ghost" className="!border-white/15 !bg-white/10 !text-white hover:!bg-white/15" leadingIcon={<Flame size={16} />}>
-                                    ادامه یادگیری
-                                </PrimaryButton>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                            <StatCard
-                                label="فعالیت‌های امروز"
-                                value={String(activityCount)}
-                                helper="آخرین آیتم‌های منتشر شده"
-                                icon={<Sparkles className="h-5 w-5" />}
-                                accent="from-amber-500 to-orange-500"
-                                inverted
-                            />
-                            <StatCard
-                                label="مسیرهای سریع"
-                                value="5"
-                                helper="موضوعات اصلی برای شروع"
-                                icon={<Compass className="h-5 w-5" />}
-                                accent="from-emerald-500 to-teal-500"
-                                inverted
-                            />
-                            <StatCard
-                                label="حالت مطالعه"
-                                value="آماده"
-                                helper="برای شروع یک درس تازه"
-                                icon={<Play className="h-5 w-5" />}
-                                accent="from-rose-500 to-orange-500"
-                                inverted
-                            />
-                        </div>
-                    </div>
-                </Surface>
-
-                <section className="grid gap-3 sm:grid-cols-2">
-                    <Link href="/settings/referrals" className="group">
-                        <div className="relative h-full overflow-hidden rounded-[30px] bg-[linear-gradient(135deg,#3f1231_0%,#a1193c_52%,#dc4a25_100%)] p-5 text-white shadow-[0_22px_60px_rgba(159,18,57,0.22)] transition group-hover:-translate-y-0.5">
-                            <div className="absolute -left-12 bottom-0 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl" />
-                            <div className="relative flex items-center gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-white text-slate-950">
-                                    <UserPlus size={21} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-100">Invite</p>
-                                    <h2 className="mt-1 text-base font-black">دعوت دوستان و کد رفرال</h2>
-                                    <p className="mt-1 line-clamp-2 text-xs leading-6 text-white/72">
-                                        لینک دعوت اختصاصی بساز، کپی کن و بعدا پاداش‌های دعوت را همین‌جا دنبال کن.
+                <section className="overflow-hidden rounded-[34px] border border-slate-900 bg-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.20)]">
+                    <div className="relative p-5 sm:p-6">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(244,63,94,0.32),transparent_34%),radial-gradient(circle_at_88%_10%,rgba(251,191,36,0.24),transparent_30%),linear-gradient(135deg,#0f172a_0%,#312033_52%,#111827_100%)]" />
+                        <div className="absolute -bottom-20 -left-12 h-52 w-52 rounded-full bg-rose-400/20 blur-3xl" />
+                        <div className="relative">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0">
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-black tracking-[0.18em] text-white/78">
+                                        <Sparkles size={13} />
+                                        ChinVerse Social
+                                    </div>
+                                    <h1 className="mt-4 max-w-xl text-3xl font-black tracking-tight sm:text-4xl">
+                                        ویترین تازه‌های چین‌ورس
+                                    </h1>
+                                    <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
+                                        عکس‌ها، خدمات، فعالیت‌ها و پروفایل‌های تازه کاربران را یک‌جا ببین؛ خانه حالا بیشتر شبیه فید اجتماعی چین‌ورس است.
                                     </p>
                                 </div>
-                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] border border-white/15 bg-white/[0.12]">
-                                    <Gift size={22} />
+                                <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-[24px] border border-white/15 bg-white/[0.12] text-amber-100 shadow-inner sm:flex">
+                                    <Users size={30} />
                                 </div>
                             </div>
-                        </div>
-                    </Link>
 
-                    <Link href="/settings/subscription" className="group">
-                        <div className="relative h-full overflow-hidden rounded-[30px] border border-white bg-white p-5 shadow-[0_20px_58px_rgba(15,23,42,0.10)] transition group-hover:-translate-y-0.5">
-                            <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-rose-100 via-amber-50 to-transparent" />
-                            <div className="relative flex items-center gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-rose-50 text-rose-600">
-                                    <CreditCard size={21} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-rose-500">VIP</p>
-                                    <h2 className="mt-1 text-base font-black text-slate-950">خرید و مدیریت اشتراک</h2>
-                                    <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-500">
-                                        پلن ماهانه، سه‌ماهه یا سالانه را انتخاب کن؛ ساختار پرداخت آماده است.
-                                    </p>
-                                </div>
-                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-slate-950 to-rose-950 text-amber-100">
-                                    <Crown size={23} />
-                                </div>
+                            <div className="mt-6 grid grid-cols-3 gap-2">
+                                <SocialStat icon={<Sparkles size={16} />} label="کل فعالیت" value={feedItems.length} />
+                                <SocialStat icon={<ImageIcon size={16} />} label="گالری" value={galleryCount} />
+                                <SocialStat icon={<Briefcase size={16} />} label="خدمات" value={serviceCount} />
                             </div>
                         </div>
-                    </Link>
-                </section>
-
-                <Surface className="p-5 sm:p-6">
-                    <div className="flex items-center justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Today</p>
-                            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">یک هدف سبک برای امروز</h2>
-                            <p className="mt-1 text-sm text-slate-500">به‌جای شلوغی، فقط روی یک جلسه کوتاه و یک مسیر مشخص تمرکز کن.</p>
-                        </div>
-                        <div className="hidden rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 sm:block">
-                            20 دقیقه
-                        </div>
-                    </div>
-                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">تمرکز</p>
-                            <p className="mt-2 text-base font-bold text-slate-900">تلفظ و شنیدن</p>
-                            <p className="mt-1 text-xs text-slate-500">برای شروع روز خیلی مناسب است.</p>
-                        </div>
-                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">پیشنهاد</p>
-                            <p className="mt-2 text-base font-bold text-slate-900">یک درس کوتاه HSK</p>
-                            <p className="mt-1 text-xs text-slate-500">درس‌های مرتب و قابل پیگیری.</p>
-                        </div>
-                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">پیشرفت</p>
-                            <ProgressBar value={58} helper="مسیر امروز" className="mt-3" />
-                        </div>
-                    </div>
-                </Surface>
-
-                <section className="space-y-3">
-                    <SectionHeader
-                        title="مسیرهای سریع"
-                        subtitle="برای ورود به بخش‌های اصلی، چند کارت کوتاه و واضح."
-                    />
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        {quickPaths.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <Link key={item.title} href={item.href} className="group">
-                                    <Surface className="h-full overflow-hidden p-4 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
-                                        <div className={`inline-flex rounded-2xl bg-gradient-to-br ${item.accent} p-3 text-white shadow-lg`}>
-                                            <Icon size={18} />
-                                        </div>
-                                        <h3 className="mt-4 text-base font-bold text-slate-900">{item.title}</h3>
-                                        <p className="mt-1 text-sm leading-6 text-slate-500">{item.subtitle}</p>
-                                    </Surface>
-                                </Link>
-                            );
-                        })}
                     </div>
                 </section>
 
-                <section className="space-y-3">
-                    <SectionHeader
-                        title="نمای کلی"
-                        subtitle="بین فعالیت‌ها و مسیر یادگیری جابه‌جا شو."
-                        actionLabel="تازه‌سازی"
-                        onAction={() => {
-                            if (activeTab === "activities") {
-                                setLoading(true);
-                                api.get<FeedItem[]>("/feed")
-                                    .then((response) => setFeedItems(response.data))
-                                    .catch((error) => console.error("Failed to refresh feed", error))
-                                    .finally(() => setLoading(false));
-                            }
-                        }}
-                    />
-
-                    <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+                <section>
+                    <div className="mb-3 flex justify-end">
                         <button
-                            onClick={() => setActiveTab("activities")}
-                            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                                activeTab === "activities"
-                                    ? "bg-slate-900 text-white shadow-md"
-                                    : "text-slate-500 hover:text-slate-800"
-                            }`}
+                            type="button"
+                            onClick={() => loadFeed("refresh")}
+                            disabled={refreshing}
+                            className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            فعالیت‌ها
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("learning")}
-                            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                                activeTab === "learning"
-                                    ? "bg-slate-900 text-white shadow-md"
-                                    : "text-slate-500 hover:text-slate-800"
-                            }`}
-                        >
-                            یادگیری
+                            <RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+                            تازه‌سازی
                         </button>
                     </div>
-
-                    {activeTab === "activities" ? (
-                        loading ? (
-                            <div className="flex items-center justify-center py-16">
-                                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                    {loading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
+                                <Loader2 className="h-5 w-5 animate-spin text-rose-500" />
+                                <span>در حال بارگذاری فید...</span>
                             </div>
-                        ) : (
+                        </div>
+                    ) : feedItems.length > 0 ? (
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
                             <div className="space-y-4">
                                 {feedItems.map((item) =>
                                     item.type === "service" ? (
@@ -298,37 +144,56 @@ export default function HomePage() {
                                         <GalleryFeedCard key={item.id} item={item} />
                                     ),
                                 )}
-                                {feedItems.length === 0 && (
-                                    <Surface className="p-8 text-center text-sm text-slate-500">
-                                        هنوز فعالیتی ثبت نشده است.
-                                    </Surface>
-                                )}
                             </div>
-                        )
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {highlightedFeed.length > 0 ? (
-                                highlightedFeed.map((item) =>
-                                    item.type === "service" ? (
-                                        <ServiceFeedCard key={item.id} item={item} />
-                                    ) : (
-                                        <GalleryFeedCard key={item.id} item={item} />
-                                    ),
-                                )
-                            ) : (
-                                quickPaths.slice(0, 3).map((item) => (
-                                    <Link key={item.title} href={item.href}>
-                                        <Surface className="h-full p-5">
-                                            <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
-                                            <p className="mt-2 text-sm text-slate-500">{item.subtitle}</p>
-                                        </Surface>
-                                    </Link>
-                                ))
-                            )}
+                            <aside className="hidden space-y-4 lg:block">
+                                <Surface className="p-5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-rose-50 text-rose-600">
+                                            <Heart size={21} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-950">چین‌ورس زنده است</h3>
+                                            <p className="mt-1 text-xs leading-6 text-slate-500">
+                                                اینجا جای نمایش فعالیت‌های کاربران، خدمات، گالری و ارتباطات اجتماعی است.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Surface>
+                                <Surface className="p-5">
+                                    <h3 className="text-sm font-black text-slate-950">میانبرهای اجتماعی</h3>
+                                    <div className="mt-4 grid gap-2">
+                                        <SocialShortcut href="/showcase" icon={<Camera size={17} />} label="ویترین استعدادها" />
+                                        <SocialShortcut href="/services" icon={<Briefcase size={17} />} label="ویترین خدمات" />
+                                        <SocialShortcut href="/community" icon={<MessageCircle size={17} />} label="تالار گفتگو" />
+                                    </div>
+                                </Surface>
+                            </aside>
                         </div>
+                    ) : (
+                        <Surface className="p-10 text-center">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-slate-100 text-slate-400">
+                                <Sparkles size={28} />
+                            </div>
+                            <h2 className="mt-5 text-lg font-black text-slate-950">هنوز فعالیتی ثبت نشده</h2>
+                            <p className="mx-auto mt-2 max-w-xs text-sm leading-7 text-slate-500">
+                                وقتی کاربران گالری یا خدمات جدید اضافه کنند، اینجا مثل یک فید اجتماعی نمایش داده می‌شود.
+                            </p>
+                        </Surface>
                     )}
                 </section>
             </main>
+        </div>
+    );
+}
+
+function SocialStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+    return (
+        <div className="rounded-[22px] border border-white/15 bg-white/[0.10] px-3 py-3 text-center">
+            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-2xl bg-white/15 text-amber-100">
+                {icon}
+            </div>
+            <p className="mt-2 text-[10px] font-bold text-white/55">{label}</p>
+            <p className="mt-0.5 text-lg font-black text-white">{toPersianDigits(value)}</p>
         </div>
     );
 }
@@ -338,65 +203,51 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
     const provider = item.provider;
 
     return (
-        <Surface className="overflow-hidden">
-            <div className="grid gap-4 p-4 sm:grid-cols-[180px_1fr]">
-                <div className="relative min-h-44 overflow-hidden rounded-[22px] bg-slate-100">
-                    {service.banner_url ? (
-                        <Image
-                            src={getMediaUrl(service.banner_url)}
-                            alt={service.title}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                        />
-                    ) : (
-                        <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_100%)] text-slate-400">
-                            <BookOpen size={32} />
-                        </div>
-                    )}
-                </div>
+        <Surface className="overflow-hidden border-white bg-white/95">
+            <div className="p-4">
+                <PostAuthor provider={provider} createdAt={item.created_at} badge="خدمت" />
 
-                <div className="flex min-w-0 flex-col justify-between">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-100">
-                                {provider?.avatar_url ? (
-                                    <Image
-                                        src={getMediaUrl(provider.avatar_url)}
-                                        alt={provider.display_name || "User"}
-                                        width={44}
-                                        height={44}
-                                        className="h-full w-full object-cover"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <UserIcon className="h-5 w-5 text-slate-400" />
-                                )}
+                <div className="mt-4 grid gap-4 sm:grid-cols-[160px_1fr]">
+                    <Link href={`/services/${service.id}`} className="relative min-h-40 overflow-hidden rounded-[24px] bg-slate-100">
+                        {service.banner_url ? (
+                            <Image
+                                src={getMediaUrl(service.banner_url)}
+                                alt={service.title}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                            />
+                        ) : (
+                            <div className="flex h-full min-h-40 items-center justify-center bg-[linear-gradient(135deg,#fff7ed_0%,#ffe4e6_100%)] text-rose-300">
+                                <Briefcase size={34} />
                             </div>
-                            <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-900">
-                                    {provider?.display_name || "کاربر"}
-                                </p>
-                                {provider?.headline && <p className="truncate text-xs text-slate-500">{provider.headline}</p>}
-                            </div>
-                        </div>
+                        )}
+                    </Link>
 
-                        <h3 className="mt-4 text-lg font-bold tracking-tight text-slate-900">{service.title}</h3>
+                    <div className="min-w-0">
+                        <Link href={`/services/${service.id}`}>
+                            <h3 className="text-lg font-black tracking-tight text-slate-950">{service.title}</h3>
+                        </Link>
                         <p className="mt-2 line-clamp-3 text-sm leading-7 text-slate-500">{service.description}</p>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 text-xs text-slate-400">
-                            {item.created_at && <span>{new Date(item.created_at).toLocaleDateString("fa-IR")}</span>}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                            {service.price_label ? (
+                                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                                    {service.price_label}
+                                </span>
+                            ) : (
+                                <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600">
+                                    آماده مشاوره
+                                </span>
+                            )}
+                            <PrimaryButton
+                                href={`/chat/${provider?.id || 0}`}
+                                variant="primary"
+                                className="px-4 py-2.5"
+                                leadingIcon={<Headphones size={16} />}
+                            >
+                                درخواست مشاوره
+                            </PrimaryButton>
                         </div>
-                        <PrimaryButton
-                            href={`/chat/${provider?.id || 0}`}
-                            variant="primary"
-                            className="px-4 py-2.5"
-                            leadingIcon={<Headphones size={16} />}
-                        >
-                            درخواست مشاوره
-                        </PrimaryButton>
                     </div>
                 </div>
             </div>
@@ -409,47 +260,87 @@ function GalleryFeedCard({ item }: { item: FeedItem }) {
     const provider = item.provider;
 
     return (
-        <Surface className="overflow-hidden">
+        <Surface className="overflow-hidden border-white bg-white/95">
             <div className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-100">
-                        {provider?.avatar_url ? (
-                            <Image
-                                src={getMediaUrl(provider.avatar_url)}
-                                alt={provider.display_name || "User"}
-                                width={44}
-                                height={44}
-                                className="h-full w-full object-cover"
-                                unoptimized
-                            />
-                        ) : (
-                            <UserIcon className="h-5 w-5 text-slate-400" />
-                        )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-slate-900">
-                            {provider?.display_name || "کاربر"}
-                        </p>
-                        {item.created_at && (
-                            <p className="text-xs text-slate-400">
-                                {new Date(item.created_at).toLocaleDateString("fa-IR")}
-                            </p>
-                        )}
-                    </div>
-                </div>
+                <PostAuthor provider={provider} createdAt={item.created_at} badge="گالری" />
 
-                <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-[22px] bg-slate-100">
+                <Link href="/showcase" className="relative mt-4 block aspect-[4/3] overflow-hidden rounded-[26px] bg-slate-100">
                     <Image
                         src={getMediaUrl(gallery.image_url)}
                         alt={gallery.caption || "Gallery image"}
                         fill
-                        className="object-cover"
+                        className="object-cover transition duration-300 hover:scale-[1.02]"
                         unoptimized
                     />
-                </div>
+                </Link>
 
                 {gallery.caption && <p className="mt-4 text-sm leading-7 text-slate-600">{gallery.caption}</p>}
+
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-400">
+                    <span className="inline-flex items-center gap-1.5">
+                        <Heart size={15} />
+                        الهام‌بخش
+                    </span>
+                    <Link href="/showcase" className="text-rose-600 transition hover:text-rose-700">
+                        دیدن ویترین
+                    </Link>
+                </div>
             </div>
         </Surface>
     );
+}
+
+function PostAuthor({ provider, createdAt, badge }: { provider?: FeedProvider; createdAt?: string; badge: string }) {
+    return (
+        <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[19px] bg-slate-100">
+                {provider?.avatar_url ? (
+                    <Image
+                        src={getMediaUrl(provider.avatar_url)}
+                        alt={provider.display_name || "User"}
+                        width={48}
+                        height={48}
+                        className="h-full w-full object-cover"
+                        unoptimized
+                    />
+                ) : (
+                    <UserIcon className="h-5 w-5 text-slate-400" />
+                )}
+            </div>
+            <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-black text-slate-950">
+                        {provider?.display_name || "کاربر چین‌ورس"}
+                    </p>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{badge}</span>
+                </div>
+                <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">
+                    {provider?.headline || "عضو جامعه چین‌ورس"}
+                    {createdAt ? ` • ${new Date(createdAt).toLocaleDateString("fa-IR")}` : ""}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+function SocialShortcut({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+    return (
+        <Link
+            href={href}
+            className="flex items-center justify-between rounded-[20px] border border-slate-100 bg-slate-50 px-3 py-3 text-sm font-black text-slate-700 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
+        >
+            <span className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm">
+                    {icon}
+                </span>
+                {label}
+            </span>
+            <span className="text-slate-300">‹</span>
+        </Link>
+    );
+}
+
+function toPersianDigits(value: string | number) {
+    const digits = "۰۱۲۳۴۵۶۷۸۹";
+    return String(value).replace(/\d/g, (digit) => digits[Number(digit)]);
 }
