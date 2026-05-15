@@ -7,7 +7,6 @@ import NotificationToaster from "@/components/notifications/NotificationToaster"
 const navHiddenPrefixes = [
     "/login",
     "/signup",
-    "/landing",
     "/account",
     "/about",
     "/support",

@@ -163,7 +163,15 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
             </div>
 
             <Transition appear show={isModalOpen} as={Fragment}>
-                <Dialog as="div" className="relative z-[120]" onClose={closeModal} dir="rtl">
+                <Dialog
+                    as="div"
+                    className="relative z-[120]"
+                    onClose={() => {
+                        if (pendingBannerFile) return;
+                        closeModal();
+                    }}
+                    dir="rtl"
+                >
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-300"
@@ -276,21 +284,21 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                             </Transition.Child>
                         </div>
                     </div>
+                    <ImageAdjustModal
+                        file={pendingBannerFile}
+                        isOpen={!!pendingBannerFile}
+                        title="تنظیم تصویر خدمت"
+                        aspectRatio={16 / 9}
+                        onCancel={() => setPendingBannerFile(null)}
+                        onConfirm={(file, previewUrl) => {
+                            setBannerFile(file);
+                            setBannerPreview(previewUrl);
+                            setPendingBannerFile(null);
+                        }}
+                    />
                 </Dialog>
             </Transition>
 
-            <ImageAdjustModal
-                file={pendingBannerFile}
-                isOpen={!!pendingBannerFile}
-                title="تنظیم تصویر خدمت"
-                aspectRatio={16 / 9}
-                onCancel={() => setPendingBannerFile(null)}
-                onConfirm={(file, previewUrl) => {
-                    setBannerFile(file);
-                    setBannerPreview(previewUrl);
-                    setPendingBannerFile(null);
-                }}
-            />
         </div>
     );
 }

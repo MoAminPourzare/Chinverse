@@ -44,6 +44,7 @@ export default function ImageAdjustModal({
     const dragRef = useRef<DragState | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+    const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isSaving, setIsSaving] = useState(false);
@@ -65,13 +66,40 @@ export default function ImageAdjustModal({
         setZoom(1);
         setOffset({ x: 0, y: 0 });
         setImageSize({ width: 0, height: 0 });
+        setFrameSize({ width: 0, height: 0 });
 
         return () => URL.revokeObjectURL(url);
     }, [file, isOpen]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const updateFrameSize = () => {
+            const frame = frameRef.current;
+            if (!frame) return;
+
+            const rect = frame.getBoundingClientRect();
+            setFrameSize({ width: rect.width, height: rect.height });
+        };
+
+        updateFrameSize();
+        const animationFrame = window.requestAnimationFrame(updateFrameSize);
+        const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateFrameSize) : null;
+
+        if (frameRef.current) resizeObserver?.observe(frameRef.current);
+        window.addEventListener("resize", updateFrameSize);
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", updateFrameSize);
+        };
+    }, [isOpen, aspectRatio]);
+
     if (!isOpen || !file || !imageUrl) return null;
 
     const getFrameSize = () => {
+        if (frameSize.width && frameSize.height) return frameSize;
         const frame = frameRef.current;
         if (!frame) return { width: 1, height: 1 };
         const rect = frame.getBoundingClientRect();
@@ -201,6 +229,10 @@ export default function ImageAdjustModal({
         }
     };
 
+    const baseScale = getBaseScale();
+    const renderedWidth = Math.max(1, imageSize.width * baseScale * zoom);
+    const renderedHeight = Math.max(1, imageSize.height * baseScale * zoom);
+
     return (
         <div className="fixed inset-0 z-[180] flex items-end justify-center bg-slate-950/70 px-3 pb-3 backdrop-blur-sm" dir="rtl">
             <div className="flex max-h-[94vh] w-full max-w-md flex-col overflow-hidden rounded-[34px] border border-white/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.32)]">
@@ -236,10 +268,13 @@ export default function ImageAdjustModal({
                             ref={imageRef}
                             src={imageUrl}
                             alt="تنظیم تصویر"
-                            fill
-                            className="pointer-events-none object-cover"
+                            width={Math.round(renderedWidth)}
+                            height={Math.round(renderedHeight)}
+                            className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
                             style={{
-                                transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                                width: `${renderedWidth}px`,
+                                height: `${renderedHeight}px`,
+                                transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
                                 transformOrigin: "center",
                             }}
                             onLoad={handleImageLoad}

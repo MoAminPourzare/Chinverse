@@ -31,11 +31,11 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-    { id: "about", label: "Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ù…Ù†", helper: "Ù…Ø¹Ø±ÙÛŒ", icon: UserIcon },
-    { id: "resume", label: "Ø±Ø²ÙˆÙ…Ù‡", helper: "Ø³ÙˆØ§Ø¨Ù‚", icon: FileText },
-    { id: "gallery", label: "Ú¯Ø§Ù„Ø±ÛŒ", helper: "ØªØµØ§ÙˆÛŒØ±", icon: ImageIcon },
-    { id: "services", label: "Ø®Ø¯Ù…Ø§Øª", helper: "Ù‡Ù…Ú©Ø§Ø±ÛŒ", icon: Briefcase },
-    { id: "collections", label: "Ù…Ù†ØªØ®Ø¨", helper: "Ø¢Ø±Ø´ÛŒÙˆ", icon: Globe },
+    { id: "about", label: "درباره من", helper: "معرفی", icon: UserIcon },
+    { id: "resume", label: "رزومه", helper: "سوابق", icon: FileText },
+    { id: "gallery", label: "گالری", helper: "تصاویر", icon: ImageIcon },
+    { id: "services", label: "خدمات", helper: "همکاری", icon: Briefcase },
+    { id: "collections", label: "منتخب", helper: "آرشیو", icon: Globe },
 ];
 
 export default function ProfilePage() {
@@ -53,12 +53,12 @@ export default function ProfilePage() {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
-        router.push('/landing');
+        router.push('/login');
     };
 
     const handleDeleteAccount = async () => {
         const confirmed = window.confirm(
-            'Ø¢ÛŒØ§ Ù…Ø·Ù…Ø¦Ù† Ù‡Ø³ØªÛŒØ¯ØŸ Ø¨Ø§ Ø­Ø°Ù Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒØŒ ØªÙ…Ø§Ù… Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ø´Ù…Ø§ (Ø±Ø²ÙˆÙ…Ù‡ØŒ Ú¯Ø§Ù„Ø±ÛŒØŒ Ú†Øªâ€ŒÙ‡Ø§) Ø¨Ø±Ø§ÛŒ Ù‡Ù…ÛŒØ´Ù‡ Ù¾Ø§Ú© Ø®ÙˆØ§Ù‡Ø¯ Ø´Ø¯.'
+            'آیا مطمئن هستید؟ با حذف حساب کاربری، تمام اطلاعات شما (رزومه، گالری، چت‌ها) برای همیشه پاک خواهد شد.'
         );
 
         if (confirmed) {
@@ -66,10 +66,10 @@ export default function ProfilePage() {
                 const api = (await import('@/lib/api')).default;
                 await api.delete('/users/me');
                 localStorage.removeItem('token');
-                router.push('/landing');
+                router.push('/login');
             } catch (error) {
                 console.error('Failed to delete account:', error);
-                alert('Ø®Ø·Ø§ Ø¯Ø± Ø­Ø°Ù Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ. Ù„Ø·ÙØ§ Ø¯ÙˆØ¨Ø§Ø±Ù‡ ØªÙ„Ø§Ø´ Ú©Ù†ÛŒØ¯.');
+                alert('خطا در حذف حساب کاربری. لطفا دوباره تلاش کنید.');
             }
         }
     };
@@ -102,12 +102,12 @@ export default function ProfilePage() {
         if (!file || isUploadingAvatar) return;
 
         if (!file.type.startsWith("image/")) {
-            alert("Ù„Ø·ÙØ§ ÛŒÚ© ÙØ§ÛŒÙ„ ØªØµÙˆÛŒØ±ÛŒ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†.");
+            alert("لطفا یک فایل تصویری انتخاب کن.");
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            alert("Ø­Ø¬Ù… Ø¹Ú©Ø³ Ù†Ø¨Ø§ÛŒØ¯ Ø¨ÛŒØ´ØªØ± Ø§Ø² Ûµ Ù…Ú¯Ø§Ø¨Ø§ÛŒØª Ø¨Ø§Ø´Ø¯.");
+            alert("حجم عکس نباید بیشتر از ۵ مگابایت باشد.");
             return;
         }
 
@@ -122,7 +122,7 @@ export default function ProfilePage() {
             setUser(updatedUser);
         } catch (error) {
             console.error("Failed to upload avatar", error);
-            alert("Ø¢Ù¾Ù„ÙˆØ¯ Ø¹Ú©Ø³ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯. Ù„Ø·ÙØ§ Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ù…ØªØ­Ø§Ù† Ú©Ù†.");
+            alert("آپلود عکس انجام نشد. لطفا دوباره امتحان کن.");
         } finally {
             setIsUploadingAvatar(false);
         }
@@ -142,10 +142,10 @@ export default function ProfilePage() {
                             <PenLine className="w-24 h-24 text-rose-200" strokeWidth={1} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mb-2">
-                            ÛŒÙ‡ Ù…Ø¹Ø±ÙÛŒ Ú©ÙˆØªØ§Ù‡ Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ø®ÙˆØ¯Øª Ø¨Ù†ÙˆÛŒØ³!
+                            یه معرفی کوتاه درباره خودت بنویس!
                         </h3>
                         <p className="text-gray-500 text-sm max-w-xs mb-8 leading-relaxed">
-                            Ø¨Ø§ Ù†ÙˆØ´ØªÙ† ÛŒÚ© Ù…Ø¹Ø±ÙÛŒ Ú©ÙˆØªØ§Ù‡ØŒ Ø¨Ù‡ Ø¨Ù‚ÛŒÙ‡ Ù†Ø´ÙˆÙ† Ø¨Ø¯Ù‡ Ú©ÛŒ Ù‡Ø³ØªÛŒ Ùˆ Ø¨Ù‡ Ú†Ù‡ Ø­ÙˆØ²Ù‡â€ŒÙ‡Ø§ÛŒÛŒ Ø¹Ù„Ø§Ù‚Ù‡ Ø¯Ø§Ø±ÛŒ. Ù…ÛŒØªÙˆÙ†ÛŒ Ù„ÛŒÙ†Ú© ÙˆØ¨Ø³Ø§ÛŒØª ÛŒØ§ Ø´Ø¨Ú©Ù‡â€ŒÙ‡Ø§Øª Ø±Ùˆ Ù‡Ù… Ø§ÛŒÙ†Ø¬Ø§ Ø¨Ø°Ø§Ø±ÛŒ.
+                            با نوشتن یک معرفی کوتاه، به بقیه نشون بده کی هستی و به چه حوزه‌هایی علاقه داری. میتونی لینک وبسایت یا شبکه‌هات رو هم اینجا بذاری.
                         </p>
                         <button
                             onClick={() => setIsEditModalOpen(true)}
@@ -168,7 +168,7 @@ export default function ProfilePage() {
 
                     {user?.profile?.bio && (
                         <div className="mb-6">
-                            <h3 className="font-bold text-gray-900 mb-3 text-lg">Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ù…Ù†</h3>
+                            <h3 className="font-bold text-gray-900 mb-3 text-lg">درباره من</h3>
                             <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">
                                 {user.profile.bio}
                             </p>
@@ -179,7 +179,7 @@ export default function ProfilePage() {
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-sm flex items-center gap-2">
                                 <Globe className="w-4 h-4" />
-                                ÙˆØ¨Ø³Ø§ÛŒØªâ€ŒÙ‡Ø§
+                                وبسایت‌ها
                             </h3>
                             <div className="flex flex-col gap-2">
                                 {user?.profile?.websites?.map((url, idx) => (
@@ -193,7 +193,7 @@ export default function ProfilePage() {
 
                     {(user?.profile?.socials?.length ?? 0) > 0 && (
                         <div>
-                            <h3 className="font-bold text-gray-900 mb-3 text-sm">Ø´Ø¨Ú©Ù‡â€ŒÙ‡Ø§ÛŒ Ø§Ø¬ØªÙ…Ø§Ø¹ÛŒ</h3>
+                            <h3 className="font-bold text-gray-900 mb-3 text-sm">شبکه‌های اجتماعی</h3>
                             <div className="grid gap-2">
                                 {user?.profile?.socials?.map((social, idx) => {
                                     const platform = getSocialPlatform(social.platform);
@@ -233,10 +233,10 @@ export default function ProfilePage() {
                             <FileText className="w-24 h-24 text-rose-200" strokeWidth={1} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mb-2">
-                            Ø±Ø²ÙˆÙ…Ù‡ Ø§Øª Ø±Ùˆ Ø«Ø¨Øª Ú©Ù†!
+                            رزومه ات رو ثبت کن!
                         </h3>
                         <p className="text-gray-500 text-sm max-w-xs mb-8 leading-relaxed">
-                            Ø¨Ø§ Ø§ÙØ²ÙˆØ¯Ù† Ù…Ù‡Ø§Ø±Øªâ€ŒÙ‡Ø§ØŒ Ø³ÙˆØ§Ø¨Ù‚ Ùˆ Ù…Ø¯Ø§Ø±Ú©ØŒ Ø±Ø²ÙˆÙ…Ù‡â€ŒØ§Øª Ø¯Ø± Ø¨Ø®Ø´ ÙˆÛŒØªØ±ÛŒÙ† Ø¨Ø±Ø§ÛŒ Ø¯ÛŒÚ¯Ø±Ø§Ù† Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ù…ÛŒØ´Ù‡ Ùˆ Ø´Ø§Ù†Ø³ Ù‡Ù…Ú©Ø§Ø±ÛŒ ÛŒØ§ Ù¾Ø±ÙˆÚ˜Ù‡ Ø¨ÛŒØ´ØªØ± Ù…ÛŒØ´Ù‡.
+                            با افزودن مهارت‌ها، سوابق و مدارک، رزومه‌ات در بخش ویترین برای دیگران نمایش داده میشه و شانس همکاری یا پروژه بیشتر میشه.
                         </p>
                         <button
                             onClick={() => setIsResumeModalOpen(true)}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                                 <Briefcase className="w-5 h-5 text-rose-600" />
-                                Ø³ÙˆØ§Ø¨Ù‚ Ú©Ø§Ø±ÛŒ
+                                سوابق کاری
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.work_experiences.map((work, idx) => (
@@ -282,7 +282,7 @@ export default function ProfilePage() {
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                                 <GraduationCap className="w-5 h-5 text-rose-600" />
-                                ØªØ­ØµÛŒÙ„Ø§Øª
+                                تحصیلات
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.educations.map((edu, idx) => (
@@ -302,7 +302,7 @@ export default function ProfilePage() {
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                                 <Wrench className="w-5 h-5 text-rose-600" />
-                                Ù…Ù‡Ø§Ø±Øªâ€ŒÙ‡Ø§
+                                مهارت‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {resume.skills.map((skill, idx) => (
@@ -319,7 +319,7 @@ export default function ProfilePage() {
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                                 <Languages className="w-5 h-5 text-rose-600" />
-                                Ø²Ø¨Ø§Ù†â€ŒÙ‡Ø§
+                                زبان‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {resume.languages.map((lang, idx) => (
@@ -350,7 +350,7 @@ export default function ProfilePage() {
         const tab = tabs.find((t) => t.id === activeTab);
         return (
             <div className="p-8 text-center text-gray-500">
-                Ù…Ø­ØªÙˆØ§ÛŒ Ø¨Ø®Ø´ {tab?.label}
+                محتوای بخش {tab?.label}
             </div>
         );
     };
@@ -367,7 +367,7 @@ export default function ProfilePage() {
                     <div className="flex gap-2 text-slate-500">
                         <Link href="/community" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><MessageCircle className="w-5 h-5" /></Link>
                         <NotificationBellLink />
-                        <Link href="/settings" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600" aria-label="ØªÙ†Ø¸ÛŒÙ…Ø§Øª"><Settings className="w-5 h-5" /></Link>
+                        <Link href="/settings" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600" aria-label="تنظیمات"><Settings className="w-5 h-5" /></Link>
                     </div>
                 </header>
 
@@ -406,7 +406,7 @@ export default function ProfilePage() {
                                 onClick={() => avatarInputRef.current?.click()}
                                 disabled={isUploadingAvatar}
                                 className="absolute -bottom-1 -left-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/40 bg-white text-rose-600 shadow-[0_14px_32px_rgba(15,23,42,0.22)] transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
-                                aria-label="ØªØºÛŒÛŒØ± Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„"
+                                aria-label="تغییر عکس پروفایل"
                             >
                                 {isUploadingAvatar ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -417,28 +417,28 @@ export default function ProfilePage() {
                         </div>
 
                         <h1 className="mb-1 text-2xl font-black tracking-tight text-white">
-                            {user?.profile?.display_name || "Ú©Ø§Ø±Ø¨Ø± Ù…Ù‡Ù…Ø§Ù†"}
+                            {user?.profile?.display_name || "کاربر مهمان"}
                         </h1>
 
                         <p className="mb-2 text-sm font-medium text-white/70">
-                            {user?.profile?.headline || "Ø¹Ù†ÙˆØ§Ù† Ø´ØºÙ„ÛŒ"}
+                            {user?.profile?.headline || "عنوان شغلی"}
                         </p>
 
                         {/* Location */}
                         <div className="mb-5 flex items-center gap-1 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs text-white/65">
                             <MapPin className="w-3.5 h-3.5" />
-                            <span>{user?.profile?.city || "Ù…ÙˆÙ‚Ø¹ÛŒØª Ù…Ú©Ø§Ù†ÛŒ"}</span>
+                            <span>{user?.profile?.city || "موقعیت مکانی"}</span>
                         </div>
 
                         {/* Followers / Following counts */}
                         <div className="grid w-full max-w-md grid-cols-2 gap-3 text-sm">
                             <Link href="/profile/network" className="rounded-[24px] border border-white/10 bg-white/10 p-4 text-center transition hover:bg-white/15">
                                 <span className="block text-2xl font-black text-white">{followersCount}</span>
-                                <span className="text-xs">Ø¯Ù†Ø¨Ø§Ù„â€ŒÚ©Ù†Ù†Ø¯Ù‡</span>
+                                <span className="text-xs">دنبال‌کننده</span>
                             </Link>
                             <Link href="/profile/network" className="rounded-[24px] border border-white/10 bg-white/10 p-4 text-center transition hover:bg-white/15">
                                 <span className="block text-2xl font-black text-white">{followingCount}</span>
-                                <span className="text-xs">Ø¯Ù†Ø¨Ø§Ù„â€ŒØ´ÙˆÙ†Ø¯Ù‡</span>
+                                <span className="text-xs">دنبال‌شونده</span>
                             </Link>
                         </div>
                         </div>
@@ -504,7 +504,7 @@ export default function ProfilePage() {
                 <ImageAdjustModal
                     file={pendingAvatarFile}
                     isOpen={!!pendingAvatarFile}
-                    title="ØªÙ†Ø¸ÛŒÙ… Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„"
+                    title="تنظیم عکس پروفایل"
                     aspectRatio={1}
                     frameClassName="rounded-full"
                     onCancel={() => setPendingAvatarFile(null)}
@@ -520,7 +520,7 @@ export default function ProfilePage() {
                             dir="rtl"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-bold text-gray-900">ØªÙ†Ø¸ÛŒÙ…Ø§Øª</h2>
+                                <h2 className="text-lg font-bold text-gray-900">تنظیمات</h2>
                                 <button
                                     onClick={() => setIsSettingsOpen(false)}
                                     className="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
@@ -530,7 +530,7 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="space-y-2">
-                                {/* 1. Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ */}
+                                {/* 1. حساب کاربری */}
                                 <Link
                                     href="/account"
                                     className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
@@ -539,7 +539,7 @@ export default function ProfilePage() {
                                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                         <UserIcon className="w-5 h-5 text-rose-600" />
                                     </div>
-                                    <span className="font-medium text-gray-800">Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ</span>
+                                    <span className="font-medium text-gray-800">حساب کاربری</span>
                                 </Link>
 
                                 <Link
@@ -551,24 +551,24 @@ export default function ProfilePage() {
                                         <SlidersHorizontal className="w-5 h-5 text-blue-700" />
                                     </div>
                                     <div className="min-w-0">
-                                        <span className="block font-medium text-gray-800">ØªÙ†Ø¸ÛŒÙ…Ø§Øª Ø¯Ù„Ø®ÙˆØ§Ù‡</span>
-                                        <span className="mt-0.5 block text-xs text-slate-400">Ù…ØªÙ†ØŒ Ù¾ÛŒÙ†â€ŒÛŒÛŒÙ†ØŒ Ù‡Ø§ÛŒÙ„Ø§ÛŒØª Ùˆ Ø³Ø±Ø¹Øª Ù¾Ø®Ø´</span>
+                                        <span className="block font-medium text-gray-800">تنظیمات دلخواه</span>
+                                        <span className="mt-0.5 block text-xs text-slate-400">متن، پین‌یین، هایلایت و سرعت پخش</span>
                                     </div>
                                 </Link>
 
-                                {/* 2. Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ú†ÛŒÙ†â€ŒÙˆØ±Ø³ */}
+                                {/* 2. درباره چین‌ورس */}
                                 <Link
-                                    href="/about"
+                                    href="/settings/about"
                                     className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                                         <Info className="w-5 h-5 text-gray-600" />
                                     </div>
-                                    <span className="font-medium text-gray-800">Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ú†ÛŒÙ†â€ŒÙˆØ±Ø³</span>
+                                    <span className="font-medium text-gray-800">درباره چین‌ورس</span>
                                 </Link>
 
-                                {/* 3. ÙˆØ±ÙˆØ¯ */}
+                                {/* 3. ورود */}
                                 <Link
                                     href="/login"
                                     className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
@@ -577,10 +577,10 @@ export default function ProfilePage() {
                                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                         <LogIn className="w-5 h-5 text-green-600" />
                                     </div>
-                                    <span className="font-medium text-gray-800">ÙˆØ±ÙˆØ¯</span>
+                                    <span className="font-medium text-gray-800">ورود</span>
                                 </Link>
 
-                                {/* 4. Ø«Ø¨Øª Ù†Ø§Ù… */}
+                                {/* 4. ثبت نام */}
                                 <Link
                                     href="/signup"
                                     className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
@@ -589,10 +589,10 @@ export default function ProfilePage() {
                                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                                         <UserPlus className="w-5 h-5 text-purple-600" />
                                     </div>
-                                    <span className="font-medium text-gray-800">Ø«Ø¨Øª Ù†Ø§Ù…</span>
+                                    <span className="font-medium text-gray-800">ثبت نام</span>
                                 </Link>
 
-                                {/* 5. Ø®Ø±ÙˆØ¬ */}
+                                {/* 5. خروج */}
                                 <button
                                     onClick={handleLogout}
                                     className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-orange-50"
@@ -600,10 +600,10 @@ export default function ProfilePage() {
                                     <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                                         <LogOut className="w-5 h-5 text-orange-600" />
                                     </div>
-                                    <span className="font-medium text-gray-800">Ø®Ø±ÙˆØ¬</span>
+                                    <span className="font-medium text-gray-800">خروج</span>
                                 </button>
 
-                                {/* 6. Ø­Ø°Ù Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ */}
+                                {/* 6. حذف حساب کاربری */}
                                 <button
                                     onClick={() => { setIsSettingsOpen(false); handleDeleteAccount(); }}
                                     className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-red-50"
@@ -611,7 +611,7 @@ export default function ProfilePage() {
                                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                                         <Trash2 className="w-5 h-5 text-red-600" />
                                     </div>
-                                    <span className="font-medium text-red-600">Ø­Ø°Ù Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ</span>
+                                    <span className="font-medium text-red-600">حذف حساب کاربری</span>
                                 </button>
                             </div>
                         </div>
@@ -669,7 +669,7 @@ function SavedCoursesTab() {
             setCourses((currentCourses) => currentCourses.filter((course) => course.id !== courseId));
         } catch (removeError) {
             console.error("Failed to remove saved course:", removeError);
-            alert("Ø­Ø°Ù Ø§ÛŒÙ† Ø¯ÙˆØ±Ù‡ Ø§Ø² Ù…Ù†ØªØ®Ø¨â€ŒÙ‡Ø§ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯. Ø¯ÙˆØ¨Ø§Ø±Ù‡ ØªÙ„Ø§Ø´ Ú©Ù†.");
+            alert("حذف این دوره از منتخب‌ها انجام نشد. دوباره تلاش کن.");
         } finally {
             setRemovingId(null);
         }
@@ -680,7 +680,7 @@ function SavedCoursesTab() {
             <div className="flex min-h-[260px] items-center justify-center p-8 text-sm text-slate-500">
                 <div className="flex items-center gap-3">
                     <Loader2 className="h-4 w-4 animate-spin text-rose-500" />
-                    <span>Ø¯Ø± Ø­Ø§Ù„ Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù…Ù†ØªØ®Ø¨â€ŒÙ‡Ø§...</span>
+                    <span>در حال بارگذاری منتخب‌ها...</span>
                 </div>
             </div>
         );
@@ -692,9 +692,9 @@ function SavedCoursesTab() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-rose-50 text-rose-500">
                     <BookmarkCheck className="h-7 w-7" />
                 </div>
-                <h3 className="mt-5 text-lg font-black text-slate-900">Ù…Ù†ØªØ®Ø¨â€ŒÙ‡Ø§ Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø´Ø¯</h3>
+                <h3 className="mt-5 text-lg font-black text-slate-900">منتخب‌ها بارگذاری نشد</h3>
                 <p className="mt-2 max-w-xs text-sm leading-7 text-slate-500">
-                    Ø§ØªØµØ§Ù„ Ø¨Ù‡ Ø³Ø±ÙˆØ± ÛŒØ§ Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ Ø±Ø§ Ø¨Ø±Ø±Ø³ÛŒ Ú©Ù† Ùˆ Ø¯ÙˆØ¨Ø§Ø±Ù‡ ÙˆØ§Ø±Ø¯ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø´Ùˆ.
+                    اتصال به سرور یا حساب کاربری را بررسی کن و دوباره وارد پروفایل شو.
                 </p>
             </div>
         );
@@ -712,9 +712,9 @@ function SavedCoursesTab() {
                     </span>
                 </div>
 
-                <h3 className="text-xl font-black tracking-tight text-slate-950">Ø§ÙˆÙ„ÛŒÙ† Ù…Ø¬Ù…ÙˆØ¹Ù‡â€ŒØ§Øª Ø±Ùˆ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†!</h3>
+                <h3 className="text-xl font-black tracking-tight text-slate-950">اولین مجموعه‌ات رو انتخاب کن!</h3>
                 <p className="mt-3 max-w-xs text-sm leading-7 text-slate-500">
-                    Ù‡Ø± course Ø±Ø§ Ø§Ø² ØµÙØ­Ù‡ Ú©Ø§ÙˆØ´ Ø°Ø®ÛŒØ±Ù‡ Ú©Ù†ÛŒØŒ Ø§ÛŒÙ†Ø¬Ø§ Ø¨Ø±Ø§ÛŒ Ø¯Ø³ØªØ±Ø³ÛŒ Ø³Ø±ÛŒØ¹ Ù†Ú¯Ù‡ Ø¯Ø§Ø´ØªÙ‡ Ù…ÛŒâ€ŒØ´ÙˆØ¯.
+                    هر course را از صفحه کاوش ذخیره کنی، اینجا برای دسترسی سریع نگه داشته می‌شود.
                 </p>
 
                 <Link
@@ -722,7 +722,7 @@ function SavedCoursesTab() {
                     className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_46px_rgba(37,99,235,0.34)]"
                 >
                     <Compass className="h-4 w-4" />
-                    Ú©Ø§ÙˆØ´ Ú©Ù†
+                    کاوش کن
                 </Link>
             </div>
         );
@@ -732,16 +732,16 @@ function SavedCoursesTab() {
         <div className="space-y-4 p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <h3 className="text-lg font-black text-slate-950">Ù…Ø¬Ù…ÙˆØ¹Ù‡â€ŒÙ‡Ø§ÛŒ Ù…Ù†ØªØ®Ø¨</h3>
+                    <h3 className="text-lg font-black text-slate-950">مجموعه‌های منتخب</h3>
                     <p className="mt-1 text-xs leading-6 text-slate-500">
-                        courseÙ‡Ø§ÛŒÛŒ Ú©Ù‡ Ø°Ø®ÛŒØ±Ù‡ Ú©Ø±Ø¯ÛŒ Ø¨Ø±Ø§ÛŒ Ø¨Ø±Ú¯Ø´Øª Ø³Ø±ÛŒØ¹ Ø§ÛŒÙ†Ø¬Ø§ Ù‡Ø³ØªÙ†Ø¯.
+                        courseهایی که ذخیره کردی برای برگشت سریع اینجا هستند.
                     </p>
                 </div>
                 <Link
                     href="/explore"
                     className="shrink-0 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100"
                 >
-                    Ú©Ø§ÙˆØ´
+                    کاوش
                 </Link>
             </div>
 
@@ -750,8 +750,8 @@ function SavedCoursesTab() {
                     const href = getCourseDetailHref(course);
                     const lessonsCount = getLessonCount(course);
                     const countText = lessonsCount > 0
-                        ? `${lessonsCount} Ø¯Ø±Ø³`
-                        : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "Ø¨Ø®Ø´");
+                        ? `${lessonsCount} درس`
+                        : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "بخش");
 
                     return (
                         <div
@@ -790,7 +790,7 @@ function SavedCoursesTab() {
                                         <Link
                                             href={href}
                                             className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-white transition hover:bg-slate-800"
-                                            aria-label="Ø§Ø¯Ø§Ù…Ù‡ Ø¯ÙˆØ±Ù‡"
+                                            aria-label="ادامه دوره"
                                         >
                                             <PlayCircle className="h-4 w-4" />
                                         </Link>
@@ -799,7 +799,7 @@ function SavedCoursesTab() {
                                             onClick={() => handleRemoveCourse(course.id)}
                                             disabled={removingId === course.id}
                                             className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                            aria-label="Ø­Ø°Ù Ø§Ø² Ù…Ù†ØªØ®Ø¨â€ŒÙ‡Ø§"
+                                            aria-label="حذف از منتخب‌ها"
                                         >
                                             {removingId === course.id ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />

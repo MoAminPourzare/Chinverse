@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Play, Star } from "lucide-react";
+import { ArrowRight, BookOpen, Play, Star } from "lucide-react";
 import {
     Course,
     fetchCoursesBySubcategory,
@@ -99,23 +99,26 @@ export default function CourseExplorePage({
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
                 <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_50%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
                     <div className="p-5 sm:p-6">
-                        <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
-                            Explore
+                        <div className="flex items-center justify-between gap-3">
+                            <Link
+                                href="/explore"
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white/85 transition-colors hover:bg-white/15 hover:text-white"
+                                aria-label="بازگشت به کاوش"
+                            >
+                                <ArrowRight size={19} />
+                            </Link>
+                            <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
+                                Explore
+                            </div>
                         </div>
                         <div className="mt-4 flex items-start justify-between gap-4">
                             <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">مسیر</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">مسیر آموزشی</p>
                                 <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
                                 <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                                    کارت‌های این بخش را مرور کن و مستقیم وارد درس‌های هر دوره شو.
+                                    دوره‌های {title} را ببین، مسیر مناسب خودت را انتخاب کن و از همان‌جا وارد درس‌ها شو.
                                 </p>
                             </div>
-                            <Link
-                                href="/explore"
-                                className="hidden rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/80 transition-colors hover:bg-white/15 sm:inline-flex"
-                            >
-                                همه مسیرها
-                            </Link>
                         </div>
                     </div>
                 </Surface>

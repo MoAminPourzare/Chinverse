@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { ArrowRight, Compass } from "lucide-react";
 import Surface from "@/components/ui/Surface";
-import PageHeader from "@/components/ui/PageHeader";
 import { getExploreSection, type ExploreItem } from "@/components/explore/exploreData";
 
 export default function ExploreGroupPage() {
@@ -18,16 +17,27 @@ export default function ExploreGroupPage() {
 
     return (
         <div className="min-h-full pb-28" dir="rtl">
-            <PageHeader title={section.title} subtitle={section.subtitle} backHref="/explore" />
             <main className="mx-auto flex w-full flex-col gap-4 px-4 py-4">
                 <Surface className={`overflow-hidden bg-gradient-to-br ${section.tone} p-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]`}>
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                        <Link
+                            href="/explore"
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white/90 transition hover:bg-white/20 hover:text-white"
+                            aria-label="بازگشت به کاوش"
+                        >
+                            <ArrowRight size={19} />
+                        </Link>
+                        <p className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white/75">
+                            مشاهده همه
+                        </p>
+                    </div>
                     <div className="flex items-center gap-3">
                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] border border-white/20 bg-white/15">
                             <Compass size={26} />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-white/65">همه مسیرهای این گروه</p>
                             <h1 className="mt-1 text-2xl font-black tracking-tight">{section.title}</h1>
+                            <p className="mt-2 text-sm leading-6 text-white/75">{section.subtitle}</p>
                         </div>
                     </div>
                 </Surface>

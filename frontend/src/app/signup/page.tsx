@@ -62,6 +62,7 @@ export default function SignupPage() {
 
     return (
         <AuthShell
+            backHref="/settings"
             title="حساب تازه بساز"
             subtitle="با یک حساب ساده شروع کن تا مسیرهای یادگیری، ویدیوها و تمرین‌های شخصی‌سازی‌شده را داشته باشی."
             footer={
@@ -73,11 +74,11 @@ export default function SignupPage() {
                 </p>
             }
         >
-            <div className="mb-8">
+            <div className="mb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-500">
                     Create account
                 </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900">
                     ثبت نام
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
