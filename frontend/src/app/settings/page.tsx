@@ -55,14 +55,14 @@ const accountItems = [
     {
         title: "حساب کاربری",
         subtitle: "پروفایل و اطلاعات عمومی",
-        href: "/profile",
+        href: "/account",
         icon: User,
         iconClassName: "bg-rose-50 text-rose-600",
     },
     {
         title: "درباره چین‌ورس",
         subtitle: "اطلاعات برنامه و مسیر محصول",
-        href: "/about",
+        href: "/settings/about",
         icon: Info,
         iconClassName: "bg-slate-100 text-slate-600",
     },

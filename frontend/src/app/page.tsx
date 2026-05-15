@@ -98,7 +98,7 @@ export default function HomePage() {
                                         ویترین تازه‌های چین‌ورس
                                     </h1>
                                     <p className="mt-3 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
-                                        عکس‌ها، خدمات، فعالیت‌ها و پروفایل‌های تازه کاربران را یک‌جا ببین؛ خانه حالا بیشتر شبیه فید اجتماعی چین‌ورس است.
+                                        عکس‌ها، خدمات، فعالیت‌ها و پروفایل‌های تازه کاربران را یک‌جا ببین.
                                     </p>
                                 </div>
                                 <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-[24px] border border-white/15 bg-white/[0.12] text-amber-100 shadow-inner sm:flex">

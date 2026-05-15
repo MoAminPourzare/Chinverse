@@ -9,7 +9,7 @@ import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
 
 const STORAGE_KEY = "chinverse:lastSeenNotificationId";
-const HIDDEN_PREFIXES = ["/login", "/signup", "/landing", "/notifications"];
+const HIDDEN_PREFIXES = ["/login", "/signup", "/notifications"];
 
 const iconByType: Record<NotificationType, typeof Bell> = {
     message: MessageCircle,

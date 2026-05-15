@@ -35,6 +35,7 @@ export default function LoginPage() {
 
     return (
         <AuthShell
+            backHref="/settings"
             title="خوش آمدی دوباره"
             subtitle="وارد حساب خودت شو تا مسیر یادگیری، ویدیوهای بعدی و پیشرفت روزانه‌ات را از همان‌جا ادامه بدهی."
             footer={
@@ -46,11 +47,11 @@ export default function LoginPage() {
                 </p>
             }
         >
-            <div className="mb-8">
+            <div className="mb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-500">
                     Sign in
                 </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900">
                     ورود به حساب
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
