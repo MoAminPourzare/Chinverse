@@ -36,17 +36,22 @@ class ForumAnswerBase(BaseModel):
     content: str = Field(min_length=1, max_length=8000)
 
 class ForumAnswerCreate(ForumAnswerBase):
-    question_id: int = Field(gt=0)
+    parent_id: Optional[int] = Field(default=None, gt=0)
 
 class ForumAnswerRead(ForumAnswerBase):
     id: int
     question_id: int
     author_user_id: int
+    parent_id: Optional[int] = None
     created_at: datetime
     author: Optional[UserSummary] = None
 
     class Config:
         from_attributes = True
+
+
+class ForumQuestionDetailRead(ForumQuestionRead):
+    answers: List[ForumAnswerRead] = Field(default_factory=list)
 
 # ===== ARTICLE SCHEMAS =====
 
@@ -61,10 +66,37 @@ class ArticleCreate(ArticleBase):
 
 class ArticleRead(ArticleBase):
     id: int
+    author_user_id: Optional[int] = None
+    author: Optional[UserSummary] = None
     created_at: datetime
+    comments_count: int = 0
 
     class Config:
         from_attributes = True
+
+
+class ArticleCommentBase(BaseModel):
+    content: str = Field(min_length=1, max_length=8000)
+
+
+class ArticleCommentCreate(ArticleCommentBase):
+    parent_id: Optional[int] = Field(default=None, gt=0)
+
+
+class ArticleCommentRead(ArticleCommentBase):
+    id: int
+    article_id: int
+    author_user_id: int
+    parent_id: Optional[int] = None
+    created_at: datetime
+    author: Optional[UserSummary] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ArticleDetailRead(ArticleRead):
+    comments: List[ArticleCommentRead] = Field(default_factory=list)
 
 # ===== SUPPORT TICKET SCHEMAS =====
 

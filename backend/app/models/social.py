@@ -99,11 +99,14 @@ class ForumAnswer(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     question_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("forum_questions.id"), nullable=False, index=True)
     author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("forum_answers.id"), nullable=True, index=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Relationships
     question: Mapped["ForumQuestion"] = relationship(back_populates="answers")
     author: Mapped["User"] = relationship()
+    replies: Mapped[List["ForumAnswer"]] = relationship(back_populates="parent", cascade="all, delete-orphan")
+    parent: Mapped[Optional["ForumAnswer"]] = relationship(remote_side=[id], back_populates="replies")
 
 class SupportStatus(str, Enum):
     OPEN = "open"
@@ -115,10 +118,29 @@ class Article(Base, TimestampMixin):
     __tablename__ = "articles"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    author_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     cover_image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    author: Mapped[Optional["User"]] = relationship()
+    comments: Mapped[List["ArticleComment"]] = relationship(back_populates="article", cascade="all, delete-orphan")
+
+
+class ArticleComment(Base, TimestampMixin):
+    __tablename__ = "article_comments"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    article_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("articles.id"), nullable=False, index=True)
+    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("article_comments.id"), nullable=True, index=True)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+
+    article: Mapped["Article"] = relationship(back_populates="comments")
+    author: Mapped["User"] = relationship()
+    replies: Mapped[List["ArticleComment"]] = relationship(back_populates="parent", cascade="all, delete-orphan")
+    parent: Mapped[Optional["ArticleComment"]] = relationship(remote_side=[id], back_populates="replies")
 
 class SupportTicket(Base, TimestampMixin):
     """Support tickets submitted by users"""

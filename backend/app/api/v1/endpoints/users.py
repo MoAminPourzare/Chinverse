@@ -57,7 +57,7 @@ async def delete_user_account(
     from app.models.media import MediaAsset
     from app.models.settings import UserLanguageSetting, UserPreference
     from app.models.social import (
-        ForumQuestion, ForumAnswer, Post, PostMedia, PostLike, PostComment,
+        ForumQuestion, ForumAnswer, Article, ArticleComment, Post, PostMedia, PostLike, PostComment,
         UserFollow, Message, SupportTicket
     )
     from app.models.service import UserService
@@ -87,16 +87,29 @@ async def delete_user_account(
 
     owned_question_ids = select(ForumQuestion.id).where(ForumQuestion.author_user_id == user_id)
     owned_post_ids = select(Post.id).where(Post.author_user_id == user_id)
+    owned_article_ids = select(Article.id).where(Article.author_user_id == user_id)
+    owned_answer_ids = select(ForumAnswer.id).where(
+        or_(ForumAnswer.author_user_id == user_id, ForumAnswer.question_id.in_(owned_question_ids))
+    )
     owned_comment_ids = select(PostComment.id).where(PostComment.user_id == user_id)
+    owned_article_comment_ids = select(ArticleComment.id).where(ArticleComment.author_user_id == user_id)
     owned_media_ids = select(MediaAsset.id).where(MediaAsset.user_id == user_id)
     owned_business_service_ids = select(BusinessService.id).where(
         BusinessService.provider_user_id == user_id
     )
 
+    await db.execute(update(ForumAnswer).where(ForumAnswer.parent_id.in_(owned_answer_ids)).values(parent_id=None))
     await db.execute(delete(ForumAnswer).where(
         or_(ForumAnswer.author_user_id == user_id, ForumAnswer.question_id.in_(owned_question_ids))
     ))
     await db.execute(delete(ForumQuestion).where(ForumQuestion.author_user_id == user_id))
+    await db.execute(update(ArticleComment).where(
+        ArticleComment.parent_id.in_(owned_article_comment_ids)
+    ).values(parent_id=None))
+    await db.execute(delete(ArticleComment).where(
+        or_(ArticleComment.author_user_id == user_id, ArticleComment.article_id.in_(owned_article_ids))
+    ))
+    await db.execute(delete(Article).where(Article.author_user_id == user_id))
 
     await db.execute(update(PostComment).where(
         PostComment.parent_id.in_(owned_comment_ids)
