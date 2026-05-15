@@ -17,6 +17,7 @@ import {
 import EmptyState from "@/components/ui/EmptyState";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
+import LikeButton from "@/components/engagement/LikeButton";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { ServiceWithProvider, ShowcaseUser, userService } from "@/services/user.service";
@@ -324,7 +325,11 @@ function ServiceCard({ service }: ServiceCardProps) {
                     </div>
                 )}
 
-                <div className="mt-5 grid grid-cols-2 gap-2">
+                <div className="mt-5 flex items-center justify-between gap-2">
+                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
                     <PrimaryButton href={`/services/${service.id}`} variant="ghost" className="w-full">
                         جزئیات
                     </PrimaryButton>

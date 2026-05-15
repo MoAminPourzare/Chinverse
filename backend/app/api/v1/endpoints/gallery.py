@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, File, UploadFile, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.api import deps
 from app.api.errors import not_found
@@ -10,6 +10,7 @@ from app.api.rate_limit import upload_rate_limit, write_rate_limit
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.models.user import User, UserGalleryItem
+from app.models.social import ContentComment, ContentLike
 from app.core.paths import GALLERY_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
 from app.schemas.gallery import GalleryItem
 from app.db.session import get_db
@@ -110,6 +111,8 @@ async def delete_gallery_item(
     
     # Delete file from filesystem
     safe_unlink(resolve_backend_file_url(gallery_item.image_url))
+    await db.execute(delete(ContentComment).where(ContentComment.target_type == "post", ContentComment.target_id == item_id))
+    await db.execute(delete(ContentLike).where(ContentLike.target_type == "post", ContentLike.target_id == item_id))
     
     await db.delete(gallery_item)
     await db.commit()

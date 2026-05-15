@@ -6,6 +6,8 @@ import { X } from 'lucide-react';
 import { GalleryItem } from '@/services/gallery.service';
 import Image from 'next/image';
 import { getMediaUrl } from '@/lib/media';
+import LikeButton from '@/components/engagement/LikeButton';
+import PostComments from '@/components/engagement/PostComments';
 
 interface ImageDetailModalProps {
     isOpen: boolean;
@@ -83,6 +85,14 @@ export default function ImageDetailModal({ isOpen, onClose, item }: ImageDetailM
                                         )}
                                     </div>
                                 )}
+
+                                <div className="mt-4 rounded-2xl bg-white p-4" dir="rtl">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-sm font-black text-slate-900">تعامل با پست</p>
+                                        <LikeButton targetType="post" targetId={item.id} compact />
+                                    </div>
+                                    <PostComments postId={item.id} />
+                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>

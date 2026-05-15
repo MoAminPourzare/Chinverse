@@ -8,6 +8,7 @@ import { ArrowRight, BriefcaseBusiness, CalendarDays, ImageIcon, MessageCircle, 
 import EmptyState from "@/components/ui/EmptyState";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
+import LikeButton from "@/components/engagement/LikeButton";
 import { getMediaUrl } from "@/lib/media";
 import { ServiceWithProvider, userService } from "@/services/user.service";
 
@@ -129,7 +130,10 @@ export default function ServiceDetailPage() {
                 </Surface>
 
                 <Surface className="p-5">
-                    <h2 className="mb-3 text-base font-black text-slate-900">توضیحات خدمت</h2>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                        <h2 className="text-base font-black text-slate-900">توضیحات خدمت</h2>
+                        <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                    </div>
                     <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700">
                         {service.description}
                     </p>

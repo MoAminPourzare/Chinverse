@@ -57,7 +57,7 @@ async def delete_user_account(
     from app.models.media import MediaAsset
     from app.models.settings import UserLanguageSetting, UserPreference
     from app.models.social import (
-        ForumQuestion, ForumAnswer, Article, ArticleComment, Post, PostMedia, PostLike, PostComment,
+        ForumQuestion, ForumAnswer, Article, ArticleComment, ContentComment, ContentLike, Post, PostMedia, PostLike, PostComment,
         UserFollow, Message, SupportTicket
     )
     from app.models.service import UserService
@@ -94,9 +94,11 @@ async def delete_user_account(
     owned_comment_ids = select(PostComment.id).where(PostComment.user_id == user_id)
     owned_article_comment_ids = select(ArticleComment.id).where(ArticleComment.author_user_id == user_id)
     owned_media_ids = select(MediaAsset.id).where(MediaAsset.user_id == user_id)
+    owned_gallery_ids = select(UserGalleryItem.id).where(UserGalleryItem.user_id == user_id)
     owned_business_service_ids = select(BusinessService.id).where(
         BusinessService.provider_user_id == user_id
     )
+    owned_user_service_ids = select(UserService.id).where(UserService.user_id == user_id)
 
     await db.execute(update(ForumAnswer).where(ForumAnswer.parent_id.in_(owned_answer_ids)).values(parent_id=None))
     await db.execute(delete(ForumAnswer).where(
@@ -124,6 +126,23 @@ async def delete_user_account(
         or_(PostComment.user_id == user_id, PostComment.post_id.in_(owned_post_ids))
     ))
     await db.execute(delete(Post).where(Post.author_user_id == user_id))
+    await db.execute(update(ContentComment).where(
+        ContentComment.parent_id.in_(select(ContentComment.id).where(ContentComment.user_id == user_id))
+    ).values(parent_id=None))
+    await db.execute(delete(ContentComment).where(
+        or_(
+            ContentComment.user_id == user_id,
+            (ContentComment.target_type == "post") & ContentComment.target_id.in_(owned_gallery_ids),
+            (ContentComment.target_type == "service") & ContentComment.target_id.in_(owned_user_service_ids),
+        )
+    ))
+    await db.execute(delete(ContentLike).where(
+        or_(
+            ContentLike.user_id == user_id,
+            (ContentLike.target_type == "post") & ContentLike.target_id.in_(owned_gallery_ids),
+            (ContentLike.target_type == "service") & ContentLike.target_id.in_(owned_user_service_ids),
+        )
+    ))
 
     await db.execute(delete(ConsultationRequest).where(
         or_(

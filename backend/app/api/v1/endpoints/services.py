@@ -1,7 +1,7 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 
 from app.api import deps
 from app.api.errors import bad_request, not_found
@@ -12,10 +12,31 @@ from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.models.user import User
 from app.models.service import UserService
+from app.models.social import ContentComment, ContentLike
 from app.schemas.service import Service
 from app.services.notifications import notify_followers
 
 router = APIRouter()
+
+
+async def _service_likes_count(db: AsyncSession, service_id: int) -> int:
+    count = await db.scalar(
+        select(func.count())
+        .select_from(ContentLike)
+        .where(ContentLike.target_type == "service", ContentLike.target_id == service_id)
+    )
+    return int(count or 0)
+
+
+async def _service_likes_counts(db: AsyncSession, service_ids: list[int]) -> dict[int, int]:
+    if not service_ids:
+        return {}
+    result = await db.execute(
+        select(ContentLike.target_id, func.count(ContentLike.id))
+        .where(ContentLike.target_type == "service", ContentLike.target_id.in_(service_ids))
+        .group_by(ContentLike.target_id)
+    )
+    return {int(service_id): int(count or 0) for service_id, count in result.all()}
 
 
 @router.get("", response_model=List[Service])
@@ -35,6 +56,7 @@ async def get_my_services(
         .limit(pagination.limit)
     )
     services = result.scalars().all()
+    like_counts = await _service_likes_counts(db, [service.id for service in services])
     return services
 
 
@@ -127,6 +149,8 @@ async def delete_service(
     # Delete banner file if exists
     if service.banner_url:
         safe_unlink(resolve_backend_file_url(service.banner_url))
+    await db.execute(delete(ContentComment).where(ContentComment.target_type == "service", ContentComment.target_id == service_id))
+    await db.execute(delete(ContentLike).where(ContentLike.target_type == "service", ContentLike.target_id == service_id))
     
     await db.delete(service)
     await db.commit()
@@ -181,6 +205,7 @@ async def get_public_services(
             "banner_url": service.banner_url,
             "price_label": service.price_label,
             "created_at": service.created_at,
+            "likes_count": like_counts.get(service.id, 0),
             "provider": provider_info
         })
     
@@ -229,5 +254,6 @@ async def get_public_service(
         "banner_url": service.banner_url,
         "price_label": service.price_label,
         "created_at": service.created_at,
+        "likes_count": await _service_likes_count(db, service.id),
         "provider": provider_info,
     }
