@@ -30,6 +30,7 @@ import Surface from "@/components/ui/Surface";
 import SectionHeader from "@/components/ui/SectionHeader";
 import LessonCard from "@/components/course/LessonCard";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import LikeButton from "@/components/engagement/LikeButton";
 
 interface CourseDetailPageProps {
     domain: string;
@@ -304,6 +305,7 @@ export default function CourseDetailPage({
                                         شروع
                                     </PrimaryButton>
                                 )}
+                                <LikeButton targetType="course" targetId={course.id} initialCount={course.likes_count || 0} />
                                 <PrimaryButton
                                     type="button"
                                     variant={isSaved ? "secondary" : "ghost"}

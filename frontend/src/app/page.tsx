@@ -20,6 +20,8 @@ import api from "@/lib/api";
 import { getMediaUrl } from "@/lib/media";
 import Surface from "@/components/ui/Surface";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import LikeButton from "@/components/engagement/LikeButton";
+import PostComments from "@/components/engagement/PostComments";
 
 interface FeedProvider {
     id: number;
@@ -46,6 +48,8 @@ interface FeedItem {
     id: string;
     type: "gallery" | "service";
     created_at?: string;
+    likes_count?: number;
+    comments_count?: number;
     data: GalleryData | ServiceData;
     provider?: FeedProvider;
 }
@@ -248,6 +252,9 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
                                 درخواست مشاوره
                             </PrimaryButton>
                         </div>
+                        <div className="mt-4">
+                            <LikeButton targetType="service" targetId={service.id} initialCount={item.likes_count || 0} compact />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -258,13 +265,14 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
 function GalleryFeedCard({ item }: { item: FeedItem }) {
     const gallery = item.data as GalleryData;
     const provider = item.provider;
+    const [commentsCount, setCommentsCount] = useState(item.comments_count || 0);
 
     return (
         <Surface className="overflow-hidden border-white bg-white/95">
             <div className="p-4">
                 <PostAuthor provider={provider} createdAt={item.created_at} badge="گالری" />
 
-                <Link href="/showcase" className="relative mt-4 block aspect-[4/3] overflow-hidden rounded-[26px] bg-slate-100">
+                <Link href={`/posts/${gallery.id}`} className="relative mt-4 block aspect-[4/3] overflow-hidden rounded-[26px] bg-slate-100">
                     <Image
                         src={getMediaUrl(gallery.image_url)}
                         alt={gallery.caption || "Gallery image"}
@@ -277,14 +285,12 @@ function GalleryFeedCard({ item }: { item: FeedItem }) {
                 {gallery.caption && <p className="mt-4 text-sm leading-7 text-slate-600">{gallery.caption}</p>}
 
                 <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-400">
-                    <span className="inline-flex items-center gap-1.5">
-                        <Heart size={15} />
-                        الهام‌بخش
-                    </span>
-                    <Link href="/showcase" className="text-rose-600 transition hover:text-rose-700">
-                        دیدن ویترین
+                    <LikeButton targetType="post" targetId={gallery.id} initialCount={item.likes_count || 0} compact />
+                    <Link href={`/posts/${gallery.id}`} className="text-rose-600 transition hover:text-rose-700">
+                        مشاهده پست
                     </Link>
                 </div>
+                <PostComments postId={gallery.id} initialCount={commentsCount} onCountChange={setCommentsCount} />
             </div>
         </Surface>
     );

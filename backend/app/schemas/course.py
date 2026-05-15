@@ -98,6 +98,7 @@ class Course(CourseBase):
     subcategory_id: int
     subcategory_slug: Optional[str] = None
     sections: List[CourseSection] = Field(default_factory=list)
+    likes_count: int = 0
 
     class Config:
         from_attributes = True

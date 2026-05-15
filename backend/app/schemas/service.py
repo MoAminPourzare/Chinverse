@@ -28,6 +28,7 @@ class Service(ServiceBase):
     user_id: int
     banner_url: Optional[str] = None
     created_at: datetime
+    likes_count: int = 0
 
     class Config:
         from_attributes = True
@@ -67,6 +68,7 @@ class ServiceWithProvider(BaseModel):
     banner_url: Optional[str] = None
     price_label: Optional[str] = None
     created_at: datetime
+    likes_count: int = 0
     provider: Optional[ServiceProviderInfo] = None
 
     class Config:

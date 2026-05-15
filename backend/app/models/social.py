@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Optional, List
-from sqlalchemy import String, ForeignKey, Text, BigInteger, UniqueConstraint
+from sqlalchemy import String, ForeignKey, Text, BigInteger, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -79,6 +79,40 @@ class PostComment(Base, TimestampMixin):
     post: Mapped["Post"] = relationship(back_populates="comments")
     replies: Mapped[List["PostComment"]] = relationship(back_populates="parent", cascade="all, delete-orphan")
     parent: Mapped[Optional["PostComment"]] = relationship(remote_side=[id], back_populates="replies")
+
+
+class ContentLike(Base, TimestampMixin):
+    __tablename__ = "content_likes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "target_type", "target_id", name="uq_content_like_user_target"),
+        Index("ix_content_likes_target", "target_type", "target_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    target_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+    user: Mapped["User"] = relationship()
+
+
+class ContentComment(Base, TimestampMixin):
+    __tablename__ = "content_comments"
+    __table_args__ = (
+        Index("ix_content_comments_target_created", "target_type", "target_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    target_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    parent_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("content_comments.id", ondelete="SET NULL"), nullable=True, index=True)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+
+    user: Mapped["User"] = relationship()
+    replies: Mapped[List["ContentComment"]] = relationship(back_populates="parent")
+    parent: Mapped[Optional["ContentComment"]] = relationship(remote_side=[id], back_populates="replies")
+
 
 class ForumQuestion(Base, TimestampMixin):
     __tablename__ = "forum_questions"

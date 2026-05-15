@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, Plus, Trash2, Upload, X } from "lucide-react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
+import LikeButton from "@/components/engagement/LikeButton";
 import { getMediaUrl } from "@/lib/media";
 import { userService, UserService } from "@/services/user.service";
 
@@ -352,6 +353,10 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                 </div>
 
                 <p className="line-clamp-3 text-sm leading-7 text-slate-500">{service.description}</p>
+
+                <div className="mt-4">
+                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                     <PrimaryButton href={`/services/${service.id}`} variant="ghost" className="w-full" leadingIcon={<ArrowLeft className="h-4 w-4" />}>

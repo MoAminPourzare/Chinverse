@@ -9,6 +9,7 @@ from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
 from app.models.course import Course, CourseSection, Lesson, Category, Subcategory
+from app.models.social import ContentLike
 from app.schemas import course as schemas
 
 router = APIRouter()
@@ -84,9 +85,24 @@ async def _read_lessons_for_courses(
     return lessons_by_section
 
 
+async def _read_course_like_counts(
+    db: AsyncSession,
+    course_ids: list[int],
+) -> dict[int, int]:
+    if not course_ids:
+        return {}
+    result = await db.execute(
+        select(ContentLike.target_id, func.count(ContentLike.id))
+        .where(ContentLike.target_type == "course", ContentLike.target_id.in_(course_ids))
+        .group_by(ContentLike.target_id)
+    )
+    return {int(course_id): int(count or 0) for course_id, count in result.all()}
+
+
 def _course_to_response(
     course: Course,
     lessons_by_section: dict[int, list[dict[str, Any]]],
+    like_counts: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     sections = sorted(course.sections or [], key=lambda item: (item.order_index, item.id))
 
@@ -100,6 +116,7 @@ def _course_to_response(
         "cover_image_url": course.cover_image_url,
         "level": course.level,
         "metadata_json": course.metadata_json or {},
+        "likes_count": (like_counts or {}).get(course.id, 0),
         "sections": [
             {
                 "id": section.id,
@@ -116,6 +133,7 @@ def _course_to_response(
 def _raw_course_to_response(
     row: Any,
     lessons_by_section: dict[int, list[dict[str, Any]]],
+    like_counts: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     return {
         "id": row["id"],
@@ -127,6 +145,7 @@ def _raw_course_to_response(
         "cover_image_url": row["cover_image_url"],
         "level": row["level"],
         "metadata_json": row["metadata_json"] or {},
+        "likes_count": (like_counts or {}).get(row["id"], 0),
         "sections": [
             {
                 "id": section["id"],
@@ -235,8 +254,10 @@ async def read_courses(
         query.order_by(Course.id).offset(pagination.skip).limit(pagination.limit)
     )
     courses = result.scalars().all()
-    lessons_by_section = await _read_lessons_for_courses(db, [course.id for course in courses])
-    return [_course_to_response(course, lessons_by_section) for course in courses]
+    course_ids = [course.id for course in courses]
+    lessons_by_section = await _read_lessons_for_courses(db, course_ids)
+    like_counts = await _read_course_like_counts(db, course_ids)
+    return [_course_to_response(course, lessons_by_section, like_counts) for course in courses]
 
 @router.get("/by-slug/{slug}", response_model=schemas.Course)
 async def read_course_by_slug(
@@ -259,7 +280,8 @@ async def read_course_by_slug(
     if not course:
         raise not_found("Course")
     lessons_by_section = await _read_lessons_for_courses(db, [course.id])
-    return _course_to_response(course, lessons_by_section)
+    like_counts = await _read_course_like_counts(db, [course.id])
+    return _course_to_response(course, lessons_by_section, like_counts)
 
 
 @router.get("/saved", response_model=List[schemas.Course])
@@ -292,7 +314,8 @@ async def read_saved_courses(
     course_ids = [row["course_id"] for row in result.mappings().all()]
     courses = await _read_raw_courses_by_ids(db, course_ids)
     lessons_by_section = await _read_lessons_for_courses(db, course_ids)
-    return [_raw_course_to_response(course, lessons_by_section) for course in courses]
+    like_counts = await _read_course_like_counts(db, course_ids)
+    return [_raw_course_to_response(course, lessons_by_section, like_counts) for course in courses]
 
 
 @router.get("/{id}/saved", response_model=schemas.SavedCourseState)
@@ -407,7 +430,8 @@ async def read_course(
     if not course:
         raise not_found("Course")
     lessons_by_section = await _read_lessons_for_courses(db, [course.id])
-    return _course_to_response(course, lessons_by_section)
+    like_counts = await _read_course_like_counts(db, [course.id])
+    return _course_to_response(course, lessons_by_section, like_counts)
 
 @router.get("/{id}/lessons", response_model=List[schemas.Lesson])
 async def read_course_lessons(

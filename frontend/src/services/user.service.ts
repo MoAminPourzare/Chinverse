@@ -259,6 +259,7 @@ export interface UserService {
     banner_url?: string;
     price_label?: string;
     created_at?: string;
+    likes_count?: number;
 }
 
 export interface ServiceProvider {
@@ -275,6 +276,7 @@ export interface ServiceWithProvider {
     banner_url?: string;
     price_label?: string;
     created_at?: string;
+    likes_count?: number;
     provider?: ServiceProvider;
 }
 

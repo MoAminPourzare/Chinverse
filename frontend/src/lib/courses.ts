@@ -27,6 +27,7 @@ export interface Course {
     subcategory_slug?: string | null;
     metadata_json?: Record<string, unknown>;
     sections?: CourseSectionSummary[];
+    likes_count?: number;
 }
 
 export interface SubcategorySummary {
