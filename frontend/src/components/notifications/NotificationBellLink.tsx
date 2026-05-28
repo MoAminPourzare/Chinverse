@@ -32,12 +32,12 @@ export default function NotificationBellLink() {
     return (
         <Link
             href="/notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white"
             aria-label="اعلان‌ها"
         >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-5 w-5" strokeWidth={1.9} />
             {count > 0 && (
-                <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white shadow-lg shadow-rose-500/30">
+                <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#155aa6] px-1 text-[10px] font-black text-white shadow-lg shadow-[#155aa6]/30">
                     {count > 9 ? "9+" : count}
                 </span>
             )}

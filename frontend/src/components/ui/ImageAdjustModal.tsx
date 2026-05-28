@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ImageIcon, Loader2, Minus, Plus, RotateCcw, X } from "lucide-react";
-import PrimaryButton from "@/components/ui/PrimaryButton";
 import { cn } from "@/lib/cn";
 
 interface ImageAdjustModalProps {
@@ -234,17 +233,17 @@ export default function ImageAdjustModal({
     const renderedHeight = Math.max(1, imageSize.height * baseScale * zoom);
 
     return (
-        <div className="fixed inset-0 z-[180] flex items-end justify-center bg-slate-950/70 px-3 pb-3 backdrop-blur-sm" dir="rtl">
-            <div className="flex max-h-[94vh] w-full max-w-md flex-col overflow-hidden rounded-[34px] border border-white/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.32)]">
-                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div className="fixed inset-0 z-[180] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" dir="rtl">
+            <div className="flex h-[min(720px,92vh)] w-full max-w-md flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
+                <div className="flex items-center justify-between px-5 py-4">
                     <div>
-                        <h2 className="text-base font-black text-slate-950">{title}</h2>
-                        <p className="mt-1 text-xs font-semibold text-slate-400">عکس را بکش، زوم کن و کادر نهایی را تنظیم کن.</p>
+                        <h2 className="text-base font-black text-[#25272d]">{title}</h2>
+                        <p className="mt-1 text-xs font-semibold text-[#7c8492]">عکس را جابه‌جا کن، زوم کن و کادر نهایی را تنظیم کن.</p>
                     </div>
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                         aria-label="بستن"
                     >
                         <X size={19} />
@@ -259,7 +258,7 @@ export default function ImageAdjustModal({
                         onPointerUp={handlePointerUp}
                         onPointerCancel={handlePointerUp}
                         className={cn(
-                            "relative mx-auto w-full touch-none select-none overflow-hidden rounded-[28px] bg-slate-950 shadow-inner",
+                            "relative mx-auto w-full touch-none select-none overflow-hidden rounded-[22px] bg-white shadow-inner ring-2 ring-[#155aa6]",
                             frameClassName,
                         )}
                         style={{ aspectRatio }}
@@ -280,11 +279,11 @@ export default function ImageAdjustModal({
                             onLoad={handleImageLoad}
                             unoptimized
                         />
-                        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/25" />
-                        <div className="pointer-events-none absolute inset-3 rounded-[22px] border border-white/45" />
+                        <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/35" />
+                        <div className="pointer-events-none absolute inset-3 rounded-[18px] border border-white/70" />
                     </div>
 
-                    <div className="mt-5 rounded-[24px] border border-slate-100 bg-slate-50 p-4">
+                    <div className="mt-5 rounded-[24px] border border-[#d6e1ee] bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between gap-3">
                             <button
                                 type="button"
@@ -301,7 +300,7 @@ export default function ImageAdjustModal({
                                 step={0.01}
                                 value={zoom}
                                 onChange={(event) => updateZoom(Number(event.target.value))}
-                                className="h-1 flex-1 accent-rose-500"
+                                className="h-1 flex-1 accent-[#155aa6]"
                             />
                             <button
                                 type="button"
@@ -329,22 +328,23 @@ export default function ImageAdjustModal({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 border-t border-slate-100 bg-white p-4">
+                <div className="grid grid-cols-2 gap-4 bg-[#f9fafc] px-5 py-5">
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50"
+                        className="inline-flex items-center justify-center rounded-full bg-[#e7eaf0] px-4 py-3 text-sm font-bold text-slate-500 shadow-[0_5px_10px_rgba(15,23,42,0.16)] transition hover:bg-slate-200"
                     >
-                        انصراف
+                        لغو کردن
                     </button>
-                    <PrimaryButton
+                    <button
                         type="button"
                         onClick={handleConfirm}
                         disabled={isSaving || !imageSize.width}
-                        leadingIcon={isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#155aa6] px-4 py-3 text-sm font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.32)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                     >
+                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         تایید تصویر
-                    </PrimaryButton>
+                    </button>
                 </div>
             </div>
         </div>

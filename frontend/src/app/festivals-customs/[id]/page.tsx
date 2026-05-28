@@ -8,7 +8,7 @@ export default function FestivalsCustomsDetailPage() {
             eyebrow="آیین‌ها و جشن‌ها"
             countKeys={["lesson_count"]}
             countLabel="درس"
-            accentClass="bg-fuchsia-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

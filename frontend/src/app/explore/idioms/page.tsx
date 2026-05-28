@@ -7,7 +7,7 @@ export default function IdiomsExplorePage() {
             subcategorySlug="idioms"
             detailPath="/idioms"
             layout="list"
-            accentClass="bg-rose-500"
+            accentClass="bg-blue-700"
         />
     );
 }

@@ -1,7 +1,8 @@
 from typing import Any
+import re
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
@@ -19,6 +20,14 @@ router = APIRouter()
 
 class ReferralApplyRequest(BaseModel):
     code: str = Field(min_length=4, max_length=32)
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, value: str) -> str:
+        normalized = normalize_referral_code(value)
+        if not re.fullmatch(r"[A-Z0-9]{4,32}", normalized):
+            raise ValueError("Referral code is invalid")
+        return normalized
 
 
 @router.get("/me")

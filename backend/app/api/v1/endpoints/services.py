@@ -13,7 +13,7 @@ from app.core.uploads import save_image_upload
 from app.models.user import User
 from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
-from app.schemas.service import Service
+from app.schemas.service import Service, ServiceWithProvider
 from app.services.notifications import notify_followers
 
 router = APIRouter()
@@ -158,7 +158,7 @@ async def delete_service(
 
 # ===== PUBLIC ENDPOINTS =====
 
-@router.get("/public", response_model=List[dict])
+@router.get("/public", response_model=List[ServiceWithProvider])
 async def get_public_services(
     db: AsyncSession = Depends(deps.get_db),
     pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
@@ -178,8 +178,8 @@ async def get_public_services(
         .limit(pagination.limit)
     )
     services = result.scalars().all()
+    like_counts = await _service_likes_counts(db, [service.id for service in services])
     
-    # Build response with provider info
     public_services = []
     for service in services:
         provider_info = None

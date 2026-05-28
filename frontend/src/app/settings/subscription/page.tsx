@@ -1,24 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
     AlertCircle,
-    ArrowRight,
     Check,
     ChevronLeft,
-    Crown,
     CreditCard,
     Loader2,
     ShieldCheck,
     Sparkles,
-    Star,
-    Zap,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
+import { AppHeader } from "@/components/ui/IconButton";
 import { cn } from "@/lib/cn";
 import {
     SubscriptionCheckout,
@@ -82,7 +78,7 @@ export default function SubscriptionSettingsPage() {
         return (
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fb]" dir="rtl">
                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
-                    <Loader2 className="h-5 w-5 animate-spin text-rose-500" />
+                    <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
                     <span>در حال آماده سازی اشتراک...</span>
                 </div>
             </div>
@@ -104,70 +100,34 @@ export default function SubscriptionSettingsPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
-            <header className="sticky top-3 z-40 mb-5 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                <Link
-                    href="/settings"
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl text-slate-600 transition hover:bg-slate-100"
-                    aria-label="بازگشت"
-                >
-                    <ArrowRight size={22} />
-                </Link>
-                <div className="text-center">
-                    <h1 className="text-base font-black text-slate-950">مدیریت اشتراک</h1>
-                    <p className="mt-0.5 text-[11px] font-semibold text-slate-400">پلن یادگیری و پرداخت</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-rose-50 text-amber-600">
-                    <Crown size={22} />
-                </div>
-            </header>
+            <AppHeader
+                title="مدیریت اشتراک"
+                backHref="/settings"
+                iconClassName="bg-transparent shadow-none ring-0"
+                icon={<Image src="/assets/chinverse/icons/Membership.svg" alt="" width={31} height={31} className="h-8 w-8 object-contain" />}
+            />
 
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-                <section className="overflow-hidden rounded-[34px] border border-slate-900 bg-slate-950 text-white shadow-[0_26px_80px_rgba(15,23,42,0.22)]">
-                    <div className="relative p-5">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(251,191,36,0.38),transparent_34%),radial-gradient(circle_at_90%_18%,rgba(244,63,94,0.28),transparent_36%),linear-gradient(135deg,#111827_0%,#7f1d1d_55%,#f97316_135%)]" />
-                        <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-amber-300/20 blur-3xl" />
-                        <div className="relative">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
-                                    <p className="text-xs font-black text-amber-100">Chinverse VIP</p>
-                                    <h2 className="mt-2 text-2xl font-black tracking-tight">یادگیری پیوسته، بدون محدودیت</h2>
-                                    <p className="mt-3 text-sm leading-7 text-white/75">
-                                        اشتراک را برای دسترسی کامل به مسیرهای آموزشی، تمرین ها و امکانات ویژه آماده کردیم. پرداخت واقعی بعدا به همین بخش وصل می شود.
-                                    </p>
-                                </div>
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[24px] border border-white/15 bg-white/[0.12] shadow-inner">
-                                    <Crown size={30} />
-                                </div>
+                {overview.current_subscription ? (
+                    <section className="rounded-[24px] border border-emerald-100 bg-emerald-50 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+                        <div className="mt-4 rounded-[20px] border border-emerald-100 bg-emerald-50 p-4">
+                            <div className="flex items-center gap-2 text-emerald-700">
+                                <ShieldCheck size={18} />
+                                <p className="text-sm font-black">اشتراک فعال داری</p>
                             </div>
-
-                            {overview.current_subscription ? (
-                                <div className="mt-5 rounded-[26px] border border-emerald-300/30 bg-emerald-400/15 p-4">
-                                    <div className="flex items-center gap-2 text-emerald-100">
-                                        <ShieldCheck size={18} />
-                                        <p className="text-sm font-black">اشتراک فعال داری</p>
-                                    </div>
-                                    <p className="mt-2 text-xs leading-6 text-white/75">
-                                        {overview.current_subscription.plan_name} تا {formatDate(overview.current_subscription.end_date)} فعال است.
-                                        {overview.current_subscription.days_remaining > 0
-                                            ? ` ${toPersianDigits(overview.current_subscription.days_remaining)} روز باقی مانده.`
-                                            : ""}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="mt-5 grid grid-cols-3 gap-2">
-                                    <MiniStat icon={<Zap size={15} />} label="تمرین" value="روزانه" />
-                                    <MiniStat icon={<Star size={15} />} label="محتوا" value="کامل" />
-                                    <MiniStat icon={<ShieldCheck size={15} />} label="پرداخت" value="آماده" />
-                                </div>
-                            )}
+                            <p className="mt-2 text-xs leading-6 text-emerald-700">
+                                {overview.current_subscription.plan_name} تا {formatDate(overview.current_subscription.end_date)} فعال است.
+                                {overview.current_subscription.days_remaining > 0
+                                    ? ` ${toPersianDigits(overview.current_subscription.days_remaining)} روز باقی مانده.`
+                                    : ""}
+                            </p>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                ) : null}
 
-                <Surface className="overflow-hidden border-white bg-white/95 p-0 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-                    <div className="border-b border-slate-100 px-5 py-4">
-                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-rose-500">Plans</p>
-                        <h2 className="mt-1 text-base font-black text-slate-950">پلن مورد نظرت را انتخاب کن</h2>
+                <Surface className="overflow-hidden border-[#155aa6] bg-[#eef0f4] p-0 shadow-[0_18px_48px_rgba(21,90,166,0.08)]">
+                    <div className="border-b border-[#155aa6]/20 px-5 py-5 text-center">
+                        <h2 className="text-[24px] font-black text-[#155aa6]">انواع اشتراک</h2>
                     </div>
                     <div className="space-y-3 p-4">
                         {overview.plans.map((plan) => (
@@ -182,7 +142,7 @@ export default function SubscriptionSettingsPage() {
                     </div>
                 </Surface>
 
-                <Surface className="p-5">
+                <Surface className="border-[#155aa6]/25 bg-[#eef0f4] p-5">
                     <div className="flex items-start gap-3">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] bg-amber-50 text-amber-600">
                             <Sparkles size={21} />
@@ -192,7 +152,7 @@ export default function SubscriptionSettingsPage() {
                             <div className="mt-3 space-y-2">
                                 {overview.features.map((feature) => (
                                     <div key={feature} className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2">
-                                        <Check className="mt-1 h-4 w-4 shrink-0 text-rose-500" />
+                                        <Check className="mt-1 h-4 w-4 shrink-0 text-[#e88462]" />
                                         <p className="text-xs leading-6 text-slate-600">{feature}</p>
                                     </div>
                                 ))}
@@ -255,18 +215,6 @@ export default function SubscriptionSettingsPage() {
     );
 }
 
-function MiniStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-    return (
-        <div className="rounded-[20px] border border-white/15 bg-white/[0.10] px-3 py-3 text-center">
-            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-2xl bg-white/15 text-amber-100">
-                {icon}
-            </div>
-            <p className="mt-2 text-[10px] font-bold text-white/55">{label}</p>
-            <p className="mt-0.5 text-xs font-black text-white">{value}</p>
-        </div>
-    );
-}
-
 function PlanCard({
     plan,
     selected,
@@ -285,14 +233,14 @@ function PlanCard({
             className={cn(
                 "w-full rounded-[26px] border p-4 text-right transition",
                 selected
-                    ? "border-rose-300 bg-rose-50 shadow-[0_16px_36px_rgba(244,63,94,0.14)]"
+                    ? "border-[#155aa6] bg-white shadow-[0_12px_26px_rgba(21,90,166,0.12)] ring-2 ring-[#e88462]/25"
                     : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50",
             )}
         >
             <div className="flex items-start gap-3">
                 <div className={cn(
                     "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
-                    selected ? "border-rose-500 bg-rose-500 text-white" : "border-slate-200 bg-white text-transparent",
+                    selected ? "border-[#155aa6] bg-[#155aa6] text-white" : "border-slate-200 bg-white text-transparent",
                 )}>
                     <Check size={14} />
                 </div>
@@ -302,7 +250,7 @@ function PlanCard({
                         {plan.badge && (
                             <span className={cn(
                                 "rounded-full px-2.5 py-1 text-[10px] font-black",
-                                plan.is_recommended ? "bg-amber-100 text-amber-700" : "bg-blue-50 text-blue-700",
+                                plan.is_recommended ? "bg-[#e88462] text-white" : "bg-blue-50 text-blue-700",
                             )}>
                                 {plan.badge}
                             </span>
@@ -314,10 +262,10 @@ function PlanCard({
                         )}
                     </div>
                     <p className="mt-1 text-xs font-bold text-slate-500">
-                        هر ماه حدود {formatPrice(plan.price_per_month)} تومان
+                        هر ماه {formatPrice(plan.price_per_month)} تومان
                     </p>
                     {plan.savings_percent > 0 && (
-                        <p className="mt-2 text-xs font-black text-rose-600">
+                        <p className="mt-2 text-xs font-black text-[#155aa6]">
                             {toPersianDigits(plan.savings_percent)}٪ صرفه جویی نسبت به پرداخت ماهانه
                         </p>
                     )}

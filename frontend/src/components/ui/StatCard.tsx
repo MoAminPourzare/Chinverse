@@ -16,7 +16,7 @@ export default function StatCard({
     value,
     helper,
     icon,
-    accent = "from-rose-500 to-orange-500",
+    accent = "from-[#155aa6] to-[#50bca4]",
     className,
     inverted = false,
 }: StatCardProps) {

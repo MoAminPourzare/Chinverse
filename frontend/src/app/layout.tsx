@@ -3,8 +3,8 @@ import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "ChinVerse",
-  description: "A premium Chinese learning app for Persian speakers",
+  title: "چین‌ورس",
+  description: "اپلیکیشن آموزش زبان چینی برای فارسی‌زبان‌ها",
 };
 
 export const viewport: Viewport = {

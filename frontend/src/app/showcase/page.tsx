@@ -5,28 +5,27 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
     BriefcaseBusiness,
-    GraduationCap,
     ImageIcon,
     MapPin,
     MessageCircle,
     Search,
-    Sparkles,
+    SlidersHorizontal,
     User as UserIcon,
     Users,
+    X,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
-import PrimaryButton from "@/components/ui/PrimaryButton";
-import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { PROFILE_HEADLINE_OPTIONS } from "@/profileOptions";
 import { ServiceWithProvider, ShowcaseUser, userService } from "@/services/user.service";
 
 type TabType = "talents" | "services";
 
-const tabs: Array<{ id: TabType; label: string; helper: string }> = [
-    { id: "talents", label: "ویترین استعدادها", helper: "زبان‌آموزها و متخصص‌ها" },
-    { id: "services", label: "ویترین خدمات", helper: "مشاوره، آموزش و همکاری" },
+const tabs: Array<{ id: TabType; label: string }> = [
+    { id: "talents", label: "ویترین استعدادها" },
+    { id: "services", label: "ویترین خدمات" },
 ];
 
 export default function ShowcasePage() {
@@ -35,6 +34,9 @@ export default function ShowcasePage() {
     const [services, setServices] = useState<ServiceWithProvider[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [selectedHeadline, setSelectedHeadline] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -58,9 +60,13 @@ export default function ShowcasePage() {
 
     const filteredUsers = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
-        if (!query) return users;
-        return users.filter((user) =>
-            [
+
+        return users.filter((user) => {
+            const matchesHeadline = !selectedHeadline || user.headline?.trim() === selectedHeadline;
+            if (!matchesHeadline) return false;
+            if (!query) return true;
+
+            return [
                 user.display_name,
                 user.headline,
                 user.city,
@@ -70,13 +76,14 @@ export default function ShowcasePage() {
                 user.education?.field,
             ]
                 .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(query)),
-        );
-    }, [searchQuery, users]);
+                .some((value) => String(value).toLowerCase().includes(query));
+        });
+    }, [searchQuery, selectedHeadline, users]);
 
     const filteredServices = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         if (!query) return services;
+
         return services.filter((service) =>
             [
                 service.title,
@@ -89,280 +96,293 @@ export default function ShowcasePage() {
         );
     }, [searchQuery, services]);
 
+    const searchPlaceholder = activeTab === "talents" ? "جستجو بین استعدادها..." : "جستجو بین خدمات...";
+
     return (
-        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
-            <main className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#334155_100%)] text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
-                    <div className="relative p-5 sm:p-7">
-                        <div className="absolute -left-10 -top-16 h-44 w-44 rounded-full bg-rose-500/30 blur-3xl" />
-                        <div className="absolute -bottom-20 right-16 h-52 w-52 rounded-full bg-emerald-400/18 blur-3xl" />
-                        <div className="absolute left-20 bottom-0 h-32 w-32 rounded-full bg-amber-300/15 blur-3xl" />
-                        <div className="relative grid gap-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
-                            <div>
-                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/85">
-                                    <Sparkles size={15} />
-                                    جامعه چین‌ورس
-                                </div>
-                                <h1 className="text-2xl font-black tracking-tight sm:text-4xl">
-                                    ویترین زبان‌آموزها و خدمات چینی
-                                </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/74">
-                                    پروفایل‌ها، نمونه‌کارها و خدمات مرتبط با زبان و فرهنگ چینی اینجا کنار هم دیده می‌شوند.
-                                </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <MiniMetric label="استعدادها" value={users.length || "—"} />
-                                <MiniMetric label="خدمات" value={services.length || "—"} tone="gold" />
-                            </div>
-                        </div>
-                    </div>
-                </Surface>
+        <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-6" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col">
+                <header className="flex items-center gap-4">
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchOpen((value) => !value)}
+                        className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full bg-[#e2e5eb] text-slate-700 transition hover:bg-[#dbe3ee] focus:outline-none focus:ring-4 focus:ring-[#155aa6]/15"
+                        aria-label="جستجو"
+                    >
+                        {isSearchOpen ? <X size={22} /> : <Search size={23} />}
+                    </button>
 
-                <Surface className="p-3">
-                    <div className="grid gap-3 lg:grid-cols-[1fr_340px]">
-                        <div className="grid grid-cols-2 gap-2">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setActiveTab(tab.id)}
+                    {activeTab === "talents" && (
+                        <button
+                            type="button"
+                            onClick={() => setIsFilterOpen((value) => !value)}
+                            className={cn(
+                                "relative flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-[#155aa6]/15",
+                                isFilterOpen || selectedHeadline
+                                    ? "bg-[#155aa6] text-white shadow-[0_10px_22px_rgba(21,90,166,0.24)]"
+                                    : "bg-[#e2e5eb] text-slate-700 hover:bg-[#dbe3ee]",
+                            )}
+                            aria-label="فیلتر شغل"
+                        >
+                            <SlidersHorizontal size={22} />
+                            {selectedHeadline && (
+                                <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#ffb74d]" />
+                            )}
+                        </button>
+                    )}
+
+                    <div className="grid min-w-0 flex-1 grid-cols-2 items-end gap-3">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    setSearchQuery("");
+                                    setSelectedHeadline("");
+                                    setIsFilterOpen(false);
+                                }}
+                                className={cn(
+                                    "relative h-[54px] px-1 text-center text-[15px] font-black transition focus:outline-none",
+                                    activeTab === tab.id ? "text-[#155aa6]" : "text-[#2f3238]",
+                                )}
+                            >
+                                <span className="block truncate">{tab.label}</span>
+                                <span
                                     className={cn(
-                                        "rounded-[22px] px-4 py-3 text-right transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400",
-                                        activeTab === tab.id
-                                            ? "bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-[0_14px_30px_rgba(244,63,94,0.22)]"
-                                            : "bg-white/70 text-slate-500 hover:bg-white hover:text-slate-800",
+                                        "absolute bottom-1 left-2 right-2 h-[2px] rounded-full transition",
+                                        activeTab === tab.id ? "bg-[#155aa6] shadow-[0_4px_8px_rgba(21,90,166,0.25)]" : "bg-transparent",
                                     )}
-                                >
-                                    <span className="block text-sm font-bold">{tab.label}</span>
-                                    <span className={cn("mt-1 block text-[11px]", activeTab === tab.id ? "text-white/75" : "text-slate-400")}>
-                                        {tab.helper}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <Search className="h-5 w-5 text-slate-400" />
-                            <input
-                                type="search"
-                                value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                placeholder={activeTab === "talents" ? "جست‌وجو بین استعدادها..." : "جست‌وجو بین خدمات..."}
-                                className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                            />
-                        </div>
+                                />
+                            </button>
+                        ))}
                     </div>
-                </Surface>
+                </header>
 
-                {loading ? (
-                    <ShowcaseSkeleton activeTab={activeTab} />
-                ) : activeTab === "talents" ? (
-                    filteredUsers.length > 0 ? (
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {filteredUsers.map((user) => (
-                                <TalentCard key={user.id} user={user} />
+                {isSearchOpen && (
+                    <label className="mt-4 flex h-12 items-center gap-3 rounded-full border border-[#d5e1ef] bg-white px-4 shadow-sm focus-within:border-[#155aa6] focus-within:ring-4 focus-within:ring-[#155aa6]/10">
+                        <Search size={18} className="text-slate-400" />
+                        <input
+                            type="search"
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            placeholder={searchPlaceholder}
+                            className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                        />
+                    </label>
+                )}
+
+                {activeTab === "talents" && isFilterOpen && (
+                    <div className="mt-3 rounded-[24px] border border-[#d5e1ef] bg-white p-3 shadow-[0_12px_26px_rgba(15,23,42,0.06)]">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-sm font-black text-slate-950">فیلتر شغل</h2>
+                                <p className="mt-0.5 text-[11px] font-semibold text-slate-400">نمایش افراد بر اساس عنوان شغلی</p>
+                            </div>
+                            {selectedHeadline && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedHeadline("")}
+                                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-black text-slate-500 transition hover:bg-slate-200"
+                                >
+                                    پاک کردن
+                                </button>
+                            )}
+                        </div>
+                        <select
+                            value={selectedHeadline}
+                            onChange={(event) => setSelectedHeadline(event.target.value)}
+                            className="w-full appearance-none rounded-2xl border border-slate-200 bg-[#f8fbff] px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                        >
+                            <option value="">همه شغل‌ها</option>
+                            {PROFILE_HEADLINE_OPTIONS.map((headline) => (
+                                <option key={headline} value={headline}>
+                                    {headline}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <section className="mt-5">
+                    {loading ? (
+                        <ShowcaseSkeleton activeTab={activeTab} />
+                    ) : activeTab === "talents" ? (
+                        filteredUsers.length > 0 ? (
+                            <div className="space-y-4">
+                                {filteredUsers.map((user) => (
+                                    <TalentCard key={user.id} user={user} />
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyState
+                                icon={<Users size={30} />}
+                                title="هنوز کاربری برای نمایش وجود ندارد"
+                                description="وقتی کاربران پروفایل، رزومه یا گالری خود را کامل کنند، اینجا نمایش داده می‌شوند."
+                            />
+                        )
+                    ) : filteredServices.length > 0 ? (
+                        <div className="space-y-4">
+                            {filteredServices.map((service) => (
+                                <ServiceCard key={service.id} service={service} />
                             ))}
                         </div>
                     ) : (
                         <EmptyState
-                            icon={<Users size={30} />}
-                            title="هنوز کاربری برای نمایش وجود ندارد"
-                            description="وقتی کاربرها پروفایل، رزومه یا گالری خود را کامل کنند، اینجا نمایش داده می‌شوند."
+                            icon={<BriefcaseBusiness size={30} />}
+                            title="هنوز خدمتی ثبت نشده است"
+                            description="خدمات عمومی کاربران بعد از ثبت شدن در پروفایل، در این بخش نمایش داده می‌شوند."
                         />
-                    )
-                ) : filteredServices.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {filteredServices.map((service) => (
-                            <ServiceCard key={service.id} service={service} />
-                        ))}
-                    </div>
-                ) : (
-                    <EmptyState
-                        icon={<BriefcaseBusiness size={30} />}
-                        title="هنوز خدمتی ثبت نشده است"
-                        description="خدمات عمومی کاربران بعد از ثبت شدن در پروفایل، در این بخش نمایش داده می‌شوند."
-                    />
-                )}
+                    )}
+                </section>
             </main>
         </div>
     );
 }
 
-function MiniMetric({ label, value, tone = "rose" }: { label: string; value: number | string; tone?: "rose" | "gold" }) {
-    return (
-        <div className="rounded-[22px] border border-white/10 bg-white/10 p-4 backdrop-blur">
-            <p className="text-[11px] font-semibold text-white/60">{label}</p>
-            <p className={cn("mt-2 text-2xl font-black", tone === "gold" ? "text-amber-200" : "text-rose-100")}>{value}</p>
-        </div>
-    );
-}
-
-interface TalentCardProps {
-    user: ShowcaseUser;
-}
-
-function TalentCard({ user }: TalentCardProps) {
-    const galleryImages = user.gallery_preview.slice(0, 3);
+function TalentCard({ user }: { user: ShowcaseUser }) {
+    const galleryImages = user.gallery_preview.slice(0, 4);
+    const location = [user.city, user.country].filter(Boolean).join("، ");
+    const education = [user.education?.university, user.education?.field].filter(Boolean).join(" - ");
 
     return (
-        <Surface as="article" className="group p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
-            <div className="flex items-start gap-4">
-                <Avatar src={user.avatar_url} name={user.display_name} size="lg" />
+        <Link
+            href={`/users/${user.id}`}
+            className="block rounded-[10px] bg-[#e2e5eb] p-3 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:bg-[#dbe3ee]"
+        >
+            <article className="grid grid-cols-[112px_1fr] gap-3" dir="ltr">
+                <GalleryMosaic images={galleryImages} />
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 text-right" dir="rtl">
                     <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                            <h3 className="truncate text-lg font-black tracking-tight text-slate-950">
+                        <Avatar src={user.avatar_url} name={user.display_name} />
+                        <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-[13px] font-black leading-6 text-slate-950">
                                 {user.display_name || "کاربر چین‌ورس"}
                             </h3>
-                            <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-rose-600">
+                            <p className="line-clamp-2 text-[11px] font-bold leading-5 text-slate-700">
                                 {user.headline || "زبان‌آموز یا متخصص زبان چینی"}
                             </p>
                         </div>
-                        {user.hsk_level && (
-                            <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
-                                {user.hsk_level}
-                            </span>
+                    </div>
+
+                    <div className="mt-2 space-y-1 text-[10px] font-medium leading-5 text-slate-500">
+                        {location && (
+                            <p className="flex items-center justify-end gap-1">
+                                <span className="truncate">{location}</span>
+                                <MapPin size={11} className="shrink-0 text-[#155aa6]" />
+                            </p>
                         )}
+                        {education && (
+                            <p className="line-clamp-2">
+                                فارغ التحصیل از {education}
+                            </p>
+                        )}
+                        {user.hsk_level && <p>دارای مدرک {user.hsk_level}</p>}
                     </div>
                 </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-                {(user.city || user.country) && (
-                    <div className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5">
-                        <MapPin size={13} className="shrink-0 text-slate-400" />
-                        <span className="truncate">{[user.city, user.country].filter(Boolean).join("، ")}</span>
-                    </div>
-                )}
-                {user.education?.university && (
-                    <div className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5">
-                        <GraduationCap size={13} className="shrink-0 text-slate-400" />
-                        <span className="truncate">{user.education.university}</span>
-                    </div>
-                )}
-            </div>
-
-            {galleryImages.length > 0 && (
-                <div className="mt-4 rounded-[24px] bg-slate-50 p-2">
-                    <div className="grid grid-cols-3 gap-1.5">
-                        {galleryImages.map((image, index) => (
-                            <GalleryPreview key={`${image}-${index}`} image={image} />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            <Link
-                href={`/users/${user.id}`}
-                className="mt-4 flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-            >
-                مشاهده پروفایل
-            </Link>
-        </Surface>
+            </article>
+        </Link>
     );
 }
 
-function GalleryPreview({ image }: { image: string }) {
+function GalleryMosaic({ images }: { images: string[] }) {
+    if (images.length === 0) {
+        return (
+            <div className="grid h-[112px] w-[112px] grid-cols-2 gap-1.5">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="rounded-[10px] bg-slate-300/70" />
+                ))}
+            </div>
+        );
+    }
+
     return (
-        <div className="relative aspect-[4/3] overflow-hidden rounded-[18px] bg-slate-100">
-            <Image
-                src={getMediaUrl(image)}
-                alt="نمونه گالری"
-                fill
-                className="object-cover"
-                sizes="120px"
-                unoptimized
-            />
+        <div className="grid h-[112px] w-[112px] grid-cols-2 gap-1.5">
+            {Array.from({ length: 4 }).map((_, index) => {
+                const image = images[index];
+                return (
+                    <div key={`${image || "empty"}-${index}`} className="relative overflow-hidden rounded-[10px] bg-slate-300">
+                        {image ? (
+                            <Image
+                                src={getMediaUrl(image)}
+                                alt="نمونه گالری"
+                                fill
+                                className="object-cover"
+                                sizes="56px"
+                                unoptimized
+                            />
+                        ) : null}
+                    </div>
+                );
+            })}
         </div>
     );
 }
 
-interface ServiceCardProps {
-    service: ServiceWithProvider;
-}
-
-function ServiceCard({ service }: ServiceCardProps) {
+function ServiceCard({ service }: { service: ServiceWithProvider }) {
     return (
-        <Surface as="article" className="group flex h-full flex-col overflow-hidden transition duration-200 hover:-translate-y-0.5">
-            <Link href={`/services/${service.id}`} className="block">
-                <div className="relative h-44 bg-gradient-to-br from-slate-100 to-rose-50">
+        <article className="rounded-[10px] bg-[#e2e5eb] p-3 shadow-[0_8px_18px_rgba(15,23,42,0.10)]">
+            <div className="grid grid-cols-[128px_1fr] gap-3" dir="ltr">
+                <Link href={`/services/${service.id}`} className="relative h-[112px] overflow-hidden rounded-[10px] bg-slate-200">
                     {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
                             alt={service.title}
                             fill
-                            className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                            sizes="430px"
+                            className="object-cover"
+                            sizes="128px"
                             unoptimized
                         />
                     ) : (
-                        <div className="flex h-full items-center justify-center text-rose-300">
-                            <ImageIcon size={44} />
+                        <div className="flex h-full items-center justify-center text-[#155aa6]/35">
+                            <ImageIcon size={34} />
                         </div>
                     )}
-                </div>
-            </Link>
-
-            <div className="flex flex-1 flex-col p-4">
-                <Link href={`/services/${service.id}`} className="block">
-                    <h3 className="text-lg font-black leading-8 tracking-tight text-slate-950">{service.title}</h3>
                 </Link>
-                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
-                    {service.description}
-                </p>
 
-                {service.provider && (
-                    <div className="mt-5 flex items-center gap-3 rounded-[20px] bg-slate-50 p-3">
-                        <Avatar src={service.provider.avatar_url} name={service.provider.display_name} size="sm" />
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold text-slate-800">
-                                {service.provider.display_name || "کاربر چین‌ورس"}
-                            </p>
-                            {service.provider.headline && (
-                                <p className="mt-0.5 truncate text-xs text-slate-500">{service.provider.headline}</p>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                <div className="mt-5 flex items-center justify-between gap-2">
-                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                    <PrimaryButton href={`/services/${service.id}`} variant="ghost" className="w-full">
-                        جزئیات
-                    </PrimaryButton>
-                    <PrimaryButton
-                        href={`/chat/${service.provider?.id || 0}`}
-                        className="w-full"
-                        leadingIcon={<MessageCircle size={18} />}
-                    >
-                        مشاوره
-                    </PrimaryButton>
+                <div className="min-w-0 text-right" dir="rtl">
+                    <Link href={`/services/${service.id}`}>
+                        <h3 className="line-clamp-2 text-[13px] font-black leading-6 text-slate-950">{service.title}</h3>
+                    </Link>
+                    <p className="mt-1 line-clamp-4 text-[10px] font-medium leading-5 text-slate-700">
+                        {service.description}
+                    </p>
+                    <Link href={`/services/${service.id}`} className="text-[10px] font-black text-[#155aa6]">
+                        بیشتر
+                    </Link>
                 </div>
             </div>
-        </Surface>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+                <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                {service.provider?.id ? (
+                    <Link
+                        href={`/chat/${service.provider.id}`}
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[8px] bg-[#155aa6] px-4 text-xs font-black text-white shadow-[0_6px_12px_rgba(21,90,166,0.25)] transition hover:bg-[#0f4e92]"
+                    >
+                        <MessageCircle size={15} />
+                        درخواست مشاوره
+                    </Link>
+                ) : null}
+            </div>
+        </article>
     );
 }
 
-function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string | null; size?: "sm" | "md" | "lg" }) {
-    const sizeClass = size === "lg" ? "h-20 w-20 rounded-[26px]" : size === "sm" ? "h-11 w-11" : "h-12 w-12";
-    const iconSize = size === "lg" ? 30 : size === "sm" ? 18 : 21;
-
+function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
     return (
-        <div className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-slate-100 shadow-[0_16px_34px_rgba(15,23,42,0.14)]", sizeClass)}>
+        <div className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#155aa6] bg-white shadow-sm">
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
                     alt={name || "کاربر"}
                     fill
                     className="object-cover"
-                    sizes={size === "lg" ? "80px" : "48px"}
+                    sizes="52px"
                     unoptimized
                 />
             ) : (
-                <UserIcon size={iconSize} className="text-slate-400" />
+                <UserIcon size={22} className="text-slate-400" />
             )}
         </div>
     );
@@ -370,11 +390,9 @@ function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string
 
 function ShowcaseSkeleton({ activeTab }: { activeTab: TabType }) {
     return (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: activeTab === "talents" ? 6 : 3 }).map((_, index) => (
-                <Surface key={index} className="h-64 animate-pulse p-4">
-                    <div className="h-full rounded-[22px] bg-slate-100" />
-                </Surface>
+        <div className="space-y-4">
+            {Array.from({ length: activeTab === "talents" ? 5 : 3 }).map((_, index) => (
+                <div key={index} className="h-[138px] animate-pulse rounded-[10px] bg-[#e2e5eb]" />
             ))}
         </div>
     );

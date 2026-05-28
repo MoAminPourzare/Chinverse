@@ -8,7 +8,7 @@ export default function HistoricalStoriesExplorePage() {
             detailPath="/historical-stories"
             layout="list"
             countLabel="درس"
-            accentClass="bg-stone-600"
+            accentClass="bg-blue-700"
         />
     );
 }

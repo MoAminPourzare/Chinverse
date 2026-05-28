@@ -8,7 +8,7 @@ export default function ArtsCookingExplorePage() {
             detailPath="/arts-cooking"
             layout="list"
             countLabel="درس"
-            accentClass="bg-orange-600"
+            accentClass="bg-blue-700"
         />
     );
 }

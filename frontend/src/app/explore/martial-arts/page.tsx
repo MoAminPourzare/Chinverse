@@ -8,7 +8,7 @@ export default function MartialArtsExplorePage() {
             detailPath="/martial-arts"
             layout="list"
             countLabel="درس"
-            accentClass="bg-red-600"
+            accentClass="bg-blue-700"
         />
     );
 }

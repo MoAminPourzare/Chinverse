@@ -1,20 +1,21 @@
-﻿'use client';
+'use client';
 
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, MapPin, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, PlayCircle, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
-import { getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount, unsaveCourse } from "@/lib/courses";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
+import { validateImageFile } from "@/validation";
 
 const EditAboutMeModal = dynamic(() => import("@/components/profile/EditAboutMeModal"), {
     ssr: false,
@@ -32,28 +33,86 @@ interface Tab {
 
 const tabs: Tab[] = [
     { id: "about", label: "درباره من", helper: "معرفی", icon: UserIcon },
+    { id: "collections", label: "مجموعه‌های منتخب", helper: "آرشیو", icon: Globe },
     { id: "resume", label: "رزومه", helper: "سوابق", icon: FileText },
     { id: "gallery", label: "گالری", helper: "تصاویر", icon: ImageIcon },
     { id: "services", label: "خدمات", helper: "همکاری", icon: Briefcase },
-    { id: "collections", label: "منتخب", helper: "آرشیو", icon: Globe },
 ];
+
+const profileAssets = {
+    logo: "/assets/chinverse/logos/chinverse-logo.png",
+    about: "/assets/chinverse/icons/about-me.svg",
+    resume: "/assets/chinverse/icons/cv-light.svg",
+    gallery: "/assets/chinverse/icons/photo.svg",
+    services: "/assets/chinverse/icons/services.svg",
+    collections: "/assets/chinverse/icons/pin.svg",
+    location: "/assets/chinverse/icons/location.svg",
+    people: "/assets/chinverse/icons/people.svg",
+};
 
 export default function ProfilePage() {
     const router = useRouter();
     const avatarInputRef = useRef<HTMLInputElement>(null);
+    const tabScrollRef = useRef<HTMLDivElement>(null);
+    const tabDragRef = useRef({ isDragging: false, startX: 0, startScrollLeft: 0 });
     const [activeTab, setActiveTab] = useState<string>(tabs[0].id);
     const [user, setUser] = useState<User | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+    const [resumeEditSection, setResumeEditSection] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+    const [avatarError, setAvatarError] = useState("");
     const [followersCount, setFollowersCount] = useState<number>(0);
-    const [followingCount, setFollowingCount] = useState<number>(0);
+    const displayName = user?.profile?.display_name?.trim() || user?.email?.split("@")[0] || "کاربر";
+    const headline = user?.profile?.headline?.trim();
+    const locationParts = [user?.profile?.city?.trim(), user?.profile?.country?.trim()].filter(Boolean);
+
+    const openResumeEditor = (section?: string) => {
+        setResumeEditSection(section ?? null);
+        setIsResumeModalOpen(true);
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         router.push('/login');
+    };
+
+    const handleTabDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+        const container = tabScrollRef.current;
+        if (!container) return;
+        const target = event.target as HTMLElement;
+
+        if (target.closest("button")) return;
+
+        tabDragRef.current = {
+            isDragging: true,
+            startX: event.clientX,
+            startScrollLeft: container.scrollLeft,
+        };
+        container.setPointerCapture(event.pointerId);
+    };
+
+    const handleTabDragMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+        const container = tabScrollRef.current;
+        if (!container || !tabDragRef.current.isDragging) return;
+
+        const deltaX = event.clientX - tabDragRef.current.startX;
+        container.scrollLeft = tabDragRef.current.startScrollLeft - deltaX;
+    };
+
+    const handleTabDragEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+        tabDragRef.current.isDragging = false;
+        tabScrollRef.current?.releasePointerCapture(event.pointerId);
+    };
+
+    const scrollProfileTabs = (direction: "left" | "right") => {
+        const container = tabScrollRef.current;
+        if (!container) return;
+
+        const delta = direction === "left" ? -150 : 150;
+        container.scrollBy({ left: delta, behavior: "smooth" });
     };
 
     const handleDeleteAccount = async () => {
@@ -80,12 +139,8 @@ export default function ProfilePage() {
             setUser(data);
 
             // Fetch followers and following counts
-            const [followers, following] = await Promise.all([
-                userService.getMyFollowersCount(),
-                userService.getMyFollowingCount(),
-            ]);
+            const followers = await userService.getMyFollowersCount();
             setFollowersCount(followers);
-            setFollowingCount(following);
         } catch (error) {
             console.error("Failed to fetch user", error);
         }
@@ -101,16 +156,13 @@ export default function ProfilePage() {
 
         if (!file || isUploadingAvatar) return;
 
-        if (!file.type.startsWith("image/")) {
-            alert("لطفا یک فایل تصویری انتخاب کن.");
+        const validation = validateImageFile(file, { maxMb: 5 });
+        if (!validation.ok) {
+            setAvatarError(validation.message);
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            alert("حجم عکس نباید بیشتر از ۵ مگابایت باشد.");
-            return;
-        }
-
+        setAvatarError("");
         setPendingAvatarFile(file);
     };
 
@@ -122,7 +174,7 @@ export default function ProfilePage() {
             setUser(updatedUser);
         } catch (error) {
             console.error("Failed to upload avatar", error);
-            alert("آپلود عکس انجام نشد. لطفا دوباره امتحان کن.");
+            setAvatarError("آپلود عکس انجام نشد. لطفا دوباره امتحان کن.");
         } finally {
             setIsUploadingAvatar(false);
         }
@@ -137,23 +189,14 @@ export default function ProfilePage() {
 
             if (isEmpty) {
                 return (
-                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                        <div className="mb-6 relative">
-                            <PenLine className="w-24 h-24 text-rose-200" strokeWidth={1} />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-2">
-                            یه معرفی کوتاه درباره خودت بنویس!
-                        </h3>
-                        <p className="text-gray-500 text-sm max-w-xs mb-8 leading-relaxed">
-                            با نوشتن یک معرفی کوتاه، به بقیه نشون بده کی هستی و به چه حوزه‌هایی علاقه داری. میتونی لینک وبسایت یا شبکه‌هات رو هم اینجا بذاری.
-                        </p>
-                        <button
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-3 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
-                        >
-                            <PenLine className="w-6 h-6" />
-                        </button>
-                    </div>
+                    <ProfileEmptyState
+                        asset={profileAssets.about}
+                        title="یه معرفی کوتاه درباره خودت بنویس!"
+                        description="با نوشتن یک معرفی کوتاه، به بقیه نشون بده کی هستی و به چه حوزه‌هایی علاقه داری. میتونی لینک وبسایت یا شبکه‌هات رو هم اینجا بذاری."
+                        actionLabel="ویرایش درباره من"
+                        actionIcon={<PenLine className="h-5 w-5" />}
+                        onAction={() => setIsEditModalOpen(true)}
+                    />
                 );
             }
 
@@ -161,7 +204,7 @@ export default function ProfilePage() {
                 <div className="p-6 relative">
                     <button
                         onClick={() => setIsEditModalOpen(true)}
-                        className="absolute left-4 top-4 rounded-2xl p-2 text-rose-600 transition-colors hover:bg-rose-50"
+                        className="absolute left-4 top-4 rounded-2xl p-2 text-[#155aa6] transition-colors hover:bg-[#eef6ff]"
                     >
                         <PenLine className="w-5 h-5" />
                     </button>
@@ -183,7 +226,7 @@ export default function ProfilePage() {
                             </h3>
                             <div className="flex flex-col gap-2">
                                 {user?.profile?.websites?.map((url, idx) => (
-                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="dir-ltr truncate text-left text-sm text-rose-600 hover:underline">
+                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="dir-ltr truncate text-left text-sm text-[#155aa6] hover:underline">
                                         {url}
                                     </a>
                                 ))}
@@ -199,15 +242,17 @@ export default function ProfilePage() {
                                     const platform = getSocialPlatform(social.platform);
                                     const Icon = platform.icon;
                                     const href = getSocialProfileUrl(social.platform, social.handle);
+                                    const target = getSocialLinkTarget(social.platform);
+                                    const rel = getSocialLinkRel(social.platform);
                                     return (
                                         <a
                                             key={idx}
                                             href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
+                                            target={target}
+                                            rel={rel}
+                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]"
                                         >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm">
+                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-sm">
                                                 <Icon className="h-4 w-4" />
                                             </span>
                                             <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
@@ -228,109 +273,99 @@ export default function ProfilePage() {
 
             if (isEmpty) {
                 return (
-                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                        <div className="mb-6 relative">
-                            <FileText className="w-24 h-24 text-rose-200" strokeWidth={1} />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-2">
-                            رزومه ات رو ثبت کن!
-                        </h3>
-                        <p className="text-gray-500 text-sm max-w-xs mb-8 leading-relaxed">
-                            با افزودن مهارت‌ها، سوابق و مدارک، رزومه‌ات در بخش ویترین برای دیگران نمایش داده میشه و شانس همکاری یا پروژه بیشتر میشه.
-                        </p>
-                        <button
-                            onClick={() => setIsResumeModalOpen(true)}
-                            className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-3 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
-                        >
-                            <PenLine className="w-6 h-6" />
-                        </button>
-                    </div>
+                    <ProfileEmptyState
+                        asset={profileAssets.resume}
+                        title="رزومه‌ات رو ثبت کن!"
+                        description="با افزودن مهارت‌ها، سوابق و مدارک، رزومه‌ات در بخش ویترین برای دیگران نمایش داده میشه و شانس همکاری یا پروژه بیشتر میشه."
+                        actionLabel="ثبت رزومه"
+                        actionIcon={<PenLine className="h-5 w-5" />}
+                        onAction={() => openResumeEditor()}
+                    />
                 );
             }
 
+            const resumeSections = [
+                {
+                    id: "work",
+                    title: "سوابق کاری",
+                    icon: Briefcase,
+                    items: resume.work_experiences?.map((work) => ({
+                        title: work.job_title || work.company,
+                        subtitle: work.company,
+                        meta: formatResumeDateRange(work.start_date, work.end_date),
+                    })) || [],
+                },
+                {
+                    id: "education",
+                    title: "تحصیلات",
+                    icon: GraduationCap,
+                    items: resume.educations?.map((edu) => ({
+                        title: edu.university,
+                        subtitle: [edu.degree, edu.field].filter(Boolean).join("، "),
+                        meta: formatResumeDateRange(edu.start_date, edu.end_date),
+                    })) || [],
+                },
+                {
+                    id: "certificates",
+                    title: "گواهینامه‌ها",
+                    icon: FileText,
+                    items: resume.certificates?.map((certificate) => ({
+                        title: certificate.title,
+                        subtitle: certificate.issuer,
+                        meta: certificate.date,
+                    })) || [],
+                },
+                {
+                    id: "awards",
+                    title: "جوایز و تقدیرنامه‌ها",
+                    icon: Award,
+                    items: resume.awards?.map((award) => ({
+                        title: award.title,
+                        subtitle: award.issuer,
+                        meta: award.date,
+                    })) || [],
+                },
+                {
+                    id: "skills",
+                    title: "مهارت‌ها",
+                    icon: Wrench,
+                    items: resume.skills?.map((skill) => ({
+                        title: skill.name,
+                        subtitle: skill.level,
+                        meta: "",
+                    })) || [],
+                },
+                {
+                    id: "languages",
+                    title: "زبان‌ها",
+                    icon: Languages,
+                    items: resume.languages?.map((language) => ({
+                        title: language.name,
+                        subtitle: language.level,
+                        meta: "",
+                    })) || [],
+                },
+            ].filter((section) => section.items.length > 0);
+
             return (
-                <div className="p-6 relative space-y-8">
+                <div className="space-y-4 px-5 pb-6 pt-4">
+                    {resumeSections.map((section) => (
+                        <ResumePreviewCard
+                            key={section.id}
+                            title={section.title}
+                            icon={section.icon}
+                            items={section.items}
+                            onEdit={() => openResumeEditor(section.id)}
+                        />
+                    ))}
                     <button
-                        onClick={() => setIsResumeModalOpen(true)}
-                        className="absolute left-4 top-4 z-10 rounded-2xl p-2 text-rose-600 transition-colors hover:bg-rose-50"
+                        type="button"
+                        onClick={() => openResumeEditor()}
+                        className="mx-auto mt-5 flex items-center justify-center gap-2 rounded-full bg-[#155aa6] px-6 py-3 text-[13px] font-black text-white shadow-[0_10px_22px_rgba(21,90,166,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
                     >
-                        <PenLine className="w-5 h-5" />
+                        <PenLine className="h-4 w-4" />
+                        <span>ویرایش کامل رزومه</span>
                     </button>
-
-                    {/* Work Experience */}
-                    {resume.work_experiences?.length > 0 && (
-                        <div>
-                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Briefcase className="w-5 h-5 text-rose-600" />
-                                سوابق کاری
-                            </h3>
-                            <div className="space-y-4 border-r-2 border-gray-100 pr-4">
-                                {resume.work_experiences.map((work, idx) => (
-                                    <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
-                                        <h4 className="font-bold text-gray-800">{work.job_title}</h4>
-                                        <p className="text-sm text-gray-600">{work.company}</p>
-                                        <span className="text-xs text-gray-400 mt-1 block">{work.start_date} - {work.end_date}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Education */}
-                    {resume.educations?.length > 0 && (
-                        <div>
-                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <GraduationCap className="w-5 h-5 text-rose-600" />
-                                تحصیلات
-                            </h3>
-                            <div className="space-y-4 border-r-2 border-gray-100 pr-4">
-                                {resume.educations.map((edu, idx) => (
-                                    <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
-                                        <h4 className="font-bold text-gray-800">{edu.degree} - {edu.field}</h4>
-                                        <p className="text-sm text-gray-600">{edu.university}</p>
-                                        <span className="text-xs text-gray-400 mt-1 block">{edu.start_date} - {edu.end_date}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Skills */}
-                    {resume.skills?.length > 0 && (
-                        <div>
-                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Wrench className="w-5 h-5 text-rose-600" />
-                                مهارت‌ها
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {resume.skills.map((skill, idx) => (
-                                    <span key={idx} className="rounded-xl bg-rose-50 px-3 py-1 text-sm font-medium text-rose-700">
-                                        {skill.name} <span className="text-xs opacity-70">({skill.level})</span>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Languages */}
-                    {resume.languages?.length > 0 && (
-                        <div>
-                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Languages className="w-5 h-5 text-rose-600" />
-                                زبان‌ها
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {resume.languages.map((lang, idx) => (
-                                    <span key={idx} className="bg-green-50 text-green-700 px-3 py-1 rounded-lg text-sm font-medium">
-                                        {lang.name} <span className="text-xs opacity-70">({lang.level})</span>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
                 </div>
             );
         }
@@ -356,27 +391,33 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-                {/* Header */}
-                <header className="sticky top-3 z-50 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl sm:px-6">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xl font-black tracking-tight text-slate-950">ChinVerse</span>
-                        <span className="rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-xs font-bold text-white">Profile</span>
-                    </div>
-                    <div className="flex gap-2 text-slate-500">
-                        <Link href="/community" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600"><MessageCircle className="w-5 h-5" /></Link>
+        <div className="min-h-full bg-[#f6f7f9] pb-8" dir="rtl">
+            <div className="mx-auto flex w-full max-w-[430px] flex-col">
+                <header className="sticky top-0 z-50 flex h-[70px] items-center justify-between border-b border-[#dfe3ea] bg-[#eef0f3] px-5">
+                    <div className="flex items-center gap-3">
+                        <Link href="/community" className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white" aria-label="گفتگو">
+                            <MessageCircle className="h-5 w-5" strokeWidth={1.9} />
+                        </Link>
                         <NotificationBellLink />
-                        <Link href="/settings" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600" aria-label="تنظیمات"><Settings className="w-5 h-5" /></Link>
+                        <Link href="/settings" className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white" aria-label="تنظیمات">
+                            <Settings className="h-5 w-5" strokeWidth={1.9} />
+                        </Link>
                     </div>
+
+                    <Link href="/" className="relative block h-11 w-32" aria-label="چین‌ورس">
+                        <Image
+                            src={profileAssets.logo}
+                            alt="لوگوی چین‌ورس"
+                            fill
+                            sizes="128px"
+                            className="object-contain object-left"
+                            priority
+                        />
+                    </Link>
                 </header>
 
-                <main className="flex flex-col gap-5 pb-4">
-                    {/* Hero Section */}
-                    <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-slate-950 px-5 py-7 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-                        <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
-                        <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl" />
-                        <div className="relative flex flex-col items-center">
+                <main className="flex flex-col bg-[#f6f7f9]">
+                    <section className="px-5 pb-2 pt-7 text-center">
                         <input
                             ref={avatarInputRef}
                             type="file"
@@ -384,105 +425,131 @@ export default function ProfilePage() {
                             className="hidden"
                             onChange={handleAvatarFileChange}
                         />
-                        <div className="relative mb-4">
-                            <div className="h-32 w-32 rounded-[32px] border border-white/30 bg-white/10 p-1 shadow-2xl">
-                                <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
+
+                        <div className="mx-auto mb-4 flex w-fit justify-center">
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => avatarInputRef.current?.click()}
+                                    disabled={isUploadingAvatar}
+                                    className="group relative h-[92px] w-[92px] overflow-hidden rounded-full border-[3px] border-[#155aa6] bg-white shadow-[0_10px_24px_rgba(21,90,166,0.18)] disabled:cursor-not-allowed disabled:opacity-70"
+                                    aria-label="تغییر عکس پروفایل"
+                                >
                                     {user?.profile?.avatar_url ? (
                                         <Image
                                             src={getMediaUrl(user.profile.avatar_url)}
-                                            alt="Avatar"
-                                            width={128}
-                                            height={128}
-                                            className="object-cover w-full h-full"
+                                            alt="عکس پروفایل"
+                                            fill
+                                            sizes="92px"
+                                            className="object-cover"
                                             unoptimized
                                         />
                                     ) : (
-                                        <UserIcon className="w-12 h-12 text-gray-400" />
+                                        <span className="flex h-full w-full items-center justify-center bg-slate-50 text-slate-400">
+                                            <UserIcon className="h-10 w-10" />
+                                        </span>
                                     )}
-                                </div>
+                                    <span className="absolute inset-0 hidden items-center justify-center bg-slate-950/35 text-white group-hover:flex">
+                                        {isUploadingAvatar ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                                    </span>
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => avatarInputRef.current?.click()}
-                                disabled={isUploadingAvatar}
-                                className="absolute -bottom-1 -left-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/40 bg-white text-rose-600 shadow-[0_14px_32px_rgba(15,23,42,0.22)] transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
-                                aria-label="تغییر عکس پروفایل"
-                            >
-                                {isUploadingAvatar ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <Camera className="h-5 w-5" />
-                                )}
-                            </button>
                         </div>
+                        {avatarError && (
+                            <p className="mx-auto mb-3 max-w-[280px] rounded-2xl border border-rose-100 bg-rose-50 px-4 py-2 text-xs font-bold leading-6 text-rose-600">
+                                {avatarError}
+                            </p>
+                        )}
 
-                        <h1 className="mb-1 text-2xl font-black tracking-tight text-white">
-                            {user?.profile?.display_name || "کاربر مهمان"}
+                        <h1 className="text-[21px] font-black leading-8 text-[#25272d]">
+                            {displayName}
                         </h1>
 
-                        <p className="mb-2 text-sm font-medium text-white/70">
-                            {user?.profile?.headline || "عنوان شغلی"}
-                        </p>
+                        {headline && (
+                            <p className="mt-1 text-[18px] font-medium leading-8 text-[#25272d]">
+                                {headline}
+                            </p>
+                        )}
 
-                        {/* Location */}
-                        <div className="mb-5 flex items-center gap-1 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs text-white/65">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span>{user?.profile?.city || "موقعیت مکانی"}</span>
-                        </div>
-
-                        {/* Followers / Following counts */}
-                        <div className="grid w-full max-w-md grid-cols-2 gap-3 text-sm">
-                            <Link href="/profile/network" className="rounded-[24px] border border-white/10 bg-white/10 p-4 text-center transition hover:bg-white/15">
-                                <span className="block text-2xl font-black text-white">{followersCount}</span>
-                                <span className="text-xs">دنبال‌کننده</span>
+                        <div className="mt-2 flex items-center justify-center gap-2 text-[12px] font-medium text-[#7a808c]">
+                            <Link href="/profile/network" className="inline-flex items-center gap-1 text-[#155aa6]">
+                                <span className="font-latin text-sm font-bold">{followersCount}</span>
+                                <Image src={profileAssets.people} alt="" width={18} height={18} />
                             </Link>
-                            <Link href="/profile/network" className="rounded-[24px] border border-white/10 bg-white/10 p-4 text-center transition hover:bg-white/15">
-                                <span className="block text-2xl font-black text-white">{followingCount}</span>
-                                <span className="text-xs">دنبال‌شونده</span>
-                            </Link>
-                        </div>
+                            {locationParts.length > 0 && (
+                                <>
+                                    <span>{locationParts.join("، ")}</span>
+                                    <Image src={profileAssets.location} alt="" width={18} height={18} />
+                                </>
+                            )}
                         </div>
                     </section>
 
-                    {/* Tab Navigation */}
-                    <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/92 p-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                        <div className="grid grid-cols-2 gap-2">
-                            {tabs.map((tab, index) => {
-                                const Icon = tab.icon;
+                    <nav className="relative mt-2 border-b border-[#c8cdd5] px-2">
+                        <button
+                            type="button"
+                            onClick={() => scrollProfileTabs("right")}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            className="absolute right-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#155aa6] shadow-[0_8px_18px_rgba(15,23,42,0.12)] transition hover:bg-[#eef6ff]"
+                            aria-label="نمایش سربرگ‌های بعدی"
+                        >
+                            <span className="text-lg leading-none">‹</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollProfileTabs("left")}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            className="absolute left-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#155aa6] shadow-[0_8px_18px_rgba(15,23,42,0.12)] transition hover:bg-[#eef6ff]"
+                            aria-label="نمایش سربرگ‌های قبلی"
+                        >
+                            <span className="text-lg leading-none">›</span>
+                        </button>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-12 bg-gradient-to-l from-[#f6f7f9] to-transparent" />
+                        <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-12 bg-gradient-to-r from-[#f6f7f9] to-transparent" />
+                        <div
+                            ref={tabScrollRef}
+                            className="no-scrollbar flex cursor-grab select-none items-end gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-10 active:cursor-grabbing"
+                            dir="rtl"
+                            style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+                            onPointerDown={handleTabDragStart}
+                            onPointerMove={handleTabDragMove}
+                            onPointerUp={handleTabDragEnd}
+                            onPointerCancel={handleTabDragEnd}
+                            onMouseLeave={() => {
+                                tabDragRef.current.isDragging = false;
+                            }}
+                        >
+                            {tabs.map((tab) => {
                                 const isActive = activeTab === tab.id;
 
                                 return (
                                     <button
                                         key={tab.id}
+                                        type="button"
+                                        onPointerDown={(event) => event.stopPropagation()}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={cn(
-                                            "flex min-h-[64px] items-center gap-2 rounded-[22px] border px-3 py-2 text-right transition-all",
-                                            index === tabs.length - 1 && "col-span-2",
+                                            "relative shrink-0 rounded-t-2xl px-4 py-3 text-center text-[14px] font-bold leading-5 transition",
                                             isActive
-                                                ? "border-transparent bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_14px_30px_rgba(244,63,94,0.2)]"
-                                                : "border-slate-100 bg-slate-50/80 text-slate-600 hover:bg-white hover:text-slate-900",
+                                                ? "bg-white text-[#155aa6] shadow-[0_-2px_14px_rgba(21,90,166,0.08)]"
+                                                : "text-[#2f3238] hover:bg-white/60 hover:text-[#155aa6]",
                                         )}
+                                        style={{ scrollSnapAlign: "center" }}
                                     >
-                                        <span className={cn(
-                                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
-                                            isActive ? "bg-white/18 text-white" : "bg-white text-rose-500 shadow-sm",
-                                        )}>
-                                            <Icon className="h-5 w-5" />
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block text-sm font-black leading-5">{tab.label}</span>
-                                            <span className={cn("mt-0.5 block text-[11px]", isActive ? "text-white/70" : "text-slate-400")}>
-                                                {tab.helper}
-                                            </span>
-                                        </span>
+                                        <span className="block whitespace-nowrap">{tab.label}</span>
+                                        <span
+                                            className={cn(
+                                                "absolute inset-x-2 -bottom-px h-[2px] rounded-full transition",
+                                                isActive ? "bg-[#155aa6]" : "bg-transparent",
+                                            )}
+                                        />
                                     </button>
                                 );
                             })}
                         </div>
-                    </div>
+                    </nav>
 
-                    {/* Tab Content */}
-                    <section className="min-h-[300px] overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+                    <section className="min-h-[370px] bg-[#f6f7f9]">
                         {renderTabContent()}
                     </section>
                 </main>
@@ -496,9 +563,13 @@ export default function ProfilePage() {
 
                 <EditResumeModal
                     isOpen={isResumeModalOpen}
-                    onClose={() => setIsResumeModalOpen(false)}
+                    onClose={() => {
+                        setIsResumeModalOpen(false);
+                        setResumeEditSection(null);
+                    }}
                     user={user}
                     onUpdate={fetchUser}
+                    initialSection={resumeEditSection}
                 />
 
                 <ImageAdjustModal
@@ -537,7 +608,7 @@ export default function ProfilePage() {
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <UserIcon className="w-5 h-5 text-rose-600" />
+                                        <UserIcon className="w-5 h-5 text-[#155aa6]" />
                                     </div>
                                     <span className="font-medium text-gray-800">حساب کاربری</span>
                                 </Link>
@@ -552,7 +623,6 @@ export default function ProfilePage() {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="block font-medium text-gray-800">تنظیمات دلخواه</span>
-                                        <span className="mt-0.5 block text-xs text-slate-400">متن، پین‌یین، هایلایت و سرعت پخش</span>
                                     </div>
                                 </Link>
 
@@ -586,8 +656,8 @@ export default function ProfilePage() {
                                     className="flex items-center gap-3 rounded-2xl p-4 transition hover:bg-slate-50"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
-                                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                        <UserPlus className="w-5 h-5 text-purple-600" />
+                                    <div className="w-10 h-10 bg-[#eef6ff] rounded-full flex items-center justify-center">
+                                        <UserPlus className="w-5 h-5 text-[#155aa6]" />
                                     </div>
                                     <span className="font-medium text-gray-800">ثبت نام</span>
                                 </Link>
@@ -595,10 +665,10 @@ export default function ProfilePage() {
                                 {/* 5. خروج */}
                                 <button
                                     onClick={handleLogout}
-                                    className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-orange-50"
+                                    className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-[#eef6ff]"
                                 >
-                                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                                        <LogOut className="w-5 h-5 text-orange-600" />
+                                    <div className="w-10 h-10 bg-[#eef6ff] rounded-full flex items-center justify-center">
+                                        <LogOut className="w-5 h-5 text-[#155aa6]" />
                                     </div>
                                     <span className="font-medium text-gray-800">خروج</span>
                                 </button>
@@ -618,6 +688,125 @@ export default function ProfilePage() {
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+function ResumePreviewCard({
+    title,
+    icon: Icon,
+    items,
+    onEdit,
+}: {
+    title: string;
+    icon: LucideIcon;
+    items: Array<{ title?: string; subtitle?: string; meta?: string }>;
+    onEdit: () => void;
+}) {
+    const visibleItems = items.slice(0, 2);
+    const hasMore = items.length > visibleItems.length;
+
+    return (
+        <section className="rounded-[12px] border border-[#d4d8df] bg-[#e1e4ea] px-4 py-3 text-right shadow-[0_5px_12px_rgba(15,23,42,0.14)]">
+            <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-[#155aa6]">
+                    <button
+                        type="button"
+                        onClick={onEdit}
+                        className="rounded-lg p-1.5 transition hover:bg-white/70"
+                        aria-label={`ویرایش ${title}`}
+                    >
+                        <PenLine className="h-4 w-4" />
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <h3 className="text-[19px] font-black leading-7 text-[#25272d]">{title}</h3>
+                    <Icon className="h-5 w-5 text-[#155aa6]" strokeWidth={1.9} />
+                </div>
+            </div>
+
+            <div className="divide-y divide-[#c4c8d0]">
+                {visibleItems.map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="py-2">
+                        <p className="truncate text-right text-[12px] font-black leading-5 text-[#2f3238]">
+                            {item.title || "بدون عنوان"}
+                        </p>
+                        {item.subtitle && (
+                            <p className="mt-0.5 truncate text-right text-[10.5px] font-semibold leading-5 text-[#555c68]">
+                                {item.subtitle}
+                            </p>
+                        )}
+                        {item.meta && (
+                            <p className="mt-0.5 text-right text-[10px] font-medium leading-4 text-[#7d8490]">
+                                {item.meta}
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {hasMore && (
+                <button
+                    type="button"
+                    onClick={onEdit}
+                    className="mt-1 flex w-full items-center justify-center gap-2 border-t border-[#c4c8d0] pt-2 text-[12px] font-black text-[#25272d]"
+                >
+                    <span>نشان دادن همه</span>
+                    <span aria-hidden>←</span>
+                </button>
+            )}
+        </section>
+    );
+}
+
+function formatResumeDateRange(start?: string, end?: string) {
+    const cleanStart = start?.trim();
+    const cleanEnd = end?.trim();
+    if (cleanStart && cleanEnd) return `${cleanStart} - ${cleanEnd}`;
+    return cleanStart || cleanEnd || "";
+}
+
+function ProfileEmptyState({
+    asset,
+    title,
+    description,
+    actionLabel,
+    actionIcon,
+    onAction,
+}: {
+    asset: string;
+    title: string;
+    description: string;
+    actionLabel: string;
+    actionIcon: ReactNode;
+    onAction: () => void;
+}) {
+    return (
+        <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
+            <div className="relative mb-6 h-[96px] w-[96px]">
+                <Image
+                    src={asset}
+                    alt=""
+                    fill
+                    sizes="96px"
+                    className="object-contain"
+                />
+            </div>
+            <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
+                {title}
+            </h3>
+            <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                {description}
+            </p>
+            <button
+                type="button"
+                onClick={onAction}
+                className="mt-7 flex h-[54px] w-[54px] items-center justify-center rounded-[14px] bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92] focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20"
+                aria-label={actionLabel}
+            >
+                {actionIcon}
+            </button>
         </div>
     );
 }
@@ -662,6 +851,7 @@ function SavedCoursesTab() {
 
     const handleRemoveCourse = async (courseId: number) => {
         if (removingId) return;
+        if (!window.confirm("این دوره از مجموعه‌های منتخب حذف شود؟")) return;
 
         setRemovingId(courseId);
         try {
@@ -679,7 +869,7 @@ function SavedCoursesTab() {
         return (
             <div className="flex min-h-[260px] items-center justify-center p-8 text-sm text-slate-500">
                 <div className="flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-rose-500" />
+                    <Loader2 className="h-4 w-4 animate-spin text-[#155aa6]" />
                     <span>در حال بارگذاری منتخب‌ها...</span>
                 </div>
             </div>
@@ -689,7 +879,7 @@ function SavedCoursesTab() {
     if (error) {
         return (
             <div className="flex min-h-[260px] flex-col items-center justify-center p-8 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-rose-50 text-rose-500">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#eef6ff] text-[#155aa6]">
                     <BookmarkCheck className="h-7 w-7" />
                 </div>
                 <h3 className="mt-5 text-lg font-black text-slate-900">منتخب‌ها بارگذاری نشد</h3>
@@ -702,24 +892,25 @@ function SavedCoursesTab() {
 
     if (courses.length === 0) {
         return (
-            <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center">
-                <div className="relative mb-6">
-                    <div className="flex h-28 w-28 items-center justify-center rounded-[34px] bg-gradient-to-br from-sky-50 via-white to-rose-50 text-blue-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-                        <BookmarkCheck className="h-14 w-14" strokeWidth={1.6} />
-                    </div>
-                    <span className="absolute -bottom-2 -left-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-[0_14px_30px_rgba(37,99,235,0.25)]">
-                        <Compass className="h-5 w-5" />
-                    </span>
+            <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
+                <div className="relative mb-6 h-[104px] w-[104px]">
+                    <Image
+                        src={profileAssets.collections}
+                        alt=""
+                        fill
+                        sizes="104px"
+                        className="object-contain"
+                    />
                 </div>
 
-                <h3 className="text-xl font-black tracking-tight text-slate-950">اولین مجموعه‌ات رو انتخاب کن!</h3>
-                <p className="mt-3 max-w-xs text-sm leading-7 text-slate-500">
-                    هر course را از صفحه کاوش ذخیره کنی، اینجا برای دسترسی سریع نگه داشته می‌شود.
+                <h3 className="text-[18px] font-black leading-8 text-[#25272d]">اولین مجموعه‌ات رو انتخاب کن!</h3>
+                <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                    به عالمه محتوای خفن منتظره. فقط کافیه یکیو انتخاب کنی و بذاری توی علاقه‌مندی‌هات.
                 </p>
 
                 <Link
                     href="/explore"
-                    className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_38px_rgba(37,99,235,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_46px_rgba(37,99,235,0.34)]"
+                    className="mt-7 inline-flex items-center gap-2 rounded-[14px] bg-[#155aa6] px-5 py-3 text-sm font-black text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
                 >
                     <Compass className="h-4 w-4" />
                     کاوش کن
@@ -730,21 +921,6 @@ function SavedCoursesTab() {
 
     return (
         <div className="space-y-4 p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <h3 className="text-lg font-black text-slate-950">مجموعه‌های منتخب</h3>
-                    <p className="mt-1 text-xs leading-6 text-slate-500">
-                        courseهایی که ذخیره کردی برای برگشت سریع اینجا هستند.
-                    </p>
-                </div>
-                <Link
-                    href="/explore"
-                    className="shrink-0 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 transition hover:bg-rose-100"
-                >
-                    کاوش
-                </Link>
-            </div>
-
             <div className="space-y-3">
                 {courses.map((course) => {
                     const href = getCourseDetailHref(course);
@@ -769,7 +945,7 @@ function SavedCoursesTab() {
                                         unoptimized
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-rose-500 to-orange-500 text-white">
+                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#155aa6] to-[#0f4e92] text-white">
                                         <BookOpen className="h-7 w-7" />
                                     </div>
                                 )}
@@ -787,18 +963,11 @@ function SavedCoursesTab() {
                                     </span>
 
                                     <div className="flex items-center gap-1.5">
-                                        <Link
-                                            href={href}
-                                            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-white transition hover:bg-slate-800"
-                                            aria-label="ادامه دوره"
-                                        >
-                                            <PlayCircle className="h-4 w-4" />
-                                        </Link>
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveCourse(course.id)}
                                             disabled={removingId === course.id}
-                                            className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition hover:border-red-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                                             aria-label="حذف از منتخب‌ها"
                                         >
                                             {removingId === course.id ? (

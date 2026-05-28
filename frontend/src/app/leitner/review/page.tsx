@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Volume2, Check, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
+import { Check, Loader2, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { cn } from "@/lib/cn";
+import { BackButton } from "@/components/ui/IconButton";
 import {
     getChineseTextStyle,
     getHighlightStyle,
@@ -41,20 +45,12 @@ interface Flashcard {
     word: Word;
 }
 
-const BOX_BORDER_COLORS: Record<number, string> = {
-    1: "border-red-500",
-    2: "border-orange-500",
-    3: "border-green-500",
-    4: "border-blue-500",
-    5: "border-blue-800",
-};
-
-const BOX_LABELS: Record<number, string> = {
-    1: "جعبه ۱",
-    2: "جعبه ۲",
-    3: "جعبه ۳",
-    4: "جعبه ۴",
-    5: "جعبه ۵",
+const BOX_STYLES: Record<number, { label: string; border: string; text: string; soft: string }> = {
+    1: { label: "جعبه ۱", border: "border-red-500", text: "text-red-600", soft: "bg-red-50 text-red-600" },
+    2: { label: "جعبه ۲", border: "border-amber-500", text: "text-amber-700", soft: "bg-amber-50 text-amber-700" },
+    3: { label: "جعبه ۳", border: "border-emerald-500", text: "text-emerald-700", soft: "bg-emerald-50 text-emerald-700" },
+    4: { label: "جعبه ۴", border: "border-sky-500", text: "text-sky-700", soft: "bg-sky-50 text-sky-700" },
+    5: { label: "جعبه ۵", border: "border-[#155aa6]", text: "text-[#155aa6]", soft: "bg-[#eef6ff] text-[#155aa6]" },
 };
 
 const BOX_INTERVALS: Record<number, number> = {
@@ -66,6 +62,13 @@ const BOX_INTERVALS: Record<number, number> = {
 };
 
 type BackTabType = "examples" | "composition" | "persian" | "chinese";
+
+const backTabs: { key: BackTabType; label: string }[] = [
+    { key: "examples", label: "مثال‌ها" },
+    { key: "composition", label: "ترکیب" },
+    { key: "persian", label: "معنی فارسی" },
+    { key: "chinese", label: "معنی چینی" },
+];
 
 export default function LeitnerReviewPage() {
     const router = useRouter();
@@ -93,14 +96,12 @@ export default function LeitnerReviewPage() {
             }
         };
 
-        fetchReviewCards();
+        void fetchReviewCards();
     }, []);
 
     const playAudio = (url?: string) => {
-        if (url) {
-            const audio = new Audio(url);
-            audio.play();
-        }
+        if (!url) return;
+        void new Audio(url).play();
     };
 
     const handleReview = async (remembered: boolean) => {
@@ -115,11 +116,10 @@ export default function LeitnerReviewPage() {
                 remembered,
             });
 
-            // Move to next card
             if (currentIndex + 1 < cards.length) {
                 setCurrentIndex(currentIndex + 1);
                 setIsFlipped(false);
-                setActiveBackTab("examples"); // Reset tab for next card
+                setActiveBackTab("examples");
             } else {
                 setSessionComplete(true);
             }
@@ -130,13 +130,12 @@ export default function LeitnerReviewPage() {
         }
     };
 
-    // Helper to highlight keywords in blue
     const highlightKeyword = (text: string, keyword: string) => {
         if (!text || !keyword) return text;
         const parts = text.split(keyword);
         if (parts.length === 1) return text;
         return parts.map((part, i) => (
-            <React.Fragment key={i}>
+            <span key={`${part}-${i}`}>
                 {part}
                 {i < parts.length - 1 && (
                     <span
@@ -147,28 +146,38 @@ export default function LeitnerReviewPage() {
                         {keyword}
                     </span>
                 )}
-            </React.Fragment>
+            </span>
         ));
     };
 
     if (loading) {
         return (
             <div className="flex min-h-full items-center justify-center">
-                <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                <Loader2 className="h-7 w-7 animate-spin text-[#155aa6]" />
             </div>
         );
     }
 
-    // Session Complete Screen
     if (sessionComplete) {
         return (
-            <div className="flex min-h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
-                <div className="font-cjk mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-rose-50 to-amber-50 text-2xl font-black text-rose-500" lang="zh-CN">完</div>
-                <h2 className="mb-2 text-2xl font-black text-slate-950">آفرین! همه کارت‌ها مرور شدند!</h2>
-                <p className="mb-8 text-slate-500">برای امروز کارتی برای مرور نداری. فردا دوباره بیا!</p>
+            <div className="flex min-h-full flex-col items-center justify-center bg-[#f7f8fa] p-6 text-center" dir="rtl">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ff]">
+                    <Image
+                        src="/assets/chinverse/icons/Laitner.svg"
+                        alt=""
+                        width={54}
+                        height={54}
+                        className="h-14 w-14 object-contain"
+                        unoptimized
+                    />
+                </div>
+                <h2 className="mb-2 text-2xl font-black text-slate-950">آفرین! مرور امروز تمام شد</h2>
+                <p className="mb-8 max-w-xs text-sm leading-7 text-slate-500">
+                    برای امروز کارتی برای مرور نداری. وقتی زمان مرور بعدی برسد، کارت‌ها دوباره اینجا می‌آیند.
+                </p>
                 <button
                     onClick={() => router.push("/leitner")}
-                    className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-8 py-3 text-lg font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
+                    className="rounded-full bg-[#155aa6] px-8 py-3 text-base font-black text-white shadow-[0_10px_18px_rgba(21,90,166,0.28)] transition hover:bg-[#0f4e92]"
                 >
                     بازگشت به لایتنر
                 </button>
@@ -177,135 +186,151 @@ export default function LeitnerReviewPage() {
     }
 
     const currentCard = cards[currentIndex];
-    const borderColor = BOX_BORDER_COLORS[currentCard.box_number] || "border-red-500";
-    const rememberedBox = Math.min(currentCard.box_number + 1, 5);
+    const currentBox = normalizeBoxNumber(currentCard.box_number);
+    const boxStyle = BOX_STYLES[currentBox];
+    const rememberedBox = Math.min(currentBox + 1, 5);
     const rememberedInterval = BOX_INTERVALS[rememberedBox] || 1;
     const chineseTextStyle = getChineseTextStyle(preferences);
     const persianTextStyle = getPersianTextStyle(preferences);
 
-    const backTabs: { key: BackTabType; label: string }[] = [
-        { key: "examples", label: "مثال‌ها" },
-        { key: "composition", label: "ترکیب واژگانی" },
-        { key: "persian", label: "معنی فارسی" },
-        { key: "chinese", label: "معنی چینی" },
-    ];
-
-    // Mock examples if not present
     const examples: Example[] = currentCard.word.examples || [
         {
-            type: "video",
-            url: "https://www.w3schools.com/html/mov_bbb.mp4",
-            sentence_ch: `${currentCard.word.chinese}，我不是在求你...`,
-            sentence_fa: "مدیر، من از شما خواهش نمی‌کنم...",
+            type: "text",
+            sentence_ch: `${currentCard.word.chinese}，我今天要好好练习。`,
+            sentence_fa: "امروز می‌خواهم این واژه را خوب تمرین کنم.",
         },
         {
             type: "text",
-            sentence_ch: `他想当${currentCard.word.chinese}`,
-            sentence_fa: "او می‌خواهد مدیر شود.",
+            sentence_ch: `他想学习${currentCard.word.chinese}这个词。`,
+            sentence_fa: "او می‌خواهد این واژه را یاد بگیرد.",
         },
     ];
 
     return (
-        <div className="flex min-h-full flex-col px-4 pb-5 pt-4" dir="rtl">
-            {/* Header */}
-            <header className="sticky top-3 z-50 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
-                <button onClick={() => router.back()} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600">
-                    <ArrowLeft size={24} className="rotate-180" />
-                </button>
-                <h1 className="text-lg font-black text-slate-950">مرور لغات</h1>
-                <div className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-500">
-                    {currentIndex + 1} / {cards.length}
-                </div>
-            </header>
-
-            <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center space-y-4 overflow-hidden pt-5">
-                {/* Intro Text */}
-                <div className="text-center space-y-1">
-                    <div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
-                        <span>{BOX_LABELS[currentCard.box_number]}</span>
-                        <span className="h-1 w-1 rounded-full bg-slate-300" />
-                        <span>اگر بلد باشی: {BOX_LABELS[rememberedBox]}، مرور {rememberedInterval.toLocaleString("fa-IR")} روز بعد</span>
+        <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col">
+                <header className="grid grid-cols-[72px_1fr_40px] items-center gap-3">
+                    <BackButton onClick={() => router.push("/leitner")} className="justify-self-end" />
+                    <h1 className="text-center text-lg font-black text-slate-950">مرور لغات</h1>
+                    <div className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#155aa6] shadow-sm">
+                        {toPersianDigits(currentIndex + 1)} / {toPersianDigits(cards.length)}
                     </div>
-                    <p className="text-sm font-medium text-slate-600">اول معنی را از حافظه بگو، بعد پشت کارت را ببین.</p>
-                </div>
+                </header>
 
-                {/* Card Container */}
-                <div className={`flex w-full max-w-md flex-1 flex-col overflow-hidden rounded-[30px] border-2 bg-white/90 shadow-[0_24px_70px_rgba(15,23,42,0.14)] backdrop-blur-xl ${borderColor}`}>
+                <section className="mt-4 rounded-[10px] bg-[#eef6ff] px-4 py-3 text-center">
+                    <p className="text-xs font-black text-[#155aa6]">
+                        {boxStyle.label} · اگر بلد باشی: {BOX_STYLES[rememberedBox].label}، مرور {toPersianDigits(rememberedInterval)} روز بعد
+                    </p>
+                    <p className="mt-1 text-[11px] font-medium leading-5 text-slate-500">
+                        اول معنی را از حافظه بگو، بعد پشت کارت را ببین.
+                    </p>
+                </section>
 
+                <section className={cn("mt-4 overflow-hidden rounded-[18px] border-2 bg-white shadow-[0_12px_26px_rgba(15,23,42,0.10)]", boxStyle.border)}>
                     {!isFlipped ? (
-                        /* Front Side */
-                        <div className="flex-1 flex flex-col items-center justify-center p-8">
-                            <div className="flex items-center justify-center gap-4">
-                                <span className="font-cjk text-[2.75rem] font-bold leading-tight text-gray-800 sm:text-5xl" dir="ltr" lang="zh-CN">
+                        <div className="flex min-h-[340px] flex-col items-center justify-center px-6 py-8 text-center">
+                            <span className={cn("rounded-full px-3 py-1 text-[11px] font-black", boxStyle.soft)}>
+                                {boxStyle.label}
+                            </span>
+                            <div className="mt-8 flex items-center justify-center gap-4">
+                                <span className="font-cjk text-[3.4rem] font-bold leading-tight text-slate-900" dir="ltr" lang="zh-CN">
                                     {currentCard.word.chinese}
                                 </span>
                                 <button
                                     onClick={() => playAudio(currentCard.word.audio_url)}
-                                    className="text-rose-500 transition-colors hover:text-rose-600"
+                                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe]"
+                                    aria-label="پخش تلفظ"
                                 >
-                                    <Volume2 size={32} />
+                                    <Image
+                                        src="/assets/chinverse/icons/Speaker.svg"
+                                        alt=""
+                                        width={23}
+                                        height={23}
+                                        className="h-6 w-6 object-contain"
+                                        unoptimized
+                                    />
                                 </button>
-                            </div>
-                        </div>
-                    ) : (
-                        /* Back Side with Tabs */
-                        <div className="flex-1 flex flex-col overflow-hidden">
-                            {/* Header: Character + Pinyin */}
-                            <div className="flex items-center justify-center gap-3 border-b border-slate-100 bg-slate-50 p-4">
-                                <button
-                                    onClick={() => playAudio(currentCard.word.audio_url)}
-                                    className="text-orange-500 hover:text-orange-600"
-                                >
-                                    <Volume2 size={20} />
-                                </button>
-                                <span className="font-cjk text-3xl font-bold text-rose-600" dir="ltr" lang="zh-CN">
-                                    {currentCard.word.chinese}
-                                </span>
                             </div>
                             {preferences.showPinyin && (
-                                <p className="font-latin py-2 text-center text-base text-gray-500" dir="ltr" lang="en">
+                                <p className="font-latin mt-3 text-sm font-bold text-slate-400" dir="ltr">
                                     {currentCard.word.pinyin}
                                 </p>
                             )}
+                            <button
+                                onClick={() => setIsFlipped(true)}
+                                className="mt-10 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#155aa6] text-sm font-black text-white shadow-[0_10px_18px_rgba(21,90,166,0.25)] transition active:scale-[0.98]"
+                            >
+                                دیدن پشت کارت
+                                <Send size={16} />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex max-h-[620px] flex-col">
+                            <div className="border-b border-slate-100 bg-[#f8fafc] px-4 py-4 text-center">
+                                <div className="flex items-center justify-center gap-3">
+                                    <button
+                                        onClick={() => playAudio(currentCard.word.audio_url)}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#155aa6] shadow-sm"
+                                        aria-label="پخش تلفظ"
+                                    >
+                                        <Image
+                                            src="/assets/chinverse/icons/Speaker.svg"
+                                            alt=""
+                                            width={18}
+                                            height={18}
+                                            className="h-5 w-5 object-contain"
+                                            unoptimized
+                                        />
+                                    </button>
+                                    <span className={cn("font-cjk text-3xl font-black", boxStyle.text)} dir="ltr" lang="zh-CN">
+                                        {currentCard.word.chinese}
+                                    </span>
+                                </div>
+                                {preferences.showPinyin && (
+                                    <p className="font-latin mt-1 text-sm font-bold text-slate-400" dir="ltr">
+                                        {currentCard.word.pinyin}
+                                    </p>
+                                )}
+                            </div>
 
-                            {/* Tab Bar */}
-                            <div className="flex border-b border-slate-200 px-2" dir="rtl">
+                            <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-2 py-2" dir="rtl">
                                 {backTabs.map((tab) => (
                                     <button
                                         key={tab.key}
                                         onClick={() => setActiveBackTab(tab.key)}
-                                        className={`flex-1 py-2 text-xs font-medium transition-colors ${activeBackTab === tab.key
-                                            ? "text-rose-600 border-b-2 border-rose-600"
-                                            : "text-slate-500 hover:text-slate-700"
-                                            }`}
+                                        className={cn(
+                                            "shrink-0 rounded-full px-3 py-2 text-xs font-black transition",
+                                            activeBackTab === tab.key
+                                                ? "bg-[#155aa6] text-white"
+                                                : "bg-slate-100 text-slate-500 hover:bg-[#eef6ff] hover:text-[#155aa6]",
+                                        )}
                                     >
                                         {tab.label}
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Tab Content - Scrollable */}
-                            <div className="flex-1 overflow-y-auto p-4" dir="rtl">
+                            <div className="min-h-[220px] flex-1 overflow-y-auto px-4 py-4" dir="rtl">
                                 {activeBackTab === "examples" && (
                                     <div className="space-y-4">
                                         {examples.length === 0 ? (
-                                            <p className="text-gray-400 text-center">مثالی موجود نیست</p>
+                                            <EmptyText>مثالی موجود نیست</EmptyText>
                                         ) : (
                                             examples.map((example, i) => (
-                                                <div key={i} className="space-y-2">
+                                                <div key={i} className="rounded-[14px] bg-slate-50 p-3">
                                                     {example.type === "video" && example.url && (
                                                         <video
                                                             src={example.url}
                                                             poster={example.poster}
                                                             controls
-                                                            className="w-full rounded-xl aspect-video bg-black"
+                                                            className="mb-3 aspect-video w-full rounded-xl bg-black"
                                                         />
                                                     )}
-                                                    <p className="font-cjk text-gray-800" style={chineseTextStyle} dir="ltr" lang="zh-CN">
-                                                        {i + 1}. {highlightKeyword(example.sentence_ch || example.zh_text || "", currentCard.word.chinese)}
+                                                    <p className="font-cjk text-slate-900" style={chineseTextStyle} dir="ltr" lang="zh-CN">
+                                                        {toPersianDigits(i + 1)}. {highlightKeyword(example.sentence_ch || example.zh_text || "", currentCard.word.chinese)}
                                                     </p>
                                                     {(example.sentence_fa || example.target_text) && (
-                                                        <p className="text-gray-500" style={persianTextStyle}>
+                                                        <p className="mt-2 text-slate-500" style={persianTextStyle}>
                                                             {example.sentence_fa || example.target_text}
                                                         </p>
                                                     )}
@@ -316,74 +341,48 @@ export default function LeitnerReviewPage() {
                                 )}
 
                                 {activeBackTab === "composition" && (
-                                    <div className="space-y-3">
-                                        {currentCard.word.composition ? (
-                                            currentCard.word.composition.split("\n").map((line, i) => (
-                                                <p key={i} className="font-cjk text-gray-800" style={chineseTextStyle} dir="ltr" lang="zh-CN">
-                                                    {i + 1}. {highlightKeyword(line, currentCard.word.chinese)}
-                                                </p>
-                                            ))
-                                        ) : (
-                                            <p className="text-gray-400 text-center">ترکیب واژگانی موجود نیست</p>
-                                        )}
-                                    </div>
+                                    <TextLines
+                                        value={currentCard.word.composition}
+                                        empty="ترکیب واژگانی موجود نیست"
+                                        chinese
+                                        keyword={currentCard.word.chinese}
+                                        style={chineseTextStyle}
+                                        highlight={highlightKeyword}
+                                    />
                                 )}
 
                                 {activeBackTab === "persian" && (
-                                    <div className="space-y-3">
-                                        {currentCard.word.persian_meaning ? (
-                                            currentCard.word.persian_meaning.split("\n").map((line, i) => (
-                                                <p key={i} className="text-gray-800" style={persianTextStyle}>
-                                                    {i + 1}. {line}
-                                                </p>
-                                            ))
-                                        ) : (
-                                            <p className="text-gray-400 text-center">معنی فارسی موجود نیست</p>
-                                        )}
-                                    </div>
+                                    <TextLines
+                                        value={currentCard.word.persian_meaning}
+                                        empty="معنی فارسی موجود نیست"
+                                        style={persianTextStyle}
+                                    />
                                 )}
 
                                 {activeBackTab === "chinese" && (
-                                    <div className="space-y-3">
-                                        {currentCard.word.chinese_meaning ? (
-                                            currentCard.word.chinese_meaning.split("\n").map((line, i) => (
-                                                <p key={i} className="font-cjk text-gray-800" style={chineseTextStyle} dir="ltr" lang="zh-CN">
-                                                    {i + 1}. {line}
-                                                </p>
-                                            ))
-                                        ) : (
-                                            <p className="text-gray-400 text-center">معنی چینی موجود نیست</p>
-                                        )}
-                                    </div>
+                                    <TextLines
+                                        value={currentCard.word.chinese_meaning}
+                                        empty="معنی چینی موجود نیست"
+                                        chinese
+                                        style={chineseTextStyle}
+                                    />
                                 )}
                             </div>
-                        </div>
-                    )}
 
-                    {/* Footer Button(s) - Fixed at bottom */}
-                    <div className="border-t border-slate-100 bg-white p-4">
-                        {!isFlipped ? (
-                            <button
-                                onClick={() => setIsFlipped(true)}
-                                className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 text-lg font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition active:scale-[0.98]"
-                            >
-                                دیدن پشت کارت
-                            </button>
-                        ) : (
-                            <div className="space-y-3">
-                                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold">
-                                    <div className="rounded-2xl bg-red-50 px-3 py-2 text-red-600">
+                            <div className="border-t border-slate-100 bg-white p-4">
+                                <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
+                                    <div className="rounded-[12px] bg-red-50 px-3 py-2 text-red-600">
                                         فراموش شد: جعبه ۱، مرور فردا
                                     </div>
-                                    <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-emerald-700">
-                                        بلد بودی: {BOX_LABELS[rememberedBox]}، {rememberedInterval.toLocaleString("fa-IR")} روز بعد
+                                    <div className="rounded-[12px] bg-emerald-50 px-3 py-2 text-emerald-700">
+                                        بلد بودی: {BOX_STYLES[rememberedBox].label}، {toPersianDigits(rememberedInterval)} روز بعد
                                     </div>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="mt-3 flex gap-3">
                                     <button
                                         onClick={() => handleReview(false)}
                                         disabled={isSubmitting}
-                                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-500 py-3 text-sm font-black text-white transition active:scale-[0.98] disabled:opacity-50"
                                     >
                                         <X size={18} />
                                         یادم نیست
@@ -391,32 +390,80 @@ export default function LeitnerReviewPage() {
                                     <button
                                         onClick={() => handleReview(true)}
                                         disabled={isSubmitting}
-                                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3 text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-emerald-500 py-3 text-sm font-black text-white transition active:scale-[0.98] disabled:opacity-50"
                                     >
                                         <Check size={18} />
                                         یادم هست
                                     </button>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    )}
+                </section>
 
-                {/* Pagination Dots */}
-                <div className="flex gap-1">
+                <div className="mt-4 flex justify-center gap-1.5">
                     {cards.map((_, i) => (
-                        <div
+                        <span
                             key={i}
-                            className={`h-2 rounded-full transition-all ${i === currentIndex
-                                ? "w-4 bg-orange-400"
-                                : i < currentIndex
-                                    ? "w-2 bg-green-400"
-                                    : "w-2 bg-gray-300"
-                                }`}
+                            className={cn(
+                                "h-2 rounded-full transition-all",
+                                i === currentIndex ? "w-5 bg-[#155aa6]" : i < currentIndex ? "w-2 bg-emerald-400" : "w-2 bg-slate-300",
+                            )}
                         />
                     ))}
                 </div>
             </main>
         </div>
     );
+}
+
+function TextLines({
+    value,
+    empty,
+    chinese = false,
+    keyword = "",
+    style,
+    highlight,
+}: {
+    value?: string;
+    empty: string;
+    chinese?: boolean;
+    keyword?: string;
+    style: CSSProperties;
+    highlight?: (text: string, keyword: string) => ReactNode;
+}) {
+    if (!value) return <EmptyText>{empty}</EmptyText>;
+
+    return (
+        <div className="space-y-3">
+            {value.split("\n").map((line, i) => (
+                <p
+                    key={`${line}-${i}`}
+                    className={cn("rounded-[14px] bg-slate-50 p-3 text-slate-800", chinese && "font-cjk")}
+                    style={style}
+                    dir={chinese ? "ltr" : "rtl"}
+                    lang={chinese ? "zh-CN" : "fa"}
+                >
+                    {toPersianDigits(i + 1)}. {highlight && keyword ? highlight(line, keyword) : line}
+                </p>
+            ))}
+        </div>
+    );
+}
+
+function EmptyText({ children }: { children: ReactNode }) {
+    return (
+        <p className="rounded-[14px] bg-slate-50 px-4 py-6 text-center text-sm font-bold text-slate-400">
+            {children}
+        </p>
+    );
+}
+
+function normalizeBoxNumber(value: number) {
+    return Math.max(1, Math.min(5, value || 1));
+}
+
+function toPersianDigits(value: string | number) {
+    const digits = "۰۱۲۳۴۵۶۷۸۹";
+    return String(value).replace(/\d/g, (digit) => digits[Number(digit)]);
 }

@@ -7,7 +7,7 @@ export default function CharactersPage() {
             subcategorySlug="characters"
             detailPath="/characters"
             layout="list"
-            accentClass="bg-purple-500"
+            accentClass="bg-blue-700"
         />
     );
 }

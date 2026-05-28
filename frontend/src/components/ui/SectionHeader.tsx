@@ -15,7 +15,6 @@ interface SectionHeaderProps {
 
 export default function SectionHeader({
     title,
-    subtitle,
     actionLabel,
     actionHref,
     onAction,
@@ -25,7 +24,7 @@ export default function SectionHeader({
     const action = actionHref ? (
         <Link
             href={actionHref}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 transition-colors hover:text-rose-700"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#155aa6] transition-colors hover:text-[#0f4e92]"
         >
             {actionLabel}
             <ArrowRight size={14} />
@@ -34,7 +33,7 @@ export default function SectionHeader({
         <button
             type="button"
             onClick={onAction}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 transition-colors hover:text-rose-700"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#155aa6] transition-colors hover:text-[#0f4e92]"
         >
             {actionLabel}
             <ArrowRight size={14} />
@@ -48,7 +47,6 @@ export default function SectionHeader({
                     {icon}
                     <h2 className="text-base font-bold tracking-tight text-slate-900">{title}</h2>
                 </div>
-                {subtitle && <p className="mt-1 text-xs leading-5 text-slate-500">{subtitle}</p>}
             </div>
             {action}
         </div>

@@ -81,7 +81,7 @@ export default function NetworkPage() {
                     <EmptyState
                         icon={<UsersRound size={30} />}
                         title={activeTab === "followers" ? "هنوز دنبال‌کننده‌ای نداری" : "هنوز کسی را دنبال نمی‌کنی"}
-                        description={activeTab === "followers" ? "وقتی کاربران پروفایلت را دنبال کنند، اینجا نمایش داده می‌شوند." : "از ویترین می‌توانی کاربران و متخصص‌های فعال را پیدا کنی."}
+                        description={activeTab === "followers" ? "وقتی کاربران پروفایلت را دنبال کنند، اینجا نمایش داده می‌شوند." : "از ویترین می‌تونی کاربران و متخصص‌های فعال را پیدا کنی."}
                         action={activeTab === "following" ? <PrimaryButton href="/showcase">رفتن به ویترین</PrimaryButton> : undefined}
                     />
                 ) : (
@@ -128,7 +128,7 @@ export default function NetworkPage() {
                                     ) : (
                                         <Link
                                             href={`/users/${user.id}`}
-                                            className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+                                            className="rounded-2xl bg-[#155aa6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0f4e92]"
                                         >
                                             مشاهده
                                         </Link>
@@ -149,10 +149,10 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
             type="button"
             onClick={onClick}
             className={cn(
-                "rounded-[22px] px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400",
+                "rounded-[22px] px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]",
                 active
-                    ? "bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_12px_26px_rgba(244,63,94,0.18)]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
+                    ? "bg-[#155aa6] text-white shadow-[0_12px_26px_rgba(21,90,166,0.18)]"
+                    : "text-slate-500 hover:bg-[#eef6ff] hover:text-[#155aa6]",
             )}
         >
             {label}

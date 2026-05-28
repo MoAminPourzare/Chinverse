@@ -1,117 +1,134 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, CheckCircle2, Headphones, Send } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import PrimaryButton from '@/components/ui/PrimaryButton';
-import Surface from '@/components/ui/Surface';
+import { useState } from 'react';
+import { CheckCircle2, X } from 'lucide-react';
 import { communityService } from '@/services/community.service';
+import { IconButton } from '@/components/ui/IconButton';
+import { validateTextLength, validationMessage } from '@/validation';
 
 type Screen = 'input' | 'success';
+
+const CHINVERSE_BLUE = '#155aa6';
 
 export default function SupportPage() {
     const router = useRouter();
     const [screen, setScreen] = useState<Screen>('input');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleClose = () => {
+        router.back();
+    };
 
     const handleSubmit = async () => {
-        if (!message.trim() || isSubmitting) return;
+        const trimmed = message.trim();
+        const validationError = validationMessage(validateTextLength(trimmed, 'پیام پشتیبانی', { required: true, min: 10, max: 4000 }));
+        setError(validationError);
+        if (validationError || isSubmitting) return;
 
         setIsSubmitting(true);
         try {
-            await communityService.submitSupportTicket({ message: message.trim() });
+            await communityService.submitSupportTicket({ message: trimmed });
             setScreen('success');
+            setMessage('');
         } catch (error) {
             console.error('Failed to submit support ticket:', error);
-            alert('خطا در ارسال پیام. لطفا دوباره تلاش کنید.');
+            setError('ارسال پیام انجام نشد. لطفا کمی بعد دوباره تلاش کن.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleClose = () => {
-        router.push('/community');
-    };
-
-    if (screen === 'success') {
-        return (
-            <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
-                <SupportHeader subtitle="پیام شما ثبت شد" onBack={handleClose} />
-                <main className="mx-auto mt-5 w-full max-w-2xl">
-                    <EmptyState
-                        icon={<CheckCircle2 size={32} />}
-                        title="پیامت به دست ما رسید"
-                        description="تیم پشتیبانی چین‌ورس پیام را بررسی می‌کند و در اولین فرصت پاسخ می‌دهد."
-                        action={<PrimaryButton onClick={handleClose}>بازگشت</PrimaryButton>}
-                    />
-                </main>
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
-            <SupportHeader subtitle="سوال یا مشکل خودت را برای ما بفرست" onBack={handleClose} />
+        <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
+            <header className="grid grid-cols-[44px_1fr_44px] items-center">
+                <IconButton onClick={handleClose} label="بستن" className="justify-self-end">
+                    <X size={20} />
+                </IconButton>
 
-            <main className="mx-auto mt-5 grid w-full max-w-5xl gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-                <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_52%,#312033_100%)] p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-white/10 text-amber-200">
-                        <Headphones size={28} />
+                <div className="flex justify-center">
+                    <Image
+                        src="/assets/chinverse/logos/chinverse-logo.png"
+                        alt="چین ورس"
+                        width={116}
+                        height={36}
+                        className="h-auto w-[116px] object-contain"
+                        priority
+                    />
+                </div>
+
+                <span aria-hidden />
+            </header>
+
+            {screen === 'success' ? (
+                <main className="flex flex-1 flex-col items-center justify-center text-center">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#155aa6]/10 text-[#155aa6]">
+                        <CheckCircle2 size={48} strokeWidth={1.8} />
                     </div>
-                    <h1 className="mt-5 text-2xl font-black tracking-tight">چطور می‌توانیم کمک کنیم؟</h1>
-                    <p className="mt-3 text-sm leading-8 text-white/70">
-                        پیام کوتاه، واضح و همراه با جزئیات بنویس تا سریع‌تر بتوانیم مشکل را پیدا کنیم.
+                    <h1 className="mt-7 text-xl font-black text-slate-900">پیامت ثبت شد</h1>
+                    <p className="mt-3 max-w-[280px] text-sm leading-7 text-slate-500">
+                        تیم پشتیبانی چین ورس پیام تو را بررسی می‌کند و در اولین فرصت پاسخ می‌دهد.
                     </p>
-                </Surface>
-
-                <Surface className="p-4 sm:p-5">
-                    <label htmlFor="support-message" className="text-sm font-bold text-slate-900">
-                        متن پیام
-                    </label>
-                    <textarea
-                        id="support-message"
-                        value={message}
-                        onChange={(event) => setMessage(event.target.value)}
-                        placeholder="پیامت را اینجا بنویس..."
-                        className="mt-3 min-h-48 w-full resize-none rounded-[24px] border border-slate-200 bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                        rows={7}
-                    />
-                    <PrimaryButton
-                        onClick={handleSubmit}
-                        disabled={!message.trim() || isSubmitting}
-                        className="mt-4 w-full"
-                        leadingIcon={isSubmitting ? undefined : <Send size={18} />}
+                    <button
+                        type="button"
+                        onClick={() => router.push('/community')}
+                        className="mt-8 h-[52px] w-full max-w-[295px] rounded-[22px] bg-[#155aa6] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.26)] transition hover:bg-[#0f4f96] focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20"
                     >
-                        {isSubmitting ? 'در حال ارسال...' : 'ارسال پیام'}
-                    </PrimaryButton>
-                </Surface>
-            </main>
-        </div>
-    );
-}
+                        بازگشت به پیام‌ها
+                    </button>
+                </main>
+            ) : (
+                <main className="flex flex-1 flex-col">
+                    <section className="mt-12 text-right">
+                        <p className="text-sm font-bold leading-8 text-slate-800">سلام؛</p>
+                        <p className="mt-1 text-[13px] font-medium leading-8 text-slate-700">
+                            به پشتیبانی چین ورس خوش اومدی، لطفا سوال یا مشکلی که داری رو برامون بنویس تا در اسرع وقت بهش رسیدگی بشه.
+                        </p>
+                    </section>
 
-function SupportHeader({ subtitle, onBack }: { subtitle: string; onBack: () => void }) {
-    return (
-        <Surface className="mx-auto max-w-5xl overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_50%,#334155_100%)] p-4 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-            <div className="flex items-center justify-between gap-3">
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white/85 transition hover:bg-white/15 hover:text-white"
-                    aria-label="بازگشت"
-                >
-                    <ArrowRight size={19} />
-                </button>
-                <div className="min-w-0 flex-1 text-right">
-                    <h1 className="text-lg font-black tracking-tight">پشتیبانی</h1>
-                    <p className="mt-1 truncate text-xs font-semibold text-white/65">{subtitle}</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-amber-200">
-                    <Headphones size={21} />
-                </div>
-            </div>
-        </Surface>
+                    <div className="mt-8 flex justify-center">
+                        <Image
+                            src="/assets/chinverse/icons/Support & Help.svg"
+                            alt=""
+                            width={176}
+                            height={176}
+                            className="h-[176px] w-[176px] object-contain"
+                            priority
+                        />
+                    </div>
+
+                    <div className="mt-8">
+                        <textarea
+                            value={message}
+                            onChange={(event) => {
+                                setMessage(event.target.value);
+                                if (error) setError('');
+                            }}
+                            placeholder="پیامتو اینجا بنویس..."
+                            rows={3}
+                            className="min-h-[72px] w-full resize-none rounded-[4px] border border-[#155aa6] bg-white px-4 py-3 text-sm leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#e88e6e] focus:ring-4 focus:ring-[#155aa6]/10"
+                        />
+                        {error && (
+                            <p className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
+                                {error}
+                            </p>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={!message.trim() || isSubmitting}
+                            style={{ backgroundColor: CHINVERSE_BLUE }}
+                            className="mt-5 h-[52px] w-full rounded-[22px] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.28)] transition hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20 disabled:cursor-not-allowed disabled:opacity-55"
+                        >
+                            {isSubmitting ? 'در حال ارسال...' : 'ارسال پیام'}
+                        </button>
+                    </div>
+                </main>
+            )}
+        </div>
     );
 }

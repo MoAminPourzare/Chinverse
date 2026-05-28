@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, RotateCcw, SlidersHorizontal } from "lucide-react";
+import Image from "next/image";
+import { RotateCcw } from "lucide-react";
 import Surface from "@/components/ui/Surface";
+import { AppHeader } from "@/components/ui/IconButton";
 import {
     OptionSheet,
     SelectSettingRow,
@@ -30,22 +31,12 @@ export default function AppearanceSettingsPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
-            <header className="sticky top-3 z-40 mb-5 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                <Link
-                    href="/settings"
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl text-slate-600 transition hover:bg-slate-100"
-                    aria-label="بازگشت"
-                >
-                    <ArrowRight size={22} />
-                </Link>
-                <div className="text-center">
-                    <h1 className="text-base font-black text-slate-950">تنظیمات نگارشی</h1>
-                    <p className="mt-0.5 text-[11px] font-semibold text-slate-400">متن، پین‌یین، هایلایت و سرعت پخش</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-rose-50 text-blue-700">
-                    <SlidersHorizontal size={23} />
-                </div>
-            </header>
+            <AppHeader
+                title="تنظیمات نگارشی"
+                backHref="/settings"
+                iconClassName="bg-transparent shadow-none ring-0"
+                icon={<Image src="/assets/chinverse/icons/Preferences 2.svg" alt="" width={32} height={32} className="h-8 w-8 object-contain" />}
+            />
 
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
                 <Surface className="overflow-hidden border-white bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
@@ -169,20 +160,6 @@ export default function AppearanceSettingsPage() {
                             checked={preferences.autoplayNext}
                             onChange={(checked) => setPreference("autoplayNext", checked)}
                         />
-                    </div>
-                </Surface>
-
-                <Surface className="bg-white/90 p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                            <SlidersHorizontal size={20} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <h2 className="text-sm font-black text-slate-950">این تنظیمات کجا اثر می‌گذارد؟</h2>
-                            <p className="mt-1 text-xs leading-6 text-slate-500">
-                                روی صفحه تماشای درس، متن فارسی و چینی، هایلایت واژه‌ها، نمایش پین‌یین، سرعت ویدیو و مرور لایتنر اعمال می‌شود.
-                            </p>
-                        </div>
                     </div>
                 </Surface>
 

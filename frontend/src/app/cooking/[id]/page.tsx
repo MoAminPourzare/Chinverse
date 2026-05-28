@@ -8,7 +8,7 @@ export default function CookingDetailPage() {
             eyebrow="آشپزی"
             countKeys={["episodes_count"]}
             countLabel="قسمت"
-            accentClass="bg-orange-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

@@ -7,7 +7,7 @@ export default function GrammarExplorePage() {
             subcategorySlug="grammar"
             detailPath="/grammar"
             layout="list"
-            accentClass="bg-emerald-500"
+            accentClass="bg-blue-700"
         />
     );
 }

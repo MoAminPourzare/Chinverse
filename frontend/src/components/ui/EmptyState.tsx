@@ -20,7 +20,7 @@ export default function EmptyState({
     return (
         <Surface className={cn("px-6 py-10 text-center", className)}>
             {icon && (
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[24px] bg-gradient-to-br from-rose-50 to-amber-50 text-rose-500">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#eef6ff] to-[#fff6df] text-[#155aa6]">
                     {icon}
                 </div>
             )}

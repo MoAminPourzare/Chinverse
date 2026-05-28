@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ServiceBase(BaseModel):
@@ -8,6 +8,18 @@ class ServiceBase(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     description: str = Field(min_length=1, max_length=4000)
     price_label: Optional[str] = Field(default=None, max_length=80)
+
+    @field_validator("title", "description", mode="before")
+    @classmethod
+    def strip_required_text(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("price_label", mode="before")
+    @classmethod
+    def strip_price_label(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        return value.strip() or None
 
 
 class ServiceCreate(ServiceBase):
@@ -20,6 +32,13 @@ class ServiceUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=160)
     description: Optional[str] = Field(default=None, max_length=4000)
     price_label: Optional[str] = Field(default=None, max_length=80)
+
+    @field_validator("title", "description", "price_label", mode="before")
+    @classmethod
+    def strip_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        return value.strip() or None
 
 
 class Service(ServiceBase):

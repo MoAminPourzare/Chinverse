@@ -8,7 +8,7 @@ export default function IdiomsDetailPage() {
             eyebrow="اصطلاحات"
             countKeys={["lesson_count"]}
             countLabel="درس"
-            accentClass="bg-rose-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

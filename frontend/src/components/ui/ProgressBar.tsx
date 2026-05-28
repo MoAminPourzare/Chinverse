@@ -20,7 +20,7 @@ export default function ProgressBar({ value, label, helper, className }: Progres
             )}
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
-                    className="h-full rounded-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-400 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-[#155aa6] via-[#50bca4] to-[#ffb74d] transition-all duration-500"
                     style={{ width: `${safeValue}%` }}
                 />
             </div>

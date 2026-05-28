@@ -8,7 +8,7 @@ export default function CharactersDetailPage() {
             eyebrow="کاراکتر"
             countKeys={["lesson_count"]}
             countLabel="درس"
-            accentClass="bg-purple-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

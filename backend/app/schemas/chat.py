@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
 # ===== USER SUMMARY =====
@@ -18,6 +18,11 @@ class ChatUserSummary(BaseModel):
 class MessageCreate(BaseModel):
     receiver_id: int = Field(gt=0)
     content: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, value: str) -> str:
+        return value.strip()
 
 class MessageRead(BaseModel):
     id: int

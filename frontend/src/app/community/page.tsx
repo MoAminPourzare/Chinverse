@@ -2,29 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type Dispatch, type ReactNode, type SetStateAction, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ArrowRight,
     BookOpen,
     ChevronDown,
     ChevronUp,
-    FileText,
     Headphones,
     Loader2,
-    MessageCircle,
-    MessageSquareReply,
-    PenLine,
     Search,
     Send,
-    Sparkles,
     User as UserIcon,
     X,
 } from "lucide-react";
-import EmptyState from "@/components/ui/EmptyState";
-import PrimaryButton from "@/components/ui/PrimaryButton";
-import Surface from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
+import { BackButton } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
+import { validateTextLength, validationMessage } from "@/validation";
 import { chatService, ConversationPreview } from "@/services/chat.service";
 import {
     Article,
@@ -37,7 +30,6 @@ import {
 } from "@/services/community.service";
 
 type MainTab = "forum" | "messages";
-type ForumSection = "questions" | "articles";
 
 const tabs: Array<{ id: MainTab; label: string }> = [
     { id: "forum", label: "تالار گفتگو" },
@@ -46,22 +38,13 @@ const tabs: Array<{ id: MainTab; label: string }> = [
 
 export default function CommunityPage() {
     const [activeTab, setActiveTab] = useState<MainTab>("forum");
-    const [forumSection, setForumSection] = useState<ForumSection>("questions");
     const [questions, setQuestions] = useState<ForumQuestion[]>([]);
     const [articles, setArticles] = useState<Article[]>([]);
     const [conversations, setConversations] = useState<ConversationPreview[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
-    useEffect(() => {
-        if (activeTab === "forum") {
-            void fetchForumData();
-        } else {
-            void fetchConversations();
-        }
-    }, [activeTab]);
-
-    const fetchForumData = async () => {
+    const fetchForumData = useCallback(async () => {
         setIsLoading(true);
         try {
             const [questionsData, articlesData] = await Promise.all([
@@ -75,9 +58,9 @@ export default function CommunityPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const fetchConversations = async () => {
+    const fetchConversations = useCallback(async () => {
         setIsLoading(true);
         try {
             setConversations(await chatService.getConversations());
@@ -86,7 +69,15 @@ export default function CommunityPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === "forum") {
+            void fetchForumData();
+        } else {
+            void fetchConversations();
+        }
+    }, [activeTab, fetchConversations, fetchForumData]);
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -118,33 +109,56 @@ export default function CommunityPage() {
     }, [articles, normalizedQuery]);
 
     return (
-        <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
-            <main className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-                <CommunityHero activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
+            <header className="relative flex h-12 items-center justify-center">
+                <BackButton href="/profile" className="absolute right-0" />
+            </header>
 
-                <Surface className="p-3">
-                    <div className="flex items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                        <Search className="h-5 w-5 text-slate-400" />
-                        <input
-                            type="search"
-                            value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            placeholder={activeTab === "messages" ? "جست‌وجو بین پیام‌ها..." : "جست‌وجو بین سوالات و مقاله‌ها..."}
-                            className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery("")}
-                                className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                aria-label="پاک کردن جست‌وجو"
-                            >
-                                <X size={16} />
-                            </button>
+            <nav className="mt-6 grid grid-cols-2 border-b-2 border-[#155aa6]">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                            "relative py-3 text-sm font-black transition",
+                            activeTab === tab.id ? "text-[#155aa6]" : "text-[#2f3238]",
                         )}
-                    </div>
-                </Surface>
+                    >
+                        {tab.label}
+                        <span
+                            className={cn(
+                                "absolute inset-x-0 -bottom-0.5 h-[3px] rounded-full transition",
+                                activeTab === tab.id ? "bg-[#155aa6]" : "bg-transparent",
+                            )}
+                        />
+                    </button>
+                ))}
+            </nav>
 
+            <div className="mt-5 flex items-center gap-3 rounded-full bg-[#e6e9ef] px-4 py-3">
+                {searchQuery ? (
+                    <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="text-[#2f3238]"
+                        aria-label="پاک کردن جستجو"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                ) : (
+                    <Search className="h-5 w-5 text-[#2f3238]" />
+                )}
+                <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={activeTab === "messages" ? "جستجو بین پیام‌ها..." : "جستجو بین سوالات و مقالات..."}
+                    className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                />
+            </div>
+
+            <main className="mt-7">
                 {activeTab === "messages" ? (
                     <MessagesTab conversations={visibleConversations} isLoading={isLoading} />
                 ) : (
@@ -152,74 +166,20 @@ export default function CommunityPage() {
                         questions={visibleQuestions}
                         articles={visibleArticles}
                         isLoading={isLoading}
-                        forumSection={forumSection}
-                        setForumSection={setForumSection}
                         setQuestions={setQuestions}
                         setArticles={setArticles}
                     />
                 )}
             </main>
+
+            <Link
+                href="/support"
+                className="fixed bottom-24 left-[calc(50%-185px)] z-20 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
+                aria-label="پشتیبانی"
+            >
+                <Headphones className="h-6 w-6" />
+            </Link>
         </div>
-    );
-}
-
-function CommunityHero({
-    activeTab,
-    setActiveTab,
-}: {
-    activeTab: MainTab;
-    setActiveTab: (tab: MainTab) => void;
-}) {
-    return (
-        <Surface className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_50%,#334155_100%)] p-0 text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]">
-            <div className="relative p-5">
-                <div className="absolute -left-14 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
-                <div className="absolute -bottom-20 right-16 h-52 w-52 rounded-full bg-emerald-400/15 blur-3xl" />
-                <div className="relative">
-                    <div className="mb-5 flex items-center justify-between gap-3">
-                        <Link
-                            href="/profile"
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white/85 transition hover:bg-white/15 hover:text-white"
-                            aria-label="بازگشت"
-                        >
-                            <ArrowRight size={19} />
-                        </Link>
-                        <PrimaryButton href="/support" variant="light" className="px-3 py-2 text-xs" leadingIcon={<Headphones size={15} />}>
-                            پشتیبانی
-                        </PrimaryButton>
-                    </div>
-
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80">
-                        <Sparkles size={15} />
-                        ChinVerse Community
-                    </div>
-                    <h1 className="mt-4 text-2xl font-black leading-9 tracking-tight">
-                        سوال بپرس، مقاله منتشر کن، گفتگو بساز.
-                    </h1>
-                    <p className="mt-3 text-sm leading-7 text-white/72">
-                        تالار گفتگو برای پرسش و پاسخ و مقاله‌ها برای نوشته‌های کامل‌تر آموزشی و تجربه‌های کاربران است.
-                    </p>
-
-                    <div className="mt-5 grid grid-cols-2 gap-2 rounded-[24px] border border-white/10 bg-white/8 p-1.5 backdrop-blur">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "rounded-[18px] px-4 py-3 text-sm font-black transition",
-                                    activeTab === tab.id
-                                        ? "bg-white text-slate-950 shadow-[0_14px_34px_rgba(15,23,42,0.22)]"
-                                        : "text-white/70 hover:bg-white/10 hover:text-white",
-                                )}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </Surface>
     );
 }
 
@@ -227,109 +187,53 @@ function ForumTab({
     questions,
     articles,
     isLoading,
-    forumSection,
-    setForumSection,
     setQuestions,
     setArticles,
 }: {
     questions: ForumQuestion[];
     articles: Article[];
     isLoading: boolean;
-    forumSection: ForumSection;
-    setForumSection: (section: ForumSection) => void;
-    setQuestions: Dispatch<SetStateAction<ForumQuestion[]>>;
-    setArticles: Dispatch<SetStateAction<Article[]>>;
+    setQuestions: React.Dispatch<React.SetStateAction<ForumQuestion[]>>;
+    setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
 }) {
     return (
-        <div className="space-y-4">
-            <Surface className="grid grid-cols-2 gap-2 p-2">
-                <ForumSectionButton
-                    active={forumSection === "questions"}
-                    title="سوالات شما"
-                    subtitle="پرسش، پاسخ و ادامه گفتگو"
-                    icon={<MessageCircle size={18} />}
-                    onClick={() => setForumSection("questions")}
-                />
-                <ForumSectionButton
-                    active={forumSection === "articles"}
-                    title="مقالات"
-                    subtitle="نوشته‌های آموزشی کامل‌تر"
-                    icon={<FileText size={18} />}
-                    onClick={() => setForumSection("articles")}
-                />
-            </Surface>
-
-            {forumSection === "questions" ? (
-                <QuestionsPanel questions={questions} isLoading={isLoading} setQuestions={setQuestions} />
-            ) : (
-                <ArticlesPanel articles={articles} isLoading={isLoading} setArticles={setArticles} />
-            )}
+        <div className="space-y-8">
+            <QuestionsSection questions={questions} isLoading={isLoading} setQuestions={setQuestions} />
+            <ArticlesSection articles={articles} isLoading={isLoading} setArticles={setArticles} />
         </div>
     );
 }
 
-function ForumSectionButton({
-    active,
-    title,
-    subtitle,
-    icon,
-    onClick,
-}: {
-    active: boolean;
-    title: string;
-    subtitle: string;
-    icon: ReactNode;
-    onClick: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                "flex min-h-[86px] flex-col items-start justify-between rounded-[24px] p-4 text-right transition",
-                active
-                    ? "bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-[0_16px_34px_rgba(244,63,94,0.22)]"
-                    : "bg-slate-50 text-slate-600 hover:bg-white",
-            )}
-        >
-            <span className={cn("flex h-9 w-9 items-center justify-center rounded-2xl", active ? "bg-white/18" : "bg-white text-rose-500 shadow-sm")}>
-                {icon}
-            </span>
-            <span>
-                <span className="block text-sm font-black">{title}</span>
-                <span className={cn("mt-1 block text-[11px] leading-5", active ? "text-white/75" : "text-slate-400")}>{subtitle}</span>
-            </span>
-        </button>
-    );
-}
-
-function QuestionsPanel({
+function QuestionsSection({
     questions,
     isLoading,
     setQuestions,
 }: {
     questions: ForumQuestion[];
     isLoading: boolean;
-    setQuestions: Dispatch<SetStateAction<ForumQuestion[]>>;
+    setQuestions: React.Dispatch<React.SetStateAction<ForumQuestion[]>>;
 }) {
-    const [draft, setDraft] = useState({ title: "", content: "" });
+    const [draft, setDraft] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
     const [details, setDetails] = useState<Record<number, ForumQuestionDetail>>({});
     const [answerInputs, setAnswerInputs] = useState<Record<number, string>>({});
-    const [replyTarget, setReplyTarget] = useState<Record<number, ForumAnswer | null>>({});
+    const [draftError, setDraftError] = useState("");
+    const [answerErrors, setAnswerErrors] = useState<Record<number, string>>({});
     const [submittingAnswerId, setSubmittingAnswerId] = useState<number | null>(null);
 
     const submitQuestion = async () => {
-        const title = draft.title.trim();
-        const content = draft.content.trim();
-        if (!title || !content || isSubmitting) return;
+        const content = draft.trim();
+        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 8, max: 8000 }));
+        setDraftError(validationError);
+        if (validationError || isSubmitting) return;
 
         setIsSubmitting(true);
         try {
+            const title = content.length > 55 ? `${content.slice(0, 55)}...` : content;
             const created = await communityService.createForumQuestion({ title, content });
             setQuestions((current) => [created, ...current]);
-            setDraft({ title: "", content: "" });
+            setDraft("");
             setOpenQuestionId(created.id);
             setDetails((current) => ({ ...current, [created.id]: { ...created, answers: [] } }));
         } catch (error) {
@@ -355,14 +259,13 @@ function QuestionsPanel({
 
     const submitAnswer = async (questionId: number) => {
         const content = answerInputs[questionId]?.trim();
-        if (!content || submittingAnswerId) return;
+        const validationError = validationMessage(validateTextLength(content || "", "پاسخ", { required: true, max: 8000 }));
+        setAnswerErrors((current) => ({ ...current, [questionId]: validationError }));
+        if (validationError || submittingAnswerId) return;
 
         setSubmittingAnswerId(questionId);
         try {
-            const created = await communityService.createForumAnswer(questionId, {
-                content,
-                parent_id: replyTarget[questionId]?.id ?? null,
-            });
+            const created = await communityService.createForumAnswer(questionId, { content });
             setDetails((current) => {
                 const detail = current[questionId];
                 if (!detail) return current;
@@ -381,7 +284,7 @@ function QuestionsPanel({
                 ),
             );
             setAnswerInputs((current) => ({ ...current, [questionId]: "" }));
-            setReplyTarget((current) => ({ ...current, [questionId]: null }));
+            setAnswerErrors((current) => ({ ...current, [questionId]: "" }));
         } catch (error) {
             console.error("Failed to submit answer:", error);
             alert("ارسال پاسخ انجام نشد. لطفا دوباره تلاش کن.");
@@ -391,114 +294,106 @@ function QuestionsPanel({
     };
 
     return (
-        <div className="space-y-4">
-            <Surface className="p-4">
-                <div className="mb-4 flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-rose-50 text-rose-600">
-                        <PenLine size={20} />
-                    </div>
-                    <div>
-                        <h2 className="text-base font-black text-slate-950">سوال تازه بپرس</h2>
-                        <p className="mt-1 text-xs leading-6 text-slate-500">
-                            عنوان کوتاه و توضیح کامل بنویس تا بقیه بتوانند دقیق‌تر جواب بدهند.
-                        </p>
-                    </div>
-                </div>
-                <div className="space-y-3">
-                    <input
-                        value={draft.title}
-                        onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-                        placeholder="عنوان سوال، مثلا: تفاوت 了 و 过 چیست؟"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                    />
-                    <textarea
-                        value={draft.content}
-                        onChange={(event) => setDraft((current) => ({ ...current, content: event.target.value }))}
-                        placeholder="توضیح سوالت را اینجا بنویس..."
-                        rows={3}
-                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                    />
-                    <PrimaryButton
-                        type="button"
-                        onClick={submitQuestion}
-                        disabled={!draft.title.trim() || !draft.content.trim() || isSubmitting}
-                        className="w-full"
-                        leadingIcon={isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send size={17} />}
-                    >
-                        ثبت سوال
-                    </PrimaryButton>
-                </div>
-            </Surface>
+        <section>
+            <SectionHeader
+                title="سوالات شما"
+                description="اگر درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چین‌ورس بهتر پاسخ میدن."
+            />
 
-            {isLoading ? (
-                <LoadingGrid count={3} />
-            ) : questions.length > 0 ? (
-                <div className="grid gap-3">
-                    {questions.map((question) => (
+            <div className="mt-4 flex items-stretch gap-2">
+                <textarea
+                    value={draft}
+                    onChange={(event) => {
+                        setDraft(event.target.value);
+                        if (draftError) setDraftError("");
+                    }}
+                    rows={2}
+                    placeholder="سوالت رو اینجا بنویس..."
+                    className="min-h-[56px] flex-1 resize-none rounded-[10px] border border-[#ef7f66] bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                />
+                <button
+                    type="button"
+                    onClick={submitQuestion}
+                    disabled={!draft.trim() || isSubmitting}
+                    className="flex w-[58px] shrink-0 items-center justify-center rounded-[14px] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.25)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-300"
+                    aria-label="ارسال سوال"
+                >
+                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-6 w-6" />}
+                </button>
+            </div>
+            {draftError && <p className="mt-2 text-xs font-bold leading-5 text-rose-600">{draftError}</p>}
+
+            <div className="mt-4 space-y-3">
+                {isLoading ? (
+                    <LoadingList count={3} />
+                ) : questions.length > 0 ? (
+                    questions.map((question) => (
                         <QuestionCard
                             key={question.id}
                             question={question}
                             detail={details[question.id]}
                             isOpen={openQuestionId === question.id}
                             answerText={answerInputs[question.id] || ""}
-                            replyTarget={replyTarget[question.id] || null}
+                            answerError={answerErrors[question.id] || ""}
                             isSubmittingAnswer={submittingAnswerId === question.id}
-                            onToggle={() => void toggleQuestion(question.id)}
-                            onAnswerChange={(value) => setAnswerInputs((current) => ({ ...current, [question.id]: value }))}
-                            onReply={(answer) => setReplyTarget((current) => ({ ...current, [question.id]: answer }))}
-                            onCancelReply={() => setReplyTarget((current) => ({ ...current, [question.id]: null }))}
-                            onSubmitAnswer={() => void submitAnswer(question.id)}
+                            onToggle={() => toggleQuestion(question.id)}
+                            onAnswerChange={(value) => {
+                                setAnswerInputs((current) => ({ ...current, [question.id]: value }));
+                                setAnswerErrors((current) => ({ ...current, [question.id]: "" }));
+                            }}
+                            onSubmitAnswer={() => submitAnswer(question.id)}
                         />
-                    ))}
-                </div>
-            ) : (
-                <EmptyState
-                    icon={<MessageCircle size={30} />}
-                    title="هنوز سوالی ثبت نشده"
-                    description="اولین سوال را بپرس تا تالار گفتگو فعال‌تر شود."
-                />
-            )}
-        </div>
+                    ))
+                ) : (
+                    <SmallEmpty text="هنوز سوالی ثبت نشده. اولین سوال را تو بپرس." />
+                )}
+            </div>
+        </section>
     );
 }
 
-function ArticlesPanel({
+function ArticlesSection({
     articles,
     isLoading,
     setArticles,
 }: {
     articles: Article[];
     isLoading: boolean;
-    setArticles: Dispatch<SetStateAction<Article[]>>;
+    setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
 }) {
+    const [showComposer, setShowComposer] = useState(false);
     const [draft, setDraft] = useState({ title: "", summary: "", content: "" });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [openArticleId, setOpenArticleId] = useState<number | null>(null);
     const [details, setDetails] = useState<Record<number, ArticleDetail>>({});
     const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
-    const [replyTarget, setReplyTarget] = useState<Record<number, ArticleComment | null>>({});
+    const [articleErrors, setArticleErrors] = useState<Record<string, string>>({});
+    const [commentErrors, setCommentErrors] = useState<Record<number, string>>({});
     const [submittingCommentId, setSubmittingCommentId] = useState<number | null>(null);
 
     const submitArticle = async () => {
-        const title = draft.title.trim();
-        const content = draft.content.trim();
-        const summary = draft.summary.trim();
-        if (!title || !content || isSubmitting) return;
+        const nextErrors = {
+            title: validationMessage(validateTextLength(draft.title, "عنوان مقاله", { required: true, min: 3, max: 180 })),
+            summary: validationMessage(validateTextLength(draft.summary, "خلاصه مقاله", { max: 500 })),
+            content: validationMessage(validateTextLength(draft.content, "متن مقاله", { required: true, min: 30, max: 50000 })),
+        };
+        setArticleErrors(nextErrors);
+        if (Object.values(nextErrors).some(Boolean) || isSubmitting) return;
 
         setIsSubmitting(true);
         try {
             const created = await communityService.createArticle({
-                title,
-                content,
-                summary: summary || null,
+                title: draft.title.trim(),
+                summary: draft.summary.trim() || null,
+                content: draft.content.trim(),
             });
             setArticles((current) => [created, ...current]);
             setDraft({ title: "", summary: "", content: "" });
-            setOpenArticleId(created.id);
-            setDetails((current) => ({ ...current, [created.id]: { ...created, comments: [] } }));
+            setArticleErrors({});
+            setShowComposer(false);
         } catch (error) {
             console.error("Failed to create article:", error);
-            alert("انتشار مقاله انجام نشد. لطفا دوباره تلاش کن.");
+            alert("ثبت مقاله انجام نشد. لطفا دوباره تلاش کن.");
         } finally {
             setIsSubmitting(false);
         }
@@ -519,14 +414,13 @@ function ArticlesPanel({
 
     const submitComment = async (articleId: number) => {
         const content = commentInputs[articleId]?.trim();
-        if (!content || submittingCommentId) return;
+        const validationError = validationMessage(validateTextLength(content || "", "کامنت", { required: true, max: 8000 }));
+        setCommentErrors((current) => ({ ...current, [articleId]: validationError }));
+        if (validationError || submittingCommentId) return;
 
         setSubmittingCommentId(articleId);
         try {
-            const created = await communityService.createArticleComment(articleId, {
-                content,
-                parent_id: replyTarget[articleId]?.id ?? null,
-            });
+            const created = await communityService.createArticleComment(articleId, { content });
             setDetails((current) => {
                 const detail = current[articleId];
                 if (!detail) return current;
@@ -545,7 +439,7 @@ function ArticlesPanel({
                 ),
             );
             setCommentInputs((current) => ({ ...current, [articleId]: "" }));
-            setReplyTarget((current) => ({ ...current, [articleId]: null }));
+            setCommentErrors((current) => ({ ...current, [articleId]: "" }));
         } catch (error) {
             console.error("Failed to submit comment:", error);
             alert("ارسال کامنت انجام نشد. لطفا دوباره تلاش کن.");
@@ -555,81 +449,108 @@ function ArticlesPanel({
     };
 
     return (
-        <div className="space-y-4">
-            <Surface className="overflow-hidden p-0">
-                <div className="border-b border-slate-100 bg-gradient-to-l from-amber-50 to-white p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-white text-amber-600 shadow-sm">
-                            <BookOpen size={20} />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-black text-slate-950">مقاله منتشر کن</h2>
-                            <p className="mt-1 text-xs leading-6 text-slate-500">
-                                مقاله با عنوان، خلاصه و متن کامل منتشر می‌شود و از سوال کوتاه جداست.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div className="space-y-3 p-4">
+        <section>
+            <SectionHeader
+                title="مقالات"
+                description="در این بخش، سوالات پرتکرار یا موضوعات جالب توسط تیم یا کاربران به مقاله تبدیل میشه. می‌تونی مقاله‌ها رو بخونی و زیرش نظر بدی یا سوال جدید مطرح کنی."
+                action={
+                    <button
+                        type="button"
+                        onClick={() => setShowComposer((value) => !value)}
+                        className="text-xs font-black text-[#155aa6]"
+                    >
+                        {showComposer ? "بستن" : "نوشتن مقاله"}
+                    </button>
+                }
+            />
+
+            {showComposer && (
+                <div className="mt-4 space-y-3 rounded-[22px] border border-[#d6e1ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
                     <input
                         value={draft.title}
-                        onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+                        onChange={(event) => {
+                            setDraft((current) => ({ ...current, title: event.target.value }));
+                            setArticleErrors((current) => ({ ...current, title: "" }));
+                        }}
                         placeholder="عنوان مقاله"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                        className="w-full rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm outline-none focus:border-[#155aa6]"
                     />
+                    {articleErrors.title && <p className="text-xs font-bold text-rose-600">{articleErrors.title}</p>}
                     <input
                         value={draft.summary}
-                        onChange={(event) => setDraft((current) => ({ ...current, summary: event.target.value }))}
-                        placeholder="خلاصه کوتاه مقاله، اختیاری"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                        onChange={(event) => {
+                            setDraft((current) => ({ ...current, summary: event.target.value }));
+                            setArticleErrors((current) => ({ ...current, summary: "" }));
+                        }}
+                        placeholder="خلاصه کوتاه"
+                        className="w-full rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm outline-none focus:border-[#155aa6]"
                     />
+                    {articleErrors.summary && <p className="text-xs font-bold text-rose-600">{articleErrors.summary}</p>}
                     <textarea
                         value={draft.content}
-                        onChange={(event) => setDraft((current) => ({ ...current, content: event.target.value }))}
-                        placeholder="متن کامل مقاله را اینجا بنویس..."
-                        rows={5}
-                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                        onChange={(event) => {
+                            setDraft((current) => ({ ...current, content: event.target.value }));
+                            setArticleErrors((current) => ({ ...current, content: "" }));
+                        }}
+                        rows={4}
+                        placeholder="متن مقاله را بنویس..."
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm leading-7 outline-none focus:border-[#155aa6]"
                     />
-                    <PrimaryButton
+                    {articleErrors.content && <p className="text-xs font-bold text-rose-600">{articleErrors.content}</p>}
+                    <button
                         type="button"
                         onClick={submitArticle}
                         disabled={!draft.title.trim() || !draft.content.trim() || isSubmitting}
-                        className="w-full"
-                        leadingIcon={isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText size={17} />}
+                        className="w-full rounded-full bg-[#155aa6] py-3 text-sm font-black text-white shadow-[0_10px_20px_rgba(21,90,166,0.24)] disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
-                        انتشار مقاله
-                    </PrimaryButton>
+                        {isSubmitting ? "در حال ثبت..." : "ثبت مقاله"}
+                    </button>
                 </div>
-            </Surface>
+            )}
 
-            {isLoading ? (
-                <LoadingGrid count={3} />
-            ) : articles.length > 0 ? (
-                <div className="grid gap-3">
-                    {articles.map((article) => (
+            <div className="mt-4 space-y-3">
+                {isLoading ? (
+                    <LoadingList count={2} />
+                ) : articles.length > 0 ? (
+                    articles.map((article) => (
                         <ArticleCard
                             key={article.id}
                             article={article}
                             detail={details[article.id]}
                             isOpen={openArticleId === article.id}
                             commentText={commentInputs[article.id] || ""}
-                            replyTarget={replyTarget[article.id] || null}
+                            commentError={commentErrors[article.id] || ""}
                             isSubmittingComment={submittingCommentId === article.id}
-                            onToggle={() => void toggleArticle(article.id)}
-                            onCommentChange={(value) => setCommentInputs((current) => ({ ...current, [article.id]: value }))}
-                            onReply={(comment) => setReplyTarget((current) => ({ ...current, [article.id]: comment }))}
-                            onCancelReply={() => setReplyTarget((current) => ({ ...current, [article.id]: null }))}
-                            onSubmitComment={() => void submitComment(article.id)}
+                            onToggle={() => toggleArticle(article.id)}
+                            onCommentChange={(value) => {
+                                setCommentInputs((current) => ({ ...current, [article.id]: value }));
+                                setCommentErrors((current) => ({ ...current, [article.id]: "" }));
+                            }}
+                            onSubmitComment={() => submitComment(article.id)}
                         />
-                    ))}
-                </div>
-            ) : (
-                <EmptyState
-                    icon={<BookOpen size={30} />}
-                    title="هنوز مقاله‌ای منتشر نشده"
-                    description="اولین مقاله آموزشی یا تجربه خودت را منتشر کن."
-                />
-            )}
+                    ))
+                ) : (
+                    <SmallEmpty text="هنوز مقاله‌ای منتشر نشده." />
+                )}
+            </div>
+        </section>
+    );
+}
+
+function SectionHeader({
+    title,
+    action,
+}: {
+    title: string;
+    description?: string;
+    action?: React.ReactNode;
+}) {
+    return (
+        <div>
+            <div className="flex items-center justify-between gap-3">
+                <h2 className="text-[18px] font-black text-[#2f3238]">{title}</h2>
+                {action}
+            </div>
         </div>
     );
 }
@@ -639,88 +560,70 @@ function QuestionCard({
     detail,
     isOpen,
     answerText,
-    replyTarget,
+    answerError,
     isSubmittingAnswer,
     onToggle,
     onAnswerChange,
-    onReply,
-    onCancelReply,
     onSubmitAnswer,
 }: {
     question: ForumQuestion;
     detail?: ForumQuestionDetail;
     isOpen: boolean;
     answerText: string;
-    replyTarget: ForumAnswer | null;
+    answerError: string;
     isSubmittingAnswer: boolean;
     onToggle: () => void;
     onAnswerChange: (value: string) => void;
-    onReply: (answer: ForumAnswer) => void;
-    onCancelReply: () => void;
     onSubmitAnswer: () => void;
 }) {
-    const answers = detail?.answers || [];
-
     return (
-        <Surface as="article" className="overflow-hidden p-0">
-            <button type="button" onClick={onToggle} className="block w-full p-4 text-right">
+        <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+            <button type="button" onClick={onToggle} className="w-full p-4 text-right">
                 <div className="flex items-start gap-3">
                     <Avatar src={question.author?.avatar_url} name={question.author?.display_name} />
                     <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-black text-slate-950">{question.author?.display_name || "کاربر چین‌ورس"}</p>
-                            <span className="text-xs text-slate-400">{formatDate(question.created_at)}</span>
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-black text-[#155aa6]">{question.author?.display_name || "کاربر چین‌ورس"}</p>
+                            <span className="text-[11px] text-slate-400">{formatDate(question.created_at)}</span>
                         </div>
-                        <h3 className="mt-2 text-base font-black leading-7 text-slate-900">{question.title}</h3>
-                        <p className="mt-1 line-clamp-2 text-sm leading-7 text-slate-500">{question.content}</p>
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                            <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                        <h3 className="mt-2 line-clamp-2 text-sm font-black leading-7 text-slate-900">{question.title}</h3>
+                        <div className="mt-3 flex items-center justify-between">
+                            <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
                                 {question.answers_count} پاسخ
                             </span>
-                            <span className="inline-flex items-center gap-1 text-xs font-black text-rose-600">
-                                {isOpen ? "بستن گفتگو" : "مشاهده گفتگو"}
-                                {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                            </span>
+                            {isOpen ? <ChevronUp className="h-4 w-4 text-[#155aa6]" /> : <ChevronDown className="h-4 w-4 text-[#155aa6]" />}
                         </div>
                     </div>
                 </div>
             </button>
 
             {isOpen && (
-                <div className="border-t border-slate-100 bg-slate-50/70 p-4">
-                    <p className="whitespace-pre-wrap rounded-[22px] bg-white p-4 text-sm leading-8 text-slate-700 shadow-sm">
+                <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
+                    <p className="whitespace-pre-wrap rounded-2xl bg-white p-4 text-sm leading-8 text-slate-700">
                         {detail?.content || question.content}
                     </p>
-
                     <div className="mt-4 space-y-3">
                         {detail ? (
-                            answers.length > 0 ? (
-                                <AnswerThread answers={answers} onReply={onReply} />
+                            detail.answers.length > 0 ? (
+                                detail.answers.map((answer) => <ThreadBubble key={answer.id} item={answer} />)
                             ) : (
-                                <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5 text-center text-sm text-slate-400">
-                                    هنوز پاسخی ثبت نشده. اولین پاسخ را بنویس.
-                                </p>
+                                <SmallEmpty text="هنوز پاسخی ثبت نشده. اولین پاسخ را بنویس." />
                             )
                         ) : (
-                            <div className="flex items-center justify-center py-6 text-sm text-slate-400">
-                                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                                در حال بارگذاری گفتگو...
-                            </div>
+                            <LoadingInline text="در حال بارگذاری گفتگو..." />
                         )}
                     </div>
-
                     <ReplyComposer
                         value={answerText}
+                        error={answerError}
                         placeholder="پاسخت را بنویس..."
-                        replyLabel={replyTarget ? `در پاسخ به ${replyTarget.author?.display_name || "یک پاسخ"}` : undefined}
                         disabled={isSubmittingAnswer}
                         onChange={onAnswerChange}
-                        onCancelReply={onCancelReply}
                         onSubmit={onSubmitAnswer}
                     />
                 </div>
             )}
-        </Surface>
+        </article>
     );
 }
 
@@ -729,161 +632,82 @@ function ArticleCard({
     detail,
     isOpen,
     commentText,
-    replyTarget,
+    commentError,
     isSubmittingComment,
     onToggle,
     onCommentChange,
-    onReply,
-    onCancelReply,
     onSubmitComment,
 }: {
     article: Article;
     detail?: ArticleDetail;
     isOpen: boolean;
     commentText: string;
-    replyTarget: ArticleComment | null;
+    commentError: string;
     isSubmittingComment: boolean;
     onToggle: () => void;
     onCommentChange: (value: string) => void;
-    onReply: (comment: ArticleComment) => void;
-    onCancelReply: () => void;
     onSubmitComment: () => void;
 }) {
-    const comments = detail?.comments || [];
-    const readingMinutes = Math.max(1, Math.ceil(article.content.length / 900));
-
     return (
-        <Surface as="article" className="overflow-hidden p-0">
-            <button type="button" onClick={onToggle} className="block w-full text-right">
-                <div className="grid gap-4 p-4 sm:grid-cols-[132px_1fr]">
-                    <div className="relative min-h-32 overflow-hidden rounded-[26px] bg-gradient-to-br from-slate-950 via-slate-800 to-rose-900 text-white">
+        <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+            <button type="button" onClick={onToggle} className="w-full p-4 text-right">
+                <div className="flex gap-3">
+                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px] bg-[#eef6ff] text-[#155aa6]">
                         {article.cover_image ? (
-                            <Image
-                                src={getMediaUrl(article.cover_image)}
-                                alt={article.title}
-                                fill
-                                className="object-cover"
-                                sizes="132px"
-                                unoptimized
-                            />
+                            <Image src={getMediaUrl(article.cover_image)} alt={article.title} fill className="object-cover" unoptimized />
                         ) : (
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(251,191,36,0.26),transparent_36%),radial-gradient(circle_at_85%_20%,rgba(244,63,94,0.32),transparent_34%)]" />
+                            <div className="flex h-full w-full items-center justify-center">
+                                <BookOpen className="h-8 w-8" />
+                            </div>
                         )}
-                        <div className="absolute inset-0 flex flex-col justify-between p-3">
-                            <span className="w-fit rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-black text-white/85">
-                                مقاله
-                            </span>
-                            <BookOpen size={28} className="text-white/78" />
-                        </div>
                     </div>
-                    <div className="min-w-0">
-                        <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-400">
-                            <span>{article.author?.display_name || "نویسنده چین‌ورس"}</span>
-                            <span>•</span>
-                            <span>{formatDate(article.created_at)}</span>
-                            <span>•</span>
-                            <span>{readingMinutes} دقیقه مطالعه</span>
-                        </div>
-                        <h3 className="text-lg font-black leading-8 text-slate-950">{article.title}</h3>
-                        {article.summary && <p className="mt-1 line-clamp-2 text-sm leading-7 text-slate-500">{article.summary}</p>}
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-bold text-slate-400">{article.author?.display_name || "نویسنده چین‌ورس"} · {formatDate(article.created_at)}</p>
+                        <h3 className="mt-1 line-clamp-2 text-sm font-black leading-7 text-slate-900">{article.title}</h3>
+                        {article.summary && <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-500">{article.summary}</p>}
+                        <div className="mt-2 flex items-center justify-between">
+                            <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
                                 {article.comments_count} کامنت
                             </span>
-                            <span className="inline-flex items-center gap-1 text-xs font-black text-rose-600">
-                                {isOpen ? "بستن مقاله" : "خواندن مقاله"}
-                                {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                            </span>
+                            {isOpen ? <ChevronUp className="h-4 w-4 text-[#155aa6]" /> : <ChevronDown className="h-4 w-4 text-[#155aa6]" />}
                         </div>
                     </div>
                 </div>
             </button>
 
             {isOpen && (
-                <div className="border-t border-slate-100 bg-slate-50/70 p-4">
-                    <div className="rounded-[24px] bg-white p-4 shadow-sm">
+                <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
+                    <div className="rounded-2xl bg-white p-4">
                         <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700">{detail?.content || article.content}</p>
                     </div>
-
                     <div className="mt-4 space-y-3">
                         {detail ? (
-                            comments.length > 0 ? (
-                                <CommentThread comments={comments} onReply={onReply} />
+                            detail.comments.length > 0 ? (
+                                detail.comments.map((comment) => <ThreadBubble key={comment.id} item={comment} />)
                             ) : (
-                                <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5 text-center text-sm text-slate-400">
-                                    هنوز کامنتی ثبت نشده. اولین نظر را بنویس.
-                                </p>
+                                <SmallEmpty text="هنوز کامنتی ثبت نشده. اولین نظر را بنویس." />
                             )
                         ) : (
-                            <div className="flex items-center justify-center py-6 text-sm text-slate-400">
-                                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                                در حال بارگذاری مقاله...
-                            </div>
+                            <LoadingInline text="در حال بارگذاری مقاله..." />
                         )}
                     </div>
-
                     <ReplyComposer
                         value={commentText}
+                        error={commentError}
                         placeholder="کامنتت را بنویس..."
-                        replyLabel={replyTarget ? `در پاسخ به ${replyTarget.author?.display_name || "یک کامنت"}` : undefined}
                         disabled={isSubmittingComment}
                         onChange={onCommentChange}
-                        onCancelReply={onCancelReply}
                         onSubmit={onSubmitComment}
                     />
                 </div>
             )}
-        </Surface>
+        </article>
     );
 }
 
-function AnswerThread({ answers, onReply }: { answers: ForumAnswer[]; onReply: (answer: ForumAnswer) => void }) {
-    const roots = answers.filter((answer) => !answer.parent_id);
-    const childrenByParent = answers.reduce<Record<number, ForumAnswer[]>>((acc, answer) => {
-        if (answer.parent_id) {
-            acc[answer.parent_id] = [...(acc[answer.parent_id] || []), answer];
-        }
-        return acc;
-    }, {});
-
+function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
     return (
-        <div className="space-y-3">
-            {roots.map((answer) => (
-                <ThreadBubble key={answer.id} item={answer} replies={childrenByParent[answer.id] || []} onReply={() => onReply(answer)} />
-            ))}
-        </div>
-    );
-}
-
-function CommentThread({ comments, onReply }: { comments: ArticleComment[]; onReply: (comment: ArticleComment) => void }) {
-    const roots = comments.filter((comment) => !comment.parent_id);
-    const childrenByParent = comments.reduce<Record<number, ArticleComment[]>>((acc, comment) => {
-        if (comment.parent_id) {
-            acc[comment.parent_id] = [...(acc[comment.parent_id] || []), comment];
-        }
-        return acc;
-    }, {});
-
-    return (
-        <div className="space-y-3">
-            {roots.map((comment) => (
-                <ThreadBubble key={comment.id} item={comment} replies={childrenByParent[comment.id] || []} onReply={() => onReply(comment)} />
-            ))}
-        </div>
-    );
-}
-
-function ThreadBubble({
-    item,
-    replies,
-    onReply,
-}: {
-    item: ForumAnswer | ArticleComment;
-    replies: Array<ForumAnswer | ArticleComment>;
-    onReply: () => void;
-}) {
-    return (
-        <div className="rounded-[22px] border border-slate-100 bg-white p-3">
+        <div className="rounded-[18px] bg-white p-3 shadow-sm">
             <div className="flex items-start gap-3">
                 <Avatar src={item.author?.avatar_url} name={item.author?.display_name} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -892,79 +716,48 @@ function ThreadBubble({
                         <span className="shrink-0 text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600">{item.content}</p>
-                    <button
-                        type="button"
-                        onClick={onReply}
-                        className="mt-2 inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
-                    >
-                        <MessageSquareReply size={13} />
-                        پاسخ
-                    </button>
                 </div>
             </div>
-            {replies.length > 0 && (
-                <div className="mr-8 mt-3 space-y-2 border-r border-slate-100 pr-3">
-                    {replies.map((reply) => (
-                        <div key={reply.id} className="rounded-[18px] bg-slate-50 p-3">
-                            <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
-                                <span className="font-black text-slate-700">{reply.author?.display_name || "کاربر چین‌ورس"}</span>
-                                <span className="text-slate-400">{formatDate(reply.created_at)}</span>
-                            </div>
-                            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{reply.content}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }
 
 function ReplyComposer({
     value,
+    error,
     placeholder,
-    replyLabel,
     disabled,
     onChange,
-    onCancelReply,
     onSubmit,
 }: {
     value: string;
+    error?: string;
     placeholder: string;
-    replyLabel?: string;
     disabled: boolean;
     onChange: (value: string) => void;
-    onCancelReply: () => void;
     onSubmit: () => void;
 }) {
     return (
-        <div className="mt-4 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm">
-            {replyLabel && (
-                <div className="mb-2 flex items-center justify-between rounded-2xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">
-                    <span>{replyLabel}</span>
-                    <button type="button" onClick={onCancelReply} className="text-rose-400 transition hover:text-rose-700">
-                        <X size={14} />
-                    </button>
-                </div>
-            )}
-            <textarea
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-                placeholder={placeholder}
-                rows={3}
-                className="w-full resize-none bg-transparent text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
-            />
-            <div className="mt-2 flex justify-end">
+        <>
+            <div className="mt-4 flex items-end gap-2 rounded-[18px] bg-white p-2 shadow-sm">
+                <textarea
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    placeholder={placeholder}
+                    rows={2}
+                    className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
+                />
                 <button
                     type="button"
                     onClick={onSubmit}
                     disabled={!value.trim() || disabled}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#155aa6] text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                    {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send size={15} />}
-                    ارسال
+                    {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-5 w-5" />}
                 </button>
             </div>
-        </div>
+            {error && <p className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
+        </>
     );
 }
 
@@ -976,27 +769,27 @@ function MessagesTab({
     isLoading: boolean;
 }) {
     if (isLoading) {
-        return <LoadingGrid count={4} />;
+        return <LoadingList count={4} />;
     }
 
     if (conversations.length === 0) {
         return (
-            <EmptyState
-                icon={<MessageCircle size={30} />}
-                title="هنوز پیامی نداری"
-                description="بعد از شروع گفتگو با کاربران یا ارائه‌دهنده‌های خدمات، پیام‌ها اینجا دیده می‌شوند."
-                action={<PrimaryButton href="/showcase">رفتن به ویترین</PrimaryButton>}
-            />
+            <div className="flex min-h-[460px] flex-col items-center justify-center px-6 text-center">
+                <div className="relative mb-8 h-[150px] w-[150px]">
+                    <Image src="/assets/chinverse/icons/chat-message-hover-pinch.svg" alt="" fill sizes="150px" className="object-contain" />
+                </div>
+                <h2 className="text-[17px] font-black text-[#25272d]">هنوز پیامی دریافت نکردی!</h2>
+            </div>
         );
     }
 
     return (
-        <div className="grid gap-3">
+        <div className="space-y-3">
             {conversations.map((conversation) => (
                 <Link
                     key={conversation.user.id}
                     href={`/chat/${conversation.user.id}`}
-                    className="rounded-[26px] border border-white/70 bg-white/85 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                    className="block rounded-[22px] border border-[#d6e1ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5"
                 >
                     <div className="flex items-center gap-3">
                         <Avatar src={conversation.user.avatar_url} name={conversation.user.display_name} />
@@ -1010,7 +803,7 @@ function MessagesTab({
                             <p className="mt-1 truncate text-sm text-slate-500">{conversation.last_message}</p>
                         </div>
                         {conversation.unread_count > 0 && (
-                            <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-rose-500 px-2 text-xs font-bold text-white">
+                            <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#155aa6] px-2 text-xs font-bold text-white">
                                 {conversation.unread_count}
                             </span>
                         )}
@@ -1023,7 +816,7 @@ function MessagesTab({
 
 function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string | null; size?: "sm" | "md" }) {
     return (
-        <div className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100", size === "sm" ? "h-9 w-9" : "h-12 w-12")}>
+        <div className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eef6ff] text-[#155aa6]", size === "sm" ? "h-9 w-9" : "h-12 w-12")}>
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
@@ -1034,21 +827,36 @@ function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string
                     unoptimized
                 />
             ) : (
-                <UserIcon size={size === "sm" ? 17 : 21} className="text-slate-400" />
+                <UserIcon size={size === "sm" ? 17 : 21} />
             )}
         </div>
     );
 }
 
-function LoadingGrid({ count }: { count: number }) {
+function LoadingList({ count }: { count: number }) {
     return (
-        <div className="grid gap-3">
+        <div className="space-y-3">
             {Array.from({ length: count }).map((_, index) => (
-                <Surface key={index} className="h-28 animate-pulse p-4">
-                    <div className="h-full rounded-[22px] bg-slate-100" />
-                </Surface>
+                <div key={index} className="h-24 animate-pulse rounded-[22px] bg-[#edf1f6]" />
             ))}
         </div>
+    );
+}
+
+function LoadingInline({ text }: { text: string }) {
+    return (
+        <div className="flex items-center justify-center py-5 text-sm text-slate-400">
+            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            {text}
+        </div>
+    );
+}
+
+function SmallEmpty({ text }: { text: string }) {
+    return (
+        <p className="rounded-[18px] border border-dashed border-[#d6e1ee] bg-white px-4 py-5 text-center text-sm text-slate-400">
+            {text}
+        </p>
     );
 }
 

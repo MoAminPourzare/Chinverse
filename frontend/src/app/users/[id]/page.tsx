@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
-    ArrowRight,
     Share2,
     Users,
     MapPin,
@@ -22,7 +21,8 @@ import {
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
 import ServicesTab from "@/components/profile/ServicesTab";
 import { getMediaUrl } from "@/lib/media";
-import { getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import { BackButton } from "@/components/ui/IconButton";
 
 interface Tab {
     id: string;
@@ -134,7 +134,7 @@ export default function PublicProfilePage() {
                                         href={url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="dir-ltr flex truncate text-left text-sm text-rose-600 hover:underline"
+                                        className="dir-ltr flex truncate text-left text-sm text-[#155aa6] hover:underline"
                                     >
                                         <span className="text-gray-400">🔗</span>
                                         {url}
@@ -154,15 +154,17 @@ export default function PublicProfilePage() {
                                     const platform = getSocialPlatform(social.platform);
                                     const Icon = platform.icon;
                                     const href = getSocialProfileUrl(social.platform, social.handle);
+                                    const target = getSocialLinkTarget(social.platform);
+                                    const rel = getSocialLinkRel(social.platform);
                                     return (
                                         <a
                                             key={idx}
                                             href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
+                                            target={target}
+                                            rel={rel}
+                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]"
                                         >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm">
+                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-sm">
                                                 <Icon className="h-4 w-4" />
                                             </span>
                                             <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
@@ -201,13 +203,13 @@ export default function PublicProfilePage() {
                     {resume.work_experiences?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Briefcase className="w-5 h-5 text-rose-600" />
+                                <Briefcase className="w-5 h-5 text-[#155aa6]" />
                                 سوابق کاری
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.work_experiences.map((work, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
+                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-[#155aa6] ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{work.job_title}</h4>
                                         <p className="text-sm text-gray-600">{work.company}</p>
                                         <span className="text-xs text-gray-400 mt-1 block">{work.start_date} - {work.end_date}</span>
@@ -221,13 +223,13 @@ export default function PublicProfilePage() {
                     {resume.educations?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <GraduationCap className="w-5 h-5 text-rose-600" />
+                                <GraduationCap className="w-5 h-5 text-[#155aa6]" />
                                 تحصیلات
                             </h3>
                             <div className="space-y-4 border-r-2 border-gray-100 pr-4">
                                 {resume.educations.map((edu, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-rose-400 ring-4 ring-white" />
+                                        <div className="absolute -right-[21px] top-1 w-3 h-3 rounded-full bg-[#155aa6] ring-4 ring-white" />
                                         <h4 className="font-bold text-gray-800">{edu.degree} - {edu.field}</h4>
                                         <p className="text-sm text-gray-600">{edu.university}</p>
                                         <span className="text-xs text-gray-400 mt-1 block">{edu.start_date} - {edu.end_date}</span>
@@ -241,12 +243,12 @@ export default function PublicProfilePage() {
                     {resume.skills?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Wrench className="w-5 h-5 text-rose-600" />
+                                <Wrench className="w-5 h-5 text-[#155aa6]" />
                                 مهارت‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {resume.skills.map((skill, idx) => (
-                                    <span key={idx} className="rounded-xl bg-rose-50 px-3 py-1 text-sm font-medium text-rose-700">
+                                    <span key={idx} className="rounded-xl bg-[#eef6ff] px-3 py-1 text-sm font-medium text-[#155aa6]">
                                         {skill.name} <span className="text-xs opacity-70">({skill.level})</span>
                                     </span>
                                 ))}
@@ -258,7 +260,7 @@ export default function PublicProfilePage() {
                     {resume.languages?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Languages className="w-5 h-5 text-rose-600" />
+                                <Languages className="w-5 h-5 text-[#155aa6]" />
                                 زبان‌ها
                             </h3>
                             <div className="flex flex-wrap gap-2">
@@ -275,7 +277,7 @@ export default function PublicProfilePage() {
                     {resume.certificates?.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Award className="w-5 h-5 text-rose-600" />
+                                <Award className="w-5 h-5 text-[#155aa6]" />
                                 گواهینامه‌ها
                             </h3>
                             <div className="space-y-2">
@@ -336,7 +338,7 @@ export default function PublicProfilePage() {
     if (loading) {
         return (
             <div className="flex min-h-full items-center justify-center py-20">
-                <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
             </div>
         );
     }
@@ -345,7 +347,7 @@ export default function PublicProfilePage() {
         return (
             <div className="flex min-h-full flex-col items-center justify-center py-20">
                 <p className="text-gray-500 mb-4">کاربر یافت نشد</p>
-                <Link href="/showcase" className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800">
+                <Link href="/showcase" className="rounded-2xl bg-[#155aa6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0f4e92]">
                     بازگشت به ویترین
                 </Link>
             </div>
@@ -355,22 +357,20 @@ export default function PublicProfilePage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             {/* Header */}
-            <header className="sticky top-3 z-50 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
-                <Link href="/showcase" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:text-rose-600">
-                    <ArrowRight className="w-5 h-5 text-gray-600" />
-                </Link>
+            <header className="sticky top-3 z-50 grid grid-cols-[44px_1fr_44px] items-center rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                <BackButton href="/showcase" className="justify-self-end" />
                 <div className="flex items-center gap-2">
-                    <span className="text-lg font-black tracking-tight text-slate-950">ChinVerse</span>
-                    <span className="rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2 py-0.5 text-xs font-bold text-white">User</span>
+                    <span className="text-lg font-black tracking-tight text-slate-950">پروفایل کاربر</span>
+                    <span className="rounded-full bg-[#eef6ff] px-2 py-0.5 text-xs font-bold text-[#155aa6]">چین‌ورس</span>
                 </div>
-                <div className="w-9" /> {/* Spacer for centering */}
+                <div className="w-9" />
             </header>
 
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4 pt-5">
                 {/* Hero Section */}
-                <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-slate-950 px-5 py-7 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-                    <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
-                    <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-emerald-400/15 blur-3xl" />
+                <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,#0b2f5f_0%,#155aa6_58%,#0f7f88_100%)] px-5 py-7 text-white shadow-[0_24px_70px_rgba(21,90,166,0.20)]">
+                    <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-white/16 blur-3xl" />
+                    <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-[#ffb74d]/20 blur-3xl" />
                     <div className="relative flex flex-col items-center">
                     <div className="relative mb-4">
                         <div className="h-28 w-28 rounded-[30px] border border-white/30 bg-white/10 p-1 shadow-2xl">
@@ -432,7 +432,7 @@ export default function PublicProfilePage() {
                             disabled={followLoading}
                             className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors ${isFollowing
                                 ? "bg-red-100 text-red-600 hover:bg-red-200"
-                                : "bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-rose-600 hover:to-orange-600"
+                                : "bg-white text-[#155aa6] shadow-[0_12px_28px_rgba(255,255,255,0.22)] hover:bg-[#eef6ff]"
                                 } ${followLoading ? "opacity-50" : ""}`}
                         >
                             <Users className="w-4 h-4" />
@@ -451,7 +451,7 @@ export default function PublicProfilePage() {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
                                     relative whitespace-nowrap rounded-2xl px-5 py-3 text-sm font-bold transition-all
-                                    ${activeTab === tab.id ? "bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_12px_26px_rgba(244,63,94,0.18)]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
+                                    ${activeTab === tab.id ? "bg-[#155aa6] text-white shadow-[0_12px_26px_rgba(21,90,166,0.18)]" : "text-slate-500 hover:bg-[#eef6ff] hover:text-[#155aa6]"}
                                 `}
                             >
                                 {tab.label}

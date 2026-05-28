@@ -8,7 +8,7 @@ export default function FestivalsCustomsExplorePage() {
             detailPath="/festivals-customs"
             layout="list"
             countLabel="درس"
-            accentClass="bg-fuchsia-600"
+            accentClass="bg-blue-700"
         />
     );
 }

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Loader2, MessageCircle, Send, User as UserIcon } from "lucide-react";
 import { getMediaUrl } from "@/lib/media";
 import { engagementService, EngagementComment } from "@/services/engagement.service";
+import { validateTextLength, validationMessage } from "@/validation";
 
 interface PostCommentsProps {
     postId: number;
@@ -19,6 +20,7 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
     const [displayCount, setDisplayCount] = useState(initialCount);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         setDisplayCount(initialCount);
@@ -52,7 +54,9 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
 
     const submitComment = async () => {
         const content = draft.trim();
-        if (!content || submitting) return;
+        const validationError = validationMessage(validateTextLength(content, "دیدگاه", { required: true, max: 4000 }));
+        setError(validationError);
+        if (validationError || submitting) return;
         setSubmitting(true);
         try {
             const created = await engagementService.createComment("post", postId, content);
@@ -61,8 +65,10 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
             setDisplayCount(nextComments.length);
             onCountChange?.(nextComments.length);
             setDraft("");
+            setError("");
         } catch (error) {
             console.error("Failed to create comment", error);
+            setError("ثبت دیدگاه انجام نشد. لطفا دوباره تلاش کن.");
         } finally {
             setSubmitting(false);
         }
@@ -73,7 +79,7 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-2 text-xs font-black text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-2 text-xs font-black text-slate-500 transition hover:bg-[#eef6ff] hover:text-[#155aa6]"
             >
                 <MessageCircle size={15} />
                 {open ? "بستن دیدگاه‌ها" : `${displayCount.toLocaleString("fa-IR")} دیدگاه`}
@@ -84,7 +90,10 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
                     <div className="flex items-center gap-2 rounded-[22px] border border-slate-200 bg-white px-3 py-2">
                         <input
                             value={draft}
-                            onChange={(event) => setDraft(event.target.value)}
+                            onChange={(event) => {
+                                setDraft(event.target.value);
+                                if (error) setError("");
+                            }}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
                                     event.preventDefault();
@@ -98,11 +107,12 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
                             type="button"
                             onClick={() => void submitComment()}
                             disabled={!draft.trim() || submitting}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#155aa6] text-white transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-200"
                         >
                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         </button>
                     </div>
+                    {error && <p className="text-xs font-bold leading-5 text-rose-600">{error}</p>}
 
                     {loading ? (
                         <div className="flex items-center justify-center py-4 text-xs font-bold text-slate-400">
