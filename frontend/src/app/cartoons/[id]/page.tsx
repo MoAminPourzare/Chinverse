@@ -8,7 +8,7 @@ export default function CartoonDetailPage() {
             eyebrow="کارتون و انیمیشن"
             countKeys={["episodes_count"]}
             countLabel="بخش"
-            accentClass="bg-purple-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

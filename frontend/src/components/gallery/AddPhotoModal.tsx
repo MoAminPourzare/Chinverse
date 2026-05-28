@@ -1,11 +1,13 @@
-'use client';
+"use client";
 
-import { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { ArrowLeft } from 'lucide-react';
-import { galleryService } from '@/services/gallery.service';
-import Image from 'next/image';
-import ImageAdjustModal from '@/components/ui/ImageAdjustModal';
+import { Fragment, useState, type ChangeEvent } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { Upload } from "lucide-react";
+import Image from "next/image";
+import { galleryService } from "@/services/gallery.service";
+import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
+import { BackButton } from "@/components/ui/IconButton";
+import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
 
 interface AddPhotoModalProps {
     isOpen: boolean;
@@ -17,27 +19,42 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [pendingFile, setPendingFile] = useState<File | null>(null);
-    const [caption, setCaption] = useState('');
+    const [caption, setCaption] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = "";
-        if (file && file.type.startsWith('image/')) {
-            setPendingFile(file);
+        const fileValidation = validateImageFile(file || null, { required: true, maxMb: 5 });
+        if (!fileValidation.ok) {
+            setError(fileValidation.message);
+            return;
         }
+
+        setError("");
+        setPendingFile(file || null);
     };
 
     const handleUpload = async () => {
+        const fileValidation = validateImageFile(selectedFile, { required: true, maxMb: 5 });
+        const captionValidation = validateTextLength(caption, "متن عکس", { max: 500 });
+        const validationError = validationMessage(fileValidation) || validationMessage(captionValidation);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
         if (!selectedFile) return;
 
         setUploading(true);
+        setError("");
         try {
-            await galleryService.uploadImage(selectedFile, caption);
+            await galleryService.uploadImage(selectedFile, caption.trim());
             onUploadSuccess();
             handleClose();
         } catch (error) {
-            console.error('Failed to upload image', error);
+            console.error("Failed to upload image", error);
+            setError("بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
         } finally {
             setUploading(false);
         }
@@ -47,7 +64,8 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
         setSelectedFile(null);
         setPreview(null);
         setPendingFile(null);
-        setCaption('');
+        setCaption("");
+        setError("");
         onClose();
     };
 
@@ -60,6 +78,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                     if (pendingFile) return;
                     handleClose();
                 }}
+                dir="rtl"
             >
                 <Transition.Child
                     as={Fragment}
@@ -70,11 +89,11 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/90" />
+                    <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm" />
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-3">
+                    <div className="flex min-h-full items-center justify-center p-4">
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"
@@ -84,30 +103,36 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="flex h-[min(92vh,760px)] w-full max-w-md transform flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white transition-all shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
-                                {/* Header */}
-                                <div className="flex items-center justify-between border-b border-slate-100 p-4">
-                                    <button
-                                        onClick={handleClose}
-                                        className="rounded-2xl p-2 transition hover:bg-slate-100"
-                                    >
-                                        <ArrowLeft className="w-6 h-6 text-gray-700" />
-                                    </button>
-                                    <button
-                                        onClick={handleUpload}
-                                        disabled={!selectedFile || uploading}
-                                        className="font-bold text-rose-600 disabled:cursor-not-allowed disabled:text-slate-400"
-                                    >
-                                        {uploading ? 'در حال بارگذاری...' : 'بعدی'}
-                                    </button>
+                            <Dialog.Panel className="flex h-[min(720px,92vh)] w-full max-w-md transform flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
+                                <div className="grid shrink-0 grid-cols-[40px_1fr_40px] items-center px-5 py-4">
+                                    <BackButton onClick={handleClose} className="justify-self-end" />
+                                    <h2 className="text-center text-base font-black text-slate-900">افزودن عکس جدید</h2>
+                                    <span aria-hidden />
                                 </div>
 
-                                {/* Content */}
-                                <div className="flex-1 flex flex-col p-4 overflow-y-auto">
-                                    {!preview ? (
-                                        <div className="flex-1 flex items-center justify-center">
-                                            <label className="cursor-pointer rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-3 font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600">
-                                                انتخاب عکس
+                                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">
+                                    <div className="grid gap-4">
+                                        {preview ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedFile(null);
+                                                    setPreview(null);
+                                                }}
+                                                className="relative aspect-square w-full overflow-hidden rounded-[18px] bg-slate-100"
+                                            >
+                                                <Image
+                                                    src={preview}
+                                                    alt="پیش‌نمایش عکس"
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </button>
+                                        ) : (
+                                            <label className="flex min-h-[250px] cursor-pointer flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-[#155aa6] bg-white text-center text-[#155aa6] transition hover:bg-[#eef6ff]">
+                                                <Upload className="mb-4 h-8 w-8" />
+                                                <span className="text-[16px] font-black">بارگذاری عکس</span>
+                                                <span className="mt-2 text-xs text-slate-400">JPG، PNG یا WEBP</span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
@@ -115,48 +140,37 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                                     className="hidden"
                                                 />
                                             </label>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {/* Image Preview */}
-                                            <div className="mb-4">
-                                                <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gray-100">
-                                                    <Image
-                                                        src={preview}
-                                                        alt="Preview"
-                                                        fill
-                                                        className="object-cover"
-                                                    />
-                                                </div>
-                                            </div>
+                                        )}
 
-                                            {/* Caption Input */}
-                                            <div>
-                                                <textarea
-                                                    value={caption}
-                                                    onChange={(e) => setCaption(e.target.value)}
-                                                    rows={4}
-                                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                                                    placeholder="هر عکسی یه داستانی داره... داستانتو اینجا بنویس!"
-                                                    dir="rtl"
-                                                />
-                                            </div>
-                                        </>
-                                    )}
+                                        <textarea
+                                            value={caption}
+                                            onChange={(event) => {
+                                                setCaption(event.target.value);
+                                                if (error) setError("");
+                                            }}
+                                            rows={5}
+                                            dir="auto"
+                                            className="w-full resize-none rounded-2xl border border-[#d6e1ee] bg-white px-4 py-3 text-start text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                            placeholder="هر عکسی یه داستانی داره... داستانتو اینجا بنویس!"
+                                        />
+                                        {error && (
+                                            <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
+                                                {error}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Footer Button (Alternative placement) */}
-                                {preview && (
-                                    <div className="border-t border-slate-100 p-4">
-                                        <button
-                                            onClick={handleUpload}
-                                            disabled={uploading}
-                                            className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
-                                        >
-                                            {uploading ? 'در حال بارگذاری...' : 'اشتراک گذاری'}
-                                        </button>
-                                    </div>
-                                )}
+                                <div className="shrink-0 px-5 pb-6">
+                                    <button
+                                        type="button"
+                                        onClick={handleUpload}
+                                        disabled={!selectedFile || uploading}
+                                        className="w-full rounded-full bg-[#155aa6] py-3 text-sm font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.32)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                                    >
+                                        {uploading ? "در حال بارگذاری..." : "اشتراک گذاری"}
+                                    </button>
+                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>

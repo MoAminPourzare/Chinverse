@@ -67,7 +67,15 @@ class Settings(BaseSettings):
     ALLOWED_VIDEO_CONTENT_TYPES: str = "video/mp4,video/webm,video/quicktime,video/x-m4v"
     FILE_STORAGE_MODE: str = "local"
 
-    BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://0.0.0.0:3000"
+    BACKEND_CORS_ORIGIN_REGEX: str = (
+        r"^https?://("
+        r"localhost|127\.0\.0\.1|0\.0\.0\.0|"
+        r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|"
+        r"192\.168\.\d{1,3}\.\d{1,3}"
+        r")(:\d+)?$"
+    )
     ALLOWED_HOSTS: str = "*"
     ENABLE_API_DOCS: bool = True
     SECURE_HEADERS_ENABLED: bool = True

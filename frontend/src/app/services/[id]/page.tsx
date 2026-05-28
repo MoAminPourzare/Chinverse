@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, BriefcaseBusiness, CalendarDays, ImageIcon, MessageCircle, User as UserIcon } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, ImageIcon, MessageCircle, User as UserIcon } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
+import { BackButton } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
@@ -39,7 +40,7 @@ export default function ServiceDetailPage() {
     if (loading) {
         return (
             <div className="flex min-h-full items-center justify-center">
-                <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
             </div>
         );
     }
@@ -67,15 +68,8 @@ export default function ServiceDetailPage() {
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
                 <header className="flex items-center justify-between">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                        aria-label="بازگشت"
-                    >
-                        <ArrowRight size={20} />
-                    </button>
-                    <Link href="/showcase" className="text-xs font-bold text-rose-600">
+                    <BackButton onClick={() => router.back()} />
+                    <Link href="/showcase" className="text-xs font-bold text-[#155aa6]">
                         ویترین خدمات
                     </Link>
                 </header>
@@ -87,7 +81,7 @@ export default function ServiceDetailPage() {
                         </h1>
                     </div>
 
-                    <div className="relative mx-5 aspect-[4/3] overflow-hidden rounded-[24px] bg-gradient-to-br from-slate-100 to-rose-50">
+                    <div className="relative mx-5 aspect-[4/3] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#eef6ff] to-[#fff6df]">
                         {service.banner_url ? (
                             <Image
                                 src={getMediaUrl(service.banner_url)}
@@ -99,7 +93,7 @@ export default function ServiceDetailPage() {
                                 unoptimized
                             />
                         ) : (
-                            <div className="flex h-full items-center justify-center text-rose-300">
+                            <div className="flex h-full items-center justify-center text-[#155aa6]/35">
                                 <ImageIcon size={54} />
                             </div>
                         )}
@@ -109,7 +103,7 @@ export default function ServiceDetailPage() {
                         <div className="grid gap-2 text-sm text-slate-600">
                             <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
                                 <span className="inline-flex items-center gap-2 font-bold text-slate-700">
-                                    <CalendarDays size={16} className="text-rose-500" />
+                                    <CalendarDays size={16} className="text-[#155aa6]" />
                                     تاریخ انتشار
                                 </span>
                                 <span className="text-xs font-semibold text-slate-500">{publishedAt}</span>
@@ -117,7 +111,7 @@ export default function ServiceDetailPage() {
 
                             <Link
                                 href={service.provider?.id ? `/users/${service.provider.id}` : "#"}
-                                className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-rose-50"
+                                className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-[#eef6ff]"
                             >
                                 <span className="font-bold text-slate-700">منتشر شده توسط</span>
                                 <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500">
@@ -142,7 +136,7 @@ export default function ServiceDetailPage() {
                 <div className="sticky bottom-4 z-10">
                     <PrimaryButton
                         href={chatHref}
-                        className="w-full shadow-[0_18px_40px_rgba(244,63,94,0.28)]"
+                        className="w-full shadow-[0_18px_40px_rgba(21,90,166,0.24)]"
                         leadingIcon={<MessageCircle size={19} />}
                     >
                         درخواست مشاوره

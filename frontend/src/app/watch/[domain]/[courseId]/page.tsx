@@ -16,6 +16,7 @@ import {
 } from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { IconButton } from "@/components/ui/IconButton";
 import { dailyActivityService } from "@/services/dailyActivity.service";
 
 const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), {
@@ -70,32 +71,32 @@ interface TranscriptEntry {
 }
 
 const domainConfig: Record<string, { label: string; color: string; backPath: (courseId: string) => string }> = {
-    hsk: { label: "HSK", color: "text-blue-600", backPath: (courseId) => `/hsk/${courseId}` },
-    pronunciation: { label: "تلفظ", color: "text-purple-600", backPath: (courseId) => `/pronunciation/${courseId}` },
-    characters: { label: "کاراکتر", color: "text-indigo-600", backPath: (courseId) => `/characters/${courseId}` },
-    series: { label: "سریال", color: "text-rose-600", backPath: (courseId) => `/series/${courseId}` },
-    movies: { label: "فیلم", color: "text-red-600", backPath: (courseId) => `/movies/${courseId}` },
-    cartoons: { label: "انیمیشن", color: "text-purple-600", backPath: (courseId) => `/cartoons/${courseId}` },
-    music: { label: "موسیقی", color: "text-teal-600", backPath: (courseId) => `/music/${courseId}` },
-    grammar: { label: "گرامر", color: "text-emerald-600", backPath: (courseId) => `/grammar/${courseId}` },
-    idioms: { label: "اصطلاحات", color: "text-rose-600", backPath: (courseId) => `/idioms/${courseId}` },
-    practical: { label: "چینی کاربردی", color: "text-cyan-600", backPath: (courseId) => `/practical/${courseId}` },
-    vlogs: { label: "یادگیری با ولاگ", color: "text-amber-600", backPath: (courseId) => `/vlogs/${courseId}` },
-    synonyms: { label: "واژگان هم‌معنی", color: "text-sky-600", backPath: (courseId) => `/synonyms/${courseId}` },
-    classical: { label: "زبان چینی کلاسیک", color: "text-slate-700", backPath: (courseId) => `/classical/${courseId}` },
-    "arts-cooking": { label: "آشپزی", color: "text-orange-600", backPath: (courseId) => `/arts-cooking/${courseId}` },
-    "martial-arts": { label: "هنرهای رزمی", color: "text-red-600", backPath: (courseId) => `/martial-arts/${courseId}` },
-    "energy-health": { label: "تمرینات انرژی و سلامت", color: "text-emerald-600", backPath: (courseId) => `/energy-health/${courseId}` },
-    calligraphy: { label: "خطاطی", color: "text-indigo-600", backPath: (courseId) => `/calligraphy/${courseId}` },
-    "tea-culture": { label: "فرهنگ چای", color: "text-amber-700", backPath: (courseId) => `/tea-culture/${courseId}` },
-    "culture-texts": { label: "متون کلاسیک آموزشی", color: "text-slate-700", backPath: (courseId) => `/culture-texts/${courseId}` },
-    "historical-stories": { label: "داستان‌های تاریخی", color: "text-stone-600", backPath: (courseId) => `/historical-stories/${courseId}` },
-    "classical-poetry": { label: "شعر و ادبیات کلاسیک", color: "text-violet-600", backPath: (courseId) => `/classical-poetry/${courseId}` },
-    "festivals-customs": { label: "آیین‌ها و جشن‌ها", color: "text-fuchsia-600", backPath: (courseId) => `/festivals-customs/${courseId}` },
-    cooking: { label: "آشپزی", color: "text-orange-600", backPath: (courseId) => `/cooking/${courseId}` },
-    podcasts: { label: "پادکست", color: "text-indigo-600", backPath: (courseId) => `/podcasts/${courseId}` },
-    reality: { label: "ریالیتی شو", color: "text-pink-600", backPath: (courseId) => `/reality/${courseId}` },
-    "topic-talks": { label: "گفتارهای موضوعی", color: "text-fuchsia-600", backPath: (courseId) => `/topic-talks/${courseId}` },
+    hsk: { label: "HSK", color: "text-[#155aa6]", backPath: (courseId) => `/hsk/${courseId}` },
+    pronunciation: { label: "تلفظ", color: "text-[#155aa6]", backPath: (courseId) => `/pronunciation/${courseId}` },
+    characters: { label: "کاراکتر", color: "text-[#155aa6]", backPath: (courseId) => `/characters/${courseId}` },
+    series: { label: "سریال", color: "text-[#155aa6]", backPath: (courseId) => `/series/${courseId}` },
+    movies: { label: "فیلم", color: "text-[#155aa6]", backPath: (courseId) => `/movies/${courseId}` },
+    cartoons: { label: "انیمیشن", color: "text-[#155aa6]", backPath: (courseId) => `/cartoons/${courseId}` },
+    music: { label: "موسیقی", color: "text-[#155aa6]", backPath: (courseId) => `/music/${courseId}` },
+    grammar: { label: "گرامر", color: "text-[#155aa6]", backPath: (courseId) => `/grammar/${courseId}` },
+    idioms: { label: "اصطلاحات", color: "text-[#155aa6]", backPath: (courseId) => `/idioms/${courseId}` },
+    practical: { label: "چینی کاربردی", color: "text-[#155aa6]", backPath: (courseId) => `/practical/${courseId}` },
+    vlogs: { label: "یادگیری با ولاگ", color: "text-[#155aa6]", backPath: (courseId) => `/vlogs/${courseId}` },
+    synonyms: { label: "واژگان هم‌معنی", color: "text-[#155aa6]", backPath: (courseId) => `/synonyms/${courseId}` },
+    classical: { label: "زبان چینی کلاسیک", color: "text-[#155aa6]", backPath: (courseId) => `/classical/${courseId}` },
+    "arts-cooking": { label: "آشپزی", color: "text-[#155aa6]", backPath: (courseId) => `/arts-cooking/${courseId}` },
+    "martial-arts": { label: "هنرهای رزمی", color: "text-[#155aa6]", backPath: (courseId) => `/martial-arts/${courseId}` },
+    "energy-health": { label: "تمرینات انرژی و سلامت", color: "text-[#155aa6]", backPath: (courseId) => `/energy-health/${courseId}` },
+    calligraphy: { label: "خطاطی", color: "text-[#155aa6]", backPath: (courseId) => `/calligraphy/${courseId}` },
+    "tea-culture": { label: "فرهنگ چای", color: "text-[#155aa6]", backPath: (courseId) => `/tea-culture/${courseId}` },
+    "culture-texts": { label: "متون کلاسیک آموزشی", color: "text-[#155aa6]", backPath: (courseId) => `/culture-texts/${courseId}` },
+    "historical-stories": { label: "داستان‌های تاریخی", color: "text-[#155aa6]", backPath: (courseId) => `/historical-stories/${courseId}` },
+    "classical-poetry": { label: "شعر و ادبیات کلاسیک", color: "text-[#155aa6]", backPath: (courseId) => `/classical-poetry/${courseId}` },
+    "festivals-customs": { label: "آیین‌ها و جشن‌ها", color: "text-[#155aa6]", backPath: (courseId) => `/festivals-customs/${courseId}` },
+    cooking: { label: "آشپزی", color: "text-[#155aa6]", backPath: (courseId) => `/cooking/${courseId}` },
+    podcasts: { label: "پادکست", color: "text-[#155aa6]", backPath: (courseId) => `/podcasts/${courseId}` },
+    reality: { label: "ریالیتی شو", color: "text-[#155aa6]", backPath: (courseId) => `/reality/${courseId}` },
+    "topic-talks": { label: "گفتارهای موضوعی", color: "text-[#155aa6]", backPath: (courseId) => `/topic-talks/${courseId}` },
 };
 
 const sampleTranscript = [
@@ -103,7 +104,7 @@ const sampleTranscript = [
     { id: 2, chinese: "周末你有什么打算？", persian: "آخر هفته چه برنامه‌ای داری؟", highlightedWords: ["周末", "打算"] },
     { id: 3, chinese: "我打算和朋友一起去旅游。", persian: "قصد دارم با دوستم برم مسافرت.", highlightedWords: ["打算", "旅游"] },
     { id: 4, chinese: "你打算什么时候出发？", persian: "قصد داری کی حرکت کنی؟", highlightedWords: ["打算", "出发"] },
-    { id: 5, chinese: "好，首先我们来看热身。", persian: "خیله خب، اول بریم سراغ گرم‌کردن.", highlightedWords: ["热身"] },
+    { id: 5, chinese: "好，首先我们来看热身。", persian: "خیلی خوب، اول بریم سراغ گرم‌کردن.", highlightedWords: ["热身"] },
 ] as TranscriptEntry[];
 
 const getMetaString = (meta: Record<string, unknown> | undefined, key: string, fallback = ""): string => {
@@ -403,7 +404,7 @@ export default function SharedWatchPage() {
         return (
             <div className="flex min-h-full items-center justify-center">
                 <div className="flex items-center gap-3 text-slate-500">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
                     <span>در حال بارگذاری...</span>
                 </div>
             </div>
@@ -432,7 +433,7 @@ export default function SharedWatchPage() {
     const lessonSubtitle = getMetaString(lessonMeta, "subtitle", "");
     const lessonNotes = getMetaArray(lessonMeta, "key_points");
     const lessonTranscript = getTranscriptEntries(lessonMeta);
-    const headerSubtitle = isEntertainment ? `${course.title} - ${isMusic ? "Track" : "EP"} ${lessonNumber}` : lessonSubtitle || chineseTitle;
+    const headerSubtitle = isEntertainment ? `${course.title} - ${isMusic ? "آهنگ" : "قسمت"} ${lessonNumber}` : lessonSubtitle || chineseTitle;
     const showChineseText = preferences.textDisplayMode !== "persian";
     const showPersianText = preferences.textDisplayMode !== "chinese";
     const chineseTextStyle = getChineseTextStyle(preferences);
@@ -455,9 +456,9 @@ export default function SharedWatchPage() {
             <main className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
                 <Surface className="sticky top-4 z-20 overflow-hidden">
                     <div className="flex items-center justify-between gap-3 px-4 py-3">
-                        <Link href={config.backPath(courseId)} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+                        <IconButton href={config.backPath(courseId)} label="بستن درس">
                             <X size={20} />
-                        </Link>
+                        </IconButton>
                         <div className="min-w-0 flex-1 text-center">
                             <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${config.color}`}>{config.label}</p>
                             <h1 className="mt-1 truncate text-base font-bold text-slate-900">{headerTitle}</h1>
@@ -538,7 +539,7 @@ export default function SharedWatchPage() {
                                     max={duration || 100}
                                     value={currentTime}
                                     onChange={handleSeek}
-                                    className="h-1 flex-1 accent-rose-500"
+                                    className="h-1 flex-1 accent-[#155aa6]"
                                 />
                                 <span>{formatTime(duration)}</span>
                             </div>
@@ -557,9 +558,9 @@ export default function SharedWatchPage() {
                                 >
                                     {isPlaying ? <Pause size={24} /> : <SkipForward size={24} className="mr-0.5" />}
                                 </button>
-                                <Link href="/settings/appearance" className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200" aria-label="تنظیمات نمایش درس">
+                                <IconButton href="/settings/appearance" label="تنظیمات نمایش درس">
                                     <MoreVertical size={20} />
-                                </Link>
+                                </IconButton>
                             </div>
                         </Surface>
 
@@ -567,7 +568,7 @@ export default function SharedWatchPage() {
                             <Surface className="p-5">
                                 <SectionHeader title="اطلاعات درس" subtitle="چکیده، نکات مهم و توضیحات تکمیلی." />
                                 <div className="mt-4 space-y-3">
-                                    {lessonSubtitle && <p className="text-xs font-semibold text-rose-600">{lessonSubtitle}</p>}
+                                    {lessonSubtitle && <p className="text-xs font-semibold text-[#155aa6]">{lessonSubtitle}</p>}
                                     {lessonSummary && <p className="text-sm leading-8 text-slate-600">{lessonSummary}</p>}
                                     {lessonNotes.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
@@ -589,7 +590,7 @@ export default function SharedWatchPage() {
                                     <div key={item.id} className="space-y-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
                                         {showChineseText && (
                                             <p
-                                                className="font-cjk font-bold text-rose-600"
+                                                className="font-cjk font-bold text-[#155aa6]"
                                                 style={chineseTextStyle}
                                                 dir="ltr"
                                                 lang="zh-CN"
@@ -610,7 +611,7 @@ export default function SharedWatchPage() {
 
                     <div className="space-y-5">
                         <Surface className="p-5">
-                            <SectionHeader title="مرور course" subtitle={course.description} />
+                            <SectionHeader title="مرور دوره" subtitle={course.description} />
                             <div className="mt-4 flex flex-wrap gap-2 text-xs">
                                 <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">{course.level}</span>
                                 <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">{course.title}</span>
@@ -633,7 +634,7 @@ export default function SharedWatchPage() {
                                                         href={`/watch/${domain}/${course.id}?lesson=${lesson.id}`}
                                                         className={`flex items-center justify-between gap-3 rounded-[18px] border px-3 py-3 transition-all duration-200 ${
                                                             active
-                                                                ? "border-rose-200 bg-rose-50 text-rose-700"
+                                                                ? "border-[#d5e1ef] bg-[#eef6ff] text-[#155aa6]"
                                                                 : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
                                                         }`}
                                                     >
@@ -643,7 +644,7 @@ export default function SharedWatchPage() {
                                                                 {lesson.duration_minutes ? `${lesson.duration_minutes} دقیقه` : "بدون زمان"}
                                                             </p>
                                                         </div>
-                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${active ? "bg-rose-600 text-white" : "bg-white text-slate-400"}`}>
+                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${active ? "bg-[#155aa6] text-white" : "bg-white text-slate-400"}`}>
                                                             <Play size={14} className="fill-current" />
                                                         </div>
                                                     </Link>

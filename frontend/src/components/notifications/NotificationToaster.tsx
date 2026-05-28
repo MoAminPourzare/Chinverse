@@ -116,13 +116,13 @@ export default function NotificationToaster() {
             )}
         >
             <div className="overflow-hidden rounded-[26px] border border-white/70 bg-white/[0.92] shadow-[0_24px_70px_rgba(15,23,42,0.24)] backdrop-blur-xl">
-                <div className="flex items-center gap-2 p-2 transition hover:bg-rose-50/70">
+                <div className="flex items-center gap-2 p-2 transition hover:bg-[#eef6ff]/80">
                     <button
                         type="button"
                         onClick={openNotification}
                         className="flex min-w-0 flex-1 items-center gap-3 rounded-[22px] p-1 text-right"
                     >
-                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-rose-100 to-amber-100 text-rose-600">
+                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#eef6ff] to-[#fff6df] text-[#155aa6]">
                             {avatarUrl ? (
                                 <Image
                                     src={avatarUrl}
@@ -138,7 +138,7 @@ export default function NotificationToaster() {
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                                <span className="h-2 w-2 rounded-full bg-[#155aa6]" />
                                 <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
                                 {extraCount > 0 && (
                                     <span className="shrink-0 rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white">

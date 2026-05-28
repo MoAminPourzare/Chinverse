@@ -8,7 +8,7 @@ export default function PracticalExplorePage() {
             detailPath="/practical"
             layout="list"
             countLabel="درس"
-            accentClass="bg-cyan-600"
+            accentClass="bg-blue-700"
         />
     );
 }

@@ -3,11 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, MessageCircle, Search, Sparkles, User as UserIcon } from "lucide-react";
-import EmptyState from "@/components/ui/EmptyState";
-import PrimaryButton from "@/components/ui/PrimaryButton";
-import Surface from "@/components/ui/Surface";
+import { Search, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { BackButton } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
 import { chatService, ConversationPreview } from "@/services/chat.service";
 
@@ -54,76 +52,51 @@ export default function ChatPage() {
         });
     }, [conversations, query]);
 
-    const unreadTotal = conversations.reduce((total, item) => total + item.unread_count, 0);
-
     return (
-        <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
-            <section className="overflow-hidden rounded-[28px] border border-slate-800 bg-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
-                <div className="relative p-5">
-                    <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_46%,#334155_100%)]" />
-                    <div className="absolute -left-12 top-0 h-44 w-44 rounded-full bg-rose-500/30 blur-3xl" />
-                    <div className="absolute -bottom-20 right-10 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
-                    <div className="absolute left-16 bottom-2 h-28 w-28 rounded-full bg-amber-300/15 blur-3xl" />
-                    <div className="relative">
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                            <Link
-                                href="/profile"
-                                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
-                                aria-label="بازگشت"
-                            >
-                                <ArrowRight size={19} />
-                            </Link>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
-                                <Sparkles size={14} />
-                                {unreadTotal > 0 ? `${unreadTotal} پیام جدید` : "پیام ها"}
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-black tracking-tight">گفت وگوها</h1>
-                        <p className="mt-3 text-sm leading-7 text-white/72">
-                            پیام های خصوصی و ارتباط با کاربران را از اینجا دنبال کن.
-                        </p>
-                        <label className="mt-5 flex items-center gap-3 rounded-[22px] border border-white/15 bg-white/10 px-4 py-3 text-white/70 backdrop-blur">
-                            <Search size={18} />
-                            <input
-                                value={query}
-                                onChange={(event) => setQuery(event.target.value)}
-                                placeholder="جستجو در گفتگوها"
-                                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-white/45"
-                            />
-                        </label>
-                    </div>
-                </div>
-            </section>
+        <div className="min-h-full bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
+            <header className="grid grid-cols-[44px_1fr_44px] items-center">
+                <BackButton href="/community" className="justify-self-end" />
+                <h1 className="text-center text-lg font-black text-slate-900">پیام‌ها</h1>
+                <span aria-hidden />
+            </header>
 
-            <main className="mx-auto mt-5 w-full max-w-2xl">
-                <Surface className="overflow-hidden p-0">
-                    {isLoading ? (
-                        <div className="flex min-h-[260px] items-center justify-center">
-                            <div className="h-9 w-9 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
-                        </div>
-                    ) : filteredConversations.length > 0 ? (
-                        <div className="divide-y divide-slate-100">
-                            {filteredConversations.map((conversation) => (
-                                <ConversationRow key={conversation.user.id} conversation={conversation} />
-                            ))}
-                        </div>
-                    ) : conversations.length > 0 ? (
-                        <EmptyState
-                            className="border-0 bg-transparent shadow-none"
-                            icon={<Search size={30} />}
-                            title="گفتگویی پیدا نشد"
-                            description="عبارت جستجو را کوتاه تر یا متفاوت تر وارد کن."
-                        />
-                    ) : (
-                        <EmptyState
-                            className="border-0 bg-transparent shadow-none"
-                            icon={<MessageCircle size={30} />}
-                            title="هنوز گفتگویی نداری"
-                            description="برای شروع پیام، از صفحه ویترین وارد پروفایل کاربر موردنظر شو."
-                            action={<PrimaryButton href="/showcase">رفتن به ویترین</PrimaryButton>}
-                        />
-                    )}
-                </Surface>
+            <label className="mt-8 flex h-[52px] items-center gap-3 rounded-full bg-[#e2e5eb] px-4 text-slate-500 focus-within:ring-4 focus-within:ring-[#155aa6]/10">
+                {query ? (
+                    <button
+                        type="button"
+                        onClick={() => setQuery("")}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-white"
+                        aria-label="پاک کردن جستجو"
+                    >
+                        <X size={18} />
+                    </button>
+                ) : (
+                    <Search size={20} className="text-slate-700" />
+                )}
+                <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="جستجو بین پیام‌ها..."
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                />
+            </label>
+
+            <main className="mt-6">
+                {isLoading ? (
+                    <div className="flex min-h-[340px] items-center justify-center">
+                        <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
+                    </div>
+                ) : filteredConversations.length > 0 ? (
+                    <div className="space-y-3">
+                        {filteredConversations.map((conversation) => (
+                            <ConversationRow key={conversation.user.id} conversation={conversation} />
+                        ))}
+                    </div>
+                ) : conversations.length > 0 ? (
+                    <EmptySearchState />
+                ) : (
+                    <EmptyMessagesState />
+                )}
             </main>
         </div>
     );
@@ -139,16 +112,16 @@ function ConversationRow({ conversation }: { conversation: ConversationPreview }
     return (
         <Link
             href={`/chat/${conversation.user.id}`}
-            className="flex items-center gap-3 px-4 py-4 transition hover:bg-rose-50/60"
+            className="flex items-center gap-3 rounded-[24px] border border-[#e0e5ee] bg-white px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition hover:border-[#155aa6]/30 hover:shadow-[0_10px_28px_rgba(21,90,166,0.10)]"
         >
-            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-slate-100">
+            <div className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#155aa6] bg-white">
                 {conversation.user.avatar_url ? (
                     <Image
                         src={getMediaUrl(conversation.user.avatar_url)}
                         alt={displayName}
                         fill
                         className="object-cover"
-                        sizes="56px"
+                        sizes="52px"
                         unoptimized
                     />
                 ) : (
@@ -161,20 +134,51 @@ function ConversationRow({ conversation }: { conversation: ConversationPreview }
                     )}
                 />
             </div>
+
             <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
                     <h2 className="truncate text-sm font-black text-slate-900">{displayName}</h2>
-                    <span className="shrink-0 text-[11px] text-slate-400">{lastTime}</span>
+                    <span className="shrink-0 text-[11px] font-semibold text-slate-400">{lastTime}</span>
                 </div>
                 <p className="mt-1 line-clamp-1 text-xs leading-6 text-slate-500">
-                    {conversation.last_message || "پیامی ثبت نشده"}
+                    {conversation.last_message || "هنوز پیامی ثبت نشده"}
                 </p>
             </div>
+
             {conversation.unread_count > 0 && (
-                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 text-[11px] font-black text-white">
+                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#155aa6] px-2 text-[11px] font-black text-white">
                     {conversation.unread_count}
                 </span>
             )}
         </Link>
+    );
+}
+
+function EmptyMessagesState() {
+    return (
+        <div className="flex min-h-[430px] flex-col items-center justify-center px-5 text-center">
+            <Image
+                src="/assets/chinverse/icons/chat-message-hover-pinch.svg"
+                alt=""
+                width={168}
+                height={168}
+                className="h-[168px] w-[168px] object-contain"
+            />
+            <h2 className="mt-7 text-lg font-black text-slate-900">هنوز پیامی دریافت نکردی!</h2>
+        </div>
+    );
+}
+
+function EmptySearchState() {
+    return (
+        <div className="flex min-h-[320px] flex-col items-center justify-center px-5 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#155aa6]/10 text-[#155aa6]">
+                <Search size={34} />
+            </div>
+            <h2 className="mt-6 text-lg font-black text-slate-900">نتیجه‌ای پیدا نشد</h2>
+            <p className="mt-2 max-w-[260px] text-sm leading-7 text-slate-500">
+                عبارت جستجو را کوتاه‌تر یا متفاوت‌تر وارد کن.
+            </p>
+        </div>
     );
 }

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class EngagementState(BaseModel):
@@ -15,6 +15,11 @@ class EngagementState(BaseModel):
 class EngagementCommentCreate(BaseModel):
     content: str = Field(min_length=1, max_length=4000)
     parent_id: Optional[int] = Field(default=None, gt=0)
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, value: str) -> str:
+        return value.strip()
 
 
 class EngagementUserSummary(BaseModel):

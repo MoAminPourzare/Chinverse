@@ -8,7 +8,7 @@ export default function TeaCultureExplorePage() {
             detailPath="/tea-culture"
             layout="list"
             countLabel="درس"
-            accentClass="bg-amber-700"
+            accentClass="bg-blue-700"
         />
     );
 }

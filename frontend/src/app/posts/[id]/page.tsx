@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, CalendarDays, ImageIcon, Loader2, User as UserIcon } from "lucide-react";
+import { CalendarDays, ImageIcon, Loader2, User as UserIcon } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
+import { BackButton } from "@/components/ui/IconButton";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostComments from "@/components/engagement/PostComments";
 import { getMediaUrl } from "@/lib/media";
@@ -55,7 +56,7 @@ export default function PostDetailPage() {
         return (
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fb]">
                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
-                    <Loader2 className="h-5 w-5 animate-spin text-rose-500" />
+                    <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
                     در حال بارگذاری پست...
                 </div>
             </div>
@@ -78,15 +79,8 @@ export default function PostDetailPage() {
         <div className="min-h-full bg-[#f7f8fb] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-4">
                 <header className="flex items-center justify-between">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                        aria-label="بازگشت"
-                    >
-                        <ArrowRight size={20} />
-                    </button>
-                    <Link href="/" className="text-xs font-black text-rose-600">
+                    <BackButton onClick={() => router.back()} />
+                    <Link href="/" className="text-xs font-black text-[#155aa6]">
                         خانه
                     </Link>
                 </header>

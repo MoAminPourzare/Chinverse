@@ -11,7 +11,7 @@ interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-    primary: "bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] hover:from-rose-600 hover:to-orange-600",
+    primary: "bg-[#155aa6] text-white shadow-[0_16px_30px_rgba(21,90,166,0.24)] hover:bg-[#0f4e92]",
     secondary: "bg-slate-900 text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)] hover:bg-slate-800",
     ghost: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
     destructive: "bg-red-600 text-white hover:bg-red-700",
@@ -27,7 +27,7 @@ export default function PrimaryButton({
     ...props
 }: PrimaryButtonProps) {
     const classes = cn(
-        "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2",
+        "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] focus-visible:ring-offset-2",
         variantClasses[variant],
         className,
     );

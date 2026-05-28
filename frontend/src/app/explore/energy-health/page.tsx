@@ -8,7 +8,7 @@ export default function EnergyHealthExplorePage() {
             detailPath="/energy-health"
             layout="list"
             countLabel="درس"
-            accentClass="bg-emerald-600"
+            accentClass="bg-blue-700"
         />
     );
 }

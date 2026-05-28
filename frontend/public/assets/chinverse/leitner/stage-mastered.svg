@@ -1,0 +1,21 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="masterBg" x1="17" y1="14" x2="102" y2="103" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EDF7FF"/>
+      <stop offset="1" stop-color="#E8FFF9"/>
+    </linearGradient>
+    <linearGradient id="masterLeaf" x1="26" y1="21" x2="91" y2="83" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EE067"/>
+      <stop offset="1" stop-color="#16823C"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="92" height="92" rx="30" fill="url(#masterBg)"/>
+  <path d="M60 88V57" stroke="#155AA6" stroke-width="5.2" stroke-linecap="round"/>
+  <path d="M60 69C48.6 60.6 40.8 50.2 35.7 36.1" stroke="#155AA6" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M60 65.5C73 55.8 81.9 44.4 88.4 29.4" stroke="#155AA6" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M31 45.2C24.4 28.7 33.4 14.7 51.2 13.3C58.8 30.8 48.9 43.2 31 45.2Z" fill="url(#masterLeaf)"/>
+  <path d="M80.9 34.1C83.6 18.7 99.1 11.4 111.3 20.4C107.3 36.4 93.8 44.1 80.9 34.1Z" fill="#2CAD4C"/>
+  <path d="M39.2 65.6C25.8 68 15.6 59.8 14.4 46.3C29.1 43.3 39.9 51.7 39.2 65.6Z" fill="#F28B61"/>
+  <path d="M78 63.2C91.3 61.1 102.7 69.2 105.2 82.5C90.9 86.6 80.1 78.1 78 63.2Z" fill="#8AC7EE"/>
+  <path d="M31 92C44 84.8 77.1 84.8 90 92" stroke="#155AA6" stroke-width="4.2" stroke-linecap="round"/>
+</svg>

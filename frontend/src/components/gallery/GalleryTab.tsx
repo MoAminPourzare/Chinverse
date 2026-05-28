@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from 'react';
-import { Plus, ImageIcon } from 'lucide-react';
-import { galleryService, GalleryItem } from '@/services/gallery.service';
-import Image from 'next/image';
-import { getMediaUrl } from '@/lib/media';
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import { galleryService, GalleryItem } from "@/services/gallery.service";
+import { getMediaUrl } from "@/lib/media";
 
-const AddPhotoModal = dynamic(() => import('@/components/gallery/AddPhotoModal'), {
+const AddPhotoModal = dynamic(() => import("@/components/gallery/AddPhotoModal"), {
     ssr: false,
 });
-const ImageDetailModal = dynamic(() => import('@/components/gallery/ImageDetailModal'), {
+const ImageDetailModal = dynamic(() => import("@/components/gallery/ImageDetailModal"), {
     ssr: false,
 });
 
@@ -26,7 +26,7 @@ export default function GalleryTab() {
             const items = await galleryService.getGallery();
             setGalleryItems(items);
         } catch (error) {
-            console.error('Failed to fetch gallery', error);
+            console.error("Failed to fetch gallery", error);
         } finally {
             setLoading(false);
         }
@@ -43,30 +43,37 @@ export default function GalleryTab() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
             </div>
         );
     }
 
-    // Empty State
     if (galleryItems.length === 0) {
         return (
             <>
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[400px]">
-                    <div className="mb-6 relative">
-                        <ImageIcon className="w-24 h-24 text-rose-200" strokeWidth={1} />
+                <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
+                    <div className="relative mb-6 h-[100px] w-[100px]">
+                        <Image
+                            src="/assets/chinverse/icons/photo.svg"
+                            alt=""
+                            fill
+                            sizes="100px"
+                            className="object-contain"
+                        />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
                         اولین عکست رو بارگذاری کن!
                     </h3>
-                    <p className="text-gray-500 text-sm max-w-xs mb-8 leading-relaxed">
-                        با اضافه کردن تصاویر شخصیت، ویترینات یا پروژه‌هات، پروفایلت رو جذاب‌تر و باورپذیرتر کن!
+                    <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                        با اضافه کردن تصاویر نمونه‌کار یا فعالیت‌هات، پروفایلت توی ویترین بیشتر به چشم میاد.
                     </p>
                     <button
+                        type="button"
                         onClick={() => setIsAddModalOpen(true)}
-                        className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-4 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
+                        className="mt-5 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
+                        aria-label="افزودن عکس"
                     >
-                        <Plus className="w-6 h-6" />
+                        <Plus className="h-6 w-6" />
                     </button>
                 </div>
 
@@ -79,21 +86,21 @@ export default function GalleryTab() {
         );
     }
 
-    // Grid State
     return (
         <>
             <div className="relative p-4">
-                {/* Gallery Grid */}
                 <div className="mb-20 grid grid-cols-3 gap-2">
                     {galleryItems.map((item) => (
                         <button
                             key={item.id}
+                            type="button"
                             onClick={() => setSelectedItem(item)}
                             className="relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-slate-100 transition hover:opacity-90"
+                            aria-label="مشاهده عکس"
                         >
                             <Image
                                 src={getMediaUrl(item.image_url)}
-                                alt={item.caption || 'Gallery image'}
+                                alt={item.caption || "Gallery image"}
                                 fill
                                 className="object-cover"
                                 unoptimized
@@ -102,12 +109,13 @@ export default function GalleryTab() {
                     ))}
                 </div>
 
-                {/* Floating Add Button */}
                 <button
+                    type="button"
                     onClick={() => setIsAddModalOpen(true)}
-                    className="fixed bottom-20 right-1/2 z-10 translate-x-1/2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-4 text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition hover:from-rose-600 hover:to-orange-600"
+                    className="fixed bottom-24 right-1/2 z-10 flex h-[54px] w-[54px] translate-x-1/2 items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
+                    aria-label="افزودن عکس"
                 >
-                    <Plus className="w-6 h-6" />
+                    <Plus className="h-6 w-6" />
                 </button>
             </div>
 

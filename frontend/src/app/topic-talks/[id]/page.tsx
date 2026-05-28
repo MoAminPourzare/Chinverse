@@ -8,7 +8,7 @@ export default function TopicTalksDetailPage() {
             eyebrow="گفتارهای موضوعی"
             countKeys={["episodes_count"]}
             countLabel="گفتار"
-            accentClass="bg-fuchsia-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

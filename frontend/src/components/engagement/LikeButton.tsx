@@ -79,8 +79,8 @@ export default function LikeButton({
                 "inline-flex items-center justify-center gap-1.5 rounded-full border text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-70",
                 compact ? "h-9 px-3" : "h-11 px-4",
                 liked
-                    ? "border-rose-100 bg-rose-50 text-rose-600 shadow-[0_10px_24px_rgba(244,63,94,0.12)]"
-                    : "border-slate-200 bg-white text-slate-500 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600",
+                    ? "border-[#d5e1ef] bg-[#eef6ff] text-[#155aa6] shadow-[0_10px_24px_rgba(21,90,166,0.12)]"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]",
                 className,
             )}
             aria-pressed={liked}

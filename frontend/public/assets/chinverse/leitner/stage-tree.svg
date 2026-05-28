@@ -1,0 +1,21 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="treeBg" x1="17" y1="15" x2="102" y2="101" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF6FF"/>
+      <stop offset="1" stop-color="#D8E8FA"/>
+    </linearGradient>
+    <linearGradient id="treeLeaf" x1="33" y1="23" x2="88" y2="79" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#57D85A"/>
+      <stop offset="1" stop-color="#157A34"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="92" height="92" rx="30" fill="url(#treeBg)"/>
+  <path d="M60 86V57" stroke="#155AA6" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 70C50.2 63.9 44.2 56.3 40.1 45.3" stroke="#155AA6" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M60 65.4C70.5 58.5 77.2 49.4 82.4 36.7" stroke="#155AA6" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M36.5 52.9C31 39.3 38.7 25.6 53.8 23C58.3 36.8 51.4 49.5 36.5 52.9Z" fill="url(#treeLeaf)"/>
+  <path d="M78.2 38.5C80.9 25 94.4 18.6 106 25.4C102.1 39.1 90.1 45.5 78.2 38.5Z" fill="#39AA20"/>
+  <path d="M50.1 62.7C38 64.6 28.3 57.4 26 45.8C38.1 43.1 48.5 49.8 50.1 62.7Z" fill="#F28B61"/>
+  <path d="M68 63C76.8 61.4 84.4 64.9 88 72.5C79.2 76.4 70.9 73.5 68 63Z" fill="#8AC7EE"/>
+  <path d="M35 91C45.4 84.4 75.7 84.4 86 91" stroke="#155AA6" stroke-width="4" stroke-linecap="round"/>
+</svg>

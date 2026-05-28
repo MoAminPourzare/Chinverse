@@ -8,7 +8,7 @@ export default function ClassicalPoetryExplorePage() {
             detailPath="/classical-poetry"
             layout="list"
             countLabel="درس"
-            accentClass="bg-violet-600"
+            accentClass="bg-blue-700"
         />
     );
 }

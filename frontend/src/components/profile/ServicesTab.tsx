@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, Plus, Trash2, Upload, X } from "lucide-react";
-import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import LikeButton from "@/components/engagement/LikeButton";
 import { getMediaUrl } from "@/lib/media";
 import { userService, UserService } from "@/services/user.service";
+import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
 
 interface ServicesTabProps {
     userId?: number;
@@ -21,6 +21,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [fetchError, setFetchError] = useState("");
     const [error, setError] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -34,10 +35,12 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     const fetchServices = useCallback(async () => {
         try {
             setLoading(true);
+            setFetchError("");
             const data = userId ? await userService.getUserServices(userId) : await userService.getMyServices();
             setServices(data);
         } catch (fetchError) {
-            console.error("Failed to fetch services", fetchError);
+            setServices([]);
+            setFetchError(getServiceErrorMessage(fetchError, Boolean(userId)));
         } finally {
             setLoading(false);
         }
@@ -62,17 +65,14 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         resetForm();
     };
 
-    const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBannerChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = "";
         if (!file) return;
 
-        if (!file.type.startsWith("image/")) {
-            setError("لطفاً یک فایل تصویری معتبر انتخاب کن.");
-            return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            setError("حجم تصویر نباید بیشتر از 5 مگابایت باشد.");
+        const fileValidation = validateImageFile(file, { maxMb: 5 });
+        if (!fileValidation.ok) {
+            setError(fileValidation.message);
             return;
         }
 
@@ -80,13 +80,17 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         setPendingBannerFile(file);
     };
 
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
         const cleanTitle = title.trim();
         const cleanDescription = description.trim();
+        const validationError =
+            validationMessage(validateTextLength(cleanTitle, "عنوان خدمت", { required: true, max: 160 })) ||
+            validationMessage(validateTextLength(cleanDescription, "توضیحات خدمت", { required: true, max: 4000 })) ||
+            validationMessage(validateImageFile(bannerFile, { maxMb: 5 }));
 
-        if (!cleanTitle || !cleanDescription) {
-            setError("عنوان و توضیحات خدمت الزامی هستند.");
+        if (validationError) {
+            setError(validationError);
             return;
         }
 
@@ -103,8 +107,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
             resetForm();
             await fetchServices();
         } catch (submitError) {
-            console.error("Failed to create service", submitError);
-            setError("ثبت خدمت انجام نشد. لطفاً دوباره امتحان کن.");
+            setError(getServiceErrorMessage(submitError, false, "ثبت خدمت انجام نشد. لطفا دوباره امتحان کن."));
         } finally {
             setSubmitting(false);
         }
@@ -117,15 +120,87 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
             await userService.deleteService(serviceId);
             setServices((current) => current.filter((service) => service.id !== serviceId));
         } catch (deleteError) {
-            console.error("Failed to delete service", deleteError);
+            setFetchError(getServiceErrorMessage(deleteError, false, "حذف خدمت انجام نشد. لطفا دوباره تلاش کن."));
         }
     };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
             </div>
+        );
+    }
+
+    if (fetchError) {
+        return (
+            <div className="p-4">
+                <div className="rounded-[24px] border border-rose-100 bg-rose-50 px-4 py-5 text-center">
+                    <p className="text-sm font-black text-rose-700">{fetchError}</p>
+                    <button
+                        type="button"
+                        onClick={() => void fetchServices()}
+                        className="mt-4 rounded-2xl bg-[#155aa6] px-4 py-2 text-sm font-black text-white shadow-[0_10px_20px_rgba(21,90,166,0.20)] transition hover:bg-[#0f4e92]"
+                    >
+                        تلاش دوباره
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (services.length === 0) {
+        return (
+            <>
+                <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
+                    <div className="relative mb-6 h-[100px] w-[100px]">
+                        <Image
+                            src="/assets/chinverse/icons/services.svg"
+                            alt=""
+                            fill
+                            sizes="100px"
+                            className="object-contain"
+                        />
+                    </div>
+                    <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
+                        اولین خدمتت رو ثبت کن!
+                    </h3>
+                    <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                        اینجا میتونی دوره‌های آموزشی، ترجمه رسمی، مشاوره بازرگانی یا هر خدمت مرتبط با زبان چینی و معرفی کسب‌وکارت رو ثبت کنی.
+                    </p>
+                    {isOwner ? (
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(true)}
+                            className="mt-7 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
+                            aria-label="افزودن خدمت"
+                        >
+                            <Plus className="h-6 w-6" />
+                        </button>
+                    ) : null}
+                </div>
+                <ServiceModal
+                    isOpen={isModalOpen}
+                    title={title}
+                    description={description}
+                    bannerPreview={bannerPreview}
+                    error={error}
+                    submitting={submitting}
+                    pendingBannerFile={pendingBannerFile}
+                    fileInputRef={fileInputRef}
+                    onClose={closeModal}
+                    onSubmit={handleSubmit}
+                    onTitleChange={setTitle}
+                    onDescriptionChange={setDescription}
+                    onBannerChange={handleBannerChange}
+                    onCancelAdjust={() => setPendingBannerFile(null)}
+                    onConfirmAdjust={(file, previewUrl) => {
+                        setBannerFile(file);
+                        setBannerPreview(previewUrl);
+                        setPendingBannerFile(null);
+                    }}
+                />
+            </>
         );
     }
 
@@ -146,161 +221,227 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                     <button
                         type="button"
                         onClick={() => setIsModalOpen(true)}
-                        className="group flex w-full flex-col items-center justify-center gap-3 rounded-[26px] border-2 border-dashed border-slate-300 bg-slate-50/70 p-8 text-center transition hover:border-rose-300 hover:bg-rose-50"
+                        className="mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
+                        aria-label="افزودن خدمت"
                     >
-                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm transition group-hover:scale-105">
-                            <Plus className="h-6 w-6" />
-                        </span>
-                        <span className="font-black text-slate-700">افزودن خدمت جدید</span>
-                        <span className="text-xs leading-6 text-slate-400">خدمتت بعد از ثبت در ویترین خدمات نمایش داده می‌شود.</span>
+                        <Plus className="h-6 w-6" />
                     </button>
-                )}
-
-                {services.length === 0 && !isOwner && (
-                    <div className="py-12 text-center text-sm text-slate-400">
-                        هنوز خدمتی ثبت نشده است.
-                    </div>
                 )}
             </div>
 
-            <Transition appear show={isModalOpen} as={Fragment}>
-                <Dialog
-                    as="div"
-                    className="relative z-[120]"
-                    onClose={() => {
-                        if (pendingBannerFile) return;
-                        closeModal();
-                    }}
-                    dir="rtl"
-                >
-                    <Transition.Child
-                        as={Fragment}
-                        enter="ease-out duration-300"
-                        enterFrom="opacity-0"
-                        enterTo="opacity-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
-                    >
-                        <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" />
-                    </Transition.Child>
+            <ServiceModal
+                isOpen={isModalOpen}
+                title={title}
+                description={description}
+                bannerPreview={bannerPreview}
+                error={error}
+                submitting={submitting}
+                pendingBannerFile={pendingBannerFile}
+                fileInputRef={fileInputRef}
+                onClose={closeModal}
+                onSubmit={handleSubmit}
+                onTitleChange={setTitle}
+                onDescriptionChange={setDescription}
+                onBannerChange={handleBannerChange}
+                onCancelAdjust={() => setPendingBannerFile(null)}
+                onConfirmAdjust={(file, previewUrl) => {
+                    setBannerFile(file);
+                    setBannerPreview(previewUrl);
+                    setPendingBannerFile(null);
+                }}
+            />
+        </div>
+    );
+}
 
-                    <div className="fixed inset-0 overflow-y-auto">
-                        <div className="flex min-h-full items-center justify-center p-4 text-center">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel className="flex h-[min(720px,88vh)] w-full max-w-md flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white text-right align-middle shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
-                                    <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
+function getServiceErrorMessage(error: unknown, isPublicView: boolean, fallback = "دریافت خدمات انجام نشد. لطفا دوباره تلاش کن.") {
+    const axiosError = error as {
+        message?: string;
+        code?: string;
+        response?: { status?: number; data?: { detail?: string } };
+    };
+
+    if (!axiosError.response) {
+        return "ارتباط با سرور برقرار نشد. مطمئن شو بک‌اند روشن است و دوباره تلاش کن.";
+    }
+    if (axiosError.response.status === 401) {
+        return isPublicView ? "برای دیدن این بخش باید وارد حساب شوی." : "نشست کاربری منقضی شده؛ لطفا دوباره وارد شو.";
+    }
+    if (axiosError.response.status === 403) {
+        return "اجازه دسترسی به این بخش را نداری.";
+    }
+
+    return axiosError.response.data?.detail || fallback;
+}
+
+interface ServiceModalProps {
+    isOpen: boolean;
+    title: string;
+    description: string;
+    bannerPreview: string | null;
+    error: string;
+    submitting: boolean;
+    pendingBannerFile: File | null;
+    fileInputRef: RefObject<HTMLInputElement | null>;
+    onClose: () => void;
+    onSubmit: (event: FormEvent) => void;
+    onTitleChange: (value: string) => void;
+    onDescriptionChange: (value: string) => void;
+    onBannerChange: (event: ChangeEvent<HTMLInputElement>) => void;
+    onCancelAdjust: () => void;
+    onConfirmAdjust: (file: File, previewUrl: string) => void;
+}
+
+function ServiceModal({
+    isOpen,
+    title,
+    description,
+    bannerPreview,
+    error,
+    submitting,
+    pendingBannerFile,
+    fileInputRef,
+    onClose,
+    onSubmit,
+    onTitleChange,
+    onDescriptionChange,
+    onBannerChange,
+    onCancelAdjust,
+    onConfirmAdjust,
+}: ServiceModalProps) {
+    return (
+        <Transition appear show={isOpen} as={Fragment}>
+            <Dialog
+                as="div"
+                className="relative z-[120]"
+                onClose={() => {
+                    if (pendingBannerFile) return;
+                    onClose();
+                }}
+                dir="rtl"
+            >
+                <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" />
+                </Transition.Child>
+
+                <div className="fixed inset-0 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0 scale-95"
+                            enterTo="opacity-100 scale-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100 scale-100"
+                            leaveTo="opacity-0 scale-95"
+                        >
+                            <Dialog.Panel className="flex h-[min(720px,88vh)] w-full max-w-md flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white text-right align-middle shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
+                                <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
+                                    <div>
+                                        <Dialog.Title as="h2" className="text-base font-black text-slate-900">
+                                            افزودن خدمت جدید
+                                        </Dialog.Title>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={onClose}
+                                        className="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                                        aria-label="بستن"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={onSubmit} className="min-h-0 flex-1 overflow-y-auto p-5">
+                                    <div className="space-y-5">
                                         <div>
-                                            <Dialog.Title as="h2" className="text-base font-black text-slate-900">
-                                                افزودن خدمت جدید
-                                            </Dialog.Title>
-                                            <p className="mt-1 text-xs text-slate-400">عنوان، تصویر و توضیحات خدمت را وارد کن.</p>
+                                            <label className="mb-2 block text-sm font-bold text-slate-700">عنوان خدمت *</label>
+                                            <input
+                                                type="text"
+                                                value={title}
+                                                onChange={(event) => onTitleChange(event.target.value)}
+                                                placeholder="مثلا: راهنمای تور و سفر چین"
+                                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                            />
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={closeModal}
-                                            className="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                                        >
-                                            <X className="h-5 w-5" />
-                                        </button>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-bold text-slate-700">تصویر خدمت</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="relative h-44 w-full overflow-hidden rounded-[24px] border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#155aa6] hover:bg-[#eef6ff]"
+                                            >
+                                                {bannerPreview ? (
+                                                    <Image src={bannerPreview} alt="پیش‌نمایش خدمت" fill className="object-cover" />
+                                                ) : (
+                                                    <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                                        <Upload className="h-8 w-8" />
+                                                        <span className="text-sm font-bold">انتخاب تصویر</span>
+                                                        <span className="text-xs">JPG، PNG یا WEBP تا ۵MB</span>
+                                                    </span>
+                                                )}
+                                            </button>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={onBannerChange}
+                                                className="hidden"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-bold text-slate-700">توضیحات خدمت *</label>
+                                            <textarea
+                                                value={description}
+                                                onChange={(event) => onDescriptionChange(event.target.value)}
+                                                placeholder="توضیح بده این خدمت چیست، برای چه کسانی مناسب است و کاربر با درخواست مشاوره چه چیزی دریافت می‌کند."
+                                                rows={8}
+                                                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                            />
+                                        </div>
+
+                                        {error && (
+                                            <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-600">
+                                                {error}
+                                            </p>
+                                        )}
                                     </div>
 
-                                    <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto p-5">
-                                        <div className="space-y-5">
-                                            <div>
-                                                <label className="mb-2 block text-sm font-bold text-slate-700">عنوان خدمت *</label>
-                                                <input
-                                                    type="text"
-                                                    value={title}
-                                                    onChange={(event) => setTitle(event.target.value)}
-                                                    placeholder="مثلاً: راهنمای تور و سفر چین"
-                                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="mb-2 block text-sm font-bold text-slate-700">تصویر خدمت</label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    className="relative h-44 w-full overflow-hidden rounded-[24px] border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-rose-300 hover:bg-rose-50/50"
-                                                >
-                                                    {bannerPreview ? (
-                                                        <Image src={bannerPreview} alt="پیش نمایش خدمت" fill className="object-cover" />
-                                                    ) : (
-                                                        <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                                                            <Upload className="h-8 w-8" />
-                                                            <span className="text-sm font-bold">انتخاب تصویر</span>
-                                                            <span className="text-xs">JPG, PNG یا WEBP تا 5MB</span>
-                                                        </span>
-                                                    )}
-                                                </button>
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleBannerChange}
-                                                    className="hidden"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="mb-2 block text-sm font-bold text-slate-700">توضیحات خدمت *</label>
-                                                <textarea
-                                                    value={description}
-                                                    onChange={(event) => setDescription(event.target.value)}
-                                                    placeholder="توضیح بده این خدمت چیست، برای چه کسانی مناسب است و کاربر با درخواست مشاوره چه چیزی دریافت می‌کند."
-                                                    rows={8}
-                                                    className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                                                />
-                                            </div>
-
-                                            {error && (
-                                                <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-600">
-                                                    {error}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="sticky bottom-0 mt-5 border-t border-slate-100 bg-white pt-3">
-                                            <PrimaryButton
-                                                type="submit"
-                                                disabled={submitting || !title.trim() || !description.trim()}
-                                                className="w-full"
-                                                leadingIcon={submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <BriefcaseBusiness className="h-5 w-5" />}
-                                            >
-                                                {submitting ? "در حال ثبت..." : "ثبت خدمت"}
-                                            </PrimaryButton>
-                                        </div>
-                                    </form>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
+                                    <div className="sticky bottom-0 mt-5 border-t border-slate-100 bg-white pt-3">
+                                        <button
+                                            type="submit"
+                                            disabled={submitting || !title.trim() || !description.trim()}
+                                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-3 text-sm font-black text-white shadow-[0_12px_24px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <BriefcaseBusiness className="h-5 w-5" />}
+                                            {submitting ? "در حال ثبت..." : "ثبت خدمت"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </Dialog.Panel>
+                        </Transition.Child>
                     </div>
-                    <ImageAdjustModal
-                        file={pendingBannerFile}
-                        isOpen={!!pendingBannerFile}
-                        title="تنظیم تصویر خدمت"
-                        aspectRatio={16 / 9}
-                        onCancel={() => setPendingBannerFile(null)}
-                        onConfirm={(file, previewUrl) => {
-                            setBannerFile(file);
-                            setBannerPreview(previewUrl);
-                            setPendingBannerFile(null);
-                        }}
-                    />
-                </Dialog>
-            </Transition>
-
-        </div>
+                </div>
+                <ImageAdjustModal
+                    file={pendingBannerFile}
+                    isOpen={!!pendingBannerFile}
+                    title="تنظیم تصویر خدمت"
+                    aspectRatio={16 / 9}
+                    onCancel={onCancelAdjust}
+                    onConfirm={onConfirmAdjust}
+                />
+            </Dialog>
+        </Transition>
     );
 }
 
@@ -315,9 +456,9 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
     const chatUserId = userId || service.user_id;
 
     return (
-        <article className="overflow-hidden rounded-[26px] border border-slate-100 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.07)]">
+        <article className="overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
             <Link href={`/services/${service.id}`} className="block">
-                <div className="relative h-40 bg-gradient-to-br from-slate-100 to-rose-50">
+                <div className="relative h-40 bg-gradient-to-br from-slate-100 to-[#eef6ff]">
                     {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
@@ -328,7 +469,7 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                             unoptimized
                         />
                     ) : (
-                        <div className="flex h-full items-center justify-center text-rose-300">
+                        <div className="flex h-full items-center justify-center text-[#155aa6]/40">
                             <ImageIcon size={42} />
                         </div>
                     )}
@@ -359,13 +500,15 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                    <PrimaryButton href={`/services/${service.id}`} variant="ghost" className="w-full" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
+                    <Link href={`/services/${service.id}`} className="flex items-center justify-center gap-2 rounded-2xl border border-[#d5e1ef] bg-white px-3 py-2 text-sm font-bold text-[#155aa6] transition hover:bg-[#eef6ff]">
+                        <ArrowLeft className="h-4 w-4" />
                         جزئیات
-                    </PrimaryButton>
+                    </Link>
                     {!isOwner && chatUserId && (
-                        <PrimaryButton href={`/chat/${chatUserId}`} className="w-full" leadingIcon={<MessageCircle className="h-4 w-4" />}>
+                        <Link href={`/chat/${chatUserId}`} className="flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#0f4e92]">
+                            <MessageCircle className="h-4 w-4" />
                             مشاوره
-                        </PrimaryButton>
+                        </Link>
                     )}
                 </div>
             </div>

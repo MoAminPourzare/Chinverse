@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
-import { ArrowRight, Compass } from "lucide-react";
-import Surface from "@/components/ui/Surface";
+import { ArrowLeft } from "lucide-react";
 import { getExploreSection, type ExploreItem } from "@/components/explore/exploreData";
+import { BackButton } from "@/components/ui/IconButton";
 
 export default function ExploreGroupPage() {
     const params = useParams();
@@ -16,35 +16,21 @@ export default function ExploreGroupPage() {
     }
 
     return (
-        <div className="min-h-full pb-28" dir="rtl">
-            <main className="mx-auto flex w-full flex-col gap-4 px-4 py-4">
-                <Surface className={`overflow-hidden bg-gradient-to-br ${section.tone} p-5 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]`}>
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                        <Link
-                            href="/explore"
-                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white/90 transition hover:bg-white/20 hover:text-white"
-                            aria-label="بازگشت به کاوش"
-                        >
-                            <ArrowRight size={19} />
-                        </Link>
-                        <p className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white/75">
-                            مشاهده همه
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] border border-white/20 bg-white/15">
-                            <Compass size={26} />
+        <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
+                <header className={`rounded-[24px] border p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${section.tone}`}>
+                    <div className="grid grid-cols-[40px_1fr_40px] items-center gap-3">
+                        <BackButton href="/explore" label="بازگشت به کاوش" className="justify-self-end" />
+                        <div className="min-w-0 flex-1">
+                            <h1 className="truncate text-center text-[20px] font-black text-[#25272d]">{section.title}</h1>
                         </div>
-                        <div className="min-w-0">
-                            <h1 className="mt-1 text-2xl font-black tracking-tight">{section.title}</h1>
-                            <p className="mt-2 text-sm leading-6 text-white/75">{section.subtitle}</p>
-                        </div>
+                        <span aria-hidden />
                     </div>
-                </Surface>
+                </header>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                     {section.items.map((item) => (
-                        <ExploreGridCard key={item.id} item={item} />
+                        <ExploreGroupCard key={item.id} item={item} />
                     ))}
                 </div>
             </main>
@@ -52,23 +38,20 @@ export default function ExploreGroupPage() {
     );
 }
 
-function ExploreGridCard({ item }: { item: ExploreItem }) {
+function ExploreGroupCard({ item }: { item: ExploreItem }) {
     const Icon = item.icon;
 
     return (
         <Link href={item.href} className="group min-w-0">
-            <Surface className="flex min-h-[132px] flex-col justify-between p-4 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_18px_50px_rgba(15,23,42,0.1)]">
-                <div className={`flex h-14 w-14 items-center justify-center rounded-[22px] bg-gradient-to-br ${item.color} text-white shadow-lg`}>
-                    <Icon size={27} strokeWidth={2.25} />
+            <div className="flex h-[74px] items-center gap-2 rounded-[18px] border border-white/80 bg-white/86 px-3 shadow-[0_5px_16px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-[#d5e1ef] hover:bg-white">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-gradient-to-br ${item.color} text-white shadow-[0_8px_16px_rgba(15,23,42,0.13)]`}>
+                    <Icon size={20} strokeWidth={2.3} />
                 </div>
-                <div className="mt-4">
-                    <h2 className="line-clamp-2 text-base font-black leading-6 text-slate-950">{item.title}</h2>
-                    <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-rose-600">
-                        ورود به بخش
-                        <ArrowRight size={14} />
-                    </div>
+                <div className="min-w-0 flex-1">
+                    <h2 className="line-clamp-2 text-[13px] font-black leading-5 text-slate-900">{item.title}</h2>
                 </div>
-            </Surface>
+                <ArrowLeft size={15} className="shrink-0 text-slate-300 transition group-hover:text-[#155aa6]" />
+            </div>
         </Link>
     );
 }

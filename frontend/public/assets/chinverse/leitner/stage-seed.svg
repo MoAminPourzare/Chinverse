@@ -1,0 +1,19 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="seedA" x1="26" y1="24" x2="93" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF6FF"/>
+      <stop offset="1" stop-color="#D8E8FA"/>
+    </linearGradient>
+    <linearGradient id="seedB" x1="43" y1="37" x2="76" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8A36F"/>
+      <stop offset="1" stop-color="#E51F35"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="92" height="92" rx="30" fill="url(#seedA)"/>
+  <path d="M32 77C43.5 68.5 76.5 68.5 88 77" stroke="#155AA6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M39 87C49.5 81.5 70.5 81.5 81 87" stroke="#155AA6" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+  <path d="M63.8 32C75.8 41.2 82.9 55.1 77.1 66.6C72.1 76.5 58.4 78.2 49.8 70.7C40.1 62.2 43.2 45.3 63.8 32Z" fill="url(#seedB)"/>
+  <path d="M61.7 39.8C56.4 49.3 55.7 59.6 60.3 69.9" stroke="white" stroke-width="3.2" stroke-linecap="round" opacity=".8"/>
+  <circle cx="35" cy="35" r="6" fill="#155AA6" opacity=".13"/>
+  <circle cx="89" cy="45" r="4" fill="#E51F35" opacity=".24"/>
+</svg>

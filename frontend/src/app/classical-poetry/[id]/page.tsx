@@ -8,7 +8,7 @@ export default function ClassicalPoetryDetailPage() {
             eyebrow="شعر و ادبیات کلاسیک"
             countKeys={["lesson_count"]}
             countLabel="درس"
-            accentClass="bg-violet-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

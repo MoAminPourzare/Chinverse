@@ -8,7 +8,7 @@ export default function MovieDetailPage() {
             eyebrow="فیلم"
             countKeys={["episodes_count"]}
             countLabel="بخش"
-            accentClass="bg-red-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

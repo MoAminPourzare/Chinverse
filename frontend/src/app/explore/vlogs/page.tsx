@@ -8,7 +8,7 @@ export default function VlogsExplorePage() {
             detailPath="/vlogs"
             layout="list"
             countLabel="درس"
-            accentClass="bg-amber-600"
+            accentClass="bg-blue-700"
         />
     );
 }

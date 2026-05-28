@@ -8,7 +8,7 @@ export default function RealityDetailPage() {
             eyebrow="ریالیتی شو"
             countKeys={["episodes_count"]}
             countLabel="قسمت"
-            accentClass="bg-pink-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

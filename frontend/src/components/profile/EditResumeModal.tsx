@@ -1,35 +1,33 @@
-'use client';
+"use client";
 
-import { Fragment, useState, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { X, Plus, Trash2, Briefcase, GraduationCap, Award, Languages, Wrench, FileText, ChevronLeft } from 'lucide-react';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { User, userService, ResumeData } from '@/services/user.service';
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { Award, Briefcase, FileText, GraduationCap, Languages, Plus, Trash2, Wrench, X } from "lucide-react";
+import { SubmitHandler, useFieldArray, useForm, type UseFormRegisterReturn } from "react-hook-form";
+import { ResumeData, User, userService } from "@/services/user.service";
 
 interface EditResumeModalProps {
     isOpen: boolean;
     onClose: () => void;
     user: User | null;
     onUpdate: () => void;
+    initialSection?: string | null;
 }
 
-// Resume Data Structures imported from user.service.ts
+const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
+const yearSelectClass = `${inputClass} cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#155aa6_50%),linear-gradient(135deg,#155aa6_50%,transparent_50%)] bg-[length:6px_6px,6px_6px] bg-[position:left_14px_center,left_8px_center] bg-no-repeat pl-8`;
+const yearOptions = buildYearOptions();
+const sectionTitles: Record<string, string> = {
+    work: "سوابق کاری",
+    education: "تحصیلات",
+    certificates: "گواهینامه‌ها",
+    awards: "جوایز و تقدیرنامه‌ها",
+    skills: "مهارت‌ها",
+    languages: "زبان‌ها",
+};
 
-const categories = [
-    { id: 'work_experiences', label: 'سوابق کاری', icon: Briefcase },
-    { id: 'educations', label: 'تحصیلات', icon: GraduationCap },
-    { id: 'certificates', label: 'گواهینامه ها', icon: FileText },
-    { id: 'awards', label: 'جوایز و تقدیرنامه ها', icon: Award },
-    { id: 'skills', label: 'مهارت ها', icon: Wrench },
-    { id: 'languages', label: 'زبان ها', icon: Languages },
-];
-
-const inputClass = "w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100";
-const halfInputClass = "w-1/2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100";
-
-export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: EditResumeModalProps) {
-    const [activeCategory, setActiveCategory] = useState<string | null>(null);
-
+export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initialSection }: EditResumeModalProps) {
+    const [resumeDateError, setResumeDateError] = useState("");
     const { register, control, handleSubmit, reset } = useForm<ResumeData>({
         defaultValues: {
             work_experiences: [],
@@ -41,149 +39,63 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
         },
     });
 
-    // Field Arrays for each category
-    const { fields: workFields, append: appendWork, remove: removeWork } = useFieldArray({ control, name: 'work_experiences' });
-    const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({ control, name: 'educations' });
-    const { fields: certFields, append: appendCert, remove: removeCert } = useFieldArray({ control, name: 'certificates' });
-    const { fields: awardFields, append: appendAward, remove: removeAward } = useFieldArray({ control, name: 'awards' });
-    const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({ control, name: 'skills' });
-    const { fields: langFields, append: appendLang, remove: removeLang } = useFieldArray({ control, name: 'languages' });
+    const work = useFieldArray({ control, name: "work_experiences" });
+    const education = useFieldArray({ control, name: "educations" });
+    const certificate = useFieldArray({ control, name: "certificates" });
+    const award = useFieldArray({ control, name: "awards" });
+    const skill = useFieldArray({ control, name: "skills" });
+    const language = useFieldArray({ control, name: "languages" });
 
-    useEffect(() => {
+    const resetToUser = useCallback(() => {
         if (user?.profile?.resume) {
             reset(user.profile.resume as ResumeData);
+        } else {
+            reset({
+                work_experiences: [],
+                educations: [],
+                certificates: [],
+                awards: [],
+                skills: [],
+                languages: [],
+            });
         }
-    }, [user, reset]);
+    }, [reset, user]);
+
+    useEffect(() => {
+        if (isOpen) {
+            resetToUser();
+        }
+    }, [isOpen, resetToUser]);
+
+    const handleClose = () => {
+        setResumeDateError("");
+        resetToUser();
+        onClose();
+    };
 
     const onSubmit: SubmitHandler<ResumeData> = async (data) => {
+        const dateError = validateResumeDateRanges(data);
+        if (dateError) {
+            setResumeDateError(dateError);
+            return;
+        }
+
         try {
-            await userService.updateProfile({
-                resume: data,
-            });
+            setResumeDateError("");
+            await userService.updateProfile({ resume: data });
             onUpdate();
             onClose();
         } catch (error) {
-            console.error('Failed to update resume', error);
+            console.error("Failed to update resume", error);
         }
     };
 
-    const renderSubModalContent = () => {
-        switch (activeCategory) {
-            case 'work_experiences':
-                return (
-                    <div className="space-y-4">
-                        <button type="button" onClick={() => appendWork({ company: '', job_title: '', start_date: '', end_date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
-                            <Plus className="w-5 h-5" />
-                            سوابق کاری رو اضافه کن
-                        </button>
-                        {workFields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
-                                <button type="button" onClick={() => removeWork(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`work_experiences.${index}.company`)} placeholder="اسم شرکت" className={inputClass} />
-                                <input {...register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" className={inputClass} />
-                                <div className="flex gap-2">
-                                    <input {...register(`work_experiences.${index}.start_date`)} placeholder="تاریخ شروع" className={halfInputClass} />
-                                    <input {...register(`work_experiences.${index}.end_date`)} placeholder="تاریخ پایان" className={halfInputClass} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                );
-            case 'educations':
-                return (
-                    <div className="space-y-4">
-                        <button type="button" onClick={() => appendEdu({ university: '', degree: '', field: '', start_date: '', end_date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
-                            <Plus className="w-5 h-5" />
-                            سوابق تحصیلی رو اضافه کن
-                        </button>
-                        {eduFields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
-                                <button type="button" onClick={() => removeEdu(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`educations.${index}.university`)} placeholder="اسم دانشگاه/موسسه" className={inputClass} />
-                                <input {...register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" className={inputClass} />
-                                <input {...register(`educations.${index}.field`)} placeholder="رشته تحصیلی" className={inputClass} />
-                                <div className="flex gap-2">
-                                    <input {...register(`educations.${index}.start_date`)} placeholder="تاریخ شروع" className={halfInputClass} />
-                                    <input {...register(`educations.${index}.end_date`)} placeholder="تاریخ پایان" className={halfInputClass} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                );
-            case 'certificates':
-                return (
-                    <div className="space-y-4">
-                        <button type="button" onClick={() => appendCert({ title: '', issuer: '', date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
-                            <Plus className="w-5 h-5" />
-                            گواهینامه‌هات رو اضافه کن
-                        </button>
-                        {certFields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
-                                <button type="button" onClick={() => removeCert(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`certificates.${index}.title`)} placeholder="عنوان گواهی" className={inputClass} />
-                                <input {...register(`certificates.${index}.issuer`)} placeholder="صادر کننده" className={inputClass} />
-                                <input {...register(`certificates.${index}.date`)} placeholder="تاریخ صدور" className={inputClass} />
-                            </div>
-                        ))}
-                    </div>
-                );
-            case 'awards':
-                return (
-                    <div className="space-y-4">
-                        <button type="button" onClick={() => appendAward({ title: '', issuer: '', date: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
-                            <Plus className="w-5 h-5" />
-                            جوایز و تقدیرنامه‌هات رو اضافه کن
-                        </button>
-                        {awardFields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
-                                <button type="button" onClick={() => removeAward(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`awards.${index}.title`)} placeholder="عنوان جایزه" className={inputClass} />
-                                <input {...register(`awards.${index}.issuer`)} placeholder="اهدا کننده" className={inputClass} />
-                                <input {...register(`awards.${index}.date`)} placeholder="تاریخ" className={inputClass} />
-                            </div>
-                        ))}
-                    </div>
-                );
-            case 'skills':
-                return (
-                    <div className="space-y-4">
-                        <button type="button" onClick={() => appendSkill({ name: '', level: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
-                            <Plus className="w-5 h-5" />
-                            مهارت‌هات رو اضافه کن
-                        </button>
-                        {skillFields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
-                                <button type="button" onClick={() => removeSkill(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`skills.${index}.name`)} placeholder="نام مهارت" className={inputClass} />
-                                <input {...register(`skills.${index}.level`)} placeholder="سطح (مثلا: پیشرفته)" className={inputClass} />
-                            </div>
-                        ))}
-                    </div>
-                );
-            case 'languages':
-                return (
-                    <div className="space-y-4">
-                        <button type="button" onClick={() => appendLang({ name: '', level: '' })} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-300 py-3 font-bold text-rose-600 transition-colors hover:bg-rose-50">
-                            <Plus className="w-5 h-5" />
-                            زبان‌هات رو اضافه کن
-                        </button>
-                        {langFields.map((field, index) => (
-                            <div key={field.id} className="bg-gray-50 p-4 rounded-xl space-y-3 relative">
-                                <button type="button" onClick={() => removeLang(index)} className="absolute top-2 left-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
-                                <input {...register(`languages.${index}.name`)} placeholder="نام زبان" className={inputClass} />
-                                <input {...register(`languages.${index}.level`)} placeholder="سطح (مثلا: native)" className={inputClass} />
-                            </div>
-                        ))}
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
+    const shouldShowSection = (section: string) => !initialSection || initialSection === section;
+    const dialogTitle = initialSection ? sectionTitles[initialSection] || "ویرایش رزومه" : "رزومه ساز";
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={onClose} dir="rtl">
+            <Dialog as="div" className="relative z-50" onClose={handleClose} dir="rtl">
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -193,7 +105,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                    <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm" />
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
@@ -207,50 +119,148 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-[30px] border border-white/70 bg-white p-6 text-right align-middle shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
-                                <Dialog.Title as="h3" className="text-lg font-bold leading-6 text-gray-900 mb-4 text-center flex items-center justify-between">
-                                    {activeCategory ? (
-                                        <button onClick={() => setActiveCategory(null)} className="p-1 hover:bg-gray-100 rounded-full">
-                                            <ChevronLeft className="w-6 h-6" />
-                                        </button>
-                                    ) : <div className="w-8" />}
-
-                                    <span>{activeCategory ? categories.find(c => c.id === activeCategory)?.label : 'رزومه ساز'}</span>
-
-                                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
-                                        <X className="w-6 h-6" />
+                            <Dialog.Panel className="flex h-[min(720px,92vh)] w-full max-w-md transform flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] text-right align-middle shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
+                                <div className="flex shrink-0 items-center justify-between px-5 py-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleClose}
+                                        className="rounded-full p-2 text-slate-500 transition hover:bg-white hover:text-slate-900"
+                                        aria-label="بستن"
+                                    >
+                                        <X className="h-5 w-5" />
                                     </button>
-                                </Dialog.Title>
+                                    <Dialog.Title as="h3" className="text-[18px] font-black text-[#25272d]">
+                                        {dialogTitle}
+                                    </Dialog.Title>
+                                    <span className="h-9 w-9" />
+                                </div>
 
-                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                                    {!activeCategory ? (
-                                        <div className="space-y-3">
-                                            {categories.map((cat) => (
-                                                <button
-                                                    key={cat.id}
-                                                    type="button"
-                                                    onClick={() => setActiveCategory(cat.id)}
-                                                    className="flex w-full items-center justify-between rounded-2xl bg-slate-50 p-4 transition-colors hover:bg-slate-100"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="rounded-xl bg-white p-2 text-rose-600 shadow-sm">
-                                                            <cat.icon className="w-5 h-5" />
-                                                        </div>
-                                                        <span className="font-bold text-gray-700">{cat.label}</span>
+                                <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+                                    <div className="min-h-0 flex-1 space-y-7 overflow-y-auto px-6 pb-4 pt-1">
+                                        {resumeDateError && (
+                                            <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
+                                                {resumeDateError}
+                                            </div>
+                                        )}
+                                        {shouldShowSection("work") && (
+                                        <ResumeSection
+                                            title="سوابق کاری"
+                                            icon={<Briefcase className="h-5 w-5" />}
+                                            addLabel="سوابق کاری رو اضافه کن"
+                                            onAdd={() => work.append({ company: "", job_title: "", start_date: "", end_date: "" })}
+                                        >
+                                            {work.fields.map((field, index) => (
+                                                <ResumeCard key={field.id} onRemove={() => work.remove(index)}>
+                                                    <input {...register(`work_experiences.${index}.company`)} placeholder="نام شرکت" className={inputClass} />
+                                                    <input {...register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" className={inputClass} />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <YearSelect registration={register(`work_experiences.${index}.start_date`)} placeholder="سال شروع" />
+                                                        <YearSelect registration={register(`work_experiences.${index}.end_date`)} placeholder="سال پایان" />
                                                     </div>
-                                                    <Plus className="w-5 h-5 text-gray-400" />
-                                                </button>
+                                                </ResumeCard>
                                             ))}
-                                        </div>
-                                    ) : (
-                                        renderSubModalContent()
-                                    )}
+                                        </ResumeSection>
+                                        )}
 
-                                    {/* Footer Buttons - Only show on main view or if we want to allow saving from sub-views */}
-                                    <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
+                                        {shouldShowSection("education") && (
+                                        <ResumeSection
+                                            title="تحصیلات"
+                                            icon={<GraduationCap className="h-5 w-5" />}
+                                            addLabel="سوابق تحصیلیتو اضافه کن"
+                                            onAdd={() => education.append({ university: "", degree: "", field: "", start_date: "", end_date: "" })}
+                                        >
+                                            {education.fields.map((field, index) => (
+                                                <ResumeCard key={field.id} onRemove={() => education.remove(index)}>
+                                                    <input {...register(`educations.${index}.university`)} placeholder="نام دانشگاه/موسسه" className={inputClass} />
+                                                    <input {...register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" className={inputClass} />
+                                                    <input {...register(`educations.${index}.field`)} placeholder="رشته تحصیلی" className={inputClass} />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <YearSelect registration={register(`educations.${index}.start_date`)} placeholder="سال شروع" />
+                                                        <YearSelect registration={register(`educations.${index}.end_date`)} placeholder="سال پایان" />
+                                                    </div>
+                                                </ResumeCard>
+                                            ))}
+                                        </ResumeSection>
+                                        )}
+
+                                        {shouldShowSection("certificates") && (
+                                        <ResumeSection
+                                            title="گواهینامه‌ها"
+                                            icon={<FileText className="h-5 w-5" />}
+                                            addLabel="گواهینامه‌هاتو اضافه کن"
+                                            onAdd={() => certificate.append({ title: "", issuer: "", date: "" })}
+                                        >
+                                            {certificate.fields.map((field, index) => (
+                                                <ResumeCard key={field.id} onRemove={() => certificate.remove(index)}>
+                                                    <input {...register(`certificates.${index}.title`)} placeholder="عنوان گواهی" className={inputClass} />
+                                                    <input {...register(`certificates.${index}.issuer`)} placeholder="صادر کننده" className={inputClass} />
+                                                    <YearSelect registration={register(`certificates.${index}.date`)} placeholder="سال صدور" />
+                                                </ResumeCard>
+                                            ))}
+                                        </ResumeSection>
+                                        )}
+
+                                        {shouldShowSection("awards") && (
+                                        <ResumeSection
+                                            title="جوایز و تقدیرنامه‌ها"
+                                            icon={<Award className="h-5 w-5" />}
+                                            addLabel="جوایز و تقدیرنامه‌هاتو اضافه کن"
+                                            onAdd={() => award.append({ title: "", issuer: "", date: "" })}
+                                        >
+                                            {award.fields.map((field, index) => (
+                                                <ResumeCard key={field.id} onRemove={() => award.remove(index)}>
+                                                    <input {...register(`awards.${index}.title`)} placeholder="عنوان جایزه" className={inputClass} />
+                                                    <input {...register(`awards.${index}.issuer`)} placeholder="اهدا کننده" className={inputClass} />
+                                                    <YearSelect registration={register(`awards.${index}.date`)} placeholder="سال دریافت" />
+                                                </ResumeCard>
+                                            ))}
+                                        </ResumeSection>
+                                        )}
+
+                                        {shouldShowSection("skills") && (
+                                        <ResumeSection
+                                            title="مهارت‌ها"
+                                            icon={<Wrench className="h-5 w-5" />}
+                                            addLabel="مهارت‌هاتو اضافه کن"
+                                            onAdd={() => skill.append({ name: "", level: "" })}
+                                        >
+                                            {skill.fields.map((field, index) => (
+                                                <ResumeCard key={field.id} onRemove={() => skill.remove(index)}>
+                                                    <input {...register(`skills.${index}.name`)} placeholder="نام مهارت" className={inputClass} />
+                                                    <input {...register(`skills.${index}.level`)} placeholder="سطح، مثلا پیشرفته" className={inputClass} />
+                                                </ResumeCard>
+                                            ))}
+                                        </ResumeSection>
+                                        )}
+
+                                        {shouldShowSection("languages") && (
+                                        <ResumeSection
+                                            title="زبان‌ها"
+                                            icon={<Languages className="h-5 w-5" />}
+                                            addLabel="زبان‌هاتو اضافه کن"
+                                            onAdd={() => language.append({ name: "", level: "" })}
+                                        >
+                                            {language.fields.map((field, index) => (
+                                                <ResumeCard key={field.id} onRemove={() => language.remove(index)}>
+                                                    <input {...register(`languages.${index}.name`)} placeholder="نام زبان" className={inputClass} />
+                                                    <input {...register(`languages.${index}.level`)} placeholder="سطح، مثلا متوسط" className={inputClass} />
+                                                </ResumeCard>
+                                            ))}
+                                        </ResumeSection>
+                                        )}
+                                    </div>
+
+                                    <div className="grid shrink-0 grid-cols-2 gap-4 px-6 py-5">
+                                        <button
+                                            type="button"
+                                            onClick={handleClose}
+                                            className="rounded-full bg-[#e7eaf0] py-3 text-sm font-bold text-slate-500 shadow-[0_5px_10px_rgba(15,23,42,0.16)] transition hover:bg-slate-200"
+                                        >
+                                            لغو کردن
+                                        </button>
                                         <button
                                             type="submit"
-                                            className="flex-1 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 py-3 font-bold text-white transition hover:from-rose-600 hover:to-orange-600"
+                                            className="rounded-full bg-[#155aa6] py-3 text-sm font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.32)] transition hover:bg-[#0f4e92]"
                                         >
                                             ذخیره کردن
                                         </button>
@@ -262,5 +272,99 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate }: Edi
                 </div>
             </Dialog>
         </Transition>
+    );
+}
+
+function YearSelect({ registration, placeholder }: { registration: UseFormRegisterReturn; placeholder: string }) {
+    return (
+        <select {...registration} className={yearSelectClass}>
+            <option value="">{placeholder}</option>
+            {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                    {year}
+                </option>
+            ))}
+        </select>
+    );
+}
+
+function buildYearOptions() {
+    const currentYear = Number(
+        new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric" })
+            .format(new Date())
+            .replace(/[^۰-۹0-9]/g, "")
+            .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit))),
+    ) || 1405;
+
+    return Array.from({ length: currentYear - 1350 + 1 }, (_, index) => String(currentYear - index));
+}
+
+function validateResumeDateRanges(data: ResumeData) {
+    const invalidWork = data.work_experiences?.some((item) => isEndBeforeStart(item.start_date, item.end_date));
+    if (invalidWork) {
+        return "در سوابق کاری، سال پایان نمی‌تواند کمتر از سال شروع باشد.";
+    }
+
+    const invalidEducation = data.educations?.some((item) => isEndBeforeStart(item.start_date, item.end_date));
+    if (invalidEducation) {
+        return "در تحصیلات، سال پایان نمی‌تواند کمتر از سال شروع باشد.";
+    }
+
+    return "";
+}
+
+function isEndBeforeStart(start?: string, end?: string) {
+    if (!start || !end) return false;
+    const startYear = Number(start);
+    const endYear = Number(end);
+    if (!Number.isFinite(startYear) || !Number.isFinite(endYear)) return false;
+    return endYear < startYear;
+}
+
+function ResumeSection({
+    title,
+    icon,
+    addLabel,
+    onAdd,
+    children,
+}: {
+    title: string;
+    icon: ReactNode;
+    addLabel: string;
+    onAdd: () => void;
+    children: ReactNode;
+}) {
+    return (
+        <section>
+            <h4 className="mb-3 flex items-center justify-end gap-2 text-[16px] font-black text-[#2f3238]">
+                {title}
+                <span className="text-[#155aa6]">{icon}</span>
+            </h4>
+            <button
+                type="button"
+                onClick={onAdd}
+                className="mr-auto flex items-center gap-2 rounded-lg border border-[#b9cbe0] bg-[#e9edf3] px-4 py-3 text-[13px] font-bold text-[#155aa6] transition hover:bg-[#eef6ff]"
+            >
+                <Plus className="h-5 w-5" />
+                {addLabel}
+            </button>
+            <div className="mt-3 space-y-3">{children}</div>
+        </section>
+    );
+}
+
+function ResumeCard({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
+    return (
+        <div className="relative space-y-2 rounded-2xl border border-[#d6e1ee] bg-white p-3 shadow-sm">
+            <button
+                type="button"
+                onClick={onRemove}
+                className="absolute left-2 top-2 rounded-xl p-2 text-red-500 transition hover:bg-red-50"
+                aria-label="حذف مورد"
+            >
+                <Trash2 className="h-4 w-4" />
+            </button>
+            <div className="space-y-2 pt-8">{children}</div>
+        </div>
     );
 }

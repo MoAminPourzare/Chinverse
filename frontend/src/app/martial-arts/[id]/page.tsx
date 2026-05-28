@@ -8,7 +8,7 @@ export default function MartialArtsDetailPage() {
             eyebrow="هنرهای رزمی"
             countKeys={["lesson_count"]}
             countLabel="درس"
-            accentClass="bg-red-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

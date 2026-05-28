@@ -1,0 +1,20 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sproutA" x1="21" y1="20" x2="98" y2="101" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7DF"/>
+      <stop offset="1" stop-color="#EAF4FF"/>
+    </linearGradient>
+    <linearGradient id="sproutLeaf" x1="48" y1="36" x2="83" y2="65" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#52C85A"/>
+      <stop offset="1" stop-color="#188B3B"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="92" height="92" rx="30" fill="url(#sproutA)"/>
+  <path d="M35 83C44.8 76.8 73.9 76.8 84 83" stroke="#155AA6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M59.7 78C59.7 63.4 57.2 52.2 50.5 41.2" stroke="#155AA6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 57.5C64.8 43.4 76.2 37.1 91.2 39.4C87.6 54.8 77.2 63.5 60 57.5Z" fill="url(#sproutLeaf)"/>
+  <path d="M55.2 55.4C47.5 45.8 37.4 42.8 26.9 47.1C32.9 59.8 43.6 64.3 55.2 55.4Z" fill="#F4AA16"/>
+  <path d="M63.5 55.2C70.4 51.6 76.1 47.8 82.6 42.4" stroke="white" stroke-width="3" stroke-linecap="round" opacity=".68"/>
+  <circle cx="43" cy="89" r="3.8" fill="#F4AA16"/>
+  <circle cx="75" cy="89" r="3.8" fill="#F4AA16"/>
+</svg>

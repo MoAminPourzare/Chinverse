@@ -90,7 +90,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         return parts.map((part, i) => (
             <React.Fragment key={i}>
                 {part}
-                {i < parts.length - 1 && <span className="font-cjk font-bold text-rose-600" lang="zh-CN">{targetWord}</span>}
+                {i < parts.length - 1 && <span className="font-cjk font-bold text-[#155aa6]" lang="zh-CN">{targetWord}</span>}
             </React.Fragment>
         ));
     };
@@ -117,12 +117,12 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
 
                     {/* Chinese Character */}
                     <div className="flex items-center justify-center gap-3 mb-2">
-                        <h2 className="font-cjk text-[2.5rem] font-bold leading-tight text-rose-600 sm:text-4xl" dir="ltr" lang="zh-CN">
+                        <h2 className="font-cjk text-[2.5rem] font-bold leading-tight text-[#155aa6] sm:text-4xl" dir="ltr" lang="zh-CN">
                             {word.chinese}
                         </h2>
                         <button
                             onClick={playAudio}
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-orange-500 transition-colors hover:bg-orange-200"
+                            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#155aa6] transition-colors hover:bg-[#dbeafe]"
                         >
                             <Volume2 size={20} />
                         </button>
@@ -141,7 +141,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
-                                ? "text-rose-600 border-b-2 border-rose-600"
+                                ? "text-[#155aa6] border-b-2 border-[#155aa6]"
                                 : "text-slate-500 hover:text-slate-700"
                                 }`}
                         >
@@ -216,7 +216,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                             ? "bg-green-500 text-white cursor-default"
                             : isAdding
                                 ? "bg-gray-400 text-white cursor-wait"
-                                : "bg-gradient-to-r from-rose-500 to-orange-500 text-white active:scale-[0.98] hover:from-rose-600 hover:to-orange-600"
+                                : "bg-[#155aa6] text-white active:scale-[0.98] hover:bg-[#0f4e92]"
                             }`}
                     >
                         {isInLeitner ? (

@@ -8,7 +8,7 @@ export default function SeriesDetailPage() {
             eyebrow="سریال"
             countKeys={["episodes_count"]}
             countLabel="قسمت"
-            accentClass="bg-rose-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

@@ -8,7 +8,7 @@ export default function ArtsCookingDetailPage() {
             eyebrow="آشپزی"
             countKeys={["lesson_count"]}
             countLabel="درس"
-            accentClass="bg-orange-600"
+            accentClass="bg-[#155aa6]"
         />
     );
 }

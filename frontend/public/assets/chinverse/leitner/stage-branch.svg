@@ -1,0 +1,20 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="branchBg" x1="18" y1="17" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0FFF8"/>
+      <stop offset="1" stop-color="#E6F0FF"/>
+    </linearGradient>
+    <linearGradient id="branchLeaf" x1="44" y1="27" x2="86" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#58D95A"/>
+      <stop offset="1" stop-color="#1C8E3E"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="92" height="92" rx="30" fill="url(#branchBg)"/>
+  <path d="M60 86V59.5C60 50.5 55.7 42.7 49.1 36.6" stroke="#155AA6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 66.8C68.1 60.9 75.7 53.2 80.8 42.5" stroke="#155AA6" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M47.7 34C56.6 28.8 67.8 30.4 75.1 39.5C65.5 47.1 54.3 46.5 47.7 34Z" fill="#39AA20"/>
+  <path d="M77.5 42.8C86.4 39.7 95.2 42.7 99.4 51.5C89.9 56.6 81.1 53.7 77.5 42.8Z" fill="url(#branchLeaf)"/>
+  <path d="M55.3 62.2C45.3 60 38.7 52.2 38 42.1C50 42 57.4 49.6 55.3 62.2Z" fill="#F28B61"/>
+  <path d="M36 88C46.5 81.7 74.1 81.7 84 88" stroke="#155AA6" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="88" cy="32" r="5" fill="#155AA6" opacity=".13"/>
+</svg>
