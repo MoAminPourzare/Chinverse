@@ -99,7 +99,7 @@ export default function DailyGoalSettingsPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                     <Link
-                        href="/daily-practice"
+                        href="/?tab=daily"
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-3 text-sm font-black text-white shadow-[0_14px_26px_rgba(21,90,166,0.18)] transition hover:bg-[#0f4e92]"
                     >
                         <CalendarDays size={17} />

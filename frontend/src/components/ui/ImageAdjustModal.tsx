@@ -233,8 +233,8 @@ export default function ImageAdjustModal({
     const renderedHeight = Math.max(1, imageSize.height * baseScale * zoom);
 
     return (
-        <div className="fixed inset-0 z-[180] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" dir="rtl">
-            <div className="flex h-[min(720px,92vh)] w-full max-w-md flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
+        <div className="modal-backdrop-motion fixed inset-0 z-[180] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" dir="rtl">
+            <div className="modal-panel-motion flex h-[min(720px,92vh)] w-full max-w-md flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
                 <div className="flex items-center justify-between px-5 py-4">
                     <div>
                         <h2 className="text-base font-black text-[#25272d]">{title}</h2>

@@ -15,6 +15,8 @@
   --font-latin: "Vazirmatn", "Segoe UI", Arial, Helvetica, sans-serif;
   --font-cjk: "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
   --font-vazirmatn: var(--font-persian);
+  --motion-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -111,10 +113,58 @@ body::selection {
 .app-scroll {
   flex: 1 1 0%;
   min-height: 0;
+  position: relative;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-top: env(safe-area-inset-top);
   -webkit-overflow-scrolling: touch;
+}
+
+.route-stage {
+  position: relative;
+  min-height: 100%;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.route-panel {
+  min-height: 100%;
+  transform-origin: center;
+  will-change: opacity, transform, filter;
+  backface-visibility: hidden;
+}
+
+.route-panel[data-phase="enter"] {
+  position: relative;
+  z-index: 1;
+}
+
+.route-panel[data-phase="enter"][data-motion="soft"] {
+  animation: route-soft-in 360ms var(--motion-ease-smooth, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.route-panel[data-phase="enter"][data-motion="tab"] {
+  animation: route-tab-in 420ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.route-panel[data-phase="enter"][data-motion="forward"] {
+  animation: route-forward-in 430ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.route-panel[data-phase="enter"][data-motion="back"] {
+  animation: route-back-in 390ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.route-panel[data-phase="enter"][data-motion="cover"] {
+  animation: route-cover-in 460ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.route-panel[data-phase="enter"][data-motion="uncover"] {
+  animation: route-uncover-in 400ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.route-panel[data-phase="enter"][data-motion="inline"] {
+  animation: route-inline-in 260ms ease-out both;
 }
 
 #headlessui-portal-root {
@@ -161,6 +211,226 @@ body::selection {
     height: min(900px, calc(100dvh - 36px));
     border-radius: 38px;
   }
+}
+
+@keyframes route-soft-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translate3d(0, 12px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes route-tab-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translate3d(0, 18px, 0) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes route-forward-in {
+  from {
+    opacity: 0;
+    filter: blur(7px);
+    transform: translate3d(-34px, 0, 0) rotateY(5deg) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) rotateY(0) scale(1);
+  }
+}
+
+@keyframes route-back-in {
+  from {
+    opacity: 0;
+    filter: blur(7px);
+    transform: translate3d(32px, 0, 0) rotateY(-4deg) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) rotateY(0) scale(1);
+  }
+}
+
+@keyframes route-cover-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translate3d(0, 42px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes route-uncover-in {
+  from {
+    opacity: 0.2;
+    filter: blur(4px);
+    transform: translate3d(0, -18px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes route-inline-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes content-rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes nav-shell-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes nav-dot-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -5px, 0) scale(0.25);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-sheet-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.bottom-nav-shell {
+  animation: nav-shell-in 520ms var(--motion-ease-spring) both;
+}
+
+.bottom-nav-link {
+  transition-property: color, background-color, box-shadow, transform;
+  transition-duration: 280ms;
+  transition-timing-function: var(--motion-ease-smooth);
+}
+
+.bottom-nav-link:active {
+  transform: translateY(1px) scale(0.96);
+}
+
+.bottom-nav-link svg {
+  transition: transform 280ms var(--motion-ease-spring);
+}
+
+.bottom-nav-link[data-active="true"] svg {
+  transform: translateY(-2px) scale(1.08);
+}
+
+.bottom-nav-dot {
+  animation: nav-dot-in 360ms var(--motion-ease-spring) both;
+}
+
+.modal-backdrop-motion {
+  animation: modal-backdrop-in 220ms ease-out both;
+}
+
+.modal-panel-motion {
+  animation: modal-sheet-in 380ms var(--motion-ease-spring) both;
+}
+
+.tab-content-motion {
+  animation: route-inline-in 220ms ease-out both;
+}
+
+.motion-list > * {
+  animation: content-rise-in 420ms var(--motion-ease-smooth) both;
+}
+
+.motion-list > :nth-child(1) {
+  animation-delay: 35ms;
+}
+
+.motion-list > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.motion-list > :nth-child(3) {
+  animation-delay: 105ms;
+}
+
+.motion-list > :nth-child(4) {
+  animation-delay: 140ms;
+}
+
+.motion-list > :nth-child(5) {
+  animation-delay: 175ms;
+}
+
+.motion-list > :nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
 }
 
 ::-webkit-scrollbar {

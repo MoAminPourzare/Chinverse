@@ -176,7 +176,7 @@ export default function LeitnerDashboard() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4">
+            <main className="motion-list mx-auto flex w-full max-w-[430px] flex-col gap-4">
                 <header className="pt-1 text-center">
                     <h1 className="text-xl font-black text-slate-950">لایتنر</h1>
                 </header>
@@ -253,7 +253,7 @@ export default function LeitnerDashboard() {
                 </section>
 
                 {stats.recent_cards.length > 0 && (
-                    <section className="space-y-2.5">
+                    <section className="motion-list space-y-2.5">
                         <div className="flex items-center justify-between px-1">
                             <h2 className="text-base font-black text-slate-950">لغت‌های اخیر</h2>
                             <span className="text-[11px] font-bold text-slate-400">مرورهای نزدیک</span>

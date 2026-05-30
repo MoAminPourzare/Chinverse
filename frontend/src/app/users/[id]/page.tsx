@@ -469,7 +469,7 @@ export default function PublicProfilePage() {
             {/* Lightbox */}
             {selectedImage && (
                 <div
-                    className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
+                    className="modal-backdrop-motion fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
                     onClick={() => setSelectedImage(null)}
                 >
                     <button
@@ -478,7 +478,7 @@ export default function PublicProfilePage() {
                     >
                         <X className="w-6 h-6" />
                     </button>
-                    <div className="relative max-w-full max-h-full">
+                    <div className="modal-panel-motion relative max-h-full max-w-full">
                         <Image
                             src={getMediaUrl(selectedImage.image_url)}
                             alt={selectedImage.caption || "Gallery image"}

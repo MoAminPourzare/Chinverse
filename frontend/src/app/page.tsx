@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     ImageIcon,
     MessageCircle,
@@ -55,6 +56,7 @@ interface FeedItem {
 }
 
 export default function HomePage() {
+    const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState<HomeTab>("activities");
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -74,6 +76,13 @@ export default function HomePage() {
     useEffect(() => {
         void loadFeed();
     }, []);
+
+    useEffect(() => {
+        const requestedTab = searchParams.get("tab");
+        if (requestedTab === "daily" || requestedTab === "activities") {
+            setActiveTab(requestedTab);
+        }
+    }, [searchParams]);
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-24" dir="rtl">
@@ -112,7 +121,10 @@ export default function HomePage() {
                 </header>
 
                 {activeTab === "daily" ? (
-                    <section className="mt-5 [&>div]:min-h-0 [&>div]:bg-transparent [&>div]:pb-0 [&_main]:max-w-none [&_main]:px-0 [&_main]:py-0">
+                    <section
+                        key="daily"
+                        className="tab-content-motion mt-5 [&>div]:min-h-0 [&>div]:bg-transparent [&>div]:pb-0 [&_main]:max-w-none [&_main]:px-0 [&_main]:py-0"
+                    >
                         <DailyPracticeContent />
                     </section>
                 ) : (
@@ -155,7 +167,7 @@ function ActivitiesFeed({
     }
 
     return (
-        <section className="mt-5 space-y-4">
+        <section className="motion-list mt-5 space-y-4">
             {items.map((item) =>
                 item.type === "service" ? (
                     <ServiceFeedCard key={item.id} item={item} />

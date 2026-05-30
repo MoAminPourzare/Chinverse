@@ -323,7 +323,7 @@ function QuestionsSection({
             </div>
             {draftError && <p className="mt-2 text-xs font-bold leading-5 text-rose-600">{draftError}</p>}
 
-            <div className="mt-4 space-y-3">
+            <div className="motion-list mt-4 space-y-3">
                 {isLoading ? (
                     <LoadingList count={3} />
                 ) : questions.length > 0 ? (
@@ -508,7 +508,7 @@ function ArticlesSection({
                 </div>
             )}
 
-            <div className="mt-4 space-y-3">
+            <div className="motion-list mt-4 space-y-3">
                 {isLoading ? (
                     <LoadingList count={2} />
                 ) : articles.length > 0 ? (
@@ -784,7 +784,7 @@ function MessagesTab({
     }
 
     return (
-        <div className="space-y-3">
+        <div className="motion-list space-y-3">
             {conversations.map((conversation) => (
                 <Link
                     key={conversation.user.id}

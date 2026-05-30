@@ -7,7 +7,7 @@ import { exploreSections, type ExploreItem } from "@/components/explore/exploreD
 export default function ExplorePage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
+            <main className="motion-list mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
                 {exploreSections.map((section) => (
                     <section key={section.id} className={`rounded-[24px] border p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${section.tone}`}>
                         <div className="mb-3 flex items-center justify-between gap-3">
@@ -22,7 +22,7 @@ export default function ExplorePage() {
                             </Link>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="motion-list grid grid-cols-2 gap-2">
                             {section.items.slice(0, 4).map((item) => (
                                 <ExploreCompactCard key={item.id} item={item} />
                             ))}

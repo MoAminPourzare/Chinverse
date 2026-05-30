@@ -119,7 +119,7 @@ export default function DailyPracticeContent() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-full items-center justify-center">
+            <div className="motion-list flex min-h-full items-center justify-center">
                 <div className="flex items-center gap-3 text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
                     <span>در حال آماده‌سازی آمار روزانه...</span>
@@ -143,7 +143,7 @@ export default function DailyPracticeContent() {
 
     return (
         <div className="min-h-full pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-4">
+            <main className="motion-list mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-4">
                 <Surface className="p-5">
                     <div className="flex items-center justify-between gap-4">
                         <div>
