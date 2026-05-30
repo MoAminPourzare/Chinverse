@@ -135,6 +135,7 @@ async def create_lesson(
         section_id=section_id,
         title=lesson_title,
         video_url=video_url,
+        thumbnail_url=lesson_in.thumbnail_url,
         duration_minutes=lesson_in.duration_minutes,
         is_free=lesson_in.is_free,
         metadata_json=lesson_in.metadata_json,
