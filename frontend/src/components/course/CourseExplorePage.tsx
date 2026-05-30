@@ -141,13 +141,13 @@ export default function CourseExplorePage({
                 ) : orderedCourses.length === 0 ? (
                     <StateCard text="هنوز محتوایی برای این بخش ثبت نشده است." />
                 ) : layout === "hsk" ? (
-                    <div className="grid grid-cols-3 gap-2.5">
+                    <div className="motion-list grid grid-cols-3 gap-2.5">
                         {orderedCourses.map((course) => (
                             <HskCourseCard key={course.id} course={course} detailPath={detailPath} />
                         ))}
                     </div>
                 ) : layout === "list" ? (
-                    <div className="space-y-3">
+                    <div className="motion-list space-y-3">
                         {orderedCourses.map((course) => (
                             <ListCourseCard
                                 key={course.id}
@@ -158,7 +158,7 @@ export default function CourseExplorePage({
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="motion-list grid grid-cols-2 gap-3">
                         {orderedCourses.map((course) => (
                             <PosterCourseCard
                                 key={course.id}

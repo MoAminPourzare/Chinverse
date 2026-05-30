@@ -56,7 +56,7 @@ export default function ProfilePage() {
     const tabScrollRef = useRef<HTMLDivElement>(null);
     const tabDragRef = useRef({ isDragging: false, startX: 0, startScrollLeft: 0 });
     const [activeTab, setActiveTab] = useState<string>(tabs[0].id);
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null | undefined>(undefined);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
     const [resumeEditSection, setResumeEditSection] = useState<string | null>(null);
@@ -143,6 +143,7 @@ export default function ProfilePage() {
             setFollowersCount(followers);
         } catch (error) {
             console.error("Failed to fetch user", error);
+            setUser(null);
         }
     };
 
@@ -181,6 +182,10 @@ export default function ProfilePage() {
     };
 
     const renderTabContent = () => {
+        if (user === undefined) {
+            return <ProfileLoadingState />;
+        }
+
         if (activeTab === "about") {
             const hasBio = user?.profile?.bio;
             const hasWebsites = user?.profile?.websites && user.profile.websites.length > 0;
@@ -557,7 +562,7 @@ export default function ProfilePage() {
                 <EditAboutMeModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
-                    user={user}
+                    user={user ?? null}
                     onUpdate={fetchUser}
                 />
 
@@ -567,7 +572,7 @@ export default function ProfilePage() {
                         setIsResumeModalOpen(false);
                         setResumeEditSection(null);
                     }}
-                    user={user}
+                    user={user ?? null}
                     onUpdate={fetchUser}
                     initialSection={resumeEditSection}
                 />
@@ -584,9 +589,9 @@ export default function ProfilePage() {
 
                 {/* Settings Modal */}
                 {isSettingsOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}>
+                    <div className="modal-backdrop-motion fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}>
                         <div
-                            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)] animate-in slide-in-from-bottom duration-300"
+                            className="modal-panel-motion max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
                             onClick={(e) => e.stopPropagation()}
                             dir="rtl"
                         >
@@ -807,6 +812,16 @@ function ProfileEmptyState({
             >
                 {actionIcon}
             </button>
+        </div>
+    );
+}
+
+function ProfileLoadingState() {
+    return (
+        <div className="space-y-4 px-5 pb-6 pt-5">
+            <div className="h-[128px] animate-pulse rounded-[12px] bg-[#e1e4ea]" />
+            <div className="h-[82px] animate-pulse rounded-[12px] bg-[#e6e9ee]" />
+            <div className="h-[82px] animate-pulse rounded-[12px] bg-[#e6e9ee]" />
         </div>
     );
 }

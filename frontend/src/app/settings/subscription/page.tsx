@@ -76,7 +76,7 @@ export default function SubscriptionSettingsPage() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-full items-center justify-center bg-[#f7f8fb]" dir="rtl">
+            <div className="motion-list flex min-h-full items-center justify-center bg-[#f7f8fb]" dir="rtl">
                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
                     <span>در حال آماده سازی اشتراک...</span>
@@ -107,7 +107,7 @@ export default function SubscriptionSettingsPage() {
                 icon={<Image src="/assets/chinverse/icons/Membership.svg" alt="" width={31} height={31} className="h-8 w-8 object-contain" />}
             />
 
-            <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+            <main className="motion-list mx-auto flex w-full max-w-2xl flex-col gap-4">
                 {overview.current_subscription ? (
                     <section className="rounded-[24px] border border-emerald-100 bg-emerald-50 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
                         <div className="mt-4 rounded-[20px] border border-emerald-100 bg-emerald-50 p-4">
@@ -129,7 +129,7 @@ export default function SubscriptionSettingsPage() {
                     <div className="border-b border-[#155aa6]/20 px-5 py-5 text-center">
                         <h2 className="text-[24px] font-black text-[#155aa6]">انواع اشتراک</h2>
                     </div>
-                    <div className="space-y-3 p-4">
+                    <div className="motion-list space-y-3 p-4">
                         {overview.plans.map((plan) => (
                             <PlanCard
                                 key={plan.id}

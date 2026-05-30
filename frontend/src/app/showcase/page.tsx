@@ -208,7 +208,7 @@ export default function ShowcasePage() {
                         <ShowcaseSkeleton activeTab={activeTab} />
                     ) : activeTab === "talents" ? (
                         filteredUsers.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="motion-list space-y-4">
                                 {filteredUsers.map((user) => (
                                     <TalentCard key={user.id} user={user} />
                                 ))}
@@ -221,7 +221,7 @@ export default function ShowcasePage() {
                             />
                         )
                     ) : filteredServices.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="motion-list space-y-4">
                             {filteredServices.map((service) => (
                                 <ServiceCard key={service.id} service={service} />
                             ))}

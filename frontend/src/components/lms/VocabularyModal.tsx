@@ -99,12 +99,12 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         <div className="fixed inset-0 z-50 flex items-end justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50"
+                className="modal-backdrop-motion absolute inset-0 bg-black/50"
                 onClick={onClose}
             />
 
             {/* Modal Content */}
-            <div className="relative flex max-h-[70vh] w-full max-w-md animate-slide-up flex-col rounded-t-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
+            <div className="modal-panel-motion relative flex max-h-[70vh] w-full max-w-md flex-col rounded-t-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
                 {/* Header */}
                 <div className="border-b border-slate-100 p-6 text-center">
                     {/* Close Button */}
@@ -151,7 +151,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
 
                 {/* Tab Content */}
-                <div className="flex-1 overflow-y-auto p-6" dir="rtl">
+                <div key={activeTab} className="tab-content-motion flex-1 overflow-y-auto p-6" dir="rtl">
                     {activeTab === "chinese" && (
                         <div className="space-y-3">
                             {word.chinese_meaning?.split("\n").map((line, i) => (
@@ -233,19 +233,6 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
             </div>
 
-            <style jsx>{`
-                @keyframes slide-up {
-                    from {
-                        transform: translateY(100%);
-                    }
-                    to {
-                        transform: translateY(0);
-                    }
-                }
-                .animate-slide-up {
-                    animation: slide-up 0.3s ease-out;
-                }
-            `}</style>
         </div>
     );
 }

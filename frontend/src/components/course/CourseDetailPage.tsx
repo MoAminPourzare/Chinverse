@@ -325,7 +325,7 @@ export default function CourseDetailPage({
                     <p className="mt-3 text-sm leading-8 text-slate-600">{synopsis}</p>
                 </section>
 
-                <section className="space-y-3">
+                <section className="motion-list space-y-3">
                     <div>
                         <h3 className="text-base font-black text-slate-950">درس‌ها</h3>
                     </div>
@@ -363,7 +363,7 @@ export default function CourseDetailPage({
                                         </div>
                                     )}
 
-                                    <div className="mt-3 space-y-2.5">
+                                    <div className="motion-list mt-3 space-y-2.5">
                                         {sectionLessons.map((lesson, index) => {
                                             const lessonSummary = getMetaString(lesson.metadata_json, "summary", "");
                                             const lessonSubtitle = getMetaString(lesson.metadata_json, "subtitle", "");
