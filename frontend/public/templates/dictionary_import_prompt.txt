@@ -1,0 +1,22 @@
+You are preparing dictionary data for a Persian-speaking Chinese learning app.
+
+I will give you Chinese words. Return ONLY a UTF-8 CSV.
+
+CSV columns must be exactly:
+chinese,pinyin,level,persian_meaning,chinese_meaning,composition,audio_url,definitions,examples,collocations
+
+Rules:
+- Use standard pinyin with tone marks if possible. If CSV compatibility is risky, use plain pinyin.
+- level should be HSK1, HSK2, HSK3, HSK4, HSK5, HSK6, or custom.
+- persian_meaning must be natural Persian.
+- chinese_meaning must be short simplified Chinese.
+- composition explains word parts, usage, or meaning difference in Persian.
+- audio_url should be empty.
+- definitions format: part_of_speech|definition_text|lang_code
+- examples format: zh_text|pinyin|target_text
+- collocations format: phrase_zh|phrase_pinyin|translation_target
+- If there are multiple definitions/examples/collocations in one cell, separate them with ;;
+- Wrap cells in double quotes if they contain commas.
+- Do not add markdown.
+
+Words:

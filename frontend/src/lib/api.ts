@@ -124,6 +124,15 @@ api.interceptors.request.use(
             }
         }
 
+        if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+            const headers = config.headers as unknown as { delete?: (name: string) => void; [key: string]: unknown };
+            if (typeof headers.delete === "function") {
+                headers.delete("Content-Type");
+            } else {
+                delete headers["Content-Type"];
+            }
+        }
+
         if ((config.method || "get").toLowerCase() !== "get") {
             clearGetCache();
         }
