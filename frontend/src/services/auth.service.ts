@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+import api, { clearApiCache } from '@/lib/api';
 
 export interface LoginRequest {
     username: string; // در اینجا ایمیل کاربر قرار می‌گیرد
@@ -18,6 +18,11 @@ export interface AuthResponse {
     token_type: string;
 }
 
+const notifyAuthChanged = () => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new Event('chinverse-auth-change'));
+};
+
 export const authService = {
     // تابع لاگین
     async login(credentials: LoginRequest): Promise<AuthResponse> {
@@ -34,7 +39,9 @@ export const authService = {
 
         // ذخیره توکن در لوکال استوریج
         if (response.data.access_token) {
+            clearApiCache();
             localStorage.setItem('token', response.data.access_token);
+            notifyAuthChanged();
         }
         return response.data;
     },
@@ -48,6 +55,9 @@ export const authService = {
 
     // خروج
     logout() {
+        if (typeof window === 'undefined') return;
         localStorage.removeItem('token');
+        clearApiCache();
+        notifyAuthChanged();
     },
 };

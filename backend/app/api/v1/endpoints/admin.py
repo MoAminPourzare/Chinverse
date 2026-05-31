@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
@@ -11,11 +12,20 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
+from app.core.config import settings
 from app.models.business import UserSubscription
 from app.models.course import Course, Lesson, LessonSubtitle, LessonWordMap
-from app.models.dictionary import DictionaryWord, WordCollocation, WordDefinition, WordExample
+from app.models.dictionary import (
+    DictionaryAiDraft,
+    DictionaryDraftStatus,
+    DictionaryWord,
+    WordCollocation,
+    WordDefinition,
+    WordExample,
+)
 from app.models.leitner import UserFlashcard
 from app.models.user import User
+from app.services.dictionary_ai import build_dictionary_prompt, generate_dictionary_words
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -59,6 +69,11 @@ class AdminOverview(BaseModel):
     recent_users: List[AdminUserSummary]
     recent_courses: List[AdminCourseSummary]
     recent_words: List[AdminWordSummary]
+
+
+class AdminAccessOut(BaseModel):
+    is_admin: bool
+    email: str
 
 
 class AdminWordDefinitionIn(BaseModel):
@@ -135,11 +150,36 @@ class AdminDictionaryWordOut(BaseModel):
 class AdminAiDraftRequest(BaseModel):
     words: List[str] = Field(min_length=1, max_length=80)
     context: Optional[str] = Field(default=None, max_length=4000)
+    model: Optional[str] = Field(default=None, max_length=120)
 
 
 class AdminAiDraftResponse(BaseModel):
     prompt: str
     words: List[str]
+
+
+class AdminDictionaryAiDraftOut(BaseModel):
+    id: int
+    batch_id: str
+    source_word: str
+    status: str
+    model: str
+    prompt_context: Optional[str] = None
+    prompt_text: str
+    suggested_json: dict[str, Any] = Field(default_factory=dict)
+    raw_response: Optional[str] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminDictionaryAiDraftUpdate(BaseModel):
+    status: Optional[str] = Field(default=None, max_length=40)
+    suggested_json: Optional[dict[str, Any]] = None
+    error_message: Optional[str] = Field(default=None, max_length=4000)
 
 
 class AdminSubtitleIn(BaseModel):
@@ -234,6 +274,112 @@ async def _replace_word_children(
         )
 
 
+async def _get_dictionary_draft(db: AsyncSession, draft_id: int) -> DictionaryAiDraft:
+    draft = await db.get(DictionaryAiDraft, draft_id)
+    if not draft:
+        raise not_found("Dictionary AI draft")
+    return draft
+
+
+def _status_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    clean_value = value.strip()
+    allowed = {status.value for status in DictionaryDraftStatus}
+    if clean_value not in allowed:
+        raise bad_request(f"Unknown draft status: {clean_value}")
+    return clean_value
+
+
+def _text(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    return str(value).strip()
+
+
+def _items(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _dictionary_payload_from_ai_suggestion(data: dict[str, Any]) -> AdminDictionaryWordIn:
+    if not isinstance(data, dict):
+        raise bad_request("AI draft suggested_json must be an object")
+
+    chinese = _text(data.get("chinese"))
+    if not chinese:
+        raise bad_request("AI draft is missing chinese")
+
+    definitions = [
+        AdminWordDefinitionIn(
+            lang_code=_text(item.get("lang_code"), "fa") or "fa",
+            definition_text=_text(item.get("definition_text")),
+            part_of_speech=_text(item.get("part_of_speech"), "unknown") or "unknown",
+        )
+        for item in _items(data.get("definitions"))
+        if _text(item.get("definition_text"))
+    ]
+    examples = [
+        AdminWordExampleIn(
+            zh_text=_text(item.get("zh_text")),
+            pinyin=_text(item.get("pinyin")),
+            target_text=_text(item.get("target_text")),
+        )
+        for item in _items(data.get("examples"))
+        if _text(item.get("zh_text"))
+    ]
+    collocations = [
+        AdminWordCollocationIn(
+            phrase_zh=_text(item.get("phrase_zh")),
+            phrase_pinyin=_text(item.get("phrase_pinyin")),
+            translation_target=_text(item.get("translation_target")),
+        )
+        for item in _items(data.get("collocations"))
+        if _text(item.get("phrase_zh"))
+    ]
+
+    return AdminDictionaryWordIn(
+        chinese=chinese,
+        pinyin=_text(data.get("pinyin")),
+        audio_url=_clean_optional(_text(data.get("audio_url"))),
+        level=_text(data.get("level"), "custom") or "custom",
+        persian_meaning=_clean_optional(_text(data.get("persian_meaning"))),
+        chinese_meaning=_clean_optional(_text(data.get("chinese_meaning"))),
+        composition=_clean_optional(_text(data.get("composition"))),
+        definitions=definitions,
+        examples=examples,
+        collocations=collocations,
+    )
+
+
+async def _upsert_dictionary_word(
+    db: AsyncSession,
+    payload: AdminDictionaryWordIn,
+) -> DictionaryWord:
+    chinese = payload.chinese.strip()
+    if not chinese:
+        raise bad_request("Chinese word cannot be empty")
+
+    result = await db.execute(select(DictionaryWord).where(DictionaryWord.chinese == chinese))
+    word = result.scalar_one_or_none()
+    if not word:
+        word = DictionaryWord(chinese=chinese, pinyin="", level="custom")
+        db.add(word)
+        await db.flush()
+
+    word.chinese = chinese
+    word.pinyin = payload.pinyin.strip()
+    word.audio_url = _clean_optional(payload.audio_url)
+    word.level = payload.level.strip() or "custom"
+    word.persian_meaning = _clean_optional(payload.persian_meaning)
+    word.chinese_meaning = _clean_optional(payload.chinese_meaning)
+    word.composition = _clean_optional(payload.composition)
+    await _replace_word_children(db, word, payload)
+    await db.flush()
+    return word
+
+
 @router.get("/overview", response_model=AdminOverview)
 async def admin_overview(
     db: AsyncSession = Depends(deps.get_db),
@@ -282,6 +428,13 @@ async def admin_overview(
         "recent_courses": courses_result.scalars().all(),
         "recent_words": words_result.scalars().all(),
     }
+
+
+@router.get("/me", response_model=AdminAccessOut)
+async def admin_me(
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    return {"is_admin": True, "email": current_user.email}
 
 
 @router.get("/users", response_model=List[AdminUserSummary])
@@ -424,6 +577,134 @@ async def admin_delete_dictionary_word(
     await db.commit()
 
 
+@router.post(
+    "/dictionary-drafts/generate",
+    response_model=List[AdminDictionaryAiDraftOut],
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_generate_dictionary_drafts(
+    payload: AdminAiDraftRequest,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    _ = current_user
+    words = [word.strip() for word in payload.words if word.strip()]
+    if not words:
+        raise bad_request("At least one word is required")
+
+    selected_model = payload.model.strip() if payload.model else settings.OPENAI_DICTIONARY_MODEL
+    prompt, raw_response, generated_words = await generate_dictionary_words(words, payload.context, selected_model)
+    batch_id = str(uuid4())
+    drafts: list[DictionaryAiDraft] = []
+    generated_by_word = {
+        _text(item.get("chinese")): item
+        for item in generated_words
+        if isinstance(item, dict) and _text(item.get("chinese"))
+    }
+
+    for source_word in words:
+        suggestion = generated_by_word.get(source_word)
+        if suggestion is None:
+            suggestion = next(
+                (
+                    item
+                    for item in generated_words
+                    if isinstance(item, dict)
+                    and _text(item.get("chinese")).replace(" ", "") == source_word.replace(" ", "")
+                ),
+                {},
+            )
+        draft = DictionaryAiDraft(
+            batch_id=batch_id,
+            source_word=source_word,
+            status=DictionaryDraftStatus.PENDING.value,
+            model=selected_model,
+            prompt_context=_clean_optional(payload.context),
+            prompt_text=prompt,
+            suggested_json=suggestion if isinstance(suggestion, dict) else {},
+            raw_response=raw_response,
+        )
+        drafts.append(draft)
+        db.add(draft)
+
+    await db.commit()
+    return drafts
+
+
+@router.get("/dictionary-drafts", response_model=List[AdminDictionaryAiDraftOut])
+async def admin_dictionary_drafts(
+    status_filter: Optional[str] = Query(default=None, alias="status", max_length=40),
+    q: Optional[str] = Query(default=None, max_length=80),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=80)),
+) -> Any:
+    _ = current_user
+    query = select(DictionaryAiDraft)
+    status_value = _status_value(status_filter)
+    if status_value:
+        query = query.where(DictionaryAiDraft.status == status_value)
+    if q:
+        term = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                DictionaryAiDraft.source_word.ilike(term),
+                DictionaryAiDraft.prompt_context.ilike(term),
+            )
+        )
+
+    result = await db.execute(
+        query.order_by(desc(DictionaryAiDraft.updated_at)).offset(pagination.skip).limit(pagination.limit)
+    )
+    return result.scalars().all()
+
+
+@router.put(
+    "/dictionary-drafts/{draft_id}",
+    response_model=AdminDictionaryAiDraftOut,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_dictionary_draft(
+    draft_id: int,
+    payload: AdminDictionaryAiDraftUpdate,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    _ = current_user
+    draft = await _get_dictionary_draft(db, draft_id)
+    if payload.suggested_json is not None:
+        draft.suggested_json = payload.suggested_json
+    status_value = _status_value(payload.status)
+    if status_value:
+        draft.status = status_value
+        if status_value in {DictionaryDraftStatus.APPROVED.value, DictionaryDraftStatus.REJECTED.value}:
+            draft.reviewed_by_user_id = current_user.id
+    if payload.error_message is not None:
+        draft.error_message = _clean_optional(payload.error_message)
+    await db.commit()
+    return await _get_dictionary_draft(db, draft_id)
+
+
+@router.post(
+    "/dictionary-drafts/{draft_id}/approve",
+    response_model=AdminDictionaryWordOut,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_approve_dictionary_draft(
+    draft_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    draft = await _get_dictionary_draft(db, draft_id)
+    payload = _dictionary_payload_from_ai_suggestion(draft.suggested_json)
+    word = await _upsert_dictionary_word(db, payload)
+    draft.status = DictionaryDraftStatus.APPROVED.value
+    draft.reviewed_by_user_id = current_user.id
+    await db.commit()
+    return await _get_word(db, word.id)
+
+
 @router.post("/ai/dictionary-draft", response_model=AdminAiDraftResponse)
 async def admin_dictionary_ai_prompt(
     payload: AdminAiDraftRequest,
@@ -434,28 +715,7 @@ async def admin_dictionary_ai_prompt(
     if not words:
         raise bad_request("At least one word is required")
 
-    word_lines = "\n".join(f"- {word}" for word in words)
-    context = payload.context.strip() if payload.context else "بدون متن زمینه"
-    prompt = f"""برای دیکشنری آموزشی چینی به فارسی چین‌ورس، برای هر کلمه زیر خروجی JSON بده.
-هر آیتم باید این کلیدها را داشته باشد:
-chinese, pinyin, level, persian_meaning, chinese_meaning, composition,
-definitions: [{{lang_code, definition_text, part_of_speech}}],
-examples: [{{zh_text, pinyin, target_text}}],
-collocations: [{{phrase_zh, phrase_pinyin, translation_target}}]
-
-قواعد:
-- فارسی طبیعی و آموزشی بنویس.
-- مثال‌ها کوتاه، کاربردی و مناسب زبان‌آموز باشند.
-- اگر از معنی مطمئن نیستی در فیلد review_note توضیح بده.
-- خروجی فقط JSON معتبر باشد.
-
-زمینه ویدیو/درس:
-{context}
-
-کلمات:
-{word_lines}
-"""
-    return {"prompt": prompt, "words": words}
+    return {"prompt": build_dictionary_prompt(words, payload.context), "words": words}
 
 
 @router.get("/lessons/{lesson_id}/subtitles", response_model=List[AdminSubtitleOut])

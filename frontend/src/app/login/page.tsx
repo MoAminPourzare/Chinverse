@@ -13,6 +13,11 @@ import { validateEmail, validateTextLength, validationMessage } from "@/validati
 
 export default function LoginPage() {
     const router = useRouter();
+    const [nextPath] = useState(() => {
+        if (typeof window === "undefined") return "/";
+        const value = new URLSearchParams(window.location.search).get("next");
+        return value && value.startsWith("/") && !value.startsWith("//") ? value : "/";
+    });
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -34,7 +39,8 @@ export default function LoginPage() {
 
         try {
             await authService.login({ username: email.trim().toLowerCase(), password });
-            router.push("/");
+            router.replace(nextPath);
+            router.refresh();
         } catch (err: unknown) {
             const apiError = err as { response?: { data?: { detail?: string } } };
             const errorMessage = apiError.response?.data?.detail || "ورود ناموفق بود. لطفا دوباره تلاش کن.";

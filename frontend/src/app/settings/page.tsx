@@ -2,14 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/cn";
+import { authService } from "@/services/auth.service";
 
 type SettingsItem = {
     title: string;
     href: string;
     icon: string;
     danger?: boolean;
+    action?: "logout";
 };
 
 const settingsItems: SettingsItem[] = [
@@ -62,6 +65,7 @@ const settingsItems: SettingsItem[] = [
         title: "خروج از حساب کاربری",
         href: "/login",
         icon: "/assets/chinverse/icons/Log out.svg",
+        action: "logout",
     },
     {
         title: "حذف حساب کاربری",
@@ -72,6 +76,14 @@ const settingsItems: SettingsItem[] = [
 ];
 
 export default function SettingsPage() {
+    const router = useRouter();
+
+    const handleLogout = () => {
+        authService.logout();
+        router.replace("/login");
+        router.refresh();
+    };
+
     return (
         <div className="min-h-full bg-[#f7f8fb] px-6 pb-8 pt-4" dir="rtl">
             <header className="relative flex h-11 items-center justify-center">
@@ -82,7 +94,7 @@ export default function SettingsPage() {
             <main className="mx-auto mt-6 flex w-full max-w-[430px] flex-col">
                 <div className="space-y-1">
                     {settingsItems.map((item) => (
-                        <SettingsRow key={item.href + item.title} item={item} />
+                        <SettingsRow key={item.href + item.title} item={item} onLogout={handleLogout} />
                     ))}
                 </div>
 
@@ -100,12 +112,9 @@ export default function SettingsPage() {
     );
 }
 
-function SettingsRow({ item }: { item: SettingsItem }) {
-    return (
-        <Link
-            href={item.href}
-            className="group flex min-h-[53px] items-center gap-3 rounded-[16px] px-1 transition hover:bg-white/70"
-        >
+function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => void }) {
+    const content = (
+        <>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center">
                 <Image src={item.icon} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
             </div>
@@ -115,6 +124,27 @@ function SettingsRow({ item }: { item: SettingsItem }) {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center text-2xl font-light leading-none text-[#155aa6] transition group-hover:-translate-x-0.5">
                 ‹
             </span>
+        </>
+    );
+
+    if (item.action === "logout") {
+        return (
+            <button
+                type="button"
+                onClick={onLogout}
+                className="group flex min-h-[53px] w-full items-center gap-3 rounded-[16px] px-1 text-right transition hover:bg-white/70"
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <Link
+            href={item.href}
+            className="group flex min-h-[53px] items-center gap-3 rounded-[16px] px-1 transition hover:bg-white/70"
+        >
+            {content}
         </Link>
     );
 }

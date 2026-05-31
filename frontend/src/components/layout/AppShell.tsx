@@ -18,6 +18,7 @@ const navHiddenPrefixes = [
     "/watch",
     "/lessons",
     "/leitner/review",
+    "/admin",
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {

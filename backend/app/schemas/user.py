@@ -65,16 +65,6 @@ class UserBase(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=32)
     is_verified: bool = False
 
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return value
-        phone = _normalize_iran_mobile(value)
-        if not re.fullmatch(r"09\d{9}", phone):
-            raise ValueError("Phone number must be a valid Iranian mobile number")
-        return phone
-
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
@@ -87,6 +77,14 @@ class UserCreate(UserBase):
     @classmethod
     def password_must_fit_bcrypt(cls, value: str) -> str:
         return _validate_password_strength(value)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_signup_phone(cls, value: str) -> str:
+        phone = _normalize_iran_mobile(value)
+        if not re.fullmatch(r"09\d{9}", phone):
+            raise ValueError("Phone number must be a valid Iranian mobile number")
+        return phone
 
     @field_validator("display_name")
     @classmethod
@@ -116,6 +114,16 @@ class UserUpdate(UserBase):
         if value is None:
             return value
         return _validate_password_strength(value)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_update_phone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        phone = _normalize_iran_mobile(value)
+        if not re.fullmatch(r"09\d{9}", phone):
+            raise ValueError("Phone number must be a valid Iranian mobile number")
+        return phone
 
 class UserInDBBase(UserBase):
     id: Optional[int] = None
@@ -194,8 +202,6 @@ class UserProfileBase(BaseModel):
         normalized = value.strip()
         if not normalized:
             return None
-        if normalized not in ALLOWED_PROFILE_HEADLINES:
-            raise ValueError("Invalid profile headline")
         return normalized
 
     @field_validator("socials")
@@ -238,7 +244,18 @@ class UserProfileBase(BaseModel):
         return normalized_socials
 
 class UserProfileUpdate(UserProfileBase):
-    pass
+    @field_validator("headline")
+    @classmethod
+    def validate_update_headline(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if normalized not in ALLOWED_PROFILE_HEADLINES:
+            raise ValueError("Invalid profile headline")
+        return normalized
 
 class UserProfile(UserProfileBase):
     user_id: int

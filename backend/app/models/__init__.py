@@ -2,7 +2,14 @@ from app.db.base_class import Base
 from app.models.user import User, UserProfile, UserSocialLink
 from app.models.settings import UserPreference, UserLanguageSetting
 from app.models.media import MediaAsset
-from app.models.dictionary import DictionaryWord, WordDefinition, WordCollocation, WordExample
+from app.models.dictionary import (
+    DictionaryAiDraft,
+    DictionaryDraftStatus,
+    DictionaryWord,
+    WordCollocation,
+    WordDefinition,
+    WordExample,
+)
 from app.models.course import Category, Subcategory, Course, CourseSection, Lesson, LessonSubtitle, LessonWordMap, UserSavedCourse
 from app.models.social import UserFollow, Post, PostMedia, PostLike, PostComment, ContentLike, ContentComment, ForumQuestion, ForumAnswer, Article, ArticleComment, SupportTicket, Message
 from app.models.business import Service, ConsultationRequest, SubscriptionPlan, UserSubscription
