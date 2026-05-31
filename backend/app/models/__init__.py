@@ -3,8 +3,6 @@ from app.models.user import User, UserProfile, UserSocialLink
 from app.models.settings import UserPreference, UserLanguageSetting
 from app.models.media import MediaAsset
 from app.models.dictionary import (
-    DictionaryAiDraft,
-    DictionaryDraftStatus,
     DictionaryWord,
     WordCollocation,
     WordDefinition,

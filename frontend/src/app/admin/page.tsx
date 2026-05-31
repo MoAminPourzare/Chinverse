@@ -5,9 +5,8 @@ import type React from "react";
 import Link from "next/link";
 import {
     BookOpen,
-    Bot,
-    CheckCircle2,
     Database,
+    Download,
     FileText,
     Layers3,
     Loader2,
@@ -16,11 +15,11 @@ import {
     Save,
     ShieldCheck,
     Trash2,
+    Upload,
     Users,
     Video,
-    WandSparkles,
 } from "lucide-react";
-import { adminService, type AdminDictionaryDraft, type AdminDictionaryWord, type AdminOverview, type AdminUserSummary } from "@/lib/admin";
+import { adminService, type AdminDictionaryImportResult, type AdminDictionaryWord, type AdminOverview, type AdminUserSummary } from "@/lib/admin";
 import { contentAdminService } from "@/lib/content-admin";
 import { fetchAllCourses, fetchCourseTaxonomy, type CategorySummary, type Course } from "@/lib/courses";
 import { isHttpStatus } from "@/lib/http";
@@ -38,13 +37,13 @@ import {
 } from "@/validation";
 import { cn } from "@/lib/cn";
 
-type AdminTab = "dashboard" | "content" | "dictionary" | "ai" | "users";
+type AdminTab = "dashboard" | "content" | "dictionary" | "import" | "users";
 
 const tabs: Array<{ id: AdminTab; label: string; icon: typeof ShieldCheck }> = [
     { id: "dashboard", label: "داشبورد", icon: ShieldCheck },
     { id: "content", label: "محتوا و ویدیو", icon: Video },
     { id: "dictionary", label: "دیکشنری", icon: Database },
-    { id: "ai", label: "پیش‌نویس AI", icon: Bot },
+    { id: "import", label: "ورود فایل", icon: Upload },
     { id: "users", label: "کاربران", icon: Users },
 ];
 
@@ -66,36 +65,6 @@ const emptyWordForm = {
     examples_text: "",
     collocations_text: "",
 };
-
-function draftText(value: unknown) {
-    return typeof value === "string" ? value : value == null ? "" : String(value);
-}
-
-function draftRows(value: unknown): Record<string, unknown>[] {
-    return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
-}
-
-function wordFormFromDraftSuggestion(suggestion: Record<string, unknown>) {
-    return {
-        ...emptyWordForm,
-        chinese: draftText(suggestion.chinese),
-        pinyin: draftText(suggestion.pinyin),
-        level: draftText(suggestion.level) || "custom",
-        audio_url: draftText(suggestion.audio_url),
-        persian_meaning: draftText(suggestion.persian_meaning),
-        chinese_meaning: draftText(suggestion.chinese_meaning),
-        composition: draftText(suggestion.composition),
-        definitions_text: draftRows(suggestion.definitions)
-            .map((item) => `${draftText(item.part_of_speech) || "unknown"} | ${draftText(item.definition_text)} | ${draftText(item.lang_code) || "fa"}`)
-            .join("\n"),
-        examples_text: draftRows(suggestion.examples)
-            .map((item) => `${draftText(item.zh_text)} | ${draftText(item.pinyin)} | ${draftText(item.target_text)}`)
-            .join("\n"),
-        collocations_text: draftRows(suggestion.collocations)
-            .map((item) => `${draftText(item.phrase_zh)} | ${draftText(item.phrase_pinyin)} | ${draftText(item.translation_target)}`)
-            .join("\n"),
-    };
-}
 
 function validateSlug(value: string) {
     const slug = value.trim();
@@ -138,9 +107,7 @@ export default function AdminPanelPage() {
     const [accessError, setAccessError] = useState("");
     const [dictionarySearch, setDictionarySearch] = useState("");
     const [userSearch, setUserSearch] = useState("");
-    const [aiWords, setAiWords] = useState("");
-    const [aiContext, setAiContext] = useState("");
-    const [dictionaryDrafts, setDictionaryDrafts] = useState<AdminDictionaryDraft[]>([]);
+    const [importResult, setImportResult] = useState<AdminDictionaryImportResult | null>(null);
 
     const [courseForm, setCourseForm] = useState({
         subcategory_id: "",
@@ -199,21 +166,19 @@ export default function AdminPanelPage() {
         setMessage("");
         try {
             const overviewData = await adminService.getOverview();
-            const [userResult, wordResult, draftResult, taxonomyResult, courseResult] = await Promise.allSettled([
+            const [userResult, wordResult, taxonomyResult, courseResult] = await Promise.allSettled([
                 adminService.listUsers(userSearch),
                 adminService.listDictionary(dictionarySearch),
-                adminService.listDictionaryDrafts("pending"),
                 fetchCourseTaxonomy(),
                 fetchAllCourses(),
             ]);
             setOverview(overviewData);
             setUsers(userResult.status === "fulfilled" ? userResult.value : []);
             setWords(wordResult.status === "fulfilled" ? wordResult.value : []);
-            setDictionaryDrafts(draftResult.status === "fulfilled" ? draftResult.value : []);
             setCategories(taxonomyResult.status === "fulfilled" ? taxonomyResult.value : []);
             setCourses(courseResult.status === "fulfilled" ? courseResult.value : []);
 
-            const failedSections = [userResult, wordResult, draftResult, taxonomyResult, courseResult].filter((result) => result.status === "rejected");
+            const failedSections = [userResult, wordResult, taxonomyResult, courseResult].filter((result) => result.status === "rejected");
             if (failedSections.length) {
                 console.error("Some admin sections failed to load:", failedSections);
                 setMessage("پنل ادمین باز شد، اما بعضی بخش‌ها کامل لود نشدند. صفحه را refresh کن یا لاگ بک‌اند را چک کن.");
@@ -422,65 +387,21 @@ export default function AdminPanelPage() {
         setMessage("کلمه حذف شد.");
     };
 
-    const handleGenerateDrafts = async () => {
-        const wordsList = aiWords.split(/[\n,،]+/).map((word) => word.trim()).filter(Boolean);
-        if (!wordsList.length) return setMessage("چند کلمه برای ساخت draft وارد کن.");
-        setSaving("ai");
+    const handleImportDictionaryFile = async (file: File | null) => {
+        if (!file) return;
+        setSaving("dictionary-import");
+        setImportResult(null);
         try {
-            const result = await adminService.generateDictionaryDrafts(wordsList, aiContext);
-            setDictionaryDrafts((current) => [...result, ...current.filter((draft) => !result.some((item) => item.id === draft.id))]);
-            setMessage("Draftهای دیکشنری ساخته شد. خروجی AI را بررسی، ویرایش و بعد تأیید کن.");
+            const result = await adminService.importDictionaryFile(file);
+            setImportResult(result);
+            setWords((current) => [
+                ...result.imported_words,
+                ...current.filter((word) => !result.imported_words.some((imported) => imported.id === word.id)),
+            ]);
+            setMessage(`${toPersianDigits(result.created)} کلمه ساخته شد، ${toPersianDigits(result.updated)} کلمه آپدیت شد، ${toPersianDigits(result.failed)} ردیف خطا داشت.`);
         } catch (error) {
-            console.error("Failed to generate AI dictionary drafts", error);
-            setMessage("ساخت draft با AI انجام نشد. کلید OpenAI و اتصال سرور را بررسی کن.");
-        } finally {
-            setSaving("");
-        }
-    };
-
-    const editDraftInDictionary = (draft: AdminDictionaryDraft) => {
-        setWordForm(wordFormFromDraftSuggestion(draft.suggested_json));
-        setActiveTab("dictionary");
-        setMessage("خروجی draft داخل فرم دیکشنری نشست؛ قبل از ذخیره می‌توانی دستی اصلاحش کنی.");
-    };
-
-    const saveDraftJson = async (draft: AdminDictionaryDraft, jsonText: string) => {
-        let parsed: Record<string, unknown>;
-        try {
-            const value = JSON.parse(jsonText);
-            if (!value || typeof value !== "object" || Array.isArray(value)) {
-                throw new Error("Draft JSON must be an object");
-            }
-            parsed = value as Record<string, unknown>;
-        } catch (error) {
-            console.error("Invalid draft JSON", error);
-            setMessage("JSON این draft معتبر نیست.");
-            return;
-        }
-
-        setSaving(`draft-save-${draft.id}`);
-        try {
-            const updated = await adminService.updateDictionaryDraft(draft.id, { suggested_json: parsed });
-            setDictionaryDrafts((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-            setMessage("تغییرات draft ذخیره شد.");
-        } catch (error) {
-            console.error("Failed to update dictionary draft", error);
-            setMessage("ذخیره تغییرات draft انجام نشد.");
-        } finally {
-            setSaving("");
-        }
-    };
-
-    const approveDraft = async (draft: AdminDictionaryDraft) => {
-        setSaving(`draft-approve-${draft.id}`);
-        try {
-            const savedWord = await adminService.approveDictionaryDraft(draft.id);
-            setWords((current) => [savedWord, ...current.filter((word) => word.id !== savedWord.id)]);
-            setDictionaryDrafts((current) => current.filter((item) => item.id !== draft.id));
-            setMessage("Draft تأیید شد و وارد دیکشنری شد.");
-        } catch (error) {
-            console.error("Failed to approve dictionary draft", error);
-            setMessage("تأیید draft انجام نشد. خروجی AI را بررسی کن که فیلدهای اصلی کامل باشند.");
+            console.error("Failed to import dictionary file", error);
+            setMessage("ورود فایل دیکشنری انجام نشد. فرمت CSV/JSON و لاگ بک‌اند را بررسی کن.");
         } finally {
             setSaving("");
         }
@@ -600,18 +521,11 @@ export default function AdminPanelPage() {
                         />
                     )}
 
-                    {activeTab === "ai" && (
-                        <AiTab
-                            aiWords={aiWords}
-                            aiContext={aiContext}
-                            drafts={dictionaryDrafts}
+                    {activeTab === "import" && (
+                        <ImportTab
                             saving={saving}
-                            setAiWords={setAiWords}
-                            setAiContext={setAiContext}
-                            onGenerate={handleGenerateDrafts}
-                            onEditDraft={editDraftInDictionary}
-                            onSaveDraftJson={saveDraftJson}
-                            onApproveDraft={approveDraft}
+                            result={importResult}
+                            onImport={handleImportDictionaryFile}
                         />
                     )}
 
@@ -828,7 +742,7 @@ function DictionaryTab(props: {
     return (
         <div className="motion-list grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
             <Surface className={cn(panelClass, "p-4")}>
-                <PanelTitle icon={<Database size={18} />} title={wordForm.id ? "ویرایش کلمه" : "افزودن کلمه"} subtitle="خروجی AI فقط بعد از بررسی دبیر اینجا ذخیره شود." />
+                <PanelTitle icon={<Database size={18} />} title={wordForm.id ? "ویرایش کلمه" : "افزودن کلمه"} subtitle="کلمات را دستی اصلاح کن یا از بخش ورود فایل، گروهی اضافه کن." />
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <input value={wordForm.chinese} onChange={(e) => setWordForm((current) => ({ ...current, chinese: e.target.value }))} className="font-cjk w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-left text-lg outline-none transition focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12" placeholder="中文" dir="ltr" />
                     <input value={wordForm.pinyin} onChange={(e) => setWordForm((current) => ({ ...current, pinyin: e.target.value }))} className={fieldClass} placeholder="pinyin" dir="ltr" />
@@ -876,124 +790,98 @@ function DictionaryTab(props: {
     );
 }
 
-function AiTab({
-    aiWords,
-    aiContext,
-    drafts,
+function ImportTab({
     saving,
-    setAiWords,
-    setAiContext,
-    onGenerate,
-    onEditDraft,
-    onSaveDraftJson,
-    onApproveDraft,
+    result,
+    onImport,
 }: {
-    aiWords: string;
-    aiContext: string;
-    drafts: AdminDictionaryDraft[];
     saving: string;
-    setAiWords: (value: string) => void;
-    setAiContext: (value: string) => void;
-    onGenerate: () => void;
-    onEditDraft: (draft: AdminDictionaryDraft) => void;
-    onSaveDraftJson: (draft: AdminDictionaryDraft, jsonText: string) => Promise<void>;
-    onApproveDraft: (draft: AdminDictionaryDraft) => void;
+    result: AdminDictionaryImportResult | null;
+    onImport: (file: File | null) => void;
 }) {
     return (
         <div className="motion-list grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
             <Surface className={cn(panelClass, "p-4")}>
-                <PanelTitle icon={<WandSparkles size={18} />} title="ساخت draft دیکشنری با AI" subtitle="کلمه‌ها به OpenAI فرستاده می‌شوند و خروجی ساختاریافته برای بررسی دبیر ذخیره می‌شود." />
+                <PanelTitle icon={<Upload size={18} />} title="ورود فایل دیکشنری" subtitle="خروجی ChatGPT را به شکل CSV یا JSON وارد کن؛ کلمات تکراری آپدیت می‌شوند." />
                 <div className="mt-4 space-y-3">
-                    <textarea value={aiWords} onChange={(e) => setAiWords(e.target.value)} className={textAreaClass} placeholder="کلمات را هر خط یکی بنویس:&#10;学习&#10;打算&#10;标题" dir="ltr" />
-                    <textarea value={aiContext} onChange={(e) => setAiContext(e.target.value)} className={textAreaClass} placeholder="زمینه درس یا متن ویدیو را اینجا بگذار تا AI معنی دقیق‌تری بدهد." />
-                    <PrimaryButton onClick={onGenerate} disabled={saving === "ai"} leadingIcon={saving === "ai" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}>ساخت draft با ChatGPT</PrimaryButton>
-                    <div className="rounded-[22px] border border-slate-100 bg-slate-50 p-3 text-xs font-bold leading-6 text-slate-500">
-                        پرامپت اصلی در <span className="font-mono text-slate-700" dir="ltr">backend/app/prompts/dictionary_word_generation.md</span> است.
-                        صدا را فعلاً AI نمی‌سازد و <span className="font-mono" dir="ltr">audio_url</span> خالی می‌ماند تا بعداً از منبع صوتی جدا پر شود.
+                    <label className={cn(
+                        "flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center transition hover:border-[#155aa6]/40 hover:bg-[#eef6ff]",
+                        saving === "dictionary-import" && "pointer-events-none opacity-60",
+                    )}>
+                        <input
+                            type="file"
+                            accept=".csv,.json,text/csv,application/json"
+                            className="hidden"
+                            disabled={saving === "dictionary-import"}
+                            onChange={(event) => {
+                                onImport(event.target.files?.[0] || null);
+                                event.target.value = "";
+                            }}
+                        />
+                        {saving === "dictionary-import" ? (
+                            <Loader2 className="h-8 w-8 animate-spin text-[#155aa6]" />
+                        ) : (
+                            <Upload className="h-8 w-8 text-[#155aa6]" />
+                        )}
+                        <span className="mt-3 text-sm font-black text-slate-700">
+                            {saving === "dictionary-import" ? "در حال ورود فایل..." : "انتخاب فایل CSV یا JSON"}
+                        </span>
+                        <span className="mt-2 max-w-sm text-xs font-bold leading-6 text-slate-400">
+                            فایل باید UTF-8 باشد. ستون اصلی فقط chinese است؛ بقیه ستون‌ها اختیاری‌اند.
+                        </span>
+                    </label>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                        <a href="/templates/dictionary_import_template.csv" download className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100">
+                            <Download className="h-4 w-4" />
+                            نمونه CSV
+                        </a>
+                        <a href="/templates/dictionary_import_prompt.txt" download className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100">
+                            <Download className="h-4 w-4" />
+                            پرامپت ChatGPT
+                        </a>
                     </div>
                 </div>
             </Surface>
+
             <Surface className={cn(panelClass, "p-4")}>
-                <PanelTitle icon={<FileText size={18} />} title="Draftهای آماده بررسی" subtitle="هر draft را می‌توانی مستقیم تأیید کنی یا قبلش JSON آن را اصلاح کنی." />
-                <div className="mt-4 max-h-[720px] space-y-3 overflow-y-auto pr-1">
-                    {drafts.length ? (
-                        drafts.map((draft) => (
-                            <AiDraftCard
-                                key={`${draft.id}-${draft.updated_at}`}
-                                draft={draft}
-                                saving={saving}
-                                onEditDraft={onEditDraft}
-                                onSaveDraftJson={onSaveDraftJson}
-                                onApproveDraft={onApproveDraft}
-                            />
-                        ))
-                    ) : (
-                        <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-bold leading-7 text-slate-400">
-                            هنوز draft در انتظار بررسی نداریم. چند کلمه بده تا خروجی AI اینجا ذخیره شود.
+                <PanelTitle icon={<FileText size={18} />} title="نتیجه ورود فایل" subtitle="بعد از import، خلاصه و خطاهای احتمالی اینجا دیده می‌شود." />
+                {result ? (
+                    <div className="mt-4 space-y-4">
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            <ImportStat label="ساخته شد" value={result.created} />
+                            <ImportStat label="آپدیت شد" value={result.updated} />
+                            <ImportStat label="خطا" value={result.failed} />
                         </div>
-                    )}
-                </div>
+                        {result.errors.length ? (
+                            <div className="max-h-[420px] space-y-2 overflow-y-auto rounded-[24px] bg-slate-50 p-3">
+                                {result.errors.map((error) => (
+                                    <div key={`${error.row}-${error.chinese || "empty"}`} className="rounded-2xl bg-white px-3 py-2 text-xs font-bold leading-6 text-rose-600">
+                                        ردیف {toPersianDigits(error.row)} {error.chinese ? `(${error.chinese})` : ""}: {error.error}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-[24px] bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700">
+                                همه ردیف‌ها بدون خطا وارد شدند.
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-bold leading-7 text-slate-400">
+                        هنوز فایلی وارد نشده است.
+                    </div>
+                )}
             </Surface>
         </div>
     );
 }
 
-function AiDraftCard({
-    draft,
-    saving,
-    onEditDraft,
-    onSaveDraftJson,
-    onApproveDraft,
-}: {
-    draft: AdminDictionaryDraft;
-    saving: string;
-    onEditDraft: (draft: AdminDictionaryDraft) => void;
-    onSaveDraftJson: (draft: AdminDictionaryDraft, jsonText: string) => Promise<void>;
-    onApproveDraft: (draft: AdminDictionaryDraft) => void;
-}) {
-    const [jsonText, setJsonText] = useState(() => JSON.stringify(draft.suggested_json || {}, null, 2));
-    const suggestion = draft.suggested_json || {};
-
+function ImportStat({ label, value }: { label: string; value: number }) {
     return (
-        <div className="rounded-[24px] border border-slate-100 bg-slate-50 p-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="font-cjk text-2xl font-black text-slate-950" dir="ltr">{draftText(suggestion.chinese) || draft.source_word}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-400" dir="ltr">{draftText(suggestion.pinyin) || draft.model}</p>
-                    <p className="mt-2 line-clamp-2 text-xs font-bold leading-6 text-slate-500">{draftText(suggestion.persian_meaning) || "معنی فارسی هنوز خالی است."}</p>
-                </div>
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500">{draft.status}</span>
-            </div>
-            {draftText(suggestion.review_note) ? (
-                <p className="mt-3 rounded-2xl bg-amber-50 px-3 py-2 text-xs font-bold leading-6 text-amber-700">{draftText(suggestion.review_note)}</p>
-            ) : null}
-            <textarea
-                value={jsonText}
-                onChange={(event) => setJsonText(event.target.value)}
-                className="mt-3 min-h-52 w-full resize-y rounded-2xl border border-slate-200 bg-white px-3 py-3 font-mono text-xs leading-6 text-slate-700 outline-none transition focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12"
-                dir="ltr"
-                spellCheck={false}
-            />
-            <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" onClick={() => onEditDraft(draft)} className="rounded-2xl bg-white px-4 py-2 text-sm font-black text-slate-600 transition hover:bg-slate-100">
-                    انتقال به فرم دیکشنری
-                </button>
-                <button
-                    type="button"
-                    onClick={() => void onSaveDraftJson(draft, jsonText)}
-                    disabled={saving === `draft-save-${draft.id}`}
-                    className="rounded-2xl bg-white px-4 py-2 text-sm font-black text-[#155aa6] transition hover:bg-[#eef6ff] disabled:opacity-60"
-                >
-                    {saving === `draft-save-${draft.id}` ? "در حال ذخیره..." : "ذخیره تغییرات draft"}
-                </button>
-                <PrimaryButton
-                    onClick={() => onApproveDraft(draft)}
-                    disabled={saving === `draft-approve-${draft.id}`}
-                    leadingIcon={saving === `draft-approve-${draft.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                >
-                    تأیید و ذخیره در دیکشنری
-                </PrimaryButton>
-            </div>
+        <div className="rounded-[22px] bg-slate-50 px-4 py-3">
+            <p className="text-xs font-black text-slate-400">{label}</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">{toPersianDigits(value)}</p>
         </div>
     );
 }
