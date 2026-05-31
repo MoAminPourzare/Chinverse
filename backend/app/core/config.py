@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     HSTS_ENABLED: bool = False
 
     ADMIN_EMAILS: str = ""
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_DICTIONARY_MODEL: str = "gpt-5-mini"
+    OPENAI_REQUEST_TIMEOUT_SECONDS: int = 90
 
     @model_validator(mode="after")
     def validate_production_settings(self):

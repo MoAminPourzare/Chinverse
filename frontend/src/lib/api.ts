@@ -99,6 +99,20 @@ const clearGetCache = () => {
     getCache.clear();
 };
 
+export const clearApiCache = clearGetCache;
+
+const notifyAuthChanged = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event("chinverse-auth-change"));
+};
+
+const clearStoredAuth = () => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem("token");
+    clearGetCache();
+    notifyAuthChanged();
+};
+
 api.interceptors.request.use(
     (config) => {
         config.baseURL = resolveApiBaseUrl();
@@ -118,6 +132,28 @@ api.interceptors.request.use(
     (error) => {
         return Promise.reject(error);
     }
+);
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error && typeof error === "object" && "response" in error
+            ? (error as { response?: { status?: number } }).response?.status
+            : undefined;
+
+        if (status === 401 && typeof window !== "undefined") {
+            clearStoredAuth();
+
+            const currentPath = `${window.location.pathname}${window.location.search}`;
+            const isAuthPage = window.location.pathname.startsWith("/login") || window.location.pathname.startsWith("/signup");
+
+            if (!isAuthPage) {
+                window.location.assign(`/login?next=${encodeURIComponent(currentPath)}`);
+            }
+        }
+
+        return Promise.reject(error);
+    },
 );
 
 export default api;

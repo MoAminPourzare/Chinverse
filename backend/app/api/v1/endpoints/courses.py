@@ -220,7 +220,7 @@ async def read_course_taxonomy(
 @router.get("/", response_model=List[schemas.Course])
 async def read_courses(
     db: AsyncSession = Depends(deps.get_db),
-    pagination: PaginationParams = Depends(pagination_params(default_limit=100)),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=100, max_limit=1000)),
     category_slug: Optional[str] = None,
     subcategory_slug: Optional[str] = None,
 ) -> Any:

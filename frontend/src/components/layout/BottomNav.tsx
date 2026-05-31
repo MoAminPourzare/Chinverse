@@ -1,12 +1,46 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, Compass, Home, User, Users } from "lucide-react";
+import { Brain, Compass, Home, ShieldCheck, User, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { adminService } from "@/lib/admin";
 
 export default function BottomNav() {
     const pathname = usePathname();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        let requestId = 0;
+
+        const syncAdminAccess = () => {
+            const currentRequest = ++requestId;
+            const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+            if (!token) {
+                setIsAdmin(false);
+                return;
+            }
+
+            adminService
+                .getAdminAccess()
+                .then((access) => {
+                    if (!cancelled && currentRequest === requestId) setIsAdmin(Boolean(access.is_admin));
+                })
+                .catch(() => {
+                    if (!cancelled && currentRequest === requestId) setIsAdmin(false);
+                });
+        };
+
+        syncAdminAccess();
+        window.addEventListener("chinverse-auth-change", syncAdminAccess);
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener("chinverse-auth-change", syncAdminAccess);
+        };
+    }, []);
 
     const navItems = [
         { name: "خانه", href: "/", icon: Home },
@@ -14,6 +48,7 @@ export default function BottomNav() {
         { name: "کاوش", href: "/explore", icon: Compass },
         { name: "ویترین", href: "/showcase", icon: Users },
         { name: "پروفایل", href: "/profile", icon: User },
+        ...(isAdmin ? [{ name: "ادمین", href: "/admin", icon: ShieldCheck }] : []),
     ];
 
     return (

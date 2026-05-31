@@ -138,7 +138,8 @@ export default function AccountPage() {
 
     const handleLogout = () => {
         authService.logout();
-        router.push("/login");
+        router.replace("/login");
+        router.refresh();
     };
 
     if (loading) {

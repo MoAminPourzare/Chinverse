@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
+import { authService } from "@/services/auth.service";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
@@ -75,8 +76,11 @@ export default function ProfilePage() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        router.push('/login');
+        authService.logout();
+        setUser(null);
+        setIsSettingsOpen(false);
+        router.replace('/login');
+        router.refresh();
     };
 
     const handleTabDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -124,8 +128,10 @@ export default function ProfilePage() {
             try {
                 const api = (await import('@/lib/api')).default;
                 await api.delete('/users/me');
-                localStorage.removeItem('token');
-                router.push('/login');
+                authService.logout();
+                setUser(null);
+                router.replace('/login');
+                router.refresh();
             } catch (error) {
                 console.error('Failed to delete account:', error);
                 alert('خطا در حذف حساب کاربری. لطفا دوباره تلاش کنید.');

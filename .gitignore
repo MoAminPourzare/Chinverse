@@ -40,6 +40,8 @@ venv.bak/
 node_modules/
 npm-debug.log
 yarn-error.log
+.next-dev*.log
+.uvicorn*.log
 .next/
 out/
 build/
