@@ -7,9 +7,11 @@ import Link from "next/link";
 import { CalendarDays, ImageIcon, MessageCircle, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getProfileHref } from "@/utils/profileHref";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostComments from "@/components/engagement/PostComments";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 
 export interface PostViewerProvider {
     id?: number | null;
@@ -44,6 +46,7 @@ export default function PostViewerModal({
     fallbackTitle = "پست گالری",
 }: PostViewerModalProps) {
     const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
+    const currentUserId = useOptionalCurrentUserId();
     const liveCommentsCount = post ? commentCounts[post.id] ?? (post.comments_count || 0) : 0;
 
     const handleCommentCountChange = (count: number) => {
@@ -98,7 +101,7 @@ export default function PostViewerModal({
                                     <div className="mr-11 flex min-w-0 items-center justify-end gap-2">
                                         {hasProvider ? (
                                             <Link
-                                                href={provider?.id ? `/users/${provider.id}` : "#"}
+                                                href={getProfileHref(provider?.id, currentUserId)}
                                                 className="flex min-w-0 items-center gap-2"
                                                 onClick={(event) => {
                                                     if (!provider?.id) event.preventDefault();

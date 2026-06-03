@@ -453,7 +453,10 @@ async def get_my_network(
     following_result = await db.execute(
         select(User)
         .join(UserFollow, User.id == UserFollow.followee_id)
-        .where(UserFollow.follower_id == current_user.id)
+        .where(
+            UserFollow.follower_id == current_user.id,
+            UserFollow.followee_id != current_user.id,
+        )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
         .offset(pagination.skip)
@@ -487,7 +490,10 @@ async def get_my_followers_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
-        .where(UserFollow.followee_id == current_user.id)
+        .where(
+            UserFollow.followee_id == current_user.id,
+            UserFollow.follower_id != current_user.id,
+        )
     )
     count = result.scalar() or 0
     
@@ -595,6 +601,9 @@ async def check_if_following(
     Check if current user is following a specific user.
     """
     from app.models.social import UserFollow
+
+    if user_id == current_user.id:
+        return {"is_following": False}
     
     result = await db.execute(
         select(UserFollow)
@@ -622,7 +631,10 @@ async def get_user_followers_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
-        .where(UserFollow.followee_id == user_id)
+        .where(
+            UserFollow.followee_id == user_id,
+            UserFollow.follower_id != user_id,
+        )
     )
     count = result.scalar() or 0
     
@@ -643,7 +655,10 @@ async def get_my_following_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
-        .where(UserFollow.follower_id == current_user.id)
+        .where(
+            UserFollow.follower_id == current_user.id,
+            UserFollow.followee_id != current_user.id,
+        )
     )
     count = result.scalar() or 0
     
@@ -665,7 +680,10 @@ async def get_my_followers(
     followers_result = await db.execute(
         select(User)
         .join(UserFollow, User.id == UserFollow.follower_id)
-        .where(UserFollow.followee_id == current_user.id)
+        .where(
+            UserFollow.followee_id == current_user.id,
+            UserFollow.follower_id != current_user.id,
+        )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
         .offset(pagination.skip)
@@ -700,7 +718,10 @@ async def get_my_following(
     following_result = await db.execute(
         select(User)
         .join(UserFollow, User.id == UserFollow.followee_id)
-        .where(UserFollow.follower_id == current_user.id)
+        .where(
+            UserFollow.follower_id == current_user.id,
+            UserFollow.followee_id != current_user.id,
+        )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
         .offset(pagination.skip)
@@ -734,7 +755,10 @@ async def get_user_followers(
     followers_result = await db.execute(
         select(User)
         .join(UserFollow, User.id == UserFollow.follower_id)
-        .where(UserFollow.followee_id == user_id)
+        .where(
+            UserFollow.followee_id == user_id,
+            UserFollow.follower_id != user_id,
+        )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
         .offset(pagination.skip)
@@ -768,7 +792,10 @@ async def get_user_following(
     following_result = await db.execute(
         select(User)
         .join(UserFollow, User.id == UserFollow.followee_id)
-        .where(UserFollow.follower_id == user_id)
+        .where(
+            UserFollow.follower_id == user_id,
+            UserFollow.followee_id != user_id,
+        )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
         .offset(pagination.skip)
@@ -802,7 +829,10 @@ async def get_user_following_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
-        .where(UserFollow.follower_id == user_id)
+        .where(
+            UserFollow.follower_id == user_id,
+            UserFollow.followee_id != user_id,
+        )
     )
     count = result.scalar() or 0
     

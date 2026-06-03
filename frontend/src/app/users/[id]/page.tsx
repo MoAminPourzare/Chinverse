@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
     Share2,
     Users,
@@ -21,6 +21,7 @@ import {
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
 import ServicesTab from "@/components/profile/ServicesTab";
 import PostViewerModal from "@/components/engagement/PostViewerModal";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
@@ -40,7 +41,10 @@ const tabs: Tab[] = [
 
 export default function PublicProfilePage() {
     const params = useParams();
+    const router = useRouter();
     const userId = Number(params.id);
+    const currentUserId = useOptionalCurrentUserId();
+    const isOwnProfile = currentUserId !== null && currentUserId === userId;
 
     const [activeTab, setActiveTab] = useState<string>(tabs[0].id);
     const [user, setUser] = useState<PublicUser | null>(null);
@@ -51,7 +55,18 @@ export default function PublicProfilePage() {
     const [followLoading, setFollowLoading] = useState(false);
 
     useEffect(() => {
+        if (isOwnProfile) {
+            router.replace("/profile");
+        }
+    }, [isOwnProfile, router]);
+
+    useEffect(() => {
         const fetchUser = async () => {
+            if (isOwnProfile) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 const data = await userService.getPublicProfile(userId);
                 setUser(data);
@@ -75,9 +90,11 @@ export default function PublicProfilePage() {
         if (userId) {
             fetchUser();
         }
-    }, [userId]);
+    }, [isOwnProfile, userId]);
 
     const handleFollowToggle = async () => {
+        if (isOwnProfile) return;
+
         setFollowLoading(true);
         try {
             if (isFollowing) {
@@ -108,6 +125,14 @@ export default function PublicProfilePage() {
             alert("لینک پروفایل کپی شد!");
         }
     };
+
+    if (isOwnProfile) {
+        return (
+            <div className="flex min-h-full items-center justify-center bg-[#f7f8fb]">
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
+            </div>
+        );
+    }
 
     const renderTabContent = () => {
         if (!user?.profile) return null;

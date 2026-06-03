@@ -8,8 +8,10 @@ import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getProfileHref } from "@/utils/profileHref";
 import { NetworkUser, userService } from "@/services/user.service";
 
 type TabType = "followers" | "following";
@@ -19,6 +21,7 @@ export default function NetworkPage() {
     const [followers, setFollowers] = useState<NetworkUser[]>([]);
     const [following, setFollowing] = useState<NetworkUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const currentUserId = useOptionalCurrentUserId();
 
     const fetchData = async () => {
         setLoading(true);
@@ -86,10 +89,13 @@ export default function NetworkPage() {
                     />
                 ) : (
                     <div className="grid gap-3">
-                        {currentList.map((user) => (
+                        {currentList.map((user) => {
+                            const profileHref = getProfileHref(user.id, currentUserId);
+
+                            return (
                             <Surface key={user.id} className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <Link href={`/users/${user.id}`} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                                    <Link href={profileHref} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
                                         {user.avatar_url ? (
                                             <Image
                                                 src={getMediaUrl(user.avatar_url)}
@@ -127,7 +133,7 @@ export default function NetworkPage() {
                                         </button>
                                     ) : (
                                         <Link
-                                            href={`/users/${user.id}`}
+                                            href={profileHref}
                                             className="rounded-2xl bg-[#155aa6] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0f4e92]"
                                         >
                                             مشاهده
@@ -135,7 +141,8 @@ export default function NetworkPage() {
                                     )}
                                 </div>
                             </Surface>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </main>

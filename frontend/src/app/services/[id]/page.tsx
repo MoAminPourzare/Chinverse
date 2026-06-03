@@ -10,7 +10,9 @@ import { BackButton } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
+import { getProfileHref } from "@/utils/profileHref";
 import { getDirectionalTextProps } from "@/lib/textDirection";
 import { ServiceWithProvider, userService } from "@/services/user.service";
 
@@ -20,6 +22,7 @@ export default function ServiceDetailPage() {
     const serviceId = Number(params.id);
     const [service, setService] = useState<ServiceWithProvider | null>(null);
     const [loading, setLoading] = useState(true);
+    const currentUserId = useOptionalCurrentUserId();
 
     useEffect(() => {
         const fetchService = async () => {
@@ -61,6 +64,7 @@ export default function ServiceDetailPage() {
 
     const providerName = service.provider?.display_name || "ارائه‌دهنده چین‌ورس";
     const chatHref = service.provider?.id ? `/chat/${service.provider.id}` : "/showcase";
+    const providerHref = getProfileHref(service.provider?.id, currentUserId);
     const publishedAt = service.created_at
         ? new Date(service.created_at).toLocaleDateString("fa-IR")
         : "نامشخص";
@@ -111,7 +115,7 @@ export default function ServiceDetailPage() {
                             </div>
 
                             <Link
-                                href={service.provider?.id ? `/users/${service.provider.id}` : "#"}
+                                href={providerHref}
                                 className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-[#eef6ff]"
                             >
                                 <span className="font-bold text-slate-700">منتشر شده توسط</span>

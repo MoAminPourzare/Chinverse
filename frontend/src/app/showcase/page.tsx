@@ -21,8 +21,10 @@ import {
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import LikeButton from "@/components/engagement/LikeButton";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getProfileHref } from "@/utils/profileHref";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import {
     EDUCATION_DEGREE_OPTIONS,
@@ -94,6 +96,7 @@ export default function ShowcasePage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [activeFilterKey, setActiveFilterKey] = useState<FilterKey | null>(null);
     const [talentFilters, setTalentFilters] = useState<TalentFilters>(() => createEmptyFilters());
+    const currentUserId = useOptionalCurrentUserId();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -266,7 +269,7 @@ export default function ShowcasePage() {
                         filteredUsers.length > 0 ? (
                             <div className="motion-list space-y-4">
                                 {filteredUsers.map((user) => (
-                                    <TalentCard key={user.id} user={user} />
+                                    <TalentCard key={user.id} user={user} currentUserId={currentUserId} />
                                 ))}
                             </div>
                         ) : (
@@ -457,7 +460,7 @@ function TalentFilterPanel({
     );
 }
 
-function TalentCard({ user }: { user: ShowcaseUser }) {
+function TalentCard({ user, currentUserId }: { user: ShowcaseUser; currentUserId: number | null }) {
     const galleryImages = user.gallery_preview.slice(0, 4);
     const location = [user.city, user.country].filter(Boolean).join("، ");
     const education = [user.education?.university, user.education?.field].filter(Boolean).join(" - ");
@@ -466,7 +469,7 @@ function TalentCard({ user }: { user: ShowcaseUser }) {
 
     return (
         <Link
-            href={`/users/${user.id}`}
+            href={getProfileHref(user.id, currentUserId)}
             className="block rounded-[10px] bg-[#e2e5eb] p-3 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:bg-[#dbe3ee]"
         >
             <article className="grid grid-cols-[112px_1fr] gap-3" dir="ltr">
