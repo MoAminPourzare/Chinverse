@@ -19,9 +19,9 @@ export default function SettingsAboutPage() {
             />
 
             <main className="mx-auto flex w-full max-w-[430px] flex-col items-center text-center">
-                <Image src={logo} alt="چین ورس" width={118} height={118} className="mt-2 h-24 w-24 object-contain" priority />
+                <Image src={logo} alt="چین ورس" width={118} height={118} className="mt-1 h-20 w-20 object-contain" priority />
 
-                <div className="mt-7 space-y-5 text-right text-[14px] font-medium leading-8 text-[#2f3238]">
+                <div className="mt-5 space-y-4 text-right text-[13px] font-medium leading-7 text-[#2f3238]">
                     <p>
                         چین‌ورس یک اپلیکیشن جامع و چندمنظوره برای همه علاقه‌مندان به زبان و فرهنگ چینی است؛ جایی که می‌توانی زبان چینی را جدی، کاربردی و همراه با محتوای واقعی یاد بگیری.
                     </p>
@@ -36,13 +36,13 @@ export default function SettingsAboutPage() {
                     </p>
                 </div>
 
-                <Image src={globeIcon} alt="" width={142} height={142} className="mt-8 h-36 w-36 object-contain" />
+                <Image src={globeIcon} alt="" width={142} height={142} className="mt-5 h-28 w-28 object-contain" />
 
                 <a
                     href="https://instagram.com"
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-7 inline-flex min-w-[160px] items-center justify-center gap-2 rounded-[10px] bg-[#155aa6] px-5 py-3 text-sm font-black text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]"
+                    className="mt-5 inline-flex min-w-[160px] items-center justify-center gap-2 rounded-[10px] bg-[#155aa6] px-5 py-3 text-sm font-black text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]"
                 >
                     <Instagram size={18} />
                     اینستاگرام چین ورس

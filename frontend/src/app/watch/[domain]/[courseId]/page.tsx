@@ -1,22 +1,22 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Maximize, Minimize, MoreVertical, Pause, Play, Rewind, FastForward, RotateCcw, SkipForward, X } from "lucide-react";
+import { Maximize, Minimize, MoreVertical, Pause, Play, Rewind, FastForward } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { cn } from "@/lib/cn";
 import { isHttpStatus } from "@/lib/http";
-import { lessonChineseTitles, persianNumbers } from "@/lib/videoUtils";
+import { getMediaUrl } from "@/lib/media";
+import { persianNumbers } from "@/lib/videoUtils";
+import { getDirectionalTextProps } from "@/lib/textDirection";
 import {
-    getChineseTextStyle,
     getHighlightStyle,
-    getPersianTextStyle,
     useLearningPreferences,
 } from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
-import SectionHeader from "@/components/ui/SectionHeader";
-import { IconButton } from "@/components/ui/IconButton";
+import { BackButton } from "@/components/ui/IconButton";
 import { dailyActivityService } from "@/services/dailyActivity.service";
 
 const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), {
@@ -68,6 +68,8 @@ interface TranscriptEntry {
     chinese: string;
     persian: string;
     highlightedWords: string[];
+    start: number;
+    end: number;
 }
 
 const domainConfig: Record<string, { label: string; color: string; backPath: (courseId: string) => string }> = {
@@ -99,22 +101,22 @@ const domainConfig: Record<string, { label: string; color: string; backPath: (co
     "topic-talks": { label: "گفتارهای موضوعی", color: "text-[#155aa6]", backPath: (courseId) => `/topic-talks/${courseId}` },
 };
 
-const sampleTranscript = [
-    { id: 1, chinese: "今天和我一起学习HSK第三级，第一课。", persian: "امروز با من HSK سطح سوم، درس اول را یاد بگیرید.", highlightedWords: ["学习", "第三级"] },
-    { id: 2, chinese: "周末你有什么打算？", persian: "آخر هفته چه برنامه‌ای داری؟", highlightedWords: ["周末", "打算"] },
-    { id: 3, chinese: "我打算和朋友一起去旅游。", persian: "قصد دارم با دوستم برم مسافرت.", highlightedWords: ["打算", "旅游"] },
-    { id: 4, chinese: "你打算什么时候出发？", persian: "قصد داری کی حرکت کنی؟", highlightedWords: ["打算", "出发"] },
-    { id: 5, chinese: "好，首先我们来看热身。", persian: "خیلی خوب، اول بریم سراغ گرم‌کردن.", highlightedWords: ["热身"] },
+const sampleTranscript: TranscriptEntry[] = [
+    { id: 1, start: 0, end: 2.4, chinese: "大家好，今天我们练习一段中文听力。", persian: "سلام به همه، امروز یک بخش کوتاه شنیداری چینی تمرین می‌کنیم.", highlightedWords: ["练习", "听力"] },
+    { id: 2, start: 2.4, end: 4.8, chinese: "请先听句子，然后看下面的翻译。", persian: "اول جمله را گوش کن، بعد ترجمه پایین را ببین.", highlightedWords: ["句子", "翻译"] },
+    { id: 3, start: 4.8, end: 7.2, chinese: "如果有不认识的词，可以点一下。", persian: "اگر واژه‌ای را نمی‌شناسی، می‌توانی روی آن بزنی.", highlightedWords: ["认识", "词"] },
+    { id: 4, start: 7.2, end: 9.6, chinese: "系统会跟着视频自动滚动。", persian: "سیستم همراه ویدیو به‌صورت خودکار اسکرول می‌کند.", highlightedWords: ["自动", "滚动"] },
+    { id: 5, start: 9.6, end: 12.4, chinese: "你也可以拖动进度条，字幕会马上同步。", persian: "می‌توانی نوار زمان را هم جابه‌جا کنی؛ زیرنویس همان لحظه هماهنگ می‌شود.", highlightedWords: ["进度条", "字幕"] },
+    { id: 6, start: 12.4, end: 15.5, chinese: "现在，我们继续看下一句。", persian: "حالا می‌رویم سراغ جمله بعدی.", highlightedWords: ["继续", "下一句"] },
 ] as TranscriptEntry[];
 
-const getMetaString = (meta: Record<string, unknown> | undefined, key: string, fallback = ""): string => {
-    const value = meta?.[key];
-    return typeof value === "string" ? value : fallback;
-};
-
-const getMetaArray = (meta: Record<string, unknown> | undefined, key: string): string[] => {
-    const value = meta?.[key];
-    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+const getOptionalNumber = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
 };
 
 const getTranscriptEntries = (meta: Record<string, unknown> | undefined): TranscriptEntry[] => {
@@ -130,8 +132,18 @@ const getTranscriptEntries = (meta: Record<string, unknown> | undefined): Transc
             }
 
             const entry = item as Record<string, unknown>;
-            const chinese = typeof entry.chinese === "string" ? entry.chinese : "";
-            const persian = typeof entry.persian === "string" ? entry.persian : "";
+            const chinese = typeof entry.chinese === "string"
+                ? entry.chinese
+                : typeof entry.zh_text === "string"
+                    ? entry.zh_text
+                    : "";
+            const persian = typeof entry.persian === "string"
+                ? entry.persian
+                : typeof entry.target_text === "string"
+                    ? entry.target_text
+                    : typeof entry.translation === "string"
+                        ? entry.translation
+                        : "";
             if (!chinese && !persian) {
                 return null;
             }
@@ -139,15 +151,20 @@ const getTranscriptEntries = (meta: Record<string, unknown> | undefined): Transc
             const highlightedWords = Array.isArray(entry.highlightedWords)
                 ? entry.highlightedWords.filter((word): word is string => typeof word === "string")
                 : [];
+            const start = getOptionalNumber(entry.start) ?? getOptionalNumber(entry.start_time) ?? getOptionalNumber(entry.timestamp_start) ?? index * 4;
+            const end = getOptionalNumber(entry.end) ?? getOptionalNumber(entry.end_time) ?? getOptionalNumber(entry.timestamp_end) ?? start + 4;
 
             return {
                 id: typeof entry.id === "number" ? entry.id : index + 1,
                 chinese,
                 persian,
                 highlightedWords,
+                start,
+                end: Math.max(end, start + 0.6),
             };
         })
-        .filter((item): item is TranscriptEntry => Boolean(item));
+        .filter((item): item is TranscriptEntry => Boolean(item))
+        .sort((a, b) => a.start - b.start);
 };
 
 export default function SharedWatchPage() {
@@ -173,6 +190,8 @@ export default function SharedWatchPage() {
     const [showVocabModal, setShowVocabModal] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const videoContainerRef = useRef<HTMLDivElement>(null);
+    const subtitleListRef = useRef<HTMLDivElement>(null);
+    const activeSubtitleRef = useRef<HTMLDivElement | null>(null);
     const pendingWatchSecondsRef = useRef(0);
     const lastWatchTickRef = useRef<number | null>(null);
     const isFlushingWatchRef = useRef(false);
@@ -328,6 +347,7 @@ export default function SharedWatchPage() {
         if (videoRef.current) {
             videoRef.current.currentTime = time;
             setCurrentTime(time);
+            currentTimeRef.current = time;
         }
     };
 
@@ -382,7 +402,10 @@ export default function SharedWatchPage() {
                 result.push(
                     <button
                         key={key++}
-                        onClick={() => handleWordClick(clickWord)}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            void handleWordClick(clickWord);
+                        }}
                         className="font-cjk px-1.5 transition brightness-100 hover:brightness-95"
                         style={getHighlightStyle(preferences.newWordHighlightColor)}
                         lang="zh-CN"
@@ -399,6 +422,38 @@ export default function SharedWatchPage() {
 
         return result;
     };
+
+    const syncedTranscript = useMemo(
+        () => getTranscriptEntries(currentLesson?.metadata_json),
+        [currentLesson?.metadata_json],
+    );
+
+    const activeSubtitleIndex = useMemo(() => {
+        if (!syncedTranscript.length) return -1;
+        const exactIndex = syncedTranscript.findIndex((entry) => currentTime >= entry.start && currentTime < entry.end);
+        if (exactIndex >= 0) return exactIndex;
+        for (let index = syncedTranscript.length - 1; index >= 0; index -= 1) {
+            if (currentTime >= syncedTranscript[index].start) return index;
+        }
+        return 0;
+    }, [currentTime, syncedTranscript]);
+
+    const activeSubtitle = activeSubtitleIndex >= 0 ? syncedTranscript[activeSubtitleIndex] : null;
+
+    useEffect(() => {
+        const subtitleList = subtitleListRef.current;
+        const activeElement = activeSubtitleRef.current;
+        if (!subtitleList || !activeElement || isFullscreen) return;
+
+        const listRect = subtitleList.getBoundingClientRect();
+        const activeRect = activeElement.getBoundingClientRect();
+        const nextScrollTop = subtitleList.scrollTop + activeRect.top - listRect.top - 8;
+
+        subtitleList.scrollTo({
+            top: Math.max(nextScrollTop, 0),
+            behavior: "smooth",
+        });
+    }, [activeSubtitleIndex, isFullscreen]);
 
     if (loading) {
         return (
@@ -425,19 +480,13 @@ export default function SharedWatchPage() {
     const entertainmentDomains = ["series", "movies", "cartoons", "music", "cooking", "podcasts", "reality", "topic-talks"];
     const isEntertainment = entertainmentDomains.includes(domain);
     const isMusic = domain === "music";
-    const chineseTitle = lessonChineseTitles[lessonNumber] || "你好！";
     const persianLessonName = persianNumbers[lessonNumber - 1] || `${lessonNumber}`;
     const headerTitle = isMusic ? `آهنگ ${persianLessonName}` : isEntertainment ? `قسمت ${persianLessonName}` : `درس ${persianLessonName}`;
-    const lessonMeta = currentLesson.metadata_json || {};
-    const lessonSummary = getMetaString(lessonMeta, "summary", "");
-    const lessonSubtitle = getMetaString(lessonMeta, "subtitle", "");
-    const lessonNotes = getMetaArray(lessonMeta, "key_points");
-    const lessonTranscript = getTranscriptEntries(lessonMeta);
-    const headerSubtitle = isEntertainment ? `${course.title} - ${isMusic ? "آهنگ" : "قسمت"} ${lessonNumber}` : lessonSubtitle || chineseTitle;
+    const lessonTranscript = syncedTranscript;
     const showChineseText = preferences.textDisplayMode !== "persian";
     const showPersianText = preferences.textDisplayMode !== "chinese";
-    const chineseTextStyle = getChineseTextStyle(preferences);
-    const persianTextStyle = getPersianTextStyle(preferences);
+    const previousLesson = lessonIndex > 0 ? allLessons[lessonIndex - 1] : null;
+    const nextLesson = lessonIndex >= 0 ? allLessons[lessonIndex + 1] : null;
 
     const handleVideoEnded = () => {
         setIsPlaying(false);
@@ -451,212 +500,188 @@ export default function SharedWatchPage() {
         }
     };
 
+    const seekBy = (seconds: number) => {
+        if (!videoRef.current) return;
+        const nextTime = Math.min(Math.max(videoRef.current.currentTime + seconds, 0), duration || Number.POSITIVE_INFINITY);
+        videoRef.current.currentTime = nextTime;
+        setCurrentTime(nextTime);
+        currentTimeRef.current = nextTime;
+    };
+
     return (
-        <div className="min-h-full pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
-                <Surface className="sticky top-4 z-20 overflow-hidden">
-                    <div className="flex items-center justify-between gap-3 px-4 py-3">
-                        <IconButton href={config.backPath(courseId)} label="بستن درس">
-                            <X size={20} />
-                        </IconButton>
+        <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
+                <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur">
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                        <BackButton href={config.backPath(courseId)} className="justify-self-end" />
                         <div className="min-w-0 flex-1 text-center">
-                            <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${config.color}`}>{config.label}</p>
-                            <h1 className="mt-1 truncate text-base font-bold text-slate-900">{headerTitle}</h1>
-                            <p className="font-latin truncate text-xs text-slate-500" dir="ltr">
-                                {headerSubtitle}
-                            </p>
+                            <p className={`text-[11px] font-black ${config.color}`}>{config.label}</p>
+                            <h1 className="truncate text-sm font-black text-slate-900">{headerTitle}</h1>
                         </div>
                         <Link
                             href="/settings/appearance"
                             aria-label="تنظیمات نمایش درس"
-                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0] transition hover:bg-[#eef6ff]"
                         >
                             <MoreVertical size={20} />
                         </Link>
                     </div>
-                </Surface>
+                </header>
 
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_360px]">
-                    <div className="space-y-5">
-                        <Surface className="overflow-hidden">
-                            <div ref={videoContainerRef} className="relative aspect-video bg-black">
-                                <video
-                                    ref={videoRef}
-                                    className="h-full w-full object-cover"
-                                    src={currentLesson.video_url || "https://www.w3schools.com/html/mov_bbb.mp4"}
-                                    onTimeUpdate={handleTimeUpdate}
-                                    onLoadedMetadata={handleLoadedMetadata}
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => {
-                                        setIsPlaying(false);
-                                        void flushWatchProgress(true);
-                                    }}
-                                    onEnded={handleVideoEnded}
-                                >
-                                    Your browser does not support the video tag.
-                                </video>
+                <section className="shrink-0 overflow-hidden rounded-[24px] border border-[#dfe6f0] bg-white p-2 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+                    <div ref={videoContainerRef} className="lesson-video-shell relative aspect-video overflow-hidden rounded-[22px] bg-black">
+                        <video
+                            ref={videoRef}
+                            className="lesson-video-element h-full w-full object-contain"
+                            src={getMediaUrl(currentLesson.video_url) || "https://www.w3schools.com/html/mov_bbb.mp4"}
+                            onTimeUpdate={handleTimeUpdate}
+                            onLoadedMetadata={handleLoadedMetadata}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => {
+                                setIsPlaying(false);
+                                void flushWatchProgress(true);
+                            }}
+                            onEnded={handleVideoEnded}
+                            onClick={handlePlayPause}
+                        >
+                            Your browser does not support the video tag.
+                        </video>
 
-                                <div className="absolute inset-0 flex items-center justify-center gap-6 bg-gradient-to-t from-black/25 via-transparent to-black/10">
-                                    <button
-                                        onClick={() => {
-                                            if (videoRef.current) videoRef.current.currentTime -= 10;
-                                        }}
-                                        className="flex h-12 w-12 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur transition-colors hover:bg-black/35"
-                                    >
-                                        <Rewind size={26} />
-                                    </button>
-                                    <button
-                                        onClick={handlePlayPause}
-                                        className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition-colors hover:bg-white/30"
-                                    >
-                                        {isPlaying ? <Pause size={34} /> : <Play size={34} className="mr-1 fill-current" />}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (videoRef.current) videoRef.current.currentTime += 10;
-                                        }}
-                                        className="flex h-12 w-12 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur transition-colors hover:bg-black/35"
-                                    >
-                                        <FastForward size={26} />
-                                    </button>
-                                </div>
-
-                                <button
-                                    onClick={toggleFullscreen}
-                                    className="absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-colors hover:bg-black/60"
-                                >
-                                    {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-                                </button>
+                        {activeSubtitle && (
+                            <div className="lesson-fullscreen-captions" aria-hidden={!isFullscreen}>
+                                {showPersianText && <div className="lesson-caption-top">{activeSubtitle.persian}</div>}
+                                {showChineseText && (
+                                    <div className="lesson-caption-bottom font-cjk" lang="zh-CN" dir="ltr">
+                                        {renderChineseWithHighlights(activeSubtitle.chinese, activeSubtitle.highlightedWords)}
+                                    </div>
+                                )}
                             </div>
-                        </Surface>
+                        )}
 
-                        <Surface className="px-4 py-4">
-                            <div className="flex items-center gap-3 text-xs text-slate-500">
-                                <span>{formatTime(currentTime)}</span>
+                        <div className="lesson-video-center-controls pointer-events-none absolute inset-0 flex items-center justify-center gap-5 bg-gradient-to-t from-black/35 via-transparent to-black/10">
+                            <button type="button" onClick={() => seekBy(-10)} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur transition hover:bg-black/55" aria-label="۱۰ ثانیه عقب">
+                                <Rewind size={22} />
+                            </button>
+                            <button type="button" onClick={handlePlayPause} className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/30" aria-label={isPlaying ? "توقف" : "پخش"}>
+                                {isPlaying ? <Pause size={30} /> : <Play size={30} className="mr-1 fill-current" />}
+                            </button>
+                            <button type="button" onClick={() => seekBy(10)} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur transition hover:bg-black/55" aria-label="۱۰ ثانیه جلو">
+                                <FastForward size={22} />
+                            </button>
+                        </div>
+
+                        <div className="lesson-video-controls absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/48 to-transparent px-3 pb-2 pt-7">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-white/82" dir="ltr">
+                                <span className="w-9 text-left">{formatTime(currentTime)}</span>
                                 <input
                                     type="range"
                                     min={0}
                                     max={duration || 100}
                                     value={currentTime}
                                     onChange={handleSeek}
-                                    className="h-1 flex-1 accent-[#155aa6]"
+                                    className="lesson-video-range h-5 flex-1"
+                                    aria-label="جابه‌جایی ویدیو"
                                 />
-                                <span>{formatTime(duration)}</span>
-                            </div>
-                            <div className="mt-3 flex items-center justify-center">
-                                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-500">
-                                    سرعت {preferences.playbackSpeed}x
-                                </span>
-                            </div>
-                            <div className="mt-4 flex items-center justify-center gap-5">
-                                <button className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
-                                    <RotateCcw size={20} />
+                                <span className="w-9 text-right">{formatTime(duration)}</span>
+                                <button type="button" onClick={toggleFullscreen} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur transition hover:bg-white/22" aria-label="تمام صفحه">
+                                    {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
                                 </button>
-                                <button
-                                    onClick={handlePlayPause}
-                                    className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-white transition-colors hover:bg-slate-800"
-                                >
-                                    {isPlaying ? <Pause size={24} /> : <SkipForward size={24} className="mr-0.5" />}
-                                </button>
-                                <IconButton href="/settings/appearance" label="تنظیمات نمایش درس">
-                                    <MoreVertical size={20} />
-                                </IconButton>
                             </div>
-                        </Surface>
+                        </div>
+                    </div>
+                </section>
 
-                        {(lessonSummary || lessonSubtitle || lessonNotes.length > 0) && (
-                            <Surface className="p-5">
-                                <SectionHeader title="اطلاعات درس" subtitle="چکیده، نکات مهم و توضیحات تکمیلی." />
-                                <div className="mt-4 space-y-3">
-                                    {lessonSubtitle && <p className="text-xs font-semibold text-[#155aa6]">{lessonSubtitle}</p>}
-                                    {lessonSummary && <p className="text-sm leading-8 text-slate-600">{lessonSummary}</p>}
-                                    {lessonNotes.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {lessonNotes.map((note) => (
-                                                <span key={note} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
-                                                    {note}
-                                                </span>
-                                            ))}
-                                        </div>
+                <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
+                    <div
+                        ref={subtitleListRef}
+                        className="lesson-subtitle-card lesson-subtitle-list no-scrollbar h-[calc(100dvh-430px)] min-h-[260px] max-h-[390px] overflow-y-auto rounded-[20px] border border-[#dfe6f0] bg-[#f8fbff] px-3 py-3"
+                    >
+                        {lessonTranscript.map((item, index) => {
+                            const active = index === activeSubtitleIndex;
+                            return (
+                                <div
+                                    key={item.id}
+                                    ref={(element) => {
+                                        if (active) activeSubtitleRef.current = element;
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => {
+                                        if (!videoRef.current) return;
+                                        videoRef.current.currentTime = Math.max(item.start + 0.02, 0);
+                                        setCurrentTime(videoRef.current.currentTime);
+                                        currentTimeRef.current = videoRef.current.currentTime;
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.key !== "Enter" && event.key !== " ") return;
+                                        event.preventDefault();
+                                        if (!videoRef.current) return;
+                                        videoRef.current.currentTime = Math.max(item.start + 0.02, 0);
+                                        setCurrentTime(videoRef.current.currentTime);
+                                        currentTimeRef.current = videoRef.current.currentTime;
+                                    }}
+                                    className={cn(
+                                        "lesson-subtitle-row cursor-pointer rounded-[16px] px-3 py-3 text-center transition-all duration-300",
+                                        active ? "bg-white opacity-100 shadow-sm ring-1 ring-[#d5e1ef]" : "opacity-65 hover:bg-white/70 hover:opacity-100",
+                                    )}
+                                >
+                                    {showChineseText && (
+                                        <p
+                                            className={cn("font-cjk text-[16px] font-black leading-8", active ? "text-[#155aa6]" : "text-slate-700")}
+                                            dir="ltr"
+                                            lang="zh-CN"
+                                        >
+                                            {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
+                                        </p>
+                                    )}
+                                    {showPersianText && (
+                                        <p className={cn("mt-1 text-[15px] font-medium leading-8", active ? "text-slate-700" : "text-slate-500")}>
+                                            {item.persian}
+                                        </p>
                                     )}
                                 </div>
-                            </Surface>
+                            );
+                        })}
+                    </div>
+                </Surface>
+
+                <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <h2 className="text-base font-black text-slate-950">ادامه دوره</h2>
+                            <p className="mt-1 truncate text-xs font-medium text-slate-500" {...getDirectionalTextProps(course.title)}>{course.title}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                            {lessonNumber}/{allLessons.length}
+                        </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                        {previousLesson ? (
+                            <Link
+                                href={`/watch/${domain}/${course.id}?lesson=${previousLesson.id}`}
+                                className="rounded-[18px] border border-[#dfe6f0] bg-white px-3 py-3 text-center text-xs font-black text-slate-600 transition hover:bg-[#eef6ff] hover:text-[#155aa6]"
+                            >
+                                درس قبلی
+                            </Link>
+                        ) : (
+                            <span className="rounded-[18px] border border-[#dfe6f0] bg-slate-50 px-3 py-3 text-center text-xs font-black text-slate-300">
+                                درس قبلی
+                            </span>
                         )}
-
-                        <Surface className="p-5">
-                            <SectionHeader title="متن درس" subtitle="روی واژه‌های مشخص‌شده بزن تا معنی‌شان را ببینی." />
-                            <div className="mt-5 space-y-5">
-                                {lessonTranscript.map((item) => (
-                                    <div key={item.id} className="space-y-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0">
-                                        {showChineseText && (
-                                            <p
-                                                className="font-cjk font-bold text-[#155aa6]"
-                                                style={chineseTextStyle}
-                                                dir="ltr"
-                                                lang="zh-CN"
-                                            >
-                                                {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
-                                            </p>
-                                        )}
-                                        {showPersianText && (
-                                            <p className="text-slate-700" style={persianTextStyle}>
-                                                {item.persian}
-                                            </p>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </Surface>
+                        {nextLesson ? (
+                            <Link
+                                href={`/watch/${domain}/${course.id}?lesson=${nextLesson.id}`}
+                                className="rounded-[18px] bg-[#155aa6] px-3 py-3 text-center text-xs font-black text-white shadow-[0_10px_24px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]"
+                            >
+                                درس بعدی
+                            </Link>
+                        ) : (
+                            <span className="rounded-[18px] bg-slate-100 px-3 py-3 text-center text-xs font-black text-slate-400">
+                                پایان دوره
+                            </span>
+                        )}
                     </div>
-
-                    <div className="space-y-5">
-                        <Surface className="p-5">
-                            <SectionHeader title="مرور دوره" subtitle={course.description} />
-                            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                                <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">{course.level}</span>
-                                <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">{course.title}</span>
-                                <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">{allLessons.length} درس</span>
-                            </div>
-                        </Surface>
-
-                        <Surface className="p-5">
-                            <SectionHeader title="فهرست درس‌ها" subtitle="برای جابه‌جایی سریع بین درس‌ها." />
-                            <div className="mt-4 space-y-3">
-                                {course.sections?.map((section, sectionIndex) => (
-                                    <div key={section.id || sectionIndex} className="space-y-2">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{section.title}</p>
-                                        <div className="space-y-2">
-                                            {(section.lessons || []).map((lesson, index) => {
-                                                const active = lesson.id === currentLesson.id;
-                                                return (
-                                                    <Link
-                                                        key={lesson.id}
-                                                        href={`/watch/${domain}/${course.id}?lesson=${lesson.id}`}
-                                                        className={`flex items-center justify-between gap-3 rounded-[18px] border px-3 py-3 transition-all duration-200 ${
-                                                            active
-                                                                ? "border-[#d5e1ef] bg-[#eef6ff] text-[#155aa6]"
-                                                                : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
-                                                        }`}
-                                                    >
-                                                        <div className="min-w-0">
-                                                            <p className="truncate text-sm font-semibold">{index + 1}. {lesson.title}</p>
-                                                            <p className="mt-1 text-[11px] text-slate-500">
-                                                                {lesson.duration_minutes ? `${lesson.duration_minutes} دقیقه` : "بدون زمان"}
-                                                            </p>
-                                                        </div>
-                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${active ? "bg-[#155aa6] text-white" : "bg-white text-slate-400"}`}>
-                                                            <Play size={14} className="fill-current" />
-                                                        </div>
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Surface>
-                    </div>
-                </div>
+                </Surface>
             </main>
 
             {selectedWord && (

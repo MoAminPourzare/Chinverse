@@ -96,17 +96,17 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4 py-5">
             {/* Backdrop */}
             <div
-                className="modal-backdrop-motion absolute inset-0 bg-black/50"
+                className="modal-backdrop-motion absolute inset-0 bg-black/45 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Modal Content */}
-            <div className="modal-panel-motion relative flex max-h-[70vh] w-full max-w-md flex-col rounded-t-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
+            <div className="modal-panel-motion relative flex max-h-[calc(100dvh-40px)] w-full max-w-[390px] flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
                 {/* Header */}
-                <div className="border-b border-slate-100 p-6 text-center">
+                <div className="shrink-0 border-b border-slate-100 px-5 pb-4 pt-5 text-center">
                     {/* Close Button */}
                     <button
                         onClick={onClose}
@@ -116,8 +116,8 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     </button>
 
                     {/* Chinese Character */}
-                    <div className="flex items-center justify-center gap-3 mb-2">
-                        <h2 className="font-cjk text-[2.5rem] font-bold leading-tight text-[#155aa6] sm:text-4xl" dir="ltr" lang="zh-CN">
+                    <div className="mb-2 flex items-center justify-center gap-3">
+                        <h2 className="font-cjk text-[2.35rem] font-bold leading-tight text-[#155aa6]" dir="ltr" lang="zh-CN">
                             {word.chinese}
                         </h2>
                         <button
@@ -135,12 +135,12 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-slate-200 px-4" dir="rtl">
+                <div className="no-scrollbar flex shrink-0 overflow-x-auto border-b border-slate-200 px-3" dir="rtl">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
-                            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
+                            className={`shrink-0 px-2.5 py-3 text-xs font-bold transition-colors ${activeTab === tab.key
                                 ? "text-[#155aa6] border-b-2 border-[#155aa6]"
                                 : "text-slate-500 hover:text-slate-700"
                                 }`}
@@ -151,7 +151,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
 
                 {/* Tab Content */}
-                <div key={activeTab} className="tab-content-motion flex-1 overflow-y-auto p-6" dir="rtl">
+                <div key={activeTab} className="tab-content-motion min-h-0 flex-1 overflow-y-auto px-5 py-4" dir="rtl">
                     {activeTab === "chinese" && (
                         <div className="space-y-3">
                             {word.chinese_meaning?.split("\n").map((line, i) => (
@@ -168,7 +168,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     {activeTab === "persian" && (
                         <div className="space-y-3">
                             {word.persian_meaning?.split("\n").map((line, i) => (
-                                <p key={i} className="text-gray-800">
+                                <p key={i} className="text-gray-800" dir="rtl" lang="fa">
                                     {i + 1}. {line}
                                 </p>
                             ))}
@@ -208,11 +208,11 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 </div>
 
                 {/* Footer Button */}
-                <div className="border-t border-slate-100 p-4">
+                <div className="shrink-0 border-t border-slate-100 bg-white p-4">
                     <button
                         onClick={handleAddToLeitner}
                         disabled={isInLeitner || isAdding}
-                        className={`w-full py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${isInLeitner
+                        className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold transition-all ${isInLeitner
                             ? "bg-green-500 text-white cursor-default"
                             : isAdding
                                 ? "bg-gray-400 text-white cursor-wait"

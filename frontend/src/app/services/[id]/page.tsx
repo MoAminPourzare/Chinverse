@@ -11,6 +11,7 @@ import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps } from "@/lib/textDirection";
 import { ServiceWithProvider, userService } from "@/services/user.service";
 
 export default function ServiceDetailPage() {
@@ -76,7 +77,7 @@ export default function ServiceDetailPage() {
 
                 <Surface className="overflow-hidden p-0">
                     <div className="p-5 pb-3">
-                        <h1 className="text-xl font-black leading-9 text-slate-950">
+                        <h1 className="text-xl font-black leading-9 text-slate-950" {...getDirectionalTextProps(service.title)}>
                             {service.title}
                         </h1>
                     </div>
@@ -116,7 +117,7 @@ export default function ServiceDetailPage() {
                                 <span className="font-bold text-slate-700">منتشر شده توسط</span>
                                 <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-500">
                                     <Avatar src={service.provider?.avatar_url} name={providerName} />
-                                    <span className="truncate">{providerName}</span>
+                                    <span className="truncate" {...getDirectionalTextProps(providerName)}>{providerName}</span>
                                 </span>
                             </Link>
                         </div>
@@ -128,7 +129,7 @@ export default function ServiceDetailPage() {
                         <h2 className="text-base font-black text-slate-900">توضیحات خدمت</h2>
                         <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
                     </div>
-                    <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700">
+                    <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700" {...getDirectionalTextProps(service.description)}>
                         {service.description}
                     </p>
                 </Surface>

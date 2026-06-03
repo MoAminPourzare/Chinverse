@@ -15,7 +15,6 @@ const navHiddenPrefixes = [
     "/settings",
     "/notifications",
     "/chat",
-    "/watch",
     "/lessons",
     "/leitner/review",
     "/admin",

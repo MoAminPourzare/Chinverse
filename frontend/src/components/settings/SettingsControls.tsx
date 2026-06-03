@@ -98,22 +98,25 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
     };
 
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/45 px-3 pb-3 backdrop-blur-sm" onClick={onClose}>
+        <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-slate-950/45 px-3 py-6 backdrop-blur-sm sm:items-center" onClick={onClose}>
             <div
-                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]"
+                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
-                <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-[#f8fbff] px-5 py-4">
                     <div className="min-w-0">
                         <h2 className="text-base font-black text-slate-950">{sheet.title}</h2>
+                        {sheet.subtitle && (
+                            <p className="mt-1 text-xs font-semibold leading-6 text-slate-500">{sheet.subtitle}</p>
+                        )}
                     </div>
                     <IconButton onClick={onClose} label="بستن">
                         <X size={19} />
                     </IconButton>
                 </div>
 
-                <div className="max-h-[58vh] overflow-y-auto p-3">
+                <div className="max-h-[64vh] overflow-y-auto p-3">
                     <div className="space-y-2">
                         {sheet.options.map((option) => {
                             const active = option.value === sheet.value;
@@ -135,7 +138,12 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
                                                 style={{ backgroundColor: option.swatch }}
                                             />
                                         )}
-                                        <span className="block text-sm font-black">{option.label}</span>
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-black">{option.label}</span>
+                                            {option.description && (
+                                                <span className="mt-1 block text-xs font-semibold leading-5 text-slate-400">{option.description}</span>
+                                            )}
+                                        </span>
                                     </span>
                                     <span
                                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl ${

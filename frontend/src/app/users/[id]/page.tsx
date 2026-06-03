@@ -14,13 +14,15 @@ import {
     Briefcase,
     GraduationCap,
     Award,
+    FileText,
     Wrench,
     Languages,
-    X,
 } from "lucide-react";
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
 import ServicesTab from "@/components/profile/ServicesTab";
+import PostViewerModal from "@/components/engagement/PostViewerModal";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { BackButton } from "@/components/ui/IconButton";
 
@@ -115,7 +117,7 @@ export default function PublicProfilePage() {
                 <div className="p-6">
                     {user.profile.bio && (
                         <div className="mb-6">
-                            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">
+                            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm" {...getDirectionalTextProps(user.profile.bio)}>
                                 {user.profile.bio}
                             </p>
                         </div>
@@ -181,7 +183,7 @@ export default function PublicProfilePage() {
                             اطلاعاتی ثبت نشده است
                         </div>
                     )}
-                </div>
+                    </div>
             );
         }
 
@@ -197,8 +199,79 @@ export default function PublicProfilePage() {
                 );
             }
 
+            const resumeSections = [
+                {
+                    id: "work",
+                    title: "سوابق کاری",
+                    icon: Briefcase,
+                    items: resume.work_experiences?.map((work) => ({
+                        title: work.job_title || work.company,
+                        subtitle: work.company,
+                        meta: formatResumeDateRange(work.start_date, work.end_date),
+                    })) || [],
+                },
+                {
+                    id: "education",
+                    title: "تحصیلات",
+                    icon: GraduationCap,
+                    items: resume.educations?.map((edu) => ({
+                        title: edu.university,
+                        subtitle: [edu.degree, edu.field].filter(Boolean).join("، "),
+                        meta: formatResumeDateRange(edu.start_date, edu.end_date),
+                    })) || [],
+                },
+                {
+                    id: "certificates",
+                    title: "گواهینامه‌ها",
+                    icon: FileText,
+                    items: resume.certificates?.map((cert) => ({
+                        title: cert.title,
+                        subtitle: cert.issuer,
+                        meta: cert.date,
+                    })) || [],
+                },
+                {
+                    id: "awards",
+                    title: "جوایز و تقدیرنامه‌ها",
+                    icon: Award,
+                    items: resume.awards?.map((award) => ({
+                        title: award.title,
+                        subtitle: award.issuer,
+                        meta: award.date,
+                    })) || [],
+                },
+                {
+                    id: "skills",
+                    title: "مهارت‌ها",
+                    icon: Wrench,
+                    items: resume.skills?.map((skill) => ({
+                        title: skill.name,
+                        subtitle: skill.level,
+                        meta: "",
+                    })) || [],
+                },
+                {
+                    id: "languages",
+                    title: "زبان‌ها",
+                    icon: Languages,
+                    items: resume.languages?.map((lang) => ({
+                        title: lang.name,
+                        subtitle: lang.level,
+                        meta: "",
+                    })) || [],
+                },
+            ].filter((section) => section.items.length > 0);
+
             return (
-                <div className="p-6 space-y-8">
+                <div className="space-y-4 px-5 pb-6 pt-4">
+                    {resumeSections.map((section) => (
+                        <PublicResumePreviewCard
+                            key={section.id}
+                            title={section.title}
+                            items={section.items}
+                        />
+                    ))}
+                    <div className="hidden">
                     {/* Work Experience */}
                     {resume.work_experiences?.length > 0 && (
                         <div>
@@ -291,6 +364,7 @@ export default function PublicProfilePage() {
                         </div>
                     )}
                 </div>
+                </div>
             );
         }
 
@@ -359,9 +433,8 @@ export default function PublicProfilePage() {
             {/* Header */}
             <header className="sticky top-3 z-50 grid grid-cols-[44px_1fr_44px] items-center rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
                 <BackButton href="/showcase" className="justify-self-end" />
-                <div className="flex items-center gap-2">
-                    <span className="text-lg font-black tracking-tight text-slate-950">پروفایل کاربر</span>
-                    <span className="rounded-full bg-[#eef6ff] px-2 py-0.5 text-xs font-bold text-[#155aa6]">چین‌ورس</span>
+                <div className="min-w-0 text-center">
+                    <span className="block truncate text-center text-lg font-black tracking-tight text-slate-950">پروفایل کاربر</span>
                 </div>
                 <div className="w-9" />
             </header>
@@ -373,36 +446,34 @@ export default function PublicProfilePage() {
                     <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-[#ffb74d]/20 blur-3xl" />
                     <div className="relative flex flex-col items-center">
                     <div className="relative mb-4">
-                        <div className="h-28 w-28 rounded-[30px] border border-white/30 bg-white/10 p-1 shadow-2xl">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative flex items-center justify-center">
-                                {user.profile?.avatar_url ? (
-                                    <Image
-                                        src={getMediaUrl(user.profile.avatar_url)}
-                                        alt="Avatar"
-                                        width={112}
-                                        height={112}
-                                        className="object-cover w-full h-full"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <UserIcon className="w-12 h-12 text-gray-400" />
-                                )}
-                            </div>
+                        <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gray-100 shadow-2xl ring-4 ring-white/25">
+                            {user.profile?.avatar_url ? (
+                                <Image
+                                    src={getMediaUrl(user.profile.avatar_url)}
+                                    alt="Avatar"
+                                    fill
+                                    className="object-cover"
+                                    sizes="112px"
+                                    unoptimized
+                                />
+                            ) : (
+                                <UserIcon className="w-12 h-12 text-gray-400" />
+                            )}
                         </div>
                     </div>
 
-                    <h1 className="mb-1 text-2xl font-black tracking-tight text-white">
+                    <h1 className="mb-1 text-2xl font-black tracking-tight text-white" {...getDirectionalTextProps(user.profile?.display_name)}>
                         {user.profile?.display_name || "کاربر"}
                     </h1>
 
-                    <p className="mb-2 text-sm font-medium text-white/70">
+                    <p className="mb-2 text-sm font-medium text-white/70" {...getDirectionalTextProps(user.profile?.headline)}>
                         {user.profile?.headline || ""}
                     </p>
 
                     <div className="mb-5 flex flex-wrap items-center justify-center gap-2 text-xs text-white/65">
                         <div className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5" />
-                            <span>{[user.profile?.city, user.profile?.country].filter(Boolean).join("، ") || "موقعیت نامشخص"}</span>
+                            <span {...getDirectionalTextProps([user.profile?.city, user.profile?.country].filter(Boolean).join("، "))}>{[user.profile?.city, user.profile?.country].filter(Boolean).join("، ") || "موقعیت نامشخص"}</span>
                         </div>
                         <span className="text-white/25">|</span>
                         <div className="flex items-center gap-1">
@@ -466,33 +537,66 @@ export default function PublicProfilePage() {
                 </section>
             </main>
 
-            {/* Lightbox */}
-            {selectedImage && (
-                <div
-                    className="modal-backdrop-motion fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
-                    onClick={() => setSelectedImage(null)}
-                >
-                    <button
-                        className="absolute top-4 right-4 text-white p-2"
-                        onClick={() => setSelectedImage(null)}
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                    <div className="modal-panel-motion relative max-h-full max-w-full">
-                        <Image
-                            src={getMediaUrl(selectedImage.image_url)}
-                            alt={selectedImage.caption || "Gallery image"}
-                            width={800}
-                            height={800}
-                            className="object-contain max-h-[80vh]"
-                            unoptimized
-                        />
-                        {selectedImage.caption && (
-                            <p className="text-white text-center mt-4">{selectedImage.caption}</p>
-                        )}
-                    </div>
-                </div>
-            )}
+            <PostViewerModal
+                isOpen={!!selectedImage}
+                onClose={() => setSelectedImage(null)}
+                post={selectedImage ? {
+                    ...selectedImage,
+                    provider: user.profile ? {
+                        id: user.id,
+                        display_name: user.profile.display_name,
+                        avatar_url: user.profile.avatar_url,
+                        headline: user.profile.headline,
+                    } : null,
+                } : null}
+                fallbackTitle="گالری کاربر"
+            />
         </div>
     );
+}
+
+function PublicResumePreviewCard({
+    title,
+    items,
+}: {
+    title: string;
+    items: Array<{ title?: string; subtitle?: string; meta?: string }>;
+}) {
+    const visibleItems = items.slice(0, 2);
+
+    return (
+        <section className="overflow-hidden rounded-[12px] border border-[#cfd3da] bg-[#e1e4ea] px-4 pb-3 pt-3 text-right shadow-[0_6px_14px_rgba(15,23,42,0.14)]">
+            <div className="min-w-0 text-right">
+                <h3 className="truncate text-[19px] font-black leading-7 text-[#25272d]">{title}</h3>
+            </div>
+
+            <div className="mt-1 divide-y divide-[#c4c8d0]">
+                {visibleItems.map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="py-2 text-right">
+                        <p className={`truncate text-right text-[12px] font-black leading-5 text-[#2f3238] ${getTextAlign(item.title)}`} {...getDirectionalTextProps(item.title)}>
+                            {item.title || "بدون عنوان"}
+                        </p>
+                        {item.subtitle && (
+                            <p className={`mt-0.5 truncate text-right text-[10px] font-semibold leading-5 text-[#555c68] ${getTextAlign(item.subtitle)}`} {...getDirectionalTextProps(item.subtitle)}>
+                                {item.subtitle}
+                            </p>
+                        )}
+                        {item.meta && (
+                            <p className="mt-0.5 truncate text-right text-[9.5px] font-medium leading-4 text-[#7d8490]" dir="rtl">
+                                {item.meta}
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+        </section>
+    );
+}
+
+function formatResumeDateRange(start?: string, end?: string) {
+    const cleanStart = start?.trim();
+    const cleanEnd = end?.trim();
+    if (cleanStart && cleanEnd) return `${cleanStart} - ${cleanEnd}`;
+    return cleanStart || cleanEnd || "";
 }

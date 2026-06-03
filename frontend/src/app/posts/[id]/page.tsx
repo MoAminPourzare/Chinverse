@@ -9,7 +9,9 @@ import EmptyState from "@/components/ui/EmptyState";
 import { BackButton } from "@/components/ui/IconButton";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostComments from "@/components/engagement/PostComments";
+import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { postService, PostDetail } from "@/services/post.service";
 
 export default function PostDetailPage() {
@@ -118,7 +120,7 @@ export default function PostDetailPage() {
                         </div>
 
                         {post.caption && (
-                            <p className="whitespace-pre-wrap rounded-[24px] bg-slate-50 px-4 py-4 text-sm leading-8 text-slate-700">
+                            <p className={cn("whitespace-pre-wrap rounded-[24px] bg-slate-50 px-4 py-4 text-sm leading-8 text-slate-700", getTextAlign(post.caption))} {...getDirectionalTextProps(post.caption)}>
                                 {post.caption}
                             </p>
                         )}
@@ -154,10 +156,10 @@ function PostAuthor({ post }: { post: PostDetail }) {
                 )}
             </Link>
             <div className="min-w-0 flex-1">
-                <Link href={provider?.id ? `/users/${provider.id}` : "#"} className="block truncate text-sm font-black text-slate-950">
+                <Link href={provider?.id ? `/users/${provider.id}` : "#"} className={cn("block truncate text-sm font-black text-slate-950", getTextAlign(provider?.display_name))} {...getDirectionalTextProps(provider?.display_name)}>
                     {provider?.display_name || "کاربر چین‌ورس"}
                 </Link>
-                <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">
+                <p className={cn("mt-0.5 truncate text-xs font-semibold text-slate-400", getTextAlign(provider?.headline))} {...getDirectionalTextProps(provider?.headline)}>
                     {provider?.headline || "عضو جامعه چین‌ورس"}
                 </p>
             </div>
