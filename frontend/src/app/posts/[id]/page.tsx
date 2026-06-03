@@ -9,8 +9,10 @@ import EmptyState from "@/components/ui/EmptyState";
 import { BackButton } from "@/components/ui/IconButton";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostComments from "@/components/engagement/PostComments";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getProfileHref } from "@/utils/profileHref";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { postService, PostDetail } from "@/services/post.service";
 
@@ -21,6 +23,7 @@ export default function PostDetailPage() {
     const [post, setPost] = useState<PostDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [commentsCount, setCommentsCount] = useState(0);
+    const currentUserId = useOptionalCurrentUserId();
 
     useEffect(() => {
         let cancelled = false;
@@ -89,7 +92,7 @@ export default function PostDetailPage() {
 
                 <article className="overflow-hidden rounded-[30px] border border-white bg-white shadow-[0_22px_60px_rgba(15,23,42,0.10)]">
                     <div className="p-4">
-                        <PostAuthor post={post} />
+                        <PostAuthor post={post} currentUserId={currentUserId} />
                     </div>
 
                     <div className="relative mx-4 aspect-[4/3] overflow-hidden rounded-[26px] bg-slate-100">
@@ -133,13 +136,14 @@ export default function PostDetailPage() {
     );
 }
 
-function PostAuthor({ post }: { post: PostDetail }) {
+function PostAuthor({ post, currentUserId }: { post: PostDetail; currentUserId: number | null }) {
     const provider = post.provider;
+    const profileHref = getProfileHref(provider?.id, currentUserId);
 
     return (
         <div className="flex items-center gap-3">
             <Link
-                href={provider?.id ? `/users/${provider.id}` : "#"}
+                href={profileHref}
                 className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[19px] bg-slate-100"
             >
                 {provider?.avatar_url ? (
@@ -156,7 +160,7 @@ function PostAuthor({ post }: { post: PostDetail }) {
                 )}
             </Link>
             <div className="min-w-0 flex-1">
-                <Link href={provider?.id ? `/users/${provider.id}` : "#"} className={cn("block truncate text-sm font-black text-slate-950", getTextAlign(provider?.display_name))} {...getDirectionalTextProps(provider?.display_name)}>
+                <Link href={profileHref} className={cn("block truncate text-sm font-black text-slate-950", getTextAlign(provider?.display_name))} {...getDirectionalTextProps(provider?.display_name)}>
                     {provider?.display_name || "کاربر چین‌ورس"}
                 </Link>
                 <p className={cn("mt-0.5 truncate text-xs font-semibold text-slate-400", getTextAlign(provider?.headline))} {...getDirectionalTextProps(provider?.headline)}>
