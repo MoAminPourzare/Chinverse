@@ -78,11 +78,6 @@ const getMetaString = (meta: Record<string, unknown> | undefined, key: string, f
     return typeof value === "string" ? value : fallback;
 };
 
-const getMetaArray = (meta: Record<string, unknown> | undefined, key: string): string[] => {
-    const value = meta?.[key];
-    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-};
-
 export default function CourseDetailPage({
     domain,
     explorePath,
@@ -205,7 +200,7 @@ export default function CourseDetailPage({
     const synopsis = getCourseMetaString(course, "synopsis", course.description);
     const countText = getDisplayCount(course, countKeys, cleanCountLabel);
     const hasPosterLayout = ["series", "movies", "cartoons", "reality"].includes(domain);
-    const sections = course.sections || [];
+    const sections = lessons.length > 0 ? [{ id: "all-lessons", title: "", lessons, metadata_json: {} }] : [];
     const courseTitleProps = getDirectionalTextProps(course.title);
     const courseDescriptionProps = getDirectionalTextProps(course.description);
     const synopsisProps = getDirectionalTextProps(synopsis);
@@ -232,7 +227,7 @@ export default function CourseDetailPage({
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-4 py-5">
                 <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                         <BackButton href={explorePath} className="justify-self-end" />
@@ -329,8 +324,8 @@ export default function CourseDetailPage({
                     <p className="mt-3 text-sm leading-8 text-slate-600" {...synopsisProps}>{synopsis}</p>
                 </section>
 
-                <section className="motion-list space-y-3">
-                    <div>
+                <section className="rounded-[24px] border border-[#dfe6f0] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+                    <div className="flex items-center justify-between gap-3">
                         <h3 className="text-base font-black text-slate-950">درس‌ها</h3>
                     </div>
 
@@ -340,12 +335,12 @@ export default function CourseDetailPage({
                         sections.map((section, sectionIndex) => {
                             const sectionSummary = getMetaString(section.metadata_json, "summary", "");
                             const sectionBadge = getMetaString(section.metadata_json, "badge", "");
-                            const sectionNotes = getMetaArray(section.metadata_json, "notes");
+                            const sectionNotes: string[] = [];
                             const sectionLessons = section.lessons || [];
 
                             return (
-                                <div key={section.id} className="rounded-[24px] border border-[#dfe6f0] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
-                                    <div className="flex items-start justify-between gap-3">
+                                <div key={section.id} className="mt-3">
+                                    <div className="hidden">
                                         <div className="min-w-0">
                                             <h4 className="text-sm font-black text-slate-950" {...getDirectionalTextProps(section.title)}>{section.title || `بخش ${sectionIndex + 1}`}</h4>
                                             {sectionSummary && <p className="mt-1 text-xs leading-6 text-slate-500" {...getDirectionalTextProps(sectionSummary)}>{sectionSummary}</p>}
@@ -367,7 +362,7 @@ export default function CourseDetailPage({
                                         </div>
                                     )}
 
-                                    <div className="motion-list mt-3 space-y-2.5">
+                                    <div className="motion-list space-y-2.5">
                                         {sectionLessons.map((lesson, index) => {
                                             const lessonSummary = getMetaString(lesson.metadata_json, "summary", "");
                                             const lessonSubtitle = getMetaString(lesson.metadata_json, "subtitle", "");

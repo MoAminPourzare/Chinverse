@@ -2,11 +2,11 @@
 
 import { Fragment, useState, type ChangeEvent } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import { galleryService } from "@/services/gallery.service";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
-import { BackButton } from "@/components/ui/IconButton";
+import { IconButton } from "@/components/ui/IconButton";
 import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
 
 interface AddPhotoModalProps {
@@ -105,7 +105,9 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                         >
                             <Dialog.Panel className="flex h-[min(720px,92vh)] w-full max-w-md transform flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
                                 <div className="grid shrink-0 grid-cols-[40px_1fr_40px] items-center px-5 py-4">
-                                    <BackButton onClick={handleClose} className="justify-self-end" />
+                                    <IconButton onClick={handleClose} label="Ø¨Ø³ØªÙ†" className="justify-self-end">
+                                        <X className="h-5 w-5" />
+                                    </IconButton>
                                     <h2 className="text-center text-base font-black text-slate-900">افزودن عکس جدید</h2>
                                     <span aria-hidden />
                                 </div>

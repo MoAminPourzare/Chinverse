@@ -496,7 +496,7 @@ export default function ProfilePage() {
                         </div>
                     </section>
 
-                    <nav className="relative mt-2 border-b border-[#c8cdd5] px-2">
+                    <nav className="relative mt-3 px-2">
                         <button
                             type="button"
                             onClick={() => scrollProfileTabs("right")}
@@ -515,11 +515,11 @@ export default function ProfilePage() {
                         >
                             <span className="text-lg leading-none">›</span>
                         </button>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-12 bg-gradient-to-l from-[#f6f7f9] to-transparent" />
-                        <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-12 bg-gradient-to-r from-[#f6f7f9] to-transparent" />
+                        <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-12 rounded-r-[24px] bg-gradient-to-l from-[#e7ebf1] to-transparent" />
+                        <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-12 rounded-l-[24px] bg-gradient-to-r from-[#e7ebf1] to-transparent" />
                         <div
                             ref={tabScrollRef}
-                            className="no-scrollbar flex cursor-grab select-none items-end gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-10 active:cursor-grabbing"
+                            className="no-scrollbar flex cursor-grab select-none items-center gap-1.5 overflow-x-auto overscroll-x-contain scroll-smooth rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 px-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)] active:cursor-grabbing"
                             dir="rtl"
                             style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
                             onPointerDown={handleTabDragStart}
@@ -540,20 +540,14 @@ export default function ProfilePage() {
                                         onPointerDown={(event) => event.stopPropagation()}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={cn(
-                                            "relative shrink-0 rounded-t-2xl px-4 py-3 text-center text-[14px] font-bold leading-5 transition",
+                                            "relative h-[48px] shrink-0 rounded-[18px] px-4 text-center text-[14px] font-black leading-5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/12",
                                             isActive
-                                                ? "bg-white text-[#155aa6] shadow-[0_-2px_14px_rgba(21,90,166,0.08)]"
-                                                : "text-[#2f3238] hover:bg-white/60 hover:text-[#155aa6]",
+                                                ? "bg-white text-[#155aa6] shadow-[0_10px_22px_rgba(21,90,166,0.13)]"
+                                                : "text-[#2f3238] hover:bg-white/55 hover:text-[#155aa6]",
                                         )}
                                         style={{ scrollSnapAlign: "center" }}
                                     >
                                         <span className="block whitespace-nowrap">{tab.label}</span>
-                                        <span
-                                            className={cn(
-                                                "absolute inset-x-2 -bottom-px h-[2px] rounded-full transition",
-                                                isActive ? "bg-[#155aa6]" : "bg-transparent",
-                                            )}
-                                        />
                                     </button>
                                 );
                             })}

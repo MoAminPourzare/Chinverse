@@ -92,7 +92,7 @@ export default function PostViewerModal({
                                     <button
                                         type="button"
                                         onClick={onClose}
-                                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-600 shadow-sm transition hover:bg-white hover:text-[#155aa6]"
+                                        className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30"
                                         aria-label="بستن"
                                     >
                                         <X size={18} />
