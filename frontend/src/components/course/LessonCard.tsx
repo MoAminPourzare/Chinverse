@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Play } from "lucide-react";
+import { getDirectionalTextProps } from "@/lib/textDirection";
 
 interface LessonCardProps {
     href: string;
@@ -21,6 +22,10 @@ export default function LessonCard({
     durationLabel,
     badge,
 }: LessonCardProps) {
+    const titleProps = getDirectionalTextProps(title);
+    const subtitleProps = getDirectionalTextProps(subtitle);
+    const summaryProps = getDirectionalTextProps(summary);
+
     return (
         <Link
             href={href}
@@ -32,8 +37,8 @@ export default function LessonCard({
             <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                        <h4 className="truncate text-sm font-black text-slate-900">{title}</h4>
-                        {subtitle && <p className="mt-1 truncate text-xs font-medium text-slate-500">{subtitle}</p>}
+                        <h4 className="truncate text-sm font-black text-slate-900" {...titleProps}>{title}</h4>
+                        {subtitle && <p className="mt-1 truncate text-xs font-medium text-slate-500" {...subtitleProps}>{subtitle}</p>}
                     </div>
                     {badge && (
                         <span className="rounded-full bg-[#eef6ff] px-2 py-1 text-[10px] font-black text-[#155aa6]">
@@ -41,7 +46,7 @@ export default function LessonCard({
                         </span>
                     )}
                 </div>
-                {summary && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{summary}</p>}
+                {summary && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500" {...summaryProps}>{summary}</p>}
                 {durationLabel && <p className="mt-1 text-[11px] font-bold text-slate-400">{durationLabel}</p>}
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition group-hover:bg-[#155aa6] group-hover:text-white">

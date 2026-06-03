@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { validateTextLength, validationMessage } from "@/validation";
 import { chatService, ConversationPreview } from "@/services/chat.service";
 import {
@@ -153,6 +154,7 @@ export default function CommunityPage() {
                     type="search"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
+                    dir="auto"
                     placeholder={activeTab === "messages" ? "جستجو بین پیام‌ها..." : "جستجو بین سوالات و مقالات..."}
                     className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
                 />
@@ -308,6 +310,7 @@ function QuestionsSection({
                         if (draftError) setDraftError("");
                     }}
                     rows={2}
+                    dir="auto"
                     placeholder="سوالت رو اینجا بنویس..."
                     className="min-h-[56px] flex-1 resize-none rounded-[10px] border border-[#ef7f66] bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                 />
@@ -468,6 +471,7 @@ function ArticlesSection({
                 <div className="mt-4 space-y-3 rounded-[22px] border border-[#d6e1ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
                     <input
                         value={draft.title}
+                        dir="auto"
                         onChange={(event) => {
                             setDraft((current) => ({ ...current, title: event.target.value }));
                             setArticleErrors((current) => ({ ...current, title: "" }));
@@ -478,6 +482,7 @@ function ArticlesSection({
                     {articleErrors.title && <p className="text-xs font-bold text-rose-600">{articleErrors.title}</p>}
                     <input
                         value={draft.summary}
+                        dir="auto"
                         onChange={(event) => {
                             setDraft((current) => ({ ...current, summary: event.target.value }));
                             setArticleErrors((current) => ({ ...current, summary: "" }));
@@ -493,6 +498,7 @@ function ArticlesSection({
                             setArticleErrors((current) => ({ ...current, content: "" }));
                         }}
                         rows={4}
+                        dir="auto"
                         placeholder="متن مقاله را بنویس..."
                         className="w-full resize-none rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm leading-7 outline-none focus:border-[#155aa6]"
                     />
@@ -583,10 +589,10 @@ function QuestionCard({
                     <Avatar src={question.author?.avatar_url} name={question.author?.display_name} />
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-black text-[#155aa6]">{question.author?.display_name || "کاربر چین‌ورس"}</p>
+                            <p className={cn("text-xs font-black text-[#155aa6]", getTextAlign(question.author?.display_name))} {...getDirectionalTextProps(question.author?.display_name)}>{question.author?.display_name || "کاربر چین‌ورس"}</p>
                             <span className="text-[11px] text-slate-400">{formatDate(question.created_at)}</span>
                         </div>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-black leading-7 text-slate-900">{question.title}</h3>
+                        <h3 className={cn("mt-2 line-clamp-2 text-sm font-black leading-7 text-slate-900", getTextAlign(question.title))} {...getDirectionalTextProps(question.title)}>{question.title}</h3>
                         <div className="mt-3 flex items-center justify-between">
                             <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
                                 {question.answers_count} پاسخ
@@ -600,7 +606,7 @@ function QuestionCard({
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
                     <p className="whitespace-pre-wrap rounded-2xl bg-white p-4 text-sm leading-8 text-slate-700">
-                        {detail?.content || question.content}
+                        <span className="block" {...getDirectionalTextProps(detail?.content || question.content)}>{detail?.content || question.content}</span>
                     </p>
                     <div className="mt-4 space-y-3">
                         {detail ? (
@@ -662,9 +668,9 @@ function ArticleCard({
                         )}
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-bold text-slate-400">{article.author?.display_name || "نویسنده چین‌ورس"} · {formatDate(article.created_at)}</p>
-                        <h3 className="mt-1 line-clamp-2 text-sm font-black leading-7 text-slate-900">{article.title}</h3>
-                        {article.summary && <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-500">{article.summary}</p>}
+                        <p className={cn("text-[11px] font-bold text-slate-400", getTextAlign(article.author?.display_name))} {...getDirectionalTextProps(article.author?.display_name)}>{article.author?.display_name || "نویسنده چین‌ورس"} · {formatDate(article.created_at)}</p>
+                        <h3 className={cn("mt-1 line-clamp-2 text-sm font-black leading-7 text-slate-900", getTextAlign(article.title))} {...getDirectionalTextProps(article.title)}>{article.title}</h3>
+                        {article.summary && <p className={cn("mt-1 line-clamp-2 text-xs leading-6 text-slate-500", getTextAlign(article.summary))} {...getDirectionalTextProps(article.summary)}>{article.summary}</p>}
                         <div className="mt-2 flex items-center justify-between">
                             <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
                                 {article.comments_count} کامنت
@@ -678,7 +684,7 @@ function ArticleCard({
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
                     <div className="rounded-2xl bg-white p-4">
-                        <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700">{detail?.content || article.content}</p>
+                        <p className={cn("whitespace-pre-wrap text-sm leading-8 text-slate-700", getTextAlign(detail?.content || article.content))} {...getDirectionalTextProps(detail?.content || article.content)}>{detail?.content || article.content}</p>
                     </div>
                     <div className="mt-4 space-y-3">
                         {detail ? (
@@ -712,10 +718,10 @@ function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
                 <Avatar src={item.author?.avatar_url} name={item.author?.display_name} size="sm" />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-xs font-black text-slate-900">{item.author?.display_name || "کاربر چین‌ورس"}</p>
+                        <p className={cn("truncate text-xs font-black text-slate-900", getTextAlign(item.author?.display_name))} {...getDirectionalTextProps(item.author?.display_name)}>{item.author?.display_name || "کاربر چین‌ورس"}</p>
                         <span className="shrink-0 text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600">{item.content}</p>
+                    <p className={cn("mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600", getTextAlign(item.content))} {...getDirectionalTextProps(item.content)}>{item.content}</p>
                 </div>
             </div>
         </div>
@@ -745,6 +751,7 @@ function ReplyComposer({
                     onChange={(event) => onChange(event.target.value)}
                     placeholder={placeholder}
                     rows={2}
+                    dir="auto"
                     className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
                 />
                 <button
@@ -796,11 +803,11 @@ function MessagesTab({
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-3">
                                 <h3 className="truncate text-sm font-black text-slate-950">
-                                    {conversation.user.display_name || "کاربر چین‌ورس"}
+                                    <span className="block" {...getDirectionalTextProps(conversation.user.display_name)}>{conversation.user.display_name || "کاربر چین‌ورس"}</span>
                                 </h3>
                                 <span className="shrink-0 text-xs text-slate-400">{formatDate(conversation.last_message_time)}</span>
                             </div>
-                            <p className="mt-1 truncate text-sm text-slate-500">{conversation.last_message}</p>
+                            <p className={cn("mt-1 truncate text-sm text-slate-500", getTextAlign(conversation.last_message))} {...getDirectionalTextProps(conversation.last_message)}>{conversation.last_message}</p>
                         </div>
                         {conversation.unread_count > 0 && (
                             <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#155aa6] px-2 text-xs font-bold text-white">

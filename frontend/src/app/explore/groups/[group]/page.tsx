@@ -18,7 +18,7 @@ export default function ExploreGroupPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
-                <header className={`rounded-[24px] border p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${section.tone}`}>
+                <header className="rounded-[24px] border border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
                     <div className="grid grid-cols-[40px_1fr_40px] items-center gap-3">
                         <BackButton href="/explore" label="بازگشت به کاوش" className="justify-self-end" />
                         <div className="min-w-0 flex-1">
@@ -44,7 +44,7 @@ function ExploreGroupCard({ item }: { item: ExploreItem }) {
     return (
         <Link href={item.href} className="group min-w-0">
             <div className="flex h-[74px] items-center gap-2 rounded-[18px] border border-white/80 bg-white/86 px-3 shadow-[0_5px_16px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-[#d5e1ef] hover:bg-white">
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-gradient-to-br ${item.color} text-white shadow-[0_8px_16px_rgba(15,23,42,0.13)]`}>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#155aa6] text-white shadow-[0_10px_18px_rgba(21,90,166,0.24)]">
                     <Icon size={20} strokeWidth={2.3} />
                 </div>
                 <div className="min-w-0 flex-1">

@@ -9,7 +9,6 @@ import {
     CreditCard,
     Loader2,
     ShieldCheck,
-    Sparkles,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -51,7 +50,7 @@ export default function SubscriptionSettingsPage() {
     };
 
     useEffect(() => {
-        loadOverview();
+        void loadOverview();
     }, []);
 
     const handleCheckout = async () => {
@@ -91,7 +90,7 @@ export default function SubscriptionSettingsPage() {
                 <EmptyState
                     icon={<AlertCircle size={30} />}
                     title="اشتراک باز نشد"
-                    description={error || "داده ای برای نمایش پیدا نشد."}
+                    description={error || "داده‌ای برای نمایش پیدا نشد."}
                     action={<PrimaryButton onClick={loadOverview}>تلاش دوباره</PrimaryButton>}
                 />
             </div>
@@ -109,25 +108,25 @@ export default function SubscriptionSettingsPage() {
 
             <main className="motion-list mx-auto flex w-full max-w-2xl flex-col gap-4">
                 {overview.current_subscription ? (
-                    <section className="rounded-[24px] border border-emerald-100 bg-emerald-50 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-                        <div className="mt-4 rounded-[20px] border border-emerald-100 bg-emerald-50 p-4">
-                            <div className="flex items-center gap-2 text-emerald-700">
-                                <ShieldCheck size={18} />
+                    <section className="rounded-[22px] border border-emerald-100 bg-emerald-50 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+                        <div className="flex items-start gap-3 text-emerald-700">
+                            <ShieldCheck size={20} className="mt-0.5 shrink-0" />
+                            <div className="min-w-0">
                                 <p className="text-sm font-black">اشتراک فعال داری</p>
+                                <p className="mt-1 text-xs font-bold leading-6">
+                                    {overview.current_subscription.plan_name} تا {formatDate(overview.current_subscription.end_date)} فعال است.
+                                    {overview.current_subscription.days_remaining > 0
+                                        ? ` ${toPersianDigits(overview.current_subscription.days_remaining)} روز باقی مانده.`
+                                        : ""}
+                                </p>
                             </div>
-                            <p className="mt-2 text-xs leading-6 text-emerald-700">
-                                {overview.current_subscription.plan_name} تا {formatDate(overview.current_subscription.end_date)} فعال است.
-                                {overview.current_subscription.days_remaining > 0
-                                    ? ` ${toPersianDigits(overview.current_subscription.days_remaining)} روز باقی مانده.`
-                                    : ""}
-                            </p>
                         </div>
                     </section>
                 ) : null}
 
-                <Surface className="overflow-hidden border-[#155aa6] bg-[#eef0f4] p-0 shadow-[0_18px_48px_rgba(21,90,166,0.08)]">
-                    <div className="border-b border-[#155aa6]/20 px-5 py-5 text-center">
-                        <h2 className="text-[24px] font-black text-[#155aa6]">انواع اشتراک</h2>
+                <Surface className="overflow-hidden border-[#155aa6]/25 bg-[#eef0f4] p-0 shadow-[0_18px_48px_rgba(21,90,166,0.08)]">
+                    <div className="border-b border-[#155aa6]/15 px-5 py-4 text-center">
+                        <h2 className="text-[22px] font-black text-[#155aa6]">انواع اشتراک</h2>
                     </div>
                     <div className="motion-list space-y-3 p-4">
                         {overview.plans.map((plan) => (
@@ -142,33 +141,26 @@ export default function SubscriptionSettingsPage() {
                     </div>
                 </Surface>
 
-                <Surface className="border-[#155aa6]/25 bg-[#eef0f4] p-5">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] bg-amber-50 text-amber-600">
-                            <Sparkles size={21} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <h2 className="text-base font-black text-slate-950">امکانات این بسته</h2>
-                            <div className="mt-3 space-y-2">
-                                {overview.features.map((feature) => (
-                                    <div key={feature} className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2">
-                                        <Check className="mt-1 h-4 w-4 shrink-0 text-[#e88462]" />
-                                        <p className="text-xs leading-6 text-slate-600">{feature}</p>
-                                    </div>
-                                ))}
+                <Surface className="border-[#155aa6]/20 bg-[#eef0f4] p-5">
+                    <h2 className="text-right text-base font-black text-slate-950">امکانات این بسته</h2>
+                    <div className="mt-3 space-y-2">
+                        {overview.features.map((feature) => (
+                            <div key={feature} className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2">
+                                <Check className="mt-1 h-4 w-4 shrink-0 text-[#e88462]" />
+                                <p className="text-xs font-medium leading-6 text-slate-600">{feature}</p>
                             </div>
-                        </div>
+                        ))}
                     </div>
                 </Surface>
 
                 {error && (
-                    <div className="rounded-[24px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
+                    <div className="rounded-[22px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
                         {error}
                     </div>
                 )}
 
                 {checkoutResult && (
-                    <div className="rounded-[24px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-800">
+                    <div className="rounded-[22px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-800">
                         <p className="font-black">سفارش پرداخت ساخته شد</p>
                         <p className="mt-1 text-xs font-bold">
                             شماره سفارش: {toPersianDigits(checkoutResult.order_id)}. {checkoutResult.message}
@@ -176,14 +168,14 @@ export default function SubscriptionSettingsPage() {
                     </div>
                 )}
 
-                <div className="sticky bottom-4 z-30 rounded-[28px] border border-white/80 bg-white/90 p-3 shadow-[0_18px_55px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+                <div className="sticky bottom-4 z-30 rounded-[24px] border border-white/80 bg-white/95 p-3 shadow-[0_18px_55px_rgba(15,23,42,0.16)] backdrop-blur-xl">
                     <div className="mb-3 flex items-center justify-between gap-3 px-1">
-                        <div>
+                        <div className="min-w-0 text-right">
                             <p className="text-xs font-bold text-slate-500">انتخاب فعلی</p>
-                            <p className="mt-1 text-sm font-black text-slate-950">{selectedPlan?.name || "پلنی انتخاب نشده"}</p>
+                            <p className="mt-1 truncate text-sm font-black text-slate-950">{selectedPlan ? planTitle(selectedPlan.duration_months) : "پلنی انتخاب نشده"}</p>
                         </div>
                         {selectedPlan && (
-                            <div className="text-left">
+                            <div className="shrink-0 text-left">
                                 <p className="font-latin text-lg font-black text-slate-950" dir="ltr">
                                     {formatPrice(selectedPlan.price)}
                                 </p>
@@ -204,11 +196,6 @@ export default function SubscriptionSettingsPage() {
                               ? "در حال ساخت سفارش..."
                               : "ادامه و پرداخت"}
                     </PrimaryButton>
-                    {!overview.payment.gateway_configured && (
-                        <p className="mt-3 text-center text-[11px] font-bold leading-5 text-slate-400">
-                            درگاه پرداخت هنوز وصل نشده؛ فعلا فقط سفارش پرداخت آزمایشی ساخته می شود.
-                        </p>
-                    )}
                 </div>
             </main>
         </div>
@@ -231,27 +218,31 @@ function PlanCard({
             type="button"
             onClick={onSelect}
             className={cn(
-                "w-full rounded-[26px] border p-4 text-right transition",
+                "w-full rounded-[22px] border p-4 text-right transition",
                 selected
-                    ? "border-[#155aa6] bg-white shadow-[0_12px_26px_rgba(21,90,166,0.12)] ring-2 ring-[#e88462]/25"
-                    : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50",
+                    ? "border-[#155aa6] bg-white shadow-[0_12px_26px_rgba(21,90,166,0.12)] ring-2 ring-[#e88462]/20"
+                    : "border-slate-100 bg-white/85 hover:border-slate-200 hover:bg-white",
             )}
         >
             <div className="flex items-start gap-3">
-                <div className={cn(
-                    "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
-                    selected ? "border-[#155aa6] bg-[#155aa6] text-white" : "border-slate-200 bg-white text-transparent",
-                )}>
+                <div
+                    className={cn(
+                        "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                        selected ? "border-[#155aa6] bg-[#155aa6] text-white" : "border-slate-200 bg-white text-transparent",
+                    )}
+                >
                     <Check size={14} />
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-black text-slate-950">{planTitle(plan.duration_months)}</h3>
                         {plan.badge && (
-                            <span className={cn(
-                                "rounded-full px-2.5 py-1 text-[10px] font-black",
-                                plan.is_recommended ? "bg-[#e88462] text-white" : "bg-blue-50 text-blue-700",
-                            )}>
+                            <span
+                                className={cn(
+                                    "rounded-full px-2.5 py-1 text-[10px] font-black",
+                                    plan.is_recommended ? "bg-[#e88462] text-white" : "bg-blue-50 text-blue-700",
+                                )}
+                            >
                                 {plan.badge}
                             </span>
                         )}
@@ -266,7 +257,7 @@ function PlanCard({
                     </p>
                     {plan.savings_percent > 0 && (
                         <p className="mt-2 text-xs font-black text-[#155aa6]">
-                            {toPersianDigits(plan.savings_percent)}٪ صرفه جویی نسبت به پرداخت ماهانه
+                            {toPersianDigits(plan.savings_percent)}٪ صرفه‌جویی نسبت به پرداخت ماهانه
                         </p>
                     )}
                 </div>

@@ -25,6 +25,7 @@ class ShowcaseUser(BaseModel):
     country: Optional[str] = None
     avatar_url: Optional[str] = None
     education: Optional[EducationSummary] = None
+    job_titles: List[str] = Field(default_factory=list)
     gallery_preview: List[str] = Field(default_factory=list)  # First 3 image URLs
     hsk_level: Optional[str] = None
 

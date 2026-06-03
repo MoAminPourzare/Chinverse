@@ -233,6 +233,7 @@ export interface ShowcaseUser {
     country?: string;
     avatar_url?: string;
     education?: EducationSummary;
+    job_titles?: string[];
     gallery_preview: string[];
     hsk_level?: string;
 }

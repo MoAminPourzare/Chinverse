@@ -197,6 +197,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                         <textarea
                                             {...register("bio")}
                                             rows={9}
+                                            dir="auto"
                                             className="min-h-[210px] w-full rounded-[10px] border-2 border-[#155aa6] bg-white p-4 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
                                             placeholder="درباره خودت بنویس..."
                                         />
@@ -208,7 +209,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                             <button
                                                 type="button"
                                                 onClick={() => appendWebsite({ url: "" })}
-                                                className="mr-auto flex items-center gap-1 text-[14px] font-black text-[#155aa6]"
+                                                className="ml-auto flex items-center gap-1 text-right text-[14px] font-black text-[#155aa6]"
                                             >
                                                 <Plus className="h-4 w-4" />
                                                 اضافه کردن وبسایت
@@ -244,7 +245,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                             <button
                                                 type="button"
                                                 onClick={() => setShowSocialDropdown((value) => !value)}
-                                                className="mr-auto flex items-center gap-1 text-[14px] font-black text-[#155aa6]"
+                                                className="ml-auto flex items-center gap-1 text-right text-[14px] font-black text-[#155aa6]"
                                             >
                                                 <Plus className="h-4 w-4" />
                                                 اضافه کردن شبکه های اجتماعی
@@ -271,7 +272,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                                     key={platform.id}
                                                                     type="button"
                                                                     onClick={() => addSocial(platform.id)}
-                                                                    className="flex items-center gap-2 rounded-xl bg-[#f5f8fc] px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-[#eef6ff] hover:text-[#155aa6]"
+                                                                    className="flex items-center justify-end gap-2 rounded-xl bg-[#f5f8fc] px-3 py-2 text-right text-sm font-bold text-slate-700 transition hover:bg-[#eef6ff] hover:text-[#155aa6]"
                                                                 >
                                                                     <Icon className="h-4 w-4" />
                                                                     {platform.name}

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/cn";
 import { authService } from "@/services/auth.service";
@@ -121,7 +122,8 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
             <span className={cn("min-w-0 flex-1 text-[15px] font-black text-[#2f3238]", item.danger && "text-red-600")}>
                 {item.title}
             </span>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center text-2xl font-light leading-none text-[#155aa6] transition group-hover:-translate-x-0.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[0px] text-[#155aa6] transition group-hover:-translate-x-0.5">
+                <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
                 ‹
             </span>
         </>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, LogOut, Pencil } from "lucide-react";
+import { Check, ChevronDown, Loader2, LogOut, Pencil } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
@@ -11,7 +11,7 @@ import { BackButton } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
-import { isKnownProfileHeadline, PROFILE_HEADLINE_OPTIONS } from "@/profileOptions";
+import { IRAN_PROVINCE_OPTIONS, isKnownProfileHeadline, PRIMARY_COUNTRY_OPTIONS, PROFILE_HEADLINE_OPTIONS } from "@/profileOptions";
 import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
 
 interface AccountFormState extends UserProfile {
@@ -20,7 +20,6 @@ interface AccountFormState extends UserProfile {
 }
 
 const accountIcon = "/assets/chinverse/icons/profile.svg";
-
 export default function AccountPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -31,11 +30,13 @@ export default function AccountPage() {
     const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formMessage, setFormMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [openPicker, setOpenPicker] = useState<"headline" | "country" | "city" | null>(null);
 
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
         headline: "",
         city: "",
+        country: "",
         email: "",
         phone: "",
         avatar_url: "",
@@ -49,6 +50,7 @@ export default function AccountPage() {
                     display_name: userData.profile?.display_name || "",
                     headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
                     city: userData.profile?.city || "",
+                    country: userData.profile?.country || "",
                     email: userData.email || "",
                     phone: userData.phone || "",
                     avatar_url: userData.profile?.avatar_url || "",
@@ -66,9 +68,28 @@ export default function AccountPage() {
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+            ...(name === "country" && value !== "ایران" ? { city: "" } : {}),
+        }));
         setFieldErrors((current) => ({ ...current, [name]: "" }));
         setFormMessage(null);
+    };
+
+    const handleOptionSelect = (name: "headline" | "country" | "city", value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+            ...(name === "country" && value !== "ایران" ? { city: "" } : {}),
+        }));
+        setFieldErrors((current) => ({
+            ...current,
+            [name]: "",
+            ...(name === "country" ? { city: "" } : {}),
+        }));
+        setFormMessage(null);
+        setOpenPicker(null);
     };
 
     const handleAvatarClick = () => {
@@ -93,10 +114,14 @@ export default function AccountPage() {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const nextErrors = {
+            country: validationMessage(validateTextLength(formData.country || "", "کشور", { max: 80 })),
             display_name: validationMessage(validateTextLength(formData.display_name || "", "نام و نام خانوادگی", { required: true, min: 2, max: 120 })),
             headline: validationMessage(validateTextLength(formData.headline || "", "عنوان شغلی", { required: true })),
             city: validationMessage(validateTextLength(formData.city || "", "شهر / کشور", { max: 80 })),
         };
+        if (formData.country === "ایران" && !formData.city) {
+            nextErrors.city = "استان را انتخاب کن.";
+        }
         setFieldErrors(nextErrors);
         setFormMessage(null);
         if (Object.values(nextErrors).some(Boolean)) return;
@@ -111,7 +136,8 @@ export default function AccountPage() {
             await userService.updateProfile({
                 display_name: (formData.display_name || "").trim(),
                 headline: (formData.headline || "").trim(),
-                city: formData.city?.trim(),
+                city: formData.country === "ایران" ? formData.city?.trim() : "",
+                country: formData.country?.trim(),
             });
 
             setAvatarFile(null);
@@ -122,6 +148,7 @@ export default function AccountPage() {
                 display_name: userData.profile?.display_name || "",
                 headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
                 city: userData.profile?.city || "",
+                country: userData.profile?.country || "",
                 email: userData.email || "",
                 phone: userData.phone || "",
                 avatar_url: userData.profile?.avatar_url || "",
@@ -222,20 +249,40 @@ export default function AccountPage() {
                     />
 
                     <FloatingField label="عنوان شغلی" error={fieldErrors.headline}>
-                        <select
-                            name="headline"
-                            value={formData.headline}
-                            onChange={handleInputChange}
-                            className="h-11 w-full appearance-none rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none"
-                        >
-                            <option value="">انتخاب شغل</option>
-                            {PROFILE_HEADLINE_OPTIONS.map((headline) => (
-                                <option key={headline} value={headline}>
-                                    {headline}
-                                </option>
-                            ))}
-                        </select>
+                        <OptionPicker
+                            value={formData.headline || ""}
+                            placeholder="انتخاب شغل"
+                            options={PROFILE_HEADLINE_OPTIONS}
+                            isOpen={openPicker === "headline"}
+                            onToggle={() => setOpenPicker((current) => current === "headline" ? null : "headline")}
+                            onSelect={(value) => handleOptionSelect("headline", value)}
+                        />
                     </FloatingField>
+
+                    <FloatingField label="کشور" error={fieldErrors.country}>
+                        <OptionPicker
+                            value={formData.country || ""}
+                            placeholder="انتخاب کشور"
+                            options={PRIMARY_COUNTRY_OPTIONS}
+                            isOpen={openPicker === "country"}
+                            clearLabel="بدون کشور"
+                            onToggle={() => setOpenPicker((current) => current === "country" ? null : "country")}
+                            onSelect={(value) => handleOptionSelect("country", value)}
+                        />
+                    </FloatingField>
+
+                    {formData.country === "ایران" && (
+                        <FloatingField label="استان" error={fieldErrors.city}>
+                            <OptionPicker
+                                value={formData.city || ""}
+                                placeholder="انتخاب استان"
+                                options={IRAN_PROVINCE_OPTIONS}
+                                isOpen={openPicker === "city"}
+                                onToggle={() => setOpenPicker((current) => current === "city" ? null : "city")}
+                                onSelect={(value) => handleOptionSelect("city", value)}
+                            />
+                        </FloatingField>
+                    )}
 
                     <AccountField
                         label="لوکیشن"
@@ -290,10 +337,13 @@ function AccountField({
     label: string;
     error?: string;
 } & InputHTMLAttributes<HTMLInputElement>) {
+    if (inputProps.name === "city") return null;
+
     return (
         <FloatingField label={label} error={error}>
             <input
                 {...inputProps}
+                dir={inputProps.dir || "auto"}
                 className={cn(
                     "h-11 w-full rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none placeholder:text-slate-400",
                     inputProps.readOnly && "text-slate-500",
@@ -303,9 +353,87 @@ function AccountField({
     );
 }
 
+function OptionPicker({
+    value,
+    placeholder,
+    options,
+    isOpen,
+    clearLabel,
+    onToggle,
+    onSelect,
+}: {
+    value: string;
+    placeholder: string;
+    options: string[];
+    isOpen: boolean;
+    clearLabel?: string;
+    onToggle: () => void;
+    onSelect: (value: string) => void;
+}) {
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={onToggle}
+                className={cn(
+                    "flex min-h-11 w-full items-center justify-between gap-3 rounded-[8px] bg-[#f7f8fb] px-4 py-2 text-center text-[15px] font-bold text-[#2f3238] outline-none transition-all duration-300",
+                    isOpen && "bg-white text-[#155aa6]",
+                )}
+            >
+                <ChevronDown className={cn("h-4 w-4 shrink-0 text-[#155aa6] transition-transform duration-300", isOpen && "rotate-180")} />
+                <span className={cn("min-w-0 flex-1 truncate", !value && "text-slate-400")}>{value || placeholder}</span>
+                <span className="h-4 w-4 shrink-0" aria-hidden />
+            </button>
+
+            {isOpen && (
+                <div className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
+                    <div className="max-h-72 overflow-y-auto pr-1">
+                        <div className="motion-list grid grid-cols-2 gap-2">
+                            {clearLabel && (
+                                <button
+                                    type="button"
+                                    onClick={() => onSelect("")}
+                                    className={cn(
+                                        "flex min-h-11 items-center justify-center rounded-[16px] border px-3 py-2 text-center text-[12px] font-black transition-all duration-300",
+                                        !value
+                                            ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
+                                            : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
+                                    )}
+                                >
+                                    {clearLabel}
+                                </button>
+                            )}
+
+                            {options.map((option) => {
+                                const active = value === option;
+                                return (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => onSelect(option)}
+                                        className={cn(
+                                            "flex min-h-11 items-center justify-center gap-1.5 rounded-[16px] border px-3 py-2 text-center text-[12px] font-black leading-5 transition-all duration-300",
+                                            active
+                                                ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
+                                                : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
+                                        )}
+                                    >
+                                        {active && <Check size={14} />}
+                                        <span className="line-clamp-2">{option}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function FloatingField({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
     return (
-        <label className="block">
+        <div className="block">
             <div className="relative rounded-[9px] bg-[linear-gradient(90deg,#f07d57,#155aa6)] p-[1.5px]">
                 <span className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">
                     {label}
@@ -315,7 +443,7 @@ function FloatingField({ label, error, children }: { label: string; error?: stri
                 </div>
             </div>
             <FieldError message={error} />
-        </label>
+        </div>
     );
 }
 

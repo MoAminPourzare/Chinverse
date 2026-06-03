@@ -13,6 +13,7 @@ import ServicesTab from "@/components/profile/ServicesTab";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount, unsaveCourse } from "@/lib/courses";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
@@ -223,7 +224,7 @@ export default function ProfilePage() {
                     {user?.profile?.bio && (
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-lg">درباره من</h3>
-                            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">
+                            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm" {...getDirectionalTextProps(user.profile.bio)}>
                                 {user.profile.bio}
                             </p>
                         </div>
@@ -261,9 +262,9 @@ export default function ProfilePage() {
                                             href={href}
                                             target={target}
                                             rel={rel}
-                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]"
+                                            className="flex items-center gap-3 rounded-[18px] border border-[#d8e8f7] bg-[#f3f8ff] px-3 py-2.5 text-sm text-slate-700 shadow-[0_6px_14px_rgba(21,90,166,0.06)] transition hover:border-[#b8d8f4] hover:bg-[#eef6ff] hover:text-[#155aa6]"
                                         >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-sm">
+                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-[0_6px_12px_rgba(21,90,166,0.12)]">
                                                 <Icon className="h-4 w-4" />
                                             </span>
                                             <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
@@ -364,7 +365,6 @@ export default function ProfilePage() {
                         <ResumePreviewCard
                             key={section.id}
                             title={section.title}
-                            icon={section.icon}
                             items={section.items}
                             onEdit={() => openResumeEditor(section.id)}
                         />
@@ -375,7 +375,7 @@ export default function ProfilePage() {
                         className="mx-auto mt-5 flex items-center justify-center gap-2 rounded-full bg-[#155aa6] px-6 py-3 text-[13px] font-black text-white shadow-[0_10px_22px_rgba(21,90,166,0.28)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
                     >
                         <PenLine className="h-4 w-4" />
-                        <span>ویرایش کامل رزومه</span>
+                        <span>ویرایش رزومه</span>
                     </button>
                 </div>
             );
@@ -472,12 +472,12 @@ export default function ProfilePage() {
                             </p>
                         )}
 
-                        <h1 className="text-[21px] font-black leading-8 text-[#25272d]">
+                        <h1 className="text-[21px] font-black leading-8 text-[#25272d]" {...getDirectionalTextProps(displayName)}>
                             {displayName}
                         </h1>
 
                         {headline && (
-                            <p className="mt-1 text-[18px] font-medium leading-8 text-[#25272d]">
+                            <p className="mt-1 text-[18px] font-medium leading-8 text-[#25272d]" {...getDirectionalTextProps(headline)}>
                                 {headline}
                             </p>
                         )}
@@ -489,7 +489,7 @@ export default function ProfilePage() {
                             </Link>
                             {locationParts.length > 0 && (
                                 <>
-                                    <span>{locationParts.join("، ")}</span>
+                                    <span {...getDirectionalTextProps(locationParts.join("، "))}>{locationParts.join("، ")}</span>
                                     <Image src={profileAssets.location} alt="" width={18} height={18} />
                                 </>
                             )}
@@ -705,51 +705,35 @@ export default function ProfilePage() {
 
 function ResumePreviewCard({
     title,
-    icon: Icon,
     items,
     onEdit,
 }: {
     title: string;
-    icon: LucideIcon;
     items: Array<{ title?: string; subtitle?: string; meta?: string }>;
     onEdit: () => void;
 }) {
     const visibleItems = items.slice(0, 2);
-    const hasMore = items.length > visibleItems.length;
+    const canOpenAll = items.length > 0;
 
     return (
-        <section className="rounded-[12px] border border-[#d4d8df] bg-[#e1e4ea] px-4 py-3 text-right shadow-[0_5px_12px_rgba(15,23,42,0.14)]">
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 text-[#155aa6]">
-                    <button
-                        type="button"
-                        onClick={onEdit}
-                        className="rounded-lg p-1.5 transition hover:bg-white/70"
-                        aria-label={`ویرایش ${title}`}
-                    >
-                        <PenLine className="h-4 w-4" />
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <h3 className="text-[19px] font-black leading-7 text-[#25272d]">{title}</h3>
-                    <Icon className="h-5 w-5 text-[#155aa6]" strokeWidth={1.9} />
-                </div>
+        <section className="overflow-hidden rounded-[12px] border border-[#cfd3da] bg-[#e1e4ea] px-4 pb-2 pt-3 text-right shadow-[0_6px_14px_rgba(15,23,42,0.14)]">
+            <div className="min-w-0 text-right">
+                <h3 className="truncate text-[19px] font-black leading-7 text-[#25272d]">{title}</h3>
             </div>
 
-            <div className="divide-y divide-[#c4c8d0]">
+            <div className="mt-1 divide-y divide-[#c4c8d0]">
                 {visibleItems.map((item, index) => (
-                    <div key={`${item.title}-${index}`} className="py-2">
-                        <p className="truncate text-right text-[12px] font-black leading-5 text-[#2f3238]">
+                    <div key={`${item.title}-${index}`} className="py-2 text-right">
+                        <p className={cn("truncate text-right text-[12px] font-black leading-5 text-[#2f3238]", getTextAlign(item.title))} {...getDirectionalTextProps(item.title)}>
                             {item.title || "بدون عنوان"}
                         </p>
                         {item.subtitle && (
-                            <p className="mt-0.5 truncate text-right text-[10.5px] font-semibold leading-5 text-[#555c68]">
+                            <p className={cn("mt-0.5 truncate text-right text-[10px] font-semibold leading-5 text-[#555c68]", getTextAlign(item.subtitle))} {...getDirectionalTextProps(item.subtitle)}>
                                 {item.subtitle}
                             </p>
                         )}
                         {item.meta && (
-                            <p className="mt-0.5 text-right text-[10px] font-medium leading-4 text-[#7d8490]">
+                            <p className="mt-0.5 truncate text-right text-[9.5px] font-medium leading-4 text-[#7d8490]" dir="rtl">
                                 {item.meta}
                             </p>
                         )}
@@ -757,11 +741,11 @@ function ResumePreviewCard({
                 ))}
             </div>
 
-            {hasMore && (
+            {canOpenAll && (
                 <button
                     type="button"
                     onClick={onEdit}
-                    className="mt-1 flex w-full items-center justify-center gap-2 border-t border-[#c4c8d0] pt-2 text-[12px] font-black text-[#25272d]"
+                    className="flex w-full items-center justify-center gap-2 border-t border-[#c4c8d0] pt-2 text-[12px] font-black text-[#25272d] transition hover:text-[#155aa6]"
                 >
                     <span>نشان دادن همه</span>
                     <span aria-hidden>←</span>
@@ -941,8 +925,8 @@ function SavedCoursesTab() {
     }
 
     return (
-        <div className="space-y-4 p-4 sm:p-5">
-            <div className="space-y-3">
+        <div className="p-4 sm:p-5">
+            <div className="grid grid-cols-3 gap-2.5">
                 {courses.map((course) => {
                     const href = getCourseDetailHref(course);
                     const lessonsCount = getLessonCount(course);
@@ -951,31 +935,54 @@ function SavedCoursesTab() {
                         : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "بخش");
 
                     return (
-                        <div
+                        <article
                             key={course.id}
-                            className="flex gap-3 rounded-[26px] border border-slate-100 bg-slate-50/80 p-3 transition hover:bg-white hover:shadow-[0_16px_38px_rgba(15,23,42,0.08)]"
+                            className="group relative overflow-hidden rounded-[16px] border border-[#cfd3da] bg-[#e1e4ea] p-1.5 shadow-[0_6px_14px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]"
                         >
-                            <Link href={href} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[22px] bg-slate-100">
+                            <Link href={href} className="block">
+                                <div className="relative aspect-square overflow-hidden rounded-[12px] bg-slate-200 shadow-sm">
                                 {course.cover_image_url ? (
                                     <Image
-                                        src={course.cover_image_url}
+                                        src={getMediaUrl(course.cover_image_url)}
                                         alt={course.title}
                                         fill
-                                        sizes="96px"
+                                        sizes="130px"
                                         className="object-cover"
                                         unoptimized
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#155aa6] to-[#0f4e92] text-white">
+                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#eef6ff] to-[#dcecff] text-[#155aa6]">
                                         <BookOpen className="h-7 w-7" />
                                     </div>
                                 )}
+                                </div>
+                                <div className="px-1 pb-1.5 pt-2">
+                                    <div className="mb-1.5 h-1 rounded-full bg-white/70">
+                                        <div className="h-full w-2/3 rounded-full bg-[#155aa6]" />
+                                    </div>
+                                    <h4 className={cn("line-clamp-1 text-[11px] font-black leading-5 text-[#25272d]", getTextAlign(course.title))} {...getDirectionalTextProps(course.title)}>{course.title}</h4>
+                                    <p className="line-clamp-1 text-[10px] font-bold leading-4 text-[#687080]">{countText}</p>
+                                </div>
                             </Link>
 
-                            <div className="min-w-0 flex-1">
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveCourse(course.id)}
+                                disabled={removingId === course.id}
+                                className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label="Ø­Ø°Ù Ø§Ø² Ù…Ù†ØªØ®Ø¨â€ŒÙ‡Ø§"
+                            >
+                                {removingId === course.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                            </button>
+
+                            <div className="hidden">
                                 <Link href={href} className="block">
-                                    <h4 className="line-clamp-1 text-sm font-black text-slate-950">{course.title}</h4>
-                                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{course.description}</p>
+                                    <h4 className={cn("line-clamp-1 text-sm font-black text-slate-950", getTextAlign(course.title))} {...getDirectionalTextProps(course.title)}>{course.title}</h4>
+                                    <p className={cn("mt-1 line-clamp-2 text-xs leading-5 text-slate-500", getTextAlign(course.description))} {...getDirectionalTextProps(course.description)}>{course.description}</p>
                                 </Link>
 
                                 <div className="mt-3 flex items-center justify-between gap-2">
@@ -1000,7 +1007,7 @@ function SavedCoursesTab() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     );
                 })}
             </div>

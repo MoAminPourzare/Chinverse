@@ -58,7 +58,8 @@ async def _read_lessons_for_courses(
 
     stmt = text(
         """
-        SELECT id, course_id, section_id, title, video_url, duration_minutes, is_free
+        SELECT id, course_id, section_id, title, video_url, thumbnail_url,
+               duration_minutes, media_id, is_free, metadata_json
         FROM lessons
         WHERE course_id IN :course_ids
         ORDER BY section_id, id
@@ -74,11 +75,11 @@ async def _read_lessons_for_courses(
             "section_id": row["section_id"],
             "title": row["title"],
             "video_url": row["video_url"],
-            "thumbnail_url": None,
+            "thumbnail_url": row["thumbnail_url"],
             "duration_minutes": row["duration_minutes"] or 0,
-            "media_id": None,
+            "media_id": row["media_id"],
             "is_free": bool(row["is_free"]),
-            "metadata_json": {},
+            "metadata_json": row["metadata_json"] or {},
         }
         lessons_by_section.setdefault(row["section_id"], []).append(lesson)
 
@@ -466,7 +467,8 @@ async def read_lesson(
     result = await db.execute(
         text(
             """
-            SELECT id, course_id, section_id, title, video_url, duration_minutes, is_free
+            SELECT id, course_id, section_id, title, video_url, thumbnail_url,
+                   duration_minutes, media_id, is_free, metadata_json
             FROM lessons
             WHERE id = :id
             """
@@ -482,9 +484,9 @@ async def read_lesson(
         "section_id": row["section_id"],
         "title": row["title"],
         "video_url": row["video_url"],
-        "thumbnail_url": None,
+        "thumbnail_url": row["thumbnail_url"],
         "duration_minutes": row["duration_minutes"] or 0,
-        "media_id": None,
+        "media_id": row["media_id"],
         "is_free": bool(row["is_free"]),
-        "metadata_json": {},
+        "metadata_json": row["metadata_json"] or {},
     }

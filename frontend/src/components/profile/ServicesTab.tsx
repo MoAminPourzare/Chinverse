@@ -7,7 +7,9 @@ import Link from "next/link";
 import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, Plus, Trash2, Upload, X } from "lucide-react";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import LikeButton from "@/components/engagement/LikeButton";
+import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { userService, UserService } from "@/services/user.service";
 import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
 
@@ -369,6 +371,7 @@ function ServiceModal({
                                                 value={title}
                                                 onChange={(event) => onTitleChange(event.target.value)}
                                                 placeholder="مثلا: راهنمای تور و سفر چین"
+                                                dir="auto"
                                                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             />
                                         </div>
@@ -405,6 +408,7 @@ function ServiceModal({
                                                 value={description}
                                                 onChange={(event) => onDescriptionChange(event.target.value)}
                                                 placeholder="توضیح بده این خدمت چیست، برای چه کسانی مناسب است و کاربر با درخواست مشاوره چه چیزی دریافت می‌کند."
+                                                dir="auto"
                                                 rows={8}
                                                 className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             />
@@ -454,11 +458,13 @@ interface ServiceCardProps {
 
 function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
     const chatUserId = userId || service.user_id;
+    const titleProps = getDirectionalTextProps(service.title);
+    const descriptionProps = getDirectionalTextProps(service.description);
 
     return (
-        <article className="overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
+        <article className="overflow-hidden rounded-[16px] border border-[#cfd3da] bg-[#e1e4ea] p-2 text-right shadow-[0_6px_14px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
             <Link href={`/services/${service.id}`} className="block">
-                <div className="relative h-40 bg-gradient-to-br from-slate-100 to-[#eef6ff]">
+                <div className="relative h-40 overflow-hidden rounded-[12px] bg-gradient-to-br from-slate-200 to-[#eef6ff] shadow-sm">
                     {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
@@ -469,23 +475,23 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                             unoptimized
                         />
                     ) : (
-                        <div className="flex h-full items-center justify-center text-[#155aa6]/40">
+                        <div className="flex h-full items-center justify-center bg-[#d5dbe5] text-[#155aa6]/50">
                             <ImageIcon size={42} />
                         </div>
                     )}
                 </div>
             </Link>
 
-            <div className="p-4">
+            <div className="px-2 pb-2 pt-3">
                 <div className="mb-2 flex items-start justify-between gap-3">
                     <Link href={`/services/${service.id}`} className="min-w-0 flex-1">
-                        <h3 className="line-clamp-2 text-base font-black leading-7 text-slate-900">{service.title}</h3>
+                        <h3 className={cn("line-clamp-2 text-base font-black leading-7 text-[#25272d]", getTextAlign(service.title))} {...titleProps}>{service.title}</h3>
                     </Link>
                     {isOwner && (
                         <button
                             type="button"
                             onClick={onDelete}
-                            className="rounded-2xl p-2 text-red-500 transition hover:bg-red-50 hover:text-red-700"
+                            className="rounded-2xl bg-white/70 p-2 text-red-500 shadow-sm transition hover:bg-red-50 hover:text-red-700"
                             aria-label="حذف خدمت"
                         >
                             <Trash2 className="h-4 w-4" />
@@ -493,19 +499,19 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                     )}
                 </div>
 
-                <p className="line-clamp-3 text-sm leading-7 text-slate-500">{service.description}</p>
+                <p className={cn("line-clamp-3 text-sm leading-7 text-[#555c68]", getTextAlign(service.description))} {...descriptionProps}>{service.description}</p>
 
                 <div className="mt-4">
                     <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Link href={`/services/${service.id}`} className="flex items-center justify-center gap-2 rounded-2xl border border-[#d5e1ef] bg-white px-3 py-2 text-sm font-bold text-[#155aa6] transition hover:bg-[#eef6ff]">
+                    <Link href={`/services/${service.id}`} className="flex items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white/85 px-3 py-2 text-sm font-bold text-[#155aa6] shadow-sm transition hover:bg-white">
                         <ArrowLeft className="h-4 w-4" />
                         جزئیات
                     </Link>
                     {!isOwner && chatUserId && (
-                        <Link href={`/chat/${chatUserId}`} className="flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#0f4e92]">
+                        <Link href={`/chat/${chatUserId}`} className="flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-3 py-2 text-sm font-bold text-white shadow-[0_8px_18px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]">
                             <MessageCircle className="h-4 w-4" />
                             مشاوره
                         </Link>

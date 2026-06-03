@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, MessageCircle, Send, User as UserIcon } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { engagementService, EngagementComment } from "@/services/engagement.service";
 import { validateTextLength, validationMessage } from "@/validation";
 
@@ -11,20 +13,41 @@ interface PostCommentsProps {
     postId: number;
     initialCount?: number;
     onCountChange?: (count: number) => void;
+    defaultOpen?: boolean;
+    showToggle?: boolean;
+    className?: string;
 }
 
-export default function PostComments({ postId, initialCount = 0, onCountChange }: PostCommentsProps) {
-    const [open, setOpen] = useState(false);
+export default function PostComments({
+    postId,
+    initialCount = 0,
+    onCountChange,
+    defaultOpen = false,
+    showToggle = true,
+    className,
+}: PostCommentsProps) {
+    const [open, setOpen] = useState(defaultOpen);
     const [comments, setComments] = useState<EngagementComment[]>([]);
     const [draft, setDraft] = useState("");
     const [displayCount, setDisplayCount] = useState(initialCount);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const onCountChangeRef = useRef(onCountChange);
+
+    useEffect(() => {
+        onCountChangeRef.current = onCountChange;
+    }, [onCountChange]);
 
     useEffect(() => {
         setDisplayCount(initialCount);
     }, [initialCount]);
+
+    useEffect(() => {
+        if (defaultOpen) {
+            setOpen(true);
+        }
+    }, [defaultOpen, postId]);
 
     useEffect(() => {
         if (!open) return;
@@ -36,7 +59,7 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
                 if (!cancelled) {
                     setComments(data);
                     setDisplayCount(data.length);
-                    onCountChange?.(data.length);
+                    onCountChangeRef.current?.(data.length);
                 }
             } catch (error) {
                 console.error("Failed to load comments", error);
@@ -50,7 +73,7 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
         return () => {
             cancelled = true;
         };
-    }, [onCountChange, open, postId]);
+    }, [open, postId]);
 
     const submitComment = async () => {
         const content = draft.trim();
@@ -63,7 +86,7 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
             const nextComments = [...comments, created];
             setComments(nextComments);
             setDisplayCount(nextComments.length);
-            onCountChange?.(nextComments.length);
+            onCountChangeRef.current?.(nextComments.length);
             setDraft("");
             setError("");
         } catch (error) {
@@ -75,7 +98,8 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
     };
 
     return (
-        <div className="mt-3 border-t border-slate-100 pt-3">
+        <div className={cn("mt-3 border-t border-slate-100 pt-3", className)}>
+            {showToggle && (
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
@@ -84,12 +108,14 @@ export default function PostComments({ postId, initialCount = 0, onCountChange }
                 <MessageCircle size={15} />
                 {open ? "بستن دیدگاه‌ها" : `${displayCount.toLocaleString("fa-IR")} دیدگاه`}
             </button>
+            )}
 
             {open && (
-                <div className="mt-3 space-y-3">
+                <div className={cn("space-y-3", showToggle && "mt-3")}>
                     <div className="flex items-center gap-2 rounded-[22px] border border-slate-200 bg-white px-3 py-2">
                         <input
                             value={draft}
+                            dir="auto"
                             onChange={(event) => {
                                 setDraft(event.target.value);
                                 if (error) setError("");
@@ -155,12 +181,12 @@ function CommentItem({ comment }: { comment: EngagementComment }) {
             </div>
             <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-xs font-black text-slate-800">{comment.author?.display_name || "کاربر چین‌ورس"}</p>
+                    <p className={cn("truncate text-xs font-black text-slate-800", getTextAlign(comment.author?.display_name))} {...getDirectionalTextProps(comment.author?.display_name)}>{comment.author?.display_name || "کاربر چین‌ورس"}</p>
                     <span className="shrink-0 text-[10px] font-semibold text-slate-400">
                         {new Date(comment.created_at).toLocaleDateString("fa-IR")}
                     </span>
                 </div>
-                <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600">{comment.content}</p>
+                <p className={cn("mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600", getTextAlign(comment.content))} {...getDirectionalTextProps(comment.content)}>{comment.content}</p>
             </div>
         </div>
     );

@@ -14,7 +14,7 @@ import api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import LikeButton from "@/components/engagement/LikeButton";
-import PostComments from "@/components/engagement/PostComments";
+import PostViewerModal from "@/components/engagement/PostViewerModal";
 import DailyPracticeContent from "@/components/daily/DailyPracticeContent";
 
 type HomeTab = "activities" | "daily";
@@ -185,7 +185,7 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
 
     return (
         <article className="overflow-hidden rounded-[10px] bg-[#dfe2e8] p-3 shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
-            <PostAuthor provider={provider} badge="خدمت" />
+            <PostAuthor provider={provider} />
 
             <div className="mt-3 grid grid-cols-[128px_1fr] gap-3" dir="ltr">
                 <Link href={`/services/${service.id}`} className="relative h-[116px] overflow-hidden rounded-[10px] bg-slate-200">
@@ -238,62 +238,73 @@ function GalleryFeedCard({ item }: { item: FeedItem }) {
     const gallery = item.data as GalleryData;
     const provider = item.provider;
     const [commentsCount, setCommentsCount] = useState(item.comments_count || 0);
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
+    const openViewer = () => setIsViewerOpen(true);
 
     return (
+        <>
         <article className="overflow-hidden rounded-[10px] bg-white shadow-[0_8px_18px_rgba(15,23,42,0.10)]">
             <div className="bg-[#dfe2e8] px-3 py-2">
-                <PostAuthor provider={provider} badge="پست" compact />
+                <PostAuthor provider={provider} compact />
             </div>
 
-            <Link href={`/posts/${gallery.id}`} className="relative block aspect-[1/1.1] bg-slate-100">
+            <button type="button" onClick={openViewer} className="relative block aspect-[1/1.1] w-full bg-slate-100 text-right">
                 <Image
                     src={getMediaUrl(gallery.image_url)}
                     alt={gallery.caption || "تصویر پست"}
                     fill
-                    className="object-cover"
+                    className="object-cover transition duration-300 hover:scale-[1.02]"
                     sizes="398px"
                     unoptimized
                 />
-            </Link>
+            </button>
 
             <div className="px-4 pb-4 pt-3">
                 <div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
                     <div className="flex items-center gap-3">
                         <LikeButton targetType="post" targetId={gallery.id} initialCount={item.likes_count || 0} compact />
-                        <Link href={`/posts/${gallery.id}`} className="inline-flex items-center gap-1.5 transition hover:text-[#155aa6]">
+                        <button type="button" onClick={openViewer} className="inline-flex items-center gap-1.5 transition hover:text-[#155aa6]">
                             <MessageCircle size={17} />
                             {toPersianDigits(commentsCount)}
-                        </Link>
+                        </button>
                     </div>
                     {item.created_at ? <span>تاریخ انتشار: {formatDate(item.created_at)}</span> : null}
                 </div>
 
                 {gallery.caption && (
-                    <p className="mt-3 text-[13px] font-medium leading-7 text-slate-700">
+                    <button type="button" onClick={openViewer} className="mt-3 block w-full text-right text-[13px] font-medium leading-7 text-slate-700">
                         {gallery.caption}
-                    </p>
+                    </button>
                 )}
 
-                <PostComments postId={gallery.id} initialCount={commentsCount} onCountChange={setCommentsCount} />
             </div>
         </article>
+        <PostViewerModal
+            isOpen={isViewerOpen}
+            onClose={() => setIsViewerOpen(false)}
+            post={{
+                ...gallery,
+                created_at: item.created_at,
+                likes_count: item.likes_count,
+                comments_count: commentsCount,
+                provider,
+            }}
+            onCommentCountChange={setCommentsCount}
+        />
+        </>
     );
 }
 
 function PostAuthor({
     provider,
-    badge,
     compact = false,
 }: {
     provider?: FeedProvider;
-    badge: string;
     compact?: boolean;
 }) {
     return (
         <div className="flex items-center justify-between gap-3" dir="ltr">
-            <span className="rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-black text-[#155aa6]">
-                {badge}
-            </span>
+            <span className="h-1 w-1" aria-hidden />
             <div className="flex min-w-0 items-center gap-2">
                 <div className="min-w-0 text-right" dir="rtl">
                     <p className={cn("truncate font-black text-slate-900", compact ? "text-xs" : "text-[13px]")}>

@@ -7,6 +7,7 @@ import { Search, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
+import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { chatService, ConversationPreview } from "@/services/chat.service";
 
 export default function ChatPage() {
@@ -76,6 +77,7 @@ export default function ChatPage() {
                 <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
+                    dir="auto"
                     placeholder="جستجو بین پیام‌ها..."
                     className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
                 />
@@ -137,10 +139,10 @@ function ConversationRow({ conversation }: { conversation: ConversationPreview }
 
             <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
-                    <h2 className="truncate text-sm font-black text-slate-900">{displayName}</h2>
+                    <h2 className={cn("truncate text-sm font-black text-slate-900", getTextAlign(displayName))} {...getDirectionalTextProps(displayName)}>{displayName}</h2>
                     <span className="shrink-0 text-[11px] font-semibold text-slate-400">{lastTime}</span>
                 </div>
-                <p className="mt-1 line-clamp-1 text-xs leading-6 text-slate-500">
+                <p className={cn("mt-1 line-clamp-1 text-xs leading-6 text-slate-500", getTextAlign(conversation.last_message))} {...getDirectionalTextProps(conversation.last_message)}>
                     {conversation.last_message || "هنوز پیامی ثبت نشده"}
                 </p>
             </div>

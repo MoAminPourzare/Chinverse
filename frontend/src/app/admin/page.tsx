@@ -139,9 +139,19 @@ export default function AdminPanelPage() {
                 transcript: [
                     {
                         id: 1,
+                        start: 0,
+                        end: 3.5,
                         chinese: "示例字幕",
                         persian: "نمونه زیرنویس",
                         highlightedWords: ["示例"],
+                    },
+                    {
+                        id: 2,
+                        start: 3.5,
+                        end: 7,
+                        chinese: "视频播放时，字幕会自动滚动。",
+                        persian: "وقتی ویدیو پخش می‌شود، زیرنویس خودکار اسکرول می‌کند.",
+                        highlightedWords: ["字幕", "自动"],
                     },
                 ],
             },

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCheck, Send, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { getMediaUrl } from '@/lib/media';
+import { getDirectionalTextProps, getTextAlign } from '@/lib/textDirection';
 import { chatService, ChatMessage } from '@/services/chat.service';
 import { BackButton } from "@/components/ui/IconButton";
 import { userService } from '@/services/user.service';
@@ -219,7 +220,7 @@ export default function ChatRoomPage() {
                     <div className="flex min-w-0 items-center justify-center gap-3">
                         <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
                         <div className="min-w-0 text-right">
-                            <h1 className="truncate text-base font-black text-slate-900">{otherUser?.display_name || 'گفت‌وگو'}</h1>
+                            <h1 className={cn("truncate text-base font-black text-slate-900", getTextAlign(otherUser?.display_name))} {...getDirectionalTextProps(otherUser?.display_name)}>{otherUser?.display_name || 'گفت‌وگو'}</h1>
                             <p className="mt-0.5 flex items-center justify-end gap-1 text-[11px] font-semibold text-slate-500">
                                 <span
                                     className={cn(
@@ -279,7 +280,7 @@ export default function ChatRoomPage() {
                                                             : 'rounded-tl-[7px] border border-slate-100 bg-white text-slate-800',
                                                     )}
                                                 >
-                                                    <p className="whitespace-pre-wrap">{message.content}</p>
+                                                    <p className={cn("whitespace-pre-wrap", getTextAlign(message.content))} {...getDirectionalTextProps(message.content)}>{message.content}</p>
                                                     <div
                                                         className={cn(
                                                             'mt-1 flex items-center gap-1 text-[10px]',
@@ -307,6 +308,7 @@ export default function ChatRoomPage() {
                         ref={inputRef}
                         type="text"
                         value={newMessage}
+                        dir="auto"
                         onChange={(event) => {
                             setNewMessage(event.target.value);
                             if (sendError) setSendError('');

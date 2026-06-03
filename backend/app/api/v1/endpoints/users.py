@@ -298,6 +298,13 @@ async def get_showcase_users(
                     field=first_edu.get("field"),
                     degree=first_edu.get("degree")
                 )
+
+        job_titles = []
+        if user.profile.resume and user.profile.resume.get("work_experiences"):
+            for work in user.profile.resume.get("work_experiences", []):
+                title = (work.get("job_title") or "").strip()
+                if title and title not in job_titles:
+                    job_titles.append(title)
         
         # Get first 3 gallery images for preview
         gallery_preview = [
@@ -325,6 +332,7 @@ async def get_showcase_users(
             country=user.profile.country,
             avatar_url=user.profile.avatar_url,
             education=education,
+            job_titles=job_titles,
             gallery_preview=gallery_preview,
             hsk_level=hsk_level
         ))
