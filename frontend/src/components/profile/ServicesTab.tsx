@@ -347,7 +347,7 @@ function ServiceModal({
                         >
                             <Dialog.Panel className="flex h-[min(720px,88vh)] w-full max-w-md flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white text-right align-middle shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
                                 <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
-                                    <div>
+                                    <div className="min-w-0 flex-1 text-center">
                                         <Dialog.Title as="h2" className="text-base font-black text-slate-900">
                                             افزودن خدمت جدید
                                         </Dialog.Title>
@@ -355,7 +355,7 @@ function ServiceModal({
                                     <button
                                         type="button"
                                         onClick={onClose}
-                                        className="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                                        className="order-first flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30"
                                         aria-label="بستن"
                                     >
                                         <X className="h-5 w-5" />

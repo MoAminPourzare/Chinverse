@@ -55,15 +55,6 @@ const labelsBySlug: Record<string, string> = {
 };
 
 const isBrokenText = (value?: string) => Boolean(value && /[ØÙÚÛâ]/.test(value));
-const hskGradients = [
-    "from-[#155aa6] to-[#0f4e92]",
-    "from-[#50bca4] to-[#15806f]",
-    "from-[#ffb74d] to-[#d88713]",
-    "from-[#4f9de8] to-[#155aa6]",
-    "from-[#64748b] to-[#334155]",
-    "from-[#38bdf8] to-[#0f7f88]",
-];
-
 const getCourseHref = (detailPath: string, course: Course) => `${detailPath}/${course.id}`;
 
 export default function CourseExplorePage({
@@ -143,7 +134,14 @@ export default function CourseExplorePage({
                 ) : layout === "hsk" ? (
                     <div className="motion-list grid grid-cols-3 gap-2.5">
                         {orderedCourses.map((course) => (
-                            <HskCourseCard key={course.id} course={course} detailPath={detailPath} />
+                            <PosterCourseCard
+                                key={course.id}
+                                course={course}
+                                href={getCourseHref(detailPath, course)}
+                                layout="square"
+                                countLabel={displayCountLabel}
+                                countKeys={countKeys}
+                            />
                         ))}
                     </div>
                 ) : layout === "list" ? (
@@ -186,6 +184,7 @@ function StateCard({ text }: { text: string }) {
     );
 }
 
+/*
 function HskCourseCard({ course, detailPath }: { course: Course; detailPath: string }) {
     const hskLevel = String(getCourseMetaNumber(course, "hsk_level", Number(course.level) || 0) || course.level || "");
     const hskNumber = Number(hskLevel);
@@ -207,6 +206,7 @@ function HskCourseCard({ course, detailPath }: { course: Course; detailPath: str
     );
 }
 
+*/
 function PosterCourseCard({
     course,
     href,

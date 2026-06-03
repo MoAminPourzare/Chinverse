@@ -181,7 +181,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                     <button
                                         type="button"
                                         onClick={handleClose}
-                                        className="rounded-full p-2 text-slate-500 transition hover:bg-white hover:text-slate-900"
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30"
                                         aria-label="بستن"
                                     >
                                         <X className="h-5 w-5" />

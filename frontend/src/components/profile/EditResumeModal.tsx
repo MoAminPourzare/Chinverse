@@ -15,7 +15,7 @@ interface EditResumeModalProps {
     initialSection?: string | null;
 }
 
-const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
+const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-sm text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
 const yearSelectClass = `${inputClass} cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#155aa6_50%),linear-gradient(135deg,#155aa6_50%,transparent_50%)] bg-[length:6px_6px,6px_6px] bg-[position:left_14px_center,left_8px_center] bg-no-repeat pl-8`;
 const yearOptions = buildYearOptions();
 const sectionTitles: Record<string, string> = {
@@ -125,7 +125,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                     <button
                                         type="button"
                                         onClick={handleClose}
-                                        className="rounded-full p-2 text-slate-500 transition hover:bg-white hover:text-slate-900"
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30"
                                         aria-label="بستن"
                                     >
                                         <X className="h-5 w-5" />
@@ -278,7 +278,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
 
 function YearSelect({ registration, placeholder }: { registration: UseFormRegisterReturn; placeholder: string }) {
     return (
-        <select {...registration} className={yearSelectClass}>
+        <select {...registration} dir="rtl" className={yearSelectClass}>
             <option value="">{placeholder}</option>
             {yearOptions.map((year) => (
                 <option key={year} value={year}>
@@ -291,7 +291,7 @@ function YearSelect({ registration, placeholder }: { registration: UseFormRegist
 
 function OptionSelect({ registration, placeholder, options }: { registration: UseFormRegisterReturn; placeholder: string; options: string[] }) {
     return (
-        <select {...registration} className={yearSelectClass}>
+        <select {...registration} dir="rtl" className={yearSelectClass}>
             <option value="">{placeholder}</option>
             {options.map((option) => (
                 <option key={option} value={option}>
@@ -349,15 +349,15 @@ function ResumeSection({
     children: ReactNode;
 }) {
     return (
-        <section>
-            <h4 className="mb-3 flex items-center justify-end gap-2 text-[16px] font-black text-[#2f3238]">
+        <section dir="rtl" className="text-right">
+            <h4 className="mb-3 flex w-full items-center justify-start gap-2 text-right text-[16px] font-black text-[#2f3238]">
                 {title}
                 <span className="text-[#155aa6]">{icon}</span>
             </h4>
             <button
                 type="button"
                 onClick={onAdd}
-                className="ml-auto flex items-center gap-2 rounded-lg border border-[#b9cbe0] bg-[#e9edf3] px-4 py-3 text-right text-[13px] font-bold text-[#155aa6] transition hover:bg-[#eef6ff]"
+                className="ml-auto flex w-fit items-center gap-2 rounded-lg border border-[#b9cbe0] bg-[#e9edf3] px-4 py-3 text-right text-[13px] font-bold text-[#155aa6] transition hover:bg-[#eef6ff]"
             >
                 <Plus className="h-5 w-5" />
                 {addLabel}
