@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 type RouteMotion = "soft" | "tab" | "forward" | "back" | "cover" | "uncover" | "inline";
@@ -89,6 +89,22 @@ const getRouteMotion = (previousPathname: string, nextPathname: string, searchOn
 };
 
 export default function RouteTransition({ children }: { children: ReactNode }) {
+    return (
+        <Suspense
+            fallback={
+                <div className="route-stage">
+                    <div className="route-panel" data-phase="enter" data-motion="soft">
+                        {children}
+                    </div>
+                </div>
+            }
+        >
+            <RouteTransitionInner>{children}</RouteTransitionInner>
+        </Suspense>
+    );
+}
+
+function RouteTransitionInner({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const search = searchParams.toString();

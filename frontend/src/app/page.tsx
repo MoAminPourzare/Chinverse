@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import {
     ImageIcon,
     MessageCircle,
@@ -56,7 +55,6 @@ interface FeedItem {
 }
 
 export default function HomePage() {
-    const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState<HomeTab>("activities");
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -78,11 +76,13 @@ export default function HomePage() {
     }, []);
 
     useEffect(() => {
+        if (typeof window === "undefined") return;
+        const searchParams = new URLSearchParams(window.location.search);
         const requestedTab = searchParams.get("tab");
         if (requestedTab === "daily" || requestedTab === "activities") {
             setActiveTab(requestedTab);
         }
-    }, [searchParams]);
+    }, []);
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-24" dir="rtl">

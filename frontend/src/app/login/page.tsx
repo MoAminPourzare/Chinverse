@@ -122,7 +122,7 @@ export default function LoginPage() {
                 </label>
 
                 <PrimaryButton type="submit" className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
-                    {loading ? "در حال ورود..." : "ورود"}
+                    {loading ? "در حال ورود…" : "ورود"}
                 </PrimaryButton>
             </form>
         </AuthShell>

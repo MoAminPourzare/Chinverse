@@ -60,17 +60,20 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
         }
     };
 
-    const handleClose = () => {
+    const resetForm = () => {
         setSelectedFile(null);
         setPreview(null);
         setPendingFile(null);
         setCaption("");
         setError("");
+    };
+
+    const handleClose = () => {
         onClose();
     };
 
     return (
-        <Transition appear show={isOpen} as={Fragment}>
+        <Transition appear show={isOpen} as={Fragment} afterLeave={resetForm}>
             <Dialog
                 as="div"
                 className="relative z-50"
@@ -153,7 +156,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                             rows={5}
                                             dir="auto"
                                             className="w-full resize-none rounded-2xl border border-[#d6e1ee] bg-white px-4 py-3 text-start text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
-                                            placeholder="هر عکسی یه داستانی داره... داستانتو اینجا بنویس!"
+                                            placeholder="هر عکسی یه داستانی داره؛ داستانتو اینجا بنویس!"
                                         />
                                         {error && (
                                             <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
@@ -170,7 +173,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                         disabled={!selectedFile || uploading}
                                         className="w-full rounded-full bg-[#155aa6] py-3 text-sm font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.32)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                                     >
-                                        {uploading ? "در حال بارگذاری..." : "اشتراک گذاری"}
+                                        {uploading ? "در حال بارگذاری…" : "اشتراک گذاری"}
                                     </button>
                                 </div>
                             </Dialog.Panel>

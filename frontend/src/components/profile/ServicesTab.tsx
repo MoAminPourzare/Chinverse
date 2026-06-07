@@ -64,7 +64,6 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     const closeModal = () => {
         if (submitting) return;
         setIsModalOpen(false);
-        resetForm();
     };
 
     const handleBannerChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -106,7 +105,6 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
 
             await userService.createService(formData);
             setIsModalOpen(false);
-            resetForm();
             await fetchServices();
         } catch (submitError) {
             setError(getServiceErrorMessage(submitError, false, "ثبت خدمت انجام نشد. لطفا دوباره امتحان کن."));
@@ -165,11 +163,13 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                         />
                     </div>
                     <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
-                        اولین خدمتت رو ثبت کن!
+                        {isOwner ? "اولین خدمتت رو ثبت کن!" : "خدمتی ثبت نشده است"}
                     </h3>
-                    <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
-                        اینجا میتونی دوره‌های آموزشی، ترجمه رسمی، مشاوره بازرگانی یا هر خدمت مرتبط با زبان چینی و معرفی کسب‌وکارت رو ثبت کنی.
-                    </p>
+                    {isOwner ? (
+                        <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                            اینجا میتونی دوره‌های آموزشی، ترجمه رسمی، مشاوره بازرگانی یا هر خدمت مرتبط با زبان چینی و معرفی کسب‌وکارت رو ثبت کنی.
+                        </p>
+                    ) : null}
                     {isOwner ? (
                         <button
                             type="button"
@@ -191,6 +191,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                     pendingBannerFile={pendingBannerFile}
                     fileInputRef={fileInputRef}
                     onClose={closeModal}
+                    onAfterLeave={resetForm}
                     onSubmit={handleSubmit}
                     onTitleChange={setTitle}
                     onDescriptionChange={setDescription}
@@ -241,6 +242,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                 pendingBannerFile={pendingBannerFile}
                 fileInputRef={fileInputRef}
                 onClose={closeModal}
+                onAfterLeave={resetForm}
                 onSubmit={handleSubmit}
                 onTitleChange={setTitle}
                 onDescriptionChange={setDescription}
@@ -286,6 +288,7 @@ interface ServiceModalProps {
     pendingBannerFile: File | null;
     fileInputRef: RefObject<HTMLInputElement | null>;
     onClose: () => void;
+    onAfterLeave: () => void;
     onSubmit: (event: FormEvent) => void;
     onTitleChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
@@ -304,6 +307,7 @@ function ServiceModal({
     pendingBannerFile,
     fileInputRef,
     onClose,
+    onAfterLeave,
     onSubmit,
     onTitleChange,
     onDescriptionChange,
@@ -312,7 +316,7 @@ function ServiceModal({
     onConfirmAdjust,
 }: ServiceModalProps) {
     return (
-        <Transition appear show={isOpen} as={Fragment}>
+        <Transition appear show={isOpen} as={Fragment} afterLeave={onAfterLeave}>
             <Dialog
                 as="div"
                 className="relative z-[120]"
@@ -372,7 +376,7 @@ function ServiceModal({
                                                 onChange={(event) => onTitleChange(event.target.value)}
                                                 placeholder="مثلا: راهنمای تور و سفر چین"
                                                 dir="auto"
-                                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             />
                                         </div>
 
@@ -410,7 +414,7 @@ function ServiceModal({
                                                 placeholder="توضیح بده این خدمت چیست، برای چه کسانی مناسب است و کاربر با درخواست مشاوره چه چیزی دریافت می‌کند."
                                                 dir="auto"
                                                 rows={8}
-                                                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             />
                                         </div>
 
@@ -428,7 +432,7 @@ function ServiceModal({
                                             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-3 text-sm font-black text-white shadow-[0_12px_24px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <BriefcaseBusiness className="h-5 w-5" />}
-                                            {submitting ? "در حال ثبت..." : "ثبت خدمت"}
+                                            {submitting ? "در حال ثبت…" : "ثبت خدمت"}
                                         </button>
                                     </div>
                                 </form>

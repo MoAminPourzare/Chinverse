@@ -209,7 +209,7 @@ export default function ChatRoomPage() {
     });
 
     const statusLabel =
-        isLoading ? 'در حال بارگذاری...' : connectionState === 'live' ? 'آنلاین' : connectionState === 'connecting' ? 'در حال اتصال' : 'همگام‌سازی خودکار';
+        isLoading ? 'در حال بارگذاری…' : connectionState === 'live' ? 'آنلاین' : connectionState === 'connecting' ? 'در حال اتصال' : 'همگام‌سازی خودکار';
 
     return (
         <div className="flex h-full min-h-full flex-col bg-[#f7f8fa]" dir="rtl">
@@ -314,7 +314,7 @@ export default function ChatRoomPage() {
                             if (sendError) setSendError('');
                         }}
                         onKeyDown={(event) => event.key === 'Enter' && !event.shiftKey && handleSend()}
-                        placeholder="پیام خود را بنویس..."
+                        placeholder="پیام خود را بنویس"
                         className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
                     />
                     <button

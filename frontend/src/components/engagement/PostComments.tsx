@@ -126,7 +126,7 @@ export default function PostComments({
                                     void submitComment();
                                 }
                             }}
-                            placeholder="دیدگاهت را بنویس..."
+                            placeholder="دیدگاهت را بنویس"
                             className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
                         />
                         <button
@@ -143,7 +143,7 @@ export default function PostComments({
                     {loading ? (
                         <div className="flex items-center justify-center py-4 text-xs font-bold text-slate-400">
                             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                            در حال دریافت دیدگاه‌ها...
+                            در حال دریافت دیدگاه‌ها…
                         </div>
                     ) : comments.length > 0 ? (
                         <div className="space-y-2">

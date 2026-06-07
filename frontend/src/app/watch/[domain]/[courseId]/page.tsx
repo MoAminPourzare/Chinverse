@@ -460,7 +460,7 @@ export default function SharedWatchPage() {
             <div className="flex min-h-full items-center justify-center">
                 <div className="flex items-center gap-3 text-slate-500">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
-                    <span>در حال بارگذاری...</span>
+                    <span>در حال بارگذاری…</span>
                 </div>
             </div>
         );

@@ -79,7 +79,6 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
     }, [isOpen, resetToUser]);
 
     const handleClose = () => {
-        resetToUser();
         onClose();
     };
 
@@ -151,7 +150,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
     };
 
     return (
-        <Transition appear show={isOpen} as={Fragment}>
+        <Transition appear show={isOpen} as={Fragment} afterLeave={resetToUser}>
             <Dialog as="div" className="relative z-50" onClose={handleClose} dir="rtl">
                 <Transition.Child
                     as={Fragment}
@@ -198,8 +197,8 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                             {...register("bio")}
                                             rows={9}
                                             dir="auto"
-                                            className="min-h-[210px] w-full rounded-[10px] border-2 border-[#155aa6] bg-white p-4 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
-                                            placeholder="درباره خودت بنویس..."
+                                            className="min-h-[210px] w-full rounded-[10px] border-2 border-[#155aa6] bg-white p-4 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
+                                            placeholder="درباره خودت بنویس"
                                         />
                                         {errors.bio?.message && (
                                             <p className="mt-2 text-xs leading-5 text-red-500">{errors.bio.message}</p>
@@ -220,7 +219,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                         <div className="flex gap-2">
                                                             <input
                                                                 {...register(`websites.${index}.url` as const)}
-                                                                className="min-w-0 flex-1 rounded-lg border border-transparent bg-[#e2e5eb] px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-[#155aa6] focus:bg-white"
+                                                                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                                                 placeholder="https://example.com"
                                                                 dir="ltr"
                                                             />
@@ -301,7 +300,6 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                                 </span>
                                                                 <div className="min-w-0 flex-1">
                                                                     <p className="text-sm font-black text-slate-800">{platform.name}</p>
-                                                                    <p className="text-[11px] leading-5 text-slate-400">{platform.hint}</p>
                                                                 </div>
                                                                 <button
                                                                     type="button"

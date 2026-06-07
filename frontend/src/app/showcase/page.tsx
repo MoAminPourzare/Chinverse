@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import LikeButton from "@/components/engagement/LikeButton";
+import { BackButton, IconButton } from "@/components/ui/IconButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
@@ -48,31 +49,26 @@ const filterOrder: FilterKey[] = ["jobTitles", "locations", "degrees", "universi
 
 const filterConfig: Record<FilterKey, {
     label: string;
-    helper: string;
     icon: typeof Tag;
     options: string[];
 }> = {
     jobTitles: {
         label: "عنوان شغلی",
-        helper: "می‌توانی چند عنوان را انتخاب کنی",
         icon: Tag,
         options: PROFILE_HEADLINE_OPTIONS,
     },
     locations: {
         label: "لوکیشن",
-        helper: "کشور یا استان ایران را انتخاب کن",
         icon: MapPin,
         options: LOCATION_FILTER_OPTIONS,
     },
     degrees: {
         label: "مقطع تحصیلی",
-        helper: "سطح تحصیلات ثبت شده در رزومه",
         icon: GraduationCap,
         options: EDUCATION_DEGREE_OPTIONS,
     },
     universities: {
         label: "دانشگاه محل تحصیل",
-        helper: "دانشگاه یا موسسه آموزشی رزومه",
         icon: Landmark,
         options: UNIVERSITY_OPTIONS,
     },
@@ -166,7 +162,7 @@ export default function ShowcasePage() {
         );
     }, [searchQuery, services]);
 
-    const searchPlaceholder = activeTab === "talents" ? "جستجو بین استعدادها..." : "جستجو بین خدمات...";
+    const searchPlaceholder = activeTab === "talents" ? "جستجو بین استعدادها" : "جستجو بین خدمات";
 
     const resetFilters = () => {
         setTalentFilters(createEmptyFilters());
@@ -341,26 +337,14 @@ function TalentFilterPanel({
     return (
         <div className="modal-backdrop-motion fixed inset-0 z-[120] bg-[#f7f8fa] px-5 pb-24 pt-5" dir="rtl">
             <div className="mx-auto flex h-full w-full max-w-[430px] flex-col">
-                <header className="grid h-12 grid-cols-[44px_1fr_44px] items-center">
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-white"
-                        aria-label="بازگشت"
-                    >
-                        <ChevronLeft className="h-5 w-5 rotate-180" />
-                    </button>
+                <header className="relative flex h-11 items-center justify-center">
+                    <BackButton onClick={onBack} className="absolute right-0 top-0" />
                     <h2 className="text-center text-[18px] font-black text-[#25272d]">
                         {currentConfig?.label || "فیلترها"}
                     </h2>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-white hover:text-slate-900"
-                        aria-label="بستن"
-                    >
+                    <IconButton onClick={onClose} label="بستن" className="absolute left-0 top-0">
                         <X className="h-5 w-5" />
-                    </button>
+                    </IconButton>
                 </header>
 
                 {!activeFilterKey ? (
@@ -413,12 +397,7 @@ function TalentFilterPanel({
                     </>
                 ) : (
                     <div className="mt-5 flex min-h-0 flex-1 flex-col">
-                        <div className="rounded-[24px] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-                            <p className="text-sm font-black text-slate-900">{currentConfig?.label}</p>
-                            <p className="mt-1 text-xs font-semibold leading-6 text-slate-500">{currentConfig?.helper}</p>
-                        </div>
-
-                        <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+                        <div className="min-h-0 flex-1 overflow-y-auto rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                             <button
                                 type="button"
                                 onClick={() => onClearFilter(activeFilterKey)}

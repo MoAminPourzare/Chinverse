@@ -1,22 +1,45 @@
 # ChinVerse
 
-A Monorepo project containing a Web App (PWA) and a Backend API.
+ChinVerse is a Persian-first Chinese learning app with a Next.js frontend and a
+FastAPI backend.
 
 ## Structure
 
-- `backend/`: FastAPI + SQLAlchemy + Poetry
-- `frontend/`: Next.js 14 + Tailwind CSS + TypeScript (PWA)
+- `backend/`: FastAPI, SQLAlchemy, Alembic, Poetry
+- `frontend/`: Next.js 16, React 19, TypeScript, Tailwind CSS
 
-## Setup
+## Development
 
 ### Backend
 
-1. Navigate to `backend/`
-2. Install dependencies: `poetry install`
-3. Run server: `poetry run uvicorn app.main:app --reload`
+```powershell
+cd backend
+poetry install
+poetry run uvicorn app.main:app --reload
+```
+
+The backend runs on `http://127.0.0.1:8000` by default.
 
 ### Frontend
 
-1. Navigate to `frontend/`
-2. Install dependencies: `npm install`
-3. Run dev server: `npm run dev`
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend runs on `http://localhost:3000` by default.
+
+## Checks
+
+```powershell
+cd frontend
+npm run lint
+npm exec tsc -- --noEmit --incremental false
+npm run build
+```
+
+```powershell
+cd backend
+poetry run python -m compileall app
+```

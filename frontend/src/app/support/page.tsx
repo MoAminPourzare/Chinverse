@@ -107,7 +107,7 @@ export default function SupportPage() {
                                 setMessage(event.target.value);
                                 if (error) setError('');
                             }}
-                            placeholder="پیامتو اینجا بنویس..."
+                            placeholder="پیامتو اینجا بنویس"
                             rows={3}
                             className="min-h-[72px] w-full resize-none rounded-[4px] border border-[#155aa6] bg-white px-4 py-3 text-sm leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#e88e6e] focus:ring-4 focus:ring-[#155aa6]/10"
                         />
@@ -124,7 +124,7 @@ export default function SupportPage() {
                             style={{ backgroundColor: CHINVERSE_BLUE }}
                             className="mt-5 h-[52px] w-full rounded-[22px] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.28)] transition hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20 disabled:cursor-not-allowed disabled:opacity-55"
                         >
-                            {isSubmitting ? 'در حال ارسال...' : 'ارسال پیام'}
+                            {isSubmitting ? 'در حال ارسال…' : 'ارسال پیام'}
                         </button>
                     </div>
                 </main>

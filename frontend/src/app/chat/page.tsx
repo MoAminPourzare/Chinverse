@@ -78,7 +78,7 @@ export default function ChatPage() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     dir="auto"
-                    placeholder="جستجو بین پیام‌ها..."
+                    placeholder="جستجو بین پیام‌ها"
                     className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
                 />
             </label>

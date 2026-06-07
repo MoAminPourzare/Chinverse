@@ -18,6 +18,7 @@ interface EditResumeModalProps {
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-sm text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
 const yearSelectClass = `${inputClass} cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#155aa6_50%),linear-gradient(135deg,#155aa6_50%,transparent_50%)] bg-[length:6px_6px,6px_6px] bg-[position:left_14px_center,left_8px_center] bg-no-repeat pl-8`;
 const yearOptions = buildYearOptions();
+const resumeLevelOptions = ["مقدماتی", "متوسط", "پیشرفته"];
 const sectionTitles: Record<string, string> = {
     work: "سوابق کاری",
     education: "تحصیلات",
@@ -70,7 +71,6 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
 
     const handleClose = () => {
         setResumeDateError("");
-        resetToUser();
         onClose();
     };
 
@@ -95,7 +95,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
     const dialogTitle = initialSection ? sectionTitles[initialSection] || "ویرایش رزومه" : "رزومه ساز";
 
     return (
-        <Transition appear show={isOpen} as={Fragment}>
+        <Transition appear show={isOpen} as={Fragment} afterLeave={resetToUser}>
             <Dialog as="div" className="relative z-50" onClose={handleClose} dir="rtl">
                 <Transition.Child
                     as={Fragment}
@@ -228,7 +228,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             {skill.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => skill.remove(index)}>
                                                     <input {...register(`skills.${index}.name`)} placeholder="نام مهارت" dir="auto" className={inputClass} />
-                                                    <input {...register(`skills.${index}.level`)} placeholder="سطح، مثلا پیشرفته" dir="auto" className={inputClass} />
+                                                    <OptionSelect registration={register(`skills.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
                                             ))}
                                         </ResumeSection>
@@ -244,7 +244,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             {language.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => language.remove(index)}>
                                                     <input {...register(`languages.${index}.name`)} placeholder="نام زبان" dir="auto" className={inputClass} />
-                                                    <input {...register(`languages.${index}.level`)} placeholder="سطح، مثلا متوسط" dir="auto" className={inputClass} />
+                                                    <OptionSelect registration={register(`languages.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
                                             ))}
                                         </ResumeSection>

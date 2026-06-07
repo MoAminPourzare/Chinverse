@@ -225,7 +225,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                                 اضافه شد
                             </>
                         ) : isAdding ? (
-                            "در حال افزودن..."
+                            "در حال افزودن…"
                         ) : (
                             "اضافه کردن به لایتنر"
                         )}
