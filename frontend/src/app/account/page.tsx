@@ -306,7 +306,7 @@ export default function AccountPage() {
                             خروج
                         </button>
                         <PrimaryButton type="submit" className="w-full rounded-full" leadingIcon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
-                            {saving ? "در حال ذخیره..." : "ذخیره"}
+                            {saving ? "در حال ذخیره…" : "ذخیره"}
                         </PrimaryButton>
                     </div>
                 </form>

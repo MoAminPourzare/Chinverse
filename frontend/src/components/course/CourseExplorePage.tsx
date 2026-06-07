@@ -126,7 +126,7 @@ export default function CourseExplorePage({
                 </header>
 
                 {loading ? (
-                    <StateCard text="در حال بارگذاری..." />
+                    <StateCard text="در حال بارگذاری…" />
                 ) : error ? (
                     <StateCard text="ارتباط با سرور برقرار نشد." />
                 ) : orderedCourses.length === 0 ? (
@@ -184,29 +184,6 @@ function StateCard({ text }: { text: string }) {
     );
 }
 
-/*
-function HskCourseCard({ course, detailPath }: { course: Course; detailPath: string }) {
-    const hskLevel = String(getCourseMetaNumber(course, "hsk_level", Number(course.level) || 0) || course.level || "");
-    const hskNumber = Number(hskLevel);
-    const gradientClass = hskGradients[(Number.isFinite(hskNumber) ? Math.max(0, hskNumber - 1) : 0) % hskGradients.length];
-    const wordCount = ["150", "300", "600", "1200", "2500", "5000"][Number(hskLevel) - 1];
-    const titleProps = getDirectionalTextProps(course.title);
-
-    return (
-        <Link href={getCourseHref(detailPath, course)} className="group">
-            <article className={`flex h-[118px] flex-col justify-between overflow-hidden rounded-[18px] bg-gradient-to-br ${gradientClass} p-3 text-white shadow-[0_10px_22px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5`}>
-                <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/75">HSK</div>
-                <div className="text-center">
-                    <div className="font-latin text-[30px] font-black leading-none" lang="en">{hskLevel}</div>
-                    <p className="mt-1 text-[11px] font-bold text-white/80" {...titleProps}>{course.title}</p>
-                </div>
-                <div className="text-center text-[10px] font-bold text-white/70">{wordCount ? `${wordCount} واژه` : course.level}</div>
-            </article>
-        </Link>
-    );
-}
-
-*/
 function PosterCourseCard({
     course,
     href,

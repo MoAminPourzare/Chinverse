@@ -169,7 +169,7 @@ export default function CourseDetailPage({
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fa]">
                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
-                    <span>در حال بارگذاری...</span>
+                    <span>در حال بارگذاری…</span>
                 </div>
             </div>
         );

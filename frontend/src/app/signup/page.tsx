@@ -215,7 +215,7 @@ export default function SignupPage() {
                 </label>
 
                 <PrimaryButton type="submit" className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
-                    {loading ? "در حال ثبت..." : "ثبت نام"}
+                    {loading ? "در حال ثبت…" : "ثبت نام"}
                 </PrimaryButton>
             </form>
         </AuthShell>

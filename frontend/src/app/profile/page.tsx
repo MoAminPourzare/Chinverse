@@ -15,7 +15,7 @@ import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
-import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount, unsaveCourse } from "@/lib/courses";
+import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount } from "@/lib/courses";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
 import { validateImageFile } from "@/validation";
 
@@ -568,10 +568,7 @@ export default function ProfilePage() {
 
                 <EditResumeModal
                     isOpen={isResumeModalOpen}
-                    onClose={() => {
-                        setIsResumeModalOpen(false);
-                        setResumeEditSection(null);
-                    }}
+                    onClose={() => setIsResumeModalOpen(false)}
                     user={user ?? null}
                     onUpdate={fetchUser}
                     initialSection={resumeEditSection}
@@ -727,7 +724,7 @@ function ResumePreviewCard({
                             </p>
                         )}
                         {item.meta && (
-                            <p className="mt-0.5 truncate text-right text-[9.5px] font-medium leading-4 text-[#7d8490]" dir="rtl">
+                            <p className="mt-0.5 truncate text-right text-[9.5px] font-medium leading-4 text-[#7d8490]" dir="ltr">
                                 {item.meta}
                             </p>
                         )}
@@ -752,7 +749,7 @@ function ResumePreviewCard({
 function formatResumeDateRange(start?: string, end?: string) {
     const cleanStart = start?.trim();
     const cleanEnd = end?.trim();
-    if (cleanStart && cleanEnd) return `${cleanStart} - ${cleanEnd}`;
+    if (cleanStart && cleanEnd) return `‎${cleanStart} - ${cleanEnd}‎`;
     return cleanStart || cleanEnd || "";
 }
 
@@ -814,7 +811,6 @@ function SavedCoursesTab() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [removingId, setRemovingId] = useState<number | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -848,28 +844,12 @@ function SavedCoursesTab() {
         };
     }, []);
 
-    const handleRemoveCourse = async (courseId: number) => {
-        if (removingId) return;
-        if (!window.confirm("این دوره از مجموعه‌های منتخب حذف شود؟")) return;
-
-        setRemovingId(courseId);
-        try {
-            await unsaveCourse(courseId);
-            setCourses((currentCourses) => currentCourses.filter((course) => course.id !== courseId));
-        } catch (removeError) {
-            console.error("Failed to remove saved course:", removeError);
-            alert("حذف این دوره از منتخب‌ها انجام نشد. دوباره تلاش کن.");
-        } finally {
-            setRemovingId(null);
-        }
-    };
-
     if (loading) {
         return (
             <div className="flex min-h-[260px] items-center justify-center p-8 text-sm text-slate-500">
                 <div className="flex items-center gap-3">
                     <Loader2 className="h-4 w-4 animate-spin text-[#155aa6]" />
-                    <span>در حال بارگذاری منتخب‌ها...</span>
+                    <span>در حال بارگذاری منتخب‌ها…</span>
                 </div>
             </div>
         );
@@ -958,49 +938,6 @@ function SavedCoursesTab() {
                                     <p className="line-clamp-1 text-[10px] font-bold leading-4 text-[#687080]">{countText}</p>
                                 </div>
                             </Link>
-
-                            <button
-                                type="button"
-                                onClick={() => handleRemoveCourse(course.id)}
-                                disabled={removingId === course.id}
-                                className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                aria-label="Ø­Ø°Ù Ø§Ø² Ù…Ù†ØªØ®Ø¨â€ŒÙ‡Ø§"
-                            >
-                                {removingId === course.id ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                )}
-                            </button>
-
-                            <div className="hidden">
-                                <Link href={href} className="block">
-                                    <h4 className={cn("line-clamp-1 text-sm font-black text-slate-950", getTextAlign(course.title))} {...getDirectionalTextProps(course.title)}>{course.title}</h4>
-                                    <p className={cn("mt-1 line-clamp-2 text-xs leading-5 text-slate-500", getTextAlign(course.description))} {...getDirectionalTextProps(course.description)}>{course.description}</p>
-                                </Link>
-
-                                <div className="mt-3 flex items-center justify-between gap-2">
-                                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500 shadow-sm">
-                                        {countText}
-                                    </span>
-
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveCourse(course.id)}
-                                            disabled={removingId === course.id}
-                                            className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition hover:border-red-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                            aria-label="حذف از منتخب‌ها"
-                                        >
-                                            {removingId === course.id ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Trash2 className="h-4 w-4" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
                         </article>
                     );
                 })}

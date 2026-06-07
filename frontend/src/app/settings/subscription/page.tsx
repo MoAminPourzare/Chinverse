@@ -78,7 +78,7 @@ export default function SubscriptionSettingsPage() {
             <div className="motion-list flex min-h-full items-center justify-center bg-[#f7f8fb]" dir="rtl">
                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
-                    <span>در حال آماده سازی اشتراک...</span>
+                    <span>در حال آماده سازی اشتراک…</span>
                 </div>
             </div>
         );
@@ -193,7 +193,7 @@ export default function SubscriptionSettingsPage() {
                         {overview.current_subscription?.plan_id === selectedPlan?.id
                             ? "این پلن فعال است"
                             : isCheckingOut
-                              ? "در حال ساخت سفارش..."
+                              ? "در حال ساخت سفارش…"
                               : "ادامه و پرداخت"}
                     </PrimaryButton>
                 </div>

@@ -422,7 +422,7 @@ export default function AdminPanelPage() {
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fb]" dir="rtl">
                 <div className="flex items-center gap-3 rounded-[24px] bg-white px-5 py-4 text-sm font-bold text-slate-500 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
-                    پنل ادمین در حال آماده‌سازی است...
+                    پنل ادمین در حال آماده‌سازی است…
                 </div>
             </div>
         );
@@ -834,7 +834,7 @@ function ImportTab({
                             <Upload className="h-8 w-8 text-[#155aa6]" />
                         )}
                         <span className="mt-3 text-sm font-black text-slate-700">
-                            {saving === "dictionary-import" ? "در حال ورود فایل..." : "انتخاب فایل CSV یا JSON"}
+                    {saving === "dictionary-import" ? "در حال ورود فایل…" : "انتخاب فایل CSV یا JSON"}
                         </span>
                         <span className="mt-2 max-w-sm text-xs font-bold leading-6 text-slate-400">
                             فایل باید UTF-8 باشد. ستون اصلی فقط chinese است؛ بقیه ستون‌ها اختیاری‌اند.

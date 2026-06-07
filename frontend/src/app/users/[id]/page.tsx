@@ -532,7 +532,7 @@ export default function PublicProfilePage() {
                                 } ${followLoading ? "opacity-50" : ""}`}
                         >
                             <Users className="w-4 h-4" />
-                            {followLoading ? "..." : isFollowing ? "لغو" : "شبکه"}
+                            {followLoading ? "…" : isFollowing ? "لغو" : "شبکه"}
                         </button>
                     </div>
                     </div>

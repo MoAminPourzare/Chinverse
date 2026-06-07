@@ -31,10 +31,16 @@ import {
 } from "@/services/community.service";
 
 type MainTab = "forum" | "messages";
+type ForumSubTab = "questions" | "articles";
 
 const tabs: Array<{ id: MainTab; label: string }> = [
     { id: "forum", label: "تالار گفتگو" },
     { id: "messages", label: "پیام‌ها" },
+];
+
+const forumTabs: Array<{ id: ForumSubTab; label: string }> = [
+    { id: "questions", label: "سوالات شما" },
+    { id: "articles", label: "مقالات" },
 ];
 
 export default function CommunityPage() {
@@ -91,82 +97,62 @@ export default function CommunityPage() {
         );
     }, [conversations, normalizedQuery]);
 
-    const visibleQuestions = useMemo(() => {
-        if (!normalizedQuery) return questions;
-        return questions.filter((question) =>
-            [question.title, question.content, question.author?.display_name]
-                .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(normalizedQuery)),
-        );
-    }, [normalizedQuery, questions]);
-
-    const visibleArticles = useMemo(() => {
-        if (!normalizedQuery) return articles;
-        return articles.filter((article) =>
-            [article.title, article.summary, article.content, article.author?.display_name]
-                .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(normalizedQuery)),
-        );
-    }, [articles, normalizedQuery]);
-
     return (
         <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
             <header className="relative flex h-12 items-center justify-center">
                 <BackButton href="/profile" className="absolute right-0" />
             </header>
 
-            <nav className="mt-6 grid grid-cols-2 border-b-2 border-[#155aa6]">
+            <nav className="mt-6 grid grid-cols-2 gap-1.5 rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
                         className={cn(
-                            "relative py-3 text-sm font-black transition",
-                            activeTab === tab.id ? "text-[#155aa6]" : "text-[#2f3238]",
+                            "h-[48px] rounded-[18px] text-center text-[14px] font-black leading-5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/12",
+                            activeTab === tab.id
+                                ? "bg-white text-[#155aa6] shadow-[0_10px_22px_rgba(21,90,166,0.13)]"
+                                : "text-[#2f3238] hover:bg-white/55 hover:text-[#155aa6]",
                         )}
                     >
                         {tab.label}
-                        <span
-                            className={cn(
-                                "absolute inset-x-0 -bottom-0.5 h-[3px] rounded-full transition",
-                                activeTab === tab.id ? "bg-[#155aa6]" : "bg-transparent",
-                            )}
-                        />
                     </button>
                 ))}
             </nav>
 
-            <div className="mt-5 flex items-center gap-3 rounded-full bg-[#e6e9ef] px-4 py-3">
-                {searchQuery ? (
-                    <button
-                        type="button"
-                        onClick={() => setSearchQuery("")}
-                        className="text-[#2f3238]"
-                        aria-label="پاک کردن جستجو"
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
-                ) : (
-                    <Search className="h-5 w-5 text-[#2f3238]" />
-                )}
-                <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    dir="auto"
-                    placeholder={activeTab === "messages" ? "جستجو بین پیام‌ها..." : "جستجو بین سوالات و مقالات..."}
-                    className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-            </div>
+            {activeTab === "messages" && (
+                <div className="mt-5 flex items-center gap-3 rounded-full bg-[#e6e9ef] px-4 py-3">
+                    {searchQuery ? (
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery("")}
+                            className="text-[#2f3238]"
+                            aria-label="پاک کردن جستجو"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    ) : (
+                        <Search className="h-5 w-5 text-[#2f3238]" />
+                    )}
+                    <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        dir="rtl"
+                        placeholder="جستجو بین پیام‌ها"
+                        className="min-w-0 flex-1 bg-transparent text-right text-sm text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
+                    />
+                </div>
+            )}
 
             <main className="mt-7">
                 {activeTab === "messages" ? (
                     <MessagesTab conversations={visibleConversations} isLoading={isLoading} />
                 ) : (
                     <ForumTab
-                        questions={visibleQuestions}
-                        articles={visibleArticles}
+                        questions={questions}
+                        articles={articles}
                         isLoading={isLoading}
                         setQuestions={setQuestions}
                         setArticles={setArticles}
@@ -174,13 +160,15 @@ export default function CommunityPage() {
                 )}
             </main>
 
-            <Link
-                href="/support"
-                className="fixed bottom-24 left-[calc(50%-185px)] z-20 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
-                aria-label="پشتیبانی"
-            >
-                <Headphones className="h-6 w-6" />
-            </Link>
+            <div className="mt-10 flex justify-start" dir="ltr">
+                <Link
+                    href="/support"
+                    className="flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
+                    aria-label="پشتیبانی"
+                >
+                    <Headphones className="h-6 w-6" />
+                </Link>
+            </div>
         </div>
     );
 }
@@ -198,10 +186,33 @@ function ForumTab({
     setQuestions: React.Dispatch<React.SetStateAction<ForumQuestion[]>>;
     setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
 }) {
+    const [activeForumTab, setActiveForumTab] = useState<ForumSubTab>("questions");
+
     return (
-        <div className="space-y-8">
-            <QuestionsSection questions={questions} isLoading={isLoading} setQuestions={setQuestions} />
-            <ArticlesSection articles={articles} isLoading={isLoading} setArticles={setArticles} />
+        <div className="space-y-6">
+            <nav className="grid grid-cols-2 gap-1.5 rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
+                {forumTabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveForumTab(tab.id)}
+                        className={cn(
+                            "h-[46px] rounded-[18px] text-center text-[14px] font-black leading-5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/12",
+                            activeForumTab === tab.id
+                                ? "bg-white text-[#155aa6] shadow-[0_10px_22px_rgba(21,90,166,0.13)]"
+                                : "text-[#2f3238] hover:bg-white/55 hover:text-[#155aa6]",
+                        )}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </nav>
+
+            {activeForumTab === "questions" ? (
+                <QuestionsSection questions={questions} isLoading={isLoading} setQuestions={setQuestions} />
+            ) : (
+                <ArticlesSection articles={articles} isLoading={isLoading} setArticles={setArticles} />
+            )}
         </div>
     );
 }
@@ -232,7 +243,7 @@ function QuestionsSection({
 
         setIsSubmitting(true);
         try {
-            const title = content.length > 55 ? `${content.slice(0, 55)}...` : content;
+            const title = content.length > 55 ? content.slice(0, 55).trim() : content;
             const created = await communityService.createForumQuestion({ title, content });
             setQuestions((current) => [created, ...current]);
             setDraft("");
@@ -310,9 +321,9 @@ function QuestionsSection({
                         if (draftError) setDraftError("");
                     }}
                     rows={2}
-                    dir="auto"
-                    placeholder="سوالت رو اینجا بنویس..."
-                    className="min-h-[56px] flex-1 resize-none rounded-[10px] border border-[#ef7f66] bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                    dir={draft.trim() ? "auto" : "rtl"}
+                    placeholder="سوالت رو اینجا بنویس"
+                    className="min-h-[56px] flex-1 resize-none rounded-[10px] border border-[#ef7f66] bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                 />
                 <button
                     type="button"
@@ -364,43 +375,11 @@ function ArticlesSection({
     isLoading: boolean;
     setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
 }) {
-    const [showComposer, setShowComposer] = useState(false);
-    const [draft, setDraft] = useState({ title: "", summary: "", content: "" });
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [openArticleId, setOpenArticleId] = useState<number | null>(null);
     const [details, setDetails] = useState<Record<number, ArticleDetail>>({});
     const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
-    const [articleErrors, setArticleErrors] = useState<Record<string, string>>({});
     const [commentErrors, setCommentErrors] = useState<Record<number, string>>({});
     const [submittingCommentId, setSubmittingCommentId] = useState<number | null>(null);
-
-    const submitArticle = async () => {
-        const nextErrors = {
-            title: validationMessage(validateTextLength(draft.title, "عنوان مقاله", { required: true, min: 3, max: 180 })),
-            summary: validationMessage(validateTextLength(draft.summary, "خلاصه مقاله", { max: 500 })),
-            content: validationMessage(validateTextLength(draft.content, "متن مقاله", { required: true, min: 30, max: 50000 })),
-        };
-        setArticleErrors(nextErrors);
-        if (Object.values(nextErrors).some(Boolean) || isSubmitting) return;
-
-        setIsSubmitting(true);
-        try {
-            const created = await communityService.createArticle({
-                title: draft.title.trim(),
-                summary: draft.summary.trim() || null,
-                content: draft.content.trim(),
-            });
-            setArticles((current) => [created, ...current]);
-            setDraft({ title: "", summary: "", content: "" });
-            setArticleErrors({});
-            setShowComposer(false);
-        } catch (error) {
-            console.error("Failed to create article:", error);
-            alert("ثبت مقاله انجام نشد. لطفا دوباره تلاش کن.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
     const toggleArticle = async (articleId: number) => {
         const shouldOpen = openArticleId !== articleId;
@@ -455,64 +434,8 @@ function ArticlesSection({
         <section>
             <SectionHeader
                 title="مقالات"
-                description="در این بخش، سوالات پرتکرار یا موضوعات جالب توسط تیم یا کاربران به مقاله تبدیل میشه. می‌تونی مقاله‌ها رو بخونی و زیرش نظر بدی یا سوال جدید مطرح کنی."
-                action={
-                    <button
-                        type="button"
-                        onClick={() => setShowComposer((value) => !value)}
-                        className="text-xs font-black text-[#155aa6]"
-                    >
-                        {showComposer ? "بستن" : "نوشتن مقاله"}
-                    </button>
-                }
+                description="در این بخش مقاله‌های آموزشی و نکته‌های تکمیلی چین‌ورس را می‌خوانی."
             />
-
-            {showComposer && (
-                <div className="mt-4 space-y-3 rounded-[22px] border border-[#d6e1ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-                    <input
-                        value={draft.title}
-                        dir="auto"
-                        onChange={(event) => {
-                            setDraft((current) => ({ ...current, title: event.target.value }));
-                            setArticleErrors((current) => ({ ...current, title: "" }));
-                        }}
-                        placeholder="عنوان مقاله"
-                        className="w-full rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm outline-none focus:border-[#155aa6]"
-                    />
-                    {articleErrors.title && <p className="text-xs font-bold text-rose-600">{articleErrors.title}</p>}
-                    <input
-                        value={draft.summary}
-                        dir="auto"
-                        onChange={(event) => {
-                            setDraft((current) => ({ ...current, summary: event.target.value }));
-                            setArticleErrors((current) => ({ ...current, summary: "" }));
-                        }}
-                        placeholder="خلاصه کوتاه"
-                        className="w-full rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm outline-none focus:border-[#155aa6]"
-                    />
-                    {articleErrors.summary && <p className="text-xs font-bold text-rose-600">{articleErrors.summary}</p>}
-                    <textarea
-                        value={draft.content}
-                        onChange={(event) => {
-                            setDraft((current) => ({ ...current, content: event.target.value }));
-                            setArticleErrors((current) => ({ ...current, content: "" }));
-                        }}
-                        rows={4}
-                        dir="auto"
-                        placeholder="متن مقاله را بنویس..."
-                        className="w-full resize-none rounded-2xl border border-slate-200 bg-[#f8fafc] px-4 py-3 text-sm leading-7 outline-none focus:border-[#155aa6]"
-                    />
-                    {articleErrors.content && <p className="text-xs font-bold text-rose-600">{articleErrors.content}</p>}
-                    <button
-                        type="button"
-                        onClick={submitArticle}
-                        disabled={!draft.title.trim() || !draft.content.trim() || isSubmitting}
-                        className="w-full rounded-full bg-[#155aa6] py-3 text-sm font-black text-white shadow-[0_10px_20px_rgba(21,90,166,0.24)] disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                        {isSubmitting ? "در حال ثبت..." : "ثبت مقاله"}
-                    </button>
-                </div>
-            )}
 
             <div className="motion-list mt-4 space-y-3">
                 {isLoading ? (
@@ -552,9 +475,9 @@ function SectionHeader({
     action?: React.ReactNode;
 }) {
     return (
-        <div>
-            <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[18px] font-black text-[#2f3238]">{title}</h2>
+        <div className="text-right">
+            <div className="flex items-center justify-between gap-3 text-right">
+                <h2 className="text-right text-[18px] font-black text-[#2f3238]">{title}</h2>
                 {action}
             </div>
         </div>
@@ -583,11 +506,11 @@ function QuestionCard({
     onSubmitAnswer: () => void;
 }) {
     return (
-        <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+        <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white text-right shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
             <button type="button" onClick={onToggle} className="w-full p-4 text-right">
                 <div className="flex items-start gap-3">
                     <Avatar src={question.author?.avatar_url} name={question.author?.display_name} />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 text-right">
                         <div className="flex items-center justify-between gap-3">
                             <p className={cn("text-xs font-black text-[#155aa6]", getTextAlign(question.author?.display_name))} {...getDirectionalTextProps(question.author?.display_name)}>{question.author?.display_name || "کاربر چین‌ورس"}</p>
                             <span className="text-[11px] text-slate-400">{formatDate(question.created_at)}</span>
@@ -605,24 +528,19 @@ function QuestionCard({
 
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
-                    <p className="whitespace-pre-wrap rounded-2xl bg-white p-4 text-sm leading-8 text-slate-700">
-                        <span className="block" {...getDirectionalTextProps(detail?.content || question.content)}>{detail?.content || question.content}</span>
-                    </p>
                     <div className="mt-4 space-y-3">
                         {detail ? (
                             detail.answers.length > 0 ? (
                                 detail.answers.map((answer) => <ThreadBubble key={answer.id} item={answer} />)
-                            ) : (
-                                <SmallEmpty text="هنوز پاسخی ثبت نشده. اولین پاسخ را بنویس." />
-                            )
+                            ) : null
                         ) : (
-                            <LoadingInline text="در حال بارگذاری گفتگو..." />
+                            <LoadingInline text="در حال بارگذاری گفتگو" />
                         )}
                     </div>
                     <ReplyComposer
                         value={answerText}
                         error={answerError}
-                        placeholder="پاسخت را بنویس..."
+                        placeholder="پاسخت را بنویس"
                         disabled={isSubmittingAnswer}
                         onChange={onAnswerChange}
                         onSubmit={onSubmitAnswer}
@@ -667,8 +585,8 @@ function ArticleCard({
                             </div>
                         )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <p className={cn("text-[11px] font-bold text-slate-400", getTextAlign(article.author?.display_name))} {...getDirectionalTextProps(article.author?.display_name)}>{article.author?.display_name || "نویسنده چین‌ورس"} · {formatDate(article.created_at)}</p>
+                    <div className="min-w-0 flex-1 text-right">
+                        <p className={cn("text-right text-[11px] font-bold text-slate-400", getTextAlign(article.author?.display_name))} {...getDirectionalTextProps(article.author?.display_name)}>{article.author?.display_name || "نویسنده چین‌ورس"} · {formatDate(article.created_at)}</p>
                         <h3 className={cn("mt-1 line-clamp-2 text-sm font-black leading-7 text-slate-900", getTextAlign(article.title))} {...getDirectionalTextProps(article.title)}>{article.title}</h3>
                         {article.summary && <p className={cn("mt-1 line-clamp-2 text-xs leading-6 text-slate-500", getTextAlign(article.summary))} {...getDirectionalTextProps(article.summary)}>{article.summary}</p>}
                         <div className="mt-2 flex items-center justify-between">
@@ -694,13 +612,13 @@ function ArticleCard({
                                 <SmallEmpty text="هنوز کامنتی ثبت نشده. اولین نظر را بنویس." />
                             )
                         ) : (
-                            <LoadingInline text="در حال بارگذاری مقاله..." />
+                            <LoadingInline text="در حال بارگذاری مقاله" />
                         )}
                     </div>
                     <ReplyComposer
                         value={commentText}
                         error={commentError}
-                        placeholder="کامنتت را بنویس..."
+                        placeholder="کامنتت را بنویس"
                         disabled={isSubmittingComment}
                         onChange={onCommentChange}
                         onSubmit={onSubmitComment}
@@ -713,10 +631,10 @@ function ArticleCard({
 
 function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
     return (
-        <div className="rounded-[18px] bg-white p-3 shadow-sm">
+        <div className="rounded-[18px] bg-white p-3 text-right shadow-sm">
             <div className="flex items-start gap-3">
                 <Avatar src={item.author?.avatar_url} name={item.author?.display_name} size="sm" />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 text-right">
                     <div className="flex items-center justify-between gap-2">
                         <p className={cn("truncate text-xs font-black text-slate-900", getTextAlign(item.author?.display_name))} {...getDirectionalTextProps(item.author?.display_name)}>{item.author?.display_name || "کاربر چین‌ورس"}</p>
                         <span className="shrink-0 text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
@@ -751,8 +669,8 @@ function ReplyComposer({
                     onChange={(event) => onChange(event.target.value)}
                     placeholder={placeholder}
                     rows={2}
-                    dir="auto"
-                    className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
+                    dir={value.trim() ? "auto" : "rtl"}
+                    className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
                 />
                 <button
                     type="button"

@@ -62,7 +62,7 @@ export default function PostDetailPage() {
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fb]">
                 <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
-                    در حال بارگذاری پست...
+                    در حال بارگذاری پست…
                 </div>
             </div>
         );

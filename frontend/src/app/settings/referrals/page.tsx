@@ -72,7 +72,7 @@ export default function ReferralSettingsPage() {
             <div className="flex min-h-full items-center justify-center">
                 <div className="flex items-center gap-3 text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
-                    <span>در حال آماده‌سازی دعوت دوستان...</span>
+                    <span>در حال آماده‌سازی دعوت دوستان…</span>
                 </div>
             </div>
         );
