@@ -6,16 +6,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
     BarChart3,
     BookOpenCheck,
-    CalendarDays,
     ChevronLeft,
     ChevronRight,
-    Clock3,
     Loader2,
     PlayCircle,
     RefreshCw,
     Settings,
     Sparkles,
-    Trophy,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -122,7 +119,7 @@ export default function DailyPracticeContent() {
             <div className="motion-list flex min-h-full items-center justify-center">
                 <div className="flex items-center gap-3 text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin text-[#155aa6]" />
-                    <span>در حال آماده‌سازی آمار روزانه...</span>
+                    <span>در حال آماده‌سازی آمار روزانه…</span>
                 </div>
             </div>
         );
@@ -143,75 +140,44 @@ export default function DailyPracticeContent() {
 
     return (
         <div className="min-h-full pb-28" dir="rtl">
-            <main className="motion-list mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-4">
-                <Surface className="p-5">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
+            <main className="motion-list mx-auto flex w-full max-w-4xl flex-col gap-4 px-2 py-3">
+                <Surface className="p-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
                             <p className="text-xs font-black text-[#155aa6]">هدف امروز</p>
-                            <h2 className="mt-1 text-xl font-black text-slate-950">فعالیت روزانه را کامل کن</h2>
-                            <p className="mt-1 text-sm leading-7 text-slate-500">
-                                هدف فعلی: {toPersianDigits(preferences.dailyGoalMinutes)} دقیقه ویدیو یا {toPersianDigits(preferences.dailyGoalWords)} لغت موفق در لایتنر.
+                            <h2 className="mt-0.5 text-[17px] font-black leading-7 text-slate-950">فعالیت روزانه</h2>
+                            <p className="mt-0.5 text-xs font-bold leading-6 text-slate-500">
+                                {toPersianDigits(preferences.dailyGoalMinutes)} دقیقه ویدیو یا {toPersianDigits(preferences.dailyGoalWords)} لغت
                             </p>
                         </div>
                         <ProgressRing value={activeGoal} />
                     </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="mt-3 grid grid-cols-2 gap-2">
                         <ActionCard
                             href="/leitner/review"
                             icon={<BookOpenCheck size={19} />}
                             title="مرور لغات"
-                            helper={`${toPersianDigits(summary.learning.due_flashcards)} کارت آماده مرور`}
                             accent="from-emerald-500 to-teal-500"
                         />
                         <ActionCard
                             href="/explore"
                             icon={<PlayCircle size={19} />}
                             title="دیدن ویدیو"
-                            helper="یک درس کوتاه شروع کن"
                             accent="from-[#155aa6] to-[#0f4e92]"
                         />
                     </div>
                     <Link
                         href="/settings/daily"
-                        className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50"
+                        className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50"
                     >
-                        <Settings size={17} />
+                        <Settings size={15} />
                         تغییر هدف روزانه
                     </Link>
                 </Surface>
 
-                <section className="grid gap-3 sm:grid-cols-2">
-                    <MetricCard
-                        icon={<Trophy size={20} />}
-                        label="بلندترین زنجیره"
-                        value={summary.streak.longest_days}
-                        suffix="روز"
-                        helper="بهترین رکورد تو تا امروز"
-                    />
-                    <MetricCard
-                        icon={<Clock3 size={20} />}
-                        label="کل زمان ویدیو"
-                        value={summary.totals.minutes}
-                        suffix="دقیقه"
-                        helper="جمع زمان‌های ثبت‌شده"
-                    />
-                    <MetricCard
-                        icon={<Sparkles size={20} />}
-                        label="کل لغات آموخته‌شده"
-                        value={summary.totals.learned_words_count}
-                        suffix="عدد"
-                        helper={`${toPersianDigits(summary.learning.mastered_words)} لغت در جعبه پایانی`}
-                    />
-                    <MetricCard
-                        icon={<CalendarDays size={20} />}
-                        label="روزهای فعال"
-                        value={summary.totals.active_days}
-                        suffix="روز"
-                        helper="روزهایی که فعالیت واقعی داشتی"
-                    />
-                </section>
+                <LearningStatsPanel summary={summary} />
 
-                <Surface className="p-5">
+                <Surface className="p-4">
                     <div className="flex items-center justify-between gap-3">
                         <button
                             type="button"
@@ -224,10 +190,10 @@ export default function DailyPracticeContent() {
                         </button>
                         <div className="text-center">
                             <p className="text-xs font-black text-[#155aa6]">تقویم شمسی فعالیت</p>
-                            <h2 className="mt-1 text-xl font-black text-slate-950">
+                            <h2 className="mt-0.5 text-lg font-black text-slate-950">
                                 {formatJalaliMonthTitle(visibleMonth)}
                             </h2>
-                            <p className="mt-1 text-[11px] font-bold text-slate-400">
+                            <p className="mt-0.5 text-[10px] font-bold text-slate-400">
                                 {toPersianDigits(monthStats.activeDays)} روز فعال، {toPersianDigits(monthStats.minutes)} دقیقه، {toPersianDigits(monthStats.words)} لغت
                             </p>
                         </div>
@@ -248,13 +214,10 @@ export default function DailyPracticeContent() {
                     />
                 </Surface>
 
-                <Surface className="p-5">
+                <Surface className="p-4">
                     <div className="flex items-center justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-black text-[#155aa6]">نمودار هفتگی</p>
-                            <h2 className="mt-1 text-xl font-black text-slate-950">ویدیو و لغات</h2>
-                        </div>
-                        <BarChart3 className="text-slate-300" size={24} />
+                        <p className="text-xs font-black text-[#155aa6]">نمودار هفتگی</p>
+                        <BarChart3 className="text-slate-300" size={22} />
                     </div>
                     <WeeklyCharts days={summary.weekly_chart} />
                 </Surface>
@@ -266,14 +229,14 @@ export default function DailyPracticeContent() {
 function ProgressRing({ value }: { value: number }) {
     const clamped = Math.max(0, Math.min(value, 100));
     return (
-        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-slate-100">
+        <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-100">
             <div
                 className="absolute inset-0 rounded-full"
                 style={{
                     background: `conic-gradient(#155aa6 ${clamped * 3.6}deg, #e2e8f0 0deg)`,
                 }}
             />
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-sm font-black text-slate-950">
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-xs font-black text-slate-950">
                 {toPersianDigits(clamped)}٪
             </div>
         </div>
@@ -284,57 +247,61 @@ function ActionCard({
     href,
     icon,
     title,
-    helper,
     accent,
 }: {
     href: string;
     icon: ReactNode;
     title: string;
-    helper: string;
     accent: string;
 }) {
     return (
         <Link href={href} className="group">
-            <div className="h-full rounded-[24px] border border-slate-200 bg-slate-50 p-4 transition group-hover:-translate-y-0.5 group-hover:bg-white group-hover:shadow-lg">
-                <div className={cn("inline-flex rounded-2xl bg-gradient-to-br p-3 text-white shadow-lg", accent)}>
+            <div className="flex h-16 items-center gap-3 rounded-[18px] border border-slate-200 bg-slate-50 px-3 transition group-hover:-translate-y-0.5 group-hover:bg-white group-hover:shadow-lg">
+                <div className={cn("inline-flex rounded-2xl bg-gradient-to-br p-2.5 text-white shadow-lg", accent)}>
                     {icon}
                 </div>
-                <h3 className="mt-3 text-sm font-black text-slate-950">{title}</h3>
-                <p className="mt-1 text-xs leading-6 text-slate-500">{helper}</p>
+                <h3 className="text-sm font-black text-slate-950">{title}</h3>
             </div>
         </Link>
     );
 }
 
-function MetricCard({
-    icon,
-    label,
-    value,
-    suffix,
-    helper,
-}: {
-    icon: ReactNode;
-    label: string;
-    value: number;
-    suffix: string;
-    helper: string;
-}) {
+function LearningStatsPanel({ summary }: { summary: DailyActivitySummary }) {
+    const stats = [
+        {
+            label: "بلندترین زنجیره تا امروز:",
+            value: summary.streak.longest_days,
+            suffix: "روز",
+        },
+        {
+            label: "مجموع کل دقایق دیده شده:",
+            value: summary.totals.minutes,
+            suffix: "دقیقه",
+        },
+        {
+            label: "تعداد کل لغات آموخته شده:",
+            value: summary.totals.learned_words_count,
+            suffix: "عدد",
+        },
+    ];
+
     return (
-        <Surface className="p-4">
-            <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-[#eef6ff] text-[#155aa6]">
-                    {icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-500">{label}</p>
-                    <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-2xl font-black text-slate-950">{toPersianDigits(value)}</span>
-                        <span className="text-xs font-bold text-slate-400">{suffix}</span>
-                    </div>
-                    <p className="mt-1 truncate text-[11px] text-slate-400">{helper}</p>
-                </div>
+        <section className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-[10px] bg-[#f0a58d] px-3 py-3 text-[#25272d] shadow-[0_8px_18px_rgba(15,23,42,0.10)]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[10px] bg-white/20 text-[#155aa6]">
+                <Sparkles size={38} strokeWidth={1.8} />
             </div>
-        </Surface>
+            <div className="space-y-1.5">
+                {stats.map((stat) => (
+                    <div key={stat.label} className="grid grid-cols-[1fr_46px_34px] items-center gap-2 text-[11px] font-black leading-5">
+                        <span className="text-right">{stat.label}</span>
+                        <span className="flex h-6 items-center justify-center rounded-[8px] border border-[#155aa6]/70 bg-[#f8d4c7] text-[12px] text-[#25272d]">
+                            {toPersianDigits(stat.value)}
+                        </span>
+                        <span className="text-right text-[10px] font-bold">{stat.suffix}</span>
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }
 
@@ -348,13 +315,13 @@ function ActivityCalendar({
     todayIso: string;
 }) {
     return (
-        <div className="mt-5">
+        <div className="mt-3">
             <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[11px] font-black text-slate-400">
                 {persianWeekdays.map((day) => (
                     <span key={day}>{day}</span>
                 ))}
             </div>
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-1">
                 {days.map((cell, index) => {
                     if (!cell) {
                         return <div key={`empty-${index}`} className="aspect-square" />;
@@ -367,7 +334,7 @@ function ActivityCalendar({
                             key={cell.iso}
                             title={`${formatJalaliFull(cell.jalali)} - ${toPersianDigits(activity?.minutes || 0)} دقیقه - ${toPersianDigits(activity?.learned_words_count || 0)} لغت`}
                             className={cn(
-                                "relative flex aspect-square min-h-10 items-center justify-center rounded-2xl border text-xs font-black transition",
+                                "relative flex aspect-square min-h-7 items-center justify-center rounded-[10px] border text-[10px] font-black transition",
                                 intensityClass(activity?.intensity || 0),
                                 activity?.is_active ? "border-white shadow-sm" : "border-slate-100",
                                 isToday && "ring-2 ring-[#155aa6] ring-offset-2",
@@ -381,7 +348,7 @@ function ActivityCalendar({
                     );
                 })}
             </div>
-            <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-slate-400">
+            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-slate-400">
                 <span>کم</span>
                 <div className="flex gap-1">
                     {[0, 1, 2, 3, 4].map((value) => (
@@ -396,24 +363,23 @@ function ActivityCalendar({
 
 function WeeklyCharts({ days }: { days: DailyActivityDay[] }) {
     return (
-        <div className="mt-5 grid gap-5">
+        <div className="mt-4 grid gap-4">
             <div>
-                <p className="mb-3 text-xs font-black text-slate-500">دقایق ویدیو</p>
-                <div className="flex h-36 items-end gap-2 rounded-[24px] bg-slate-50 p-3">
+                <h3 className="mb-2 text-right text-sm font-black text-slate-800">دقایق ویدیو</h3>
+                <div className="flex h-28 items-end gap-2 rounded-[20px] bg-slate-50 px-3 pb-3 pt-4">
                     {days.map((day) => (
-                        <ChartBar key={`${day.date}-minutes`} value={day.minutes_ratio || 0} label={shortDay(day.date)} text={String(day.minutes)} />
+                        <ChartBar key={`${day.date}-minutes`} value={day.minutes_ratio || 0} label={shortDay(day.date)} />
                     ))}
                 </div>
             </div>
             <div>
-                <p className="mb-3 text-xs font-black text-slate-500">لغات آموخته‌شده</p>
-                <div className="flex h-36 items-end gap-2 rounded-[24px] bg-slate-50 p-3">
+                <h3 className="mb-2 text-right text-sm font-black text-slate-800">لغات آموخته‌شده</h3>
+                <div className="flex h-28 items-end gap-2 rounded-[20px] bg-slate-50 px-3 pb-3 pt-4">
                     {days.map((day) => (
                         <ChartBar
                             key={`${day.date}-words`}
                             value={day.words_ratio || 0}
                             label={shortDay(day.date)}
-                            text={String(day.learned_words_count)}
                             warm
                         />
                     ))}
@@ -423,12 +389,11 @@ function WeeklyCharts({ days }: { days: DailyActivityDay[] }) {
     );
 }
 
-function ChartBar({ value, label, text, warm = false }: { value: number; label: string; text: string; warm?: boolean }) {
-    const height = Math.max(10, Math.round(Math.max(0, Math.min(value, 1)) * 88));
+function ChartBar({ value, label, warm = false }: { value: number; label: string; warm?: boolean }) {
+    const height = Math.max(10, Math.round(Math.max(0, Math.min(value, 1)) * 72));
     return (
         <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
-            <span className="text-[10px] font-black text-slate-400">{toPersianDigits(text)}</span>
-            <div className="flex h-24 w-full items-end justify-center">
+            <div className="flex h-20 w-full items-end justify-center">
                 <div
                     className={cn(
                         "w-full max-w-7 rounded-t-xl rounded-b-md",
