@@ -21,12 +21,15 @@ const withPWA = enablePWA
 
 const nextConfig = {
     reactStrictMode: true,
-    outputFileTracingRoot: __dirname,
     experimental: {
         cpus: 1,
         webpackBuildWorker: false,
     },
 };
+
+if (!process.env.VERCEL) {
+    nextConfig.outputFileTracingRoot = path.join(__dirname, '..');
+}
 
 module.exports = withPWA(nextConfig);
 
