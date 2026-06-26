@@ -46,12 +46,12 @@ export interface CategorySummary {
 }
 
 export const fetchCoursesBySubcategory = async (subcategorySlug: string): Promise<Course[]> => {
-    const response = await api.get(`/courses?subcategory_slug=${subcategorySlug}`);
+    const response = await api.get('/courses/', { params: { subcategory_slug: subcategorySlug } });
     return Array.isArray(response.data) ? response.data : [];
 };
 
 export const fetchAllCourses = async (): Promise<Course[]> => {
-    const response = await api.get('/courses', { params: { limit: 1000 } });
+    const response = await api.get('/courses/', { params: { limit: 1000 } });
     return Array.isArray(response.data) ? response.data : [];
 };
 
