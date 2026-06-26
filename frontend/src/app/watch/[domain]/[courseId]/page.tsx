@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Hls from "hls.js";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Maximize, Minimize, MoreVertical, Pause, Play, Rewind, FastForward } from "lucide-react";
@@ -18,6 +19,10 @@ import {
 import Surface from "@/components/ui/Surface";
 import { BackButton } from "@/components/ui/IconButton";
 import { dailyActivityService } from "@/services/dailyActivity.service";
+import {
+    FIRST_VIDEO_HLS_URL,
+    firstVideoTranscript as firstVideoTranscriptData,
+} from "@/data/firstVideoTranscript";
 
 const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), {
     ssr: false,
@@ -71,6 +76,25 @@ interface TranscriptEntry {
     start: number;
     end: number;
 }
+
+interface VocabularyMatchesResponse {
+    matches: string[][];
+}
+
+const FIRST_VIDEO_URL = FIRST_VIDEO_HLS_URL;
+
+const isPlaceholderVideoUrl = (url: string | null | undefined): boolean => (
+    !url
+    || url.includes("w3schools.com/html/mov_bbb.mp4")
+    || url === FIRST_VIDEO_URL
+    || url.includes("chinverse-test.arvanvod.ir/wYPdKwd32N/2AVeEG8bo0")
+);
+
+const resolveVideoUrl = (url: string | null | undefined): string => {
+    if (!url) return FIRST_VIDEO_URL;
+    if (url.startsWith("/api/")) return url;
+    return getMediaUrl(url);
+};
 
 const domainConfig: Record<string, { label: string; color: string; backPath: (courseId: string) => string }> = {
     hsk: { label: "HSK", color: "text-[#155aa6]", backPath: (courseId) => `/hsk/${courseId}` },
@@ -188,6 +212,9 @@ export default function SharedWatchPage() {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [selectedWord, setSelectedWord] = useState<VocabularyWord | null>(null);
     const [showVocabModal, setShowVocabModal] = useState(false);
+    const [loadingVocabularyWord, setLoadingVocabularyWord] = useState<string | null>(null);
+    const [vocabularyError, setVocabularyError] = useState<string | null>(null);
+    const [vocabularyMatches, setVocabularyMatches] = useState<string[][]>([]);
     const videoRef = useRef<HTMLVideoElement>(null);
     const videoContainerRef = useRef<HTMLDivElement>(null);
     const subtitleListRef = useRef<HTMLDivElement>(null);
@@ -198,6 +225,9 @@ export default function SharedWatchPage() {
     const currentTimeRef = useRef(0);
     const durationRef = useRef(0);
     const lessonIdRef = useRef<number | null>(null);
+    const vocabularyRequestIdRef = useRef(0);
+    const usesFirstVideo = isPlaceholderVideoUrl(currentLesson?.video_url);
+    const resolvedVideoUrl = resolveVideoUrl(usesFirstVideo ? FIRST_VIDEO_URL : currentLesson?.video_url);
 
     const flushWatchProgress = useCallback(async (force = false) => {
         const lessonId = lessonIdRef.current;
@@ -262,6 +292,47 @@ export default function SharedWatchPage() {
             videoRef.current.playbackRate = preferences.playbackSpeed;
         }
     }, [preferences.playbackSpeed, currentLesson?.id]);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video || !resolvedVideoUrl) return;
+
+        setIsPlaying(false);
+        setCurrentTime(0);
+        currentTimeRef.current = 0;
+        durationRef.current = 0;
+
+        const isHlsSource = resolvedVideoUrl.split("?")[0].toLowerCase().endsWith(".m3u8");
+        if (!isHlsSource) {
+            video.src = resolvedVideoUrl;
+            video.load();
+            return;
+        }
+
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = resolvedVideoUrl;
+            video.load();
+            return;
+        }
+
+        if (!Hls.isSupported()) {
+            console.error("HLS playback is not supported in this browser");
+            return;
+        }
+
+        const hls = new Hls({
+            enableWorker: true,
+            startLevel: -1,
+        });
+        hls.loadSource(resolvedVideoUrl);
+        hls.attachMedia(video);
+
+        return () => {
+            hls.destroy();
+            video.removeAttribute("src");
+            video.load();
+        };
+    }, [currentLesson?.id, resolvedVideoUrl]);
 
     useEffect(() => {
         lessonIdRef.current = currentLesson?.id || null;
@@ -366,16 +437,31 @@ export default function SharedWatchPage() {
     };
 
     const handleWordClick = async (word: string) => {
+        const requestId = vocabularyRequestIdRef.current + 1;
+        vocabularyRequestIdRef.current = requestId;
+        setLoadingVocabularyWord(word);
+        setVocabularyError(null);
         try {
             const response = await api.get(`/vocabulary/${encodeURIComponent(word)}`);
+            if (vocabularyRequestIdRef.current !== requestId) return;
             setSelectedWord(response.data);
             setShowVocabModal(true);
         } catch (error) {
             console.error("Failed to fetch vocabulary:", error);
+            if (vocabularyRequestIdRef.current !== requestId) return;
             setSelectedWord(null);
             setShowVocabModal(false);
+            setVocabularyError("اطلاعات این واژه دریافت نشد. دوباره روی آن بزن.");
+        } finally {
+            if (vocabularyRequestIdRef.current === requestId) {
+                setLoadingVocabularyWord(null);
+            }
         }
     };
+
+    const handleCloseVocabulary = useCallback(() => {
+        setShowVocabModal(false);
+    }, []);
 
     const renderChineseWithHighlights = (text: string, highlightedWords: string[]) => {
         const result: React.ReactNode[] = [];
@@ -402,11 +488,15 @@ export default function SharedWatchPage() {
                 result.push(
                     <button
                         key={key++}
+                        type="button"
                         onClick={(event) => {
                             event.stopPropagation();
                             void handleWordClick(clickWord);
                         }}
-                        className="font-cjk px-1.5 transition brightness-100 hover:brightness-95"
+                        onKeyDown={(event) => event.stopPropagation()}
+                        disabled={loadingVocabularyWord === foundWord}
+                        aria-busy={loadingVocabularyWord === foundWord}
+                        className="font-cjk px-1.5 transition brightness-100 hover:brightness-95 disabled:cursor-wait disabled:opacity-55"
                         style={getHighlightStyle(preferences.newWordHighlightColor)}
                         lang="zh-CN"
                     >
@@ -423,9 +513,52 @@ export default function SharedWatchPage() {
         return result;
     };
 
-    const syncedTranscript = useMemo(
+    const embeddedTranscript = useMemo(
         () => getTranscriptEntries(currentLesson?.metadata_json),
         [currentLesson?.metadata_json],
+    );
+
+    const firstVideoTranscript = useMemo<TranscriptEntry[]>(
+        () => (usesFirstVideo ? firstVideoTranscriptData : []),
+        [usesFirstVideo],
+    );
+
+    const baseTranscript = useMemo(
+        () => (usesFirstVideo ? firstVideoTranscript : embeddedTranscript),
+        [embeddedTranscript, firstVideoTranscript, usesFirstVideo],
+    );
+
+    useEffect(() => {
+        if (baseTranscript.length === 0) {
+            setVocabularyMatches([]);
+            return;
+        }
+
+        let cancelled = false;
+        api.post<VocabularyMatchesResponse>("/vocabulary/matches", {
+            texts: baseTranscript.map((entry) => entry.chinese),
+        })
+            .then((response) => {
+                if (!cancelled) {
+                    setVocabularyMatches(Array.isArray(response.data.matches) ? response.data.matches : []);
+                }
+            })
+            .catch((error) => {
+                console.error("Failed to match transcript vocabulary", error);
+                if (!cancelled) setVocabularyMatches([]);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [baseTranscript]);
+
+    const syncedTranscript = useMemo(
+        () => baseTranscript.map((entry, index) => ({
+            ...entry,
+            highlightedWords: vocabularyMatches[index] || entry.highlightedWords,
+        })),
+        [baseTranscript, vocabularyMatches],
     );
 
     const activeSubtitleIndex = useMemo(() => {
@@ -511,7 +644,7 @@ export default function SharedWatchPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
-                <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur">
+                <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                         <BackButton href={config.backPath(courseId)} className="justify-self-end" />
                         <div className="min-w-0 flex-1 text-center">
@@ -533,7 +666,6 @@ export default function SharedWatchPage() {
                         <video
                             ref={videoRef}
                             className="lesson-video-element h-full w-full object-contain"
-                            src={getMediaUrl(currentLesson.video_url) || "https://www.w3schools.com/html/mov_bbb.mp4"}
                             onTimeUpdate={handleTimeUpdate}
                             onLoadedMetadata={handleLoadedMetadata}
                             onPlay={() => setIsPlaying(true)}
@@ -686,10 +818,21 @@ export default function SharedWatchPage() {
 
             {selectedWord && (
                 <VocabularyModal
+                    key={selectedWord.id}
                     word={selectedWord}
                     isOpen={showVocabModal}
-                    onClose={() => setShowVocabModal(false)}
+                    onClose={handleCloseVocabulary}
                 />
+            )}
+            {vocabularyError && (
+                <button
+                    type="button"
+                    onClick={() => setVocabularyError(null)}
+                    className="fixed bottom-24 left-1/2 z-[950] w-[min(360px,calc(100%-32px))] -translate-x-1/2 rounded-2xl bg-red-50 px-4 py-3 text-center text-xs font-bold leading-5 text-red-600 shadow-lg"
+                    role="alert"
+                >
+                    {vocabularyError}
+                </button>
             )}
         </div>
     );
