@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, Volume2 } from "lucide-react";
 import api from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { getMediaUrl } from "@/lib/media";
 
 interface Word {
     id: number;
@@ -110,40 +111,36 @@ export default function LeitnerDashboard() {
     const [stats, setStats] = useState<LeitnerStats | null>(null);
     const [dueCards, setDueCards] = useState<Flashcard[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    const fetchLeitner = useCallback(async () => {
+        setLoading(true);
+        setLoadError(null);
+        try {
+            const [statsResponse, reviewResponse] = await Promise.all([
+                api.get<LeitnerStats>("/leitner/dashboard"),
+                api.get<LeitnerReviewResponse>("/leitner/review", { params: { limit: 1000 } }),
+            ]);
+
+            setStats(statsResponse.data);
+            setDueCards(Array.isArray(reviewResponse.data.cards) ? reviewResponse.data.cards : []);
+        } catch (error) {
+            console.error("Failed to fetch leitner dashboard:", error);
+            setLoadError("اطلاعات لایتنر دریافت نشد. اتصال را بررسی و دوباره تلاش کن.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        let cancelled = false;
-
-        const fetchLeitner = async () => {
-            try {
-                const [statsResponse, reviewResponse] = await Promise.all([
-                    api.get<LeitnerStats>("/leitner/dashboard"),
-                    api.get<LeitnerReviewResponse>("/leitner/review"),
-                ]);
-
-                if (!cancelled) {
-                    setStats(statsResponse.data);
-                    setDueCards(reviewResponse.data.cards || []);
-                }
-            } catch (error) {
-                console.error("Failed to fetch leitner dashboard:", error);
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        };
-
         void fetchLeitner();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    }, [fetchLeitner]);
 
     const playAudio = (url?: string) => {
         if (!url) return;
-        void new Audio(url).play();
+        void new Audio(getMediaUrl(url)).play().catch((error) => {
+            console.error("Failed to play vocabulary audio:", error);
+        });
     };
 
     if (loading) {
@@ -157,7 +154,22 @@ export default function LeitnerDashboard() {
         );
     }
 
-    if (!stats) return null;
+    if (!stats) {
+        return (
+            <div className="flex min-h-full flex-col items-center justify-center bg-[#f7f8fa] p-6 text-center" dir="rtl">
+                <p className="max-w-xs text-sm font-bold leading-7 text-red-600">
+                    {loadError || "اطلاعات لایتنر در دسترس نیست."}
+                </p>
+                <button
+                    type="button"
+                    onClick={() => void fetchLeitner()}
+                    className="mt-5 rounded-full bg-[#155aa6] px-7 py-3 text-sm font-black text-white"
+                >
+                    تلاش دوباره
+                </button>
+            </div>
+        );
+    }
 
     const hasCards = stats.total_cards > 0;
     const hasDueCards = dueCards.length > 0;
@@ -246,7 +258,8 @@ function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (u
                     <button
                         type="button"
                         onClick={() => onPlayAudio(card.word.audio_url)}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe]"
+                        disabled={!card.word.audio_url}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-35"
                         aria-label="پخش تلفظ"
                     >
                         <Volume2 size={19} />

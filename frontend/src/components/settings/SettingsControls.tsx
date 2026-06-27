@@ -45,7 +45,7 @@ export function SelectSettingRow({ label, value, options, onOpen, swatches = fal
         <button
             type="button"
             onClick={() => onOpen(value, options)}
-            className="flex min-h-[62px] w-full items-center justify-between gap-3 px-4 py-3 text-right transition hover:bg-[#f8fbff] active:bg-[#eef6ff]"
+            className="flex min-h-[62px] w-full items-center justify-between gap-3 px-4 py-3 text-right transition hover:bg-[#f8fbff] active:bg-[#eef6ff] dark:hover:bg-[#202936] dark:active:bg-[#253347]"
         >
             <span className="text-sm font-black text-slate-800">{label}</span>
             <span className="flex min-w-0 items-center gap-2 text-left">
@@ -82,7 +82,7 @@ export function SwitchSettingRow({ label, checked, onChange }: SwitchSettingRowP
                 aria-label={label}
             >
                 <span
-                    className={`block h-6 w-6 rounded-full bg-white shadow transition ${
+                    className={`theme-switch-thumb block h-6 w-6 rounded-full bg-white shadow transition ${
                         checked ? "-translate-x-6" : "translate-x-0"
                     }`}
                 />
@@ -100,11 +100,11 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
     return (
         <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-slate-950/45 px-3 py-6 backdrop-blur-sm sm:items-center" onClick={onClose}>
             <div
-                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]"
+                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_24px_70px_rgba(0,0,0,0.5)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
-                <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-[#f8fbff] px-5 py-4">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-[#f8fbff] px-5 py-4 dark:border-[#2b3542] dark:bg-[#1d2530]">
                     <div className="min-w-0">
                         <h2 className="text-base font-black text-slate-950">{sheet.title}</h2>
                         {sheet.subtitle && (
@@ -127,8 +127,8 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
                                     onClick={() => handleSelect(option.value)}
                                     className={`flex w-full items-center justify-between gap-3 rounded-[24px] border px-4 py-3 text-right transition ${
                                         active
-                                            ? "border-[#d5e1ef] bg-[#eef6ff] text-[#155aa6] shadow-[0_12px_28px_rgba(21,90,166,0.12)]"
-                                            : "border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                                            ? "border-[#d5e1ef] bg-[#eef6ff] text-[#155aa6] shadow-[0_12px_28px_rgba(21,90,166,0.12)] dark:border-[#42617f] dark:bg-[#1b3149] dark:text-[#72b6ff]"
+                                            : "border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[#2b3542] dark:bg-[#1d2530] dark:text-[#b8c2cf] dark:hover:bg-[#252f3c]"
                                     }`}
                                 >
                                     <span className="flex min-w-0 items-center gap-3">

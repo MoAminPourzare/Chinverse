@@ -51,6 +51,8 @@ export interface AdminWordDefinition {
     lang_code: string;
     definition_text: string;
     part_of_speech: string;
+    sense_order?: number;
+    notes?: string | null;
 }
 
 export interface AdminWordExample {
@@ -58,6 +60,7 @@ export interface AdminWordExample {
     zh_text: string;
     pinyin: string;
     target_text: string;
+    sense_order?: number;
 }
 
 export interface AdminWordCollocation {
@@ -65,6 +68,7 @@ export interface AdminWordCollocation {
     phrase_zh: string;
     phrase_pinyin: string;
     translation_target: string;
+    sense_order?: number;
 }
 
 export interface AdminDictionaryWord {
@@ -73,9 +77,14 @@ export interface AdminDictionaryWord {
     pinyin: string;
     audio_url?: string | null;
     level: string;
+    hsk_level?: number | null;
+    source?: string;
+    source_word_id?: string | null;
+    status?: string;
     persian_meaning?: string | null;
     chinese_meaning?: string | null;
     composition?: string | null;
+    notes?: string | null;
     definitions: AdminWordDefinition[];
     examples: AdminWordExample[];
     collocations: AdminWordCollocation[];
@@ -88,9 +97,14 @@ export interface AdminDictionaryWordPayload {
     pinyin: string;
     audio_url?: string | null;
     level: string;
+    hsk_level?: number | null;
+    source?: string;
+    source_word_id?: string | null;
+    status?: string;
     persian_meaning?: string | null;
     chinese_meaning?: string | null;
     composition?: string | null;
+    notes?: string | null;
     definitions: AdminWordDefinition[];
     examples: AdminWordExample[];
     collocations: AdminWordCollocation[];
@@ -128,9 +142,22 @@ export const adminService = {
         return Array.isArray(response.data) ? response.data : [];
     },
 
-    async listDictionary(q = ""): Promise<AdminDictionaryWord[]> {
+    async listDictionary(q = "", filters: {
+        status?: string;
+        source?: string;
+        hsk_level?: number | null;
+        missing?: string;
+        limit?: number;
+    } = {}): Promise<AdminDictionaryWord[]> {
         const response = await api.get<AdminDictionaryWord[]>("/admin/dictionary", {
-            params: { q: q || undefined, limit: 80 },
+            params: {
+                q: q || undefined,
+                status: filters.status || undefined,
+                source: filters.source || undefined,
+                hsk_level: filters.hsk_level || undefined,
+                missing: filters.missing || undefined,
+                limit: filters.limit || 1000,
+            },
         });
         return Array.isArray(response.data) ? response.data : [];
     },

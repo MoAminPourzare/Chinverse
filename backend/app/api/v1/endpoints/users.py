@@ -205,7 +205,7 @@ async def update_user_profile(
     # Check if profile exists
     if not current_user.profile:
         # Create new profile
-        update_data.setdefault("display_name", current_user.email or "User")
+        update_data.setdefault("display_name", "کاربر چین‌ورس")
         profile = UserProfile(user_id=current_user.id, **update_data)
         db.add(profile)
     else:
@@ -240,7 +240,7 @@ async def upload_avatar(
         profile = UserProfile(
             user_id=current_user.id,
             avatar_url=avatar_url,
-            display_name="User",
+            display_name="کاربر چین‌ورس",
         )
         db.add(profile)
     else:

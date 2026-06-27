@@ -53,7 +53,7 @@ export default function BottomNav() {
 
     return (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 px-3 pb-3">
-            <div className="bottom-nav-shell pointer-events-auto mx-auto max-w-xl rounded-[28px] border border-white/70 bg-white/92 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+            <div className="bottom-nav-shell pointer-events-auto mx-auto max-w-xl rounded-[28px] border border-white/70 bg-white/92 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-[#303a48] dark:bg-[#171d26]/95 dark:shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
                 <div className="flex items-end justify-around gap-1">
                     {navItems.map((item) => {
                         const Icon = item.icon;
@@ -68,8 +68,8 @@ export default function BottomNav() {
                                 className={cn(
                                     "bottom-nav-link relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center",
                                     isActive
-                                        ? "bg-gradient-to-b from-[#eef6ff] to-white text-[#155aa6] shadow-sm"
-                                        : "text-slate-400 hover:bg-slate-50 hover:text-slate-700",
+                                        ? "bg-gradient-to-b from-[#eef6ff] to-white text-[#155aa6] shadow-sm dark:from-[#1b3149] dark:to-[#1b2430] dark:text-[#72b6ff]"
+                                        : "text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-[#788596] dark:hover:bg-[#202936] dark:hover:text-[#c8d1dc]",
                                 )}
                             >
                                 <Icon size={21} strokeWidth={isActive ? 2.5 : 2} />

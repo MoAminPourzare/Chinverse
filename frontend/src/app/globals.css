@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @font-face {
   font-family: "Vazirmatn";
   src: url("https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/fonts/webfonts/Vazirmatn[wght].woff2") format("woff2");
@@ -11,12 +13,49 @@
 :root {
   --background: #eef2f7;
   --foreground: #0f172a;
+  --app-canvas: #f7f8fb;
+  --app-canvas-soft: #eef2f7;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f3f6fa;
+  --app-surface-raised: #ffffff;
+  --app-border: #dfe6f0;
+  --app-border-strong: #cdd8e6;
+  --app-text: #172033;
+  --app-text-muted: #687386;
+  --app-text-faint: #94a0b1;
+  --app-primary: #155aa6;
+  --app-primary-hover: #0f4e92;
+  --app-primary-soft: #eef6ff;
+  --app-shadow: rgba(15, 23, 42, 0.12);
+  --app-ambient-rose: rgba(244, 63, 94, 0.14);
+  --app-ambient-green: rgba(16, 185, 129, 0.12);
   --font-persian: "Vazirmatn", Tahoma, Arial, Helvetica, sans-serif;
   --font-latin: "Vazirmatn", "Segoe UI", Arial, Helvetica, sans-serif;
   --font-cjk: "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
   --font-vazirmatn: var(--font-persian);
   --motion-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.dark {
+  --background: #0d1117;
+  --foreground: #f4f7fb;
+  --app-canvas: #10151c;
+  --app-canvas-soft: #0d1117;
+  --app-surface: #171d26;
+  --app-surface-soft: #1d2530;
+  --app-surface-raised: #202936;
+  --app-border: #2b3542;
+  --app-border-strong: #3a4656;
+  --app-text: #f4f7fb;
+  --app-text-muted: #aab4c2;
+  --app-text-faint: #778394;
+  --app-primary: #62a8f4;
+  --app-primary-hover: #82bbf7;
+  --app-primary-soft: #172a40;
+  --app-shadow: rgba(0, 0, 0, 0.42);
+  --app-ambient-rose: rgba(244, 63, 94, 0.08);
+  --app-ambient-green: rgba(16, 185, 129, 0.06);
 }
 
 @theme inline {
@@ -44,7 +83,7 @@ body {
   margin: 0;
   color: var(--foreground);
   background:
-    linear-gradient(180deg, #f8fbff 0%, #f3f6fb 45%, #eef2f7 100%);
+    linear-gradient(180deg, var(--app-canvas) 0%, var(--app-canvas-soft) 100%);
   font-family: var(--font-vazirmatn);
   overflow: hidden;
   text-rendering: optimizeLegibility;
@@ -94,9 +133,9 @@ body::selection {
   width: 100%;
   justify-content: center;
   background:
-    radial-gradient(circle at top left, rgba(244, 63, 94, 0.14), transparent 34rem),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 30rem),
-    linear-gradient(180deg, #f8fbff 0%, #eef2f7 100%);
+    radial-gradient(circle at top left, var(--app-ambient-rose), transparent 34rem),
+    radial-gradient(circle at bottom right, var(--app-ambient-green), transparent 30rem),
+    linear-gradient(180deg, var(--app-canvas) 0%, var(--app-canvas-soft) 100%);
 }
 
 .app-frame {
@@ -112,7 +151,7 @@ body::selection {
   overscroll-behavior: contain;
   transform: translateZ(0);
   background:
-    linear-gradient(180deg, rgba(248, 251, 255, 0.98) 0%, rgba(242, 246, 251, 0.98) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--app-canvas) 98%, transparent) 0%, color-mix(in srgb, var(--app-canvas-soft) 98%, transparent) 100%);
 }
 
 .app-scroll {
@@ -200,11 +239,11 @@ body::selection {
 
   .app-frame {
     height: min(900px, calc(100dvh - 36px));
-    border: 1px solid rgba(255, 255, 255, 0.82);
+    border: 1px solid color-mix(in srgb, var(--app-border) 82%, transparent);
     border-radius: 38px;
     box-shadow:
-      0 32px 90px rgba(15, 23, 42, 0.2),
-      0 0 0 10px rgba(255, 255, 255, 0.3);
+      0 32px 90px var(--app-shadow),
+      0 0 0 10px color-mix(in srgb, var(--app-border) 30%, transparent);
   }
 
   #headlessui-portal-root {
@@ -618,4 +657,302 @@ body::selection {
 
 .h-safe-bottom {
   height: env(safe-area-inset-bottom);
+}
+
+/* Theme adaptation for the existing component palette. Keeping these rules
+   centralized lets older and newly added screens inherit dark mode without
+   duplicating theme classes across every page. */
+html.theme-ready body,
+html.theme-ready .app-viewport,
+html.theme-ready .app-frame,
+html.theme-ready .bottom-nav-shell,
+html.theme-ready [class~="bg-white"],
+html.theme-ready [class~="bg-slate-50"],
+html.theme-ready [class~="bg-slate-100"] {
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 180ms ease,
+    box-shadow 220ms ease;
+}
+
+html.dark body::selection {
+  background: rgba(98, 168, 244, 0.3);
+}
+
+html.dark [class~="bg-white"],
+html.dark [class~="bg-white/95"],
+html.dark [class~="bg-white/92"],
+html.dark [class~="bg-white/[0.92]"],
+html.dark [class~="bg-white/90"],
+html.dark [class~="bg-white/88"],
+html.dark [class~="bg-white/86"],
+html.dark [class~="bg-white/85"],
+html.dark [class~="bg-white/80"],
+html.dark [class~="bg-white/70"],
+html.dark [class~="bg-white/55"] {
+  background-color: color-mix(in srgb, var(--app-surface) 94%, transparent) !important;
+}
+
+html.dark [class~="bg-slate-50"],
+html.dark [class~="bg-slate-50/75"],
+html.dark [class~="bg-slate-100"],
+html.dark [class~="bg-gray-50"],
+html.dark [class~="bg-gray-100"],
+html.dark [class~="bg-[#eef6ff]"],
+html.dark [class~="bg-[#dbeafe]"] {
+  background-color: var(--app-surface-soft) !important;
+}
+
+html.dark [class~="bg-slate-200"],
+html.dark [class~="bg-slate-300"],
+html.dark [class~="bg-slate-300/70"],
+html.dark [class~="bg-[#e2e5eb]"],
+html.dark [class~="bg-[#e1e4ea]"],
+html.dark [class~="bg-[#e7ebf1]"],
+html.dark [class~="bg-[#e7eaf0]"],
+html.dark [class~="bg-[#eef0f4]"],
+html.dark [class~="bg-[#e6e9ee]"],
+html.dark [class~="bg-[#dbe3ee]"],
+html.dark [class~="bg-[#dfe2e8]"],
+html.dark [class~="bg-[#e3e6ec]"],
+html.dark [class~="bg-[#dfe3eb]"],
+html.dark [class~="bg-[#eef0f3]"],
+html.dark [class~="bg-[#f0f2f5]"],
+html.dark [class~="bg-[#edf1f6]"],
+html.dark [class~="bg-[#e9edf3]"],
+html.dark [class~="bg-[#e6e9ef]"],
+html.dark [class~="bg-[#d5dbe5]"] {
+  background-color: var(--app-surface-raised) !important;
+}
+
+html.dark [class~="bg-[#f7f8fa]"],
+html.dark [class~="bg-[#f7f8fb]"],
+html.dark [class~="bg-[#f9fafc]"],
+html.dark [class~="bg-[#f8fbff]"],
+html.dark [class~="bg-[#f8fafc]"],
+html.dark [class~="bg-[#f6f7f9]"],
+html.dark [class~="bg-[#f5f8fc]"],
+html.dark [class~="bg-[#f3f7fc]"] {
+  background-color: var(--app-canvas) !important;
+}
+
+html.dark [class~="bg-[#f7f8fa]/90"] {
+  background-color: color-mix(in srgb, var(--app-canvas) 92%, transparent) !important;
+}
+
+html.dark [class~="bg-[#f1f3f7]"],
+html.dark [class~="bg-[#eef3fb]"],
+html.dark [class~="bg-[#e9f2ff]"],
+html.dark [class~="bg-[#c7e3fb]"],
+html.dark [class~="bg-[#d5d6da]"],
+html.dark [class~="bg-[#edf7ff]"],
+html.dark [class~="bg-[#e7eef8]"],
+html.dark [class~="bg-[#f3f8ff]"] {
+  background-color: var(--app-surface-soft) !important;
+}
+
+html.dark [class~="bg-[#ffe9ec]"] {
+  background-color: #3b2028 !important;
+}
+
+html.dark [class~="bg-[#fff3ce]"],
+html.dark [class~="bg-[#fff6df]"] {
+  background-color: #382c18 !important;
+}
+
+html.dark [class~="bg-[#f8d4c7]"] {
+  background-color: #3a2522 !important;
+}
+
+html.dark [class~="bg-[#155aa6]/10"] {
+  background-color: rgba(98, 168, 244, 0.16) !important;
+}
+
+html.dark [class~="bg-[#eef6ff]/80"] {
+  background-color: rgba(32, 41, 54, 0.88) !important;
+}
+
+html.dark [class~="bg-red-50"],
+html.dark [class~="bg-red-100"],
+html.dark [class~="bg-red-200"],
+html.dark [class~="bg-rose-50"],
+html.dark [class~="bg-rose-100"] {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+}
+
+html.dark [class~="bg-amber-50"] {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+}
+
+html.dark [class~="bg-emerald-50"],
+html.dark [class~="bg-emerald-100"],
+html.dark [class~="bg-green-50"],
+html.dark [class~="bg-green-100"] {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.dark [class~="bg-blue-50"],
+html.dark [class~="bg-blue-100"],
+html.dark [class~="bg-sky-50"] {
+  background-color: rgba(56, 139, 253, 0.16) !important;
+}
+
+html.dark [class~="bg-[linear-gradient(180deg,#f8fbff_0%,#f4f7fb_100%)]"] {
+  background-image: linear-gradient(180deg, var(--app-surface) 0%, var(--app-canvas) 100%) !important;
+}
+
+html.dark [class~="bg-gradient-to-b"][class~="from-[#eef6ff]"][class~="to-white"] {
+  background-image: linear-gradient(to bottom, var(--app-primary-soft), var(--app-surface)) !important;
+}
+
+html.dark [class~="bg-[#155aa6]"] {
+  background-color: #216bb8 !important;
+}
+
+html.dark [class~="bg-[#0f4e92]"],
+html.dark [class~="bg-[#0f4f96]"] {
+  background-color: #185a9f !important;
+}
+
+html.dark [class~="hover:bg-[#eef6ff]"]:hover,
+html.dark [class~="active:bg-[#eef6ff]"]:active,
+html.dark [class~="hover:bg-slate-50"]:hover,
+html.dark [class~="hover:bg-slate-100"]:hover,
+html.dark [class~="hover:bg-white/70"]:hover {
+  background-color: var(--app-surface-raised) !important;
+}
+
+html.dark [class~="text-slate-950"],
+html.dark [class~="text-slate-900"],
+html.dark [class~="text-slate-800"],
+html.dark [class~="text-gray-900"],
+html.dark [class~="text-gray-800"],
+html.dark [class~="text-[#25272d]"],
+html.dark [class~="text-[#2f3238]"],
+html.dark [class~="text-[#242833]"] {
+  color: var(--app-text) !important;
+}
+
+html.dark [class~="text-slate-700"],
+html.dark [class~="text-slate-600"],
+html.dark [class~="text-slate-500"],
+html.dark [class~="text-gray-600"],
+html.dark [class~="text-gray-500"],
+html.dark [class~="text-[#555c68]"],
+html.dark [class~="text-[#687080]"],
+html.dark [class~="text-[#7d8490]"],
+html.dark [class~="text-[#7a808c]"],
+html.dark [class~="text-[#7c8492]"] {
+  color: var(--app-text-muted) !important;
+}
+
+html.dark [class~="text-slate-400"],
+html.dark [class~="text-slate-300"],
+html.dark [class~="text-gray-400"],
+html.dark [class~="text-[#888e99]"],
+html.dark [class~="text-[#858b96]"] {
+  color: var(--app-text-faint) !important;
+}
+
+html.dark [class~="text-[#155aa6]"],
+html.dark [class~="text-[#0f4e92]"] {
+  color: var(--app-primary) !important;
+}
+
+html.dark [class~="text-red-500"],
+html.dark [class~="text-red-600"],
+html.dark [class~="text-red-700"],
+html.dark [class~="text-rose-500"],
+html.dark [class~="text-rose-600"],
+html.dark [class~="text-rose-700"] {
+  color: #fb8da1 !important;
+}
+
+html.dark [class~="text-amber-700"],
+html.dark [class~="text-amber-800"] {
+  color: #f7c85c !important;
+}
+
+html.dark [class~="text-emerald-600"],
+html.dark [class~="text-emerald-700"],
+html.dark [class~="text-green-600"],
+html.dark [class~="text-green-700"] {
+  color: #69d9ad !important;
+}
+
+html.dark [class~="text-blue-700"],
+html.dark [class~="text-sky-700"] {
+  color: #7fc5ff !important;
+}
+
+html.dark [class~="border-white"],
+html.dark [class~="border-white/80"],
+html.dark [class~="border-white/70"],
+html.dark [class~="border-slate-100"],
+html.dark [class~="border-slate-200"],
+html.dark [class~="border-slate-300"],
+html.dark [class~="border-slate-300/80"],
+html.dark [class~="border-gray-100"],
+html.dark [class~="border-[#dfe6f0]"],
+html.dark [class~="border-[#d5e1ef]"] {
+  border-color: var(--app-border) !important;
+}
+
+html.dark [class~="border-red-100"],
+html.dark [class~="border-rose-100"],
+html.dark [class~="border-rose-200"] {
+  border-color: rgba(251, 113, 133, 0.32) !important;
+}
+
+html.dark [class~="border-amber-100"] {
+  border-color: rgba(245, 158, 11, 0.32) !important;
+}
+
+html.dark [class~="border-emerald-100"] {
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+html.dark [class~="divide-slate-100"] > :not(:last-child) {
+  border-color: var(--app-border) !important;
+}
+
+html.dark [class~="ring-white"],
+html.dark [class~="ring-white/70"] {
+  --tw-ring-color: var(--app-border) !important;
+}
+
+html.dark [class~="ring-[#dfe6f0]"],
+html.dark [class~="ring-[#d5e1ef]"] {
+  --tw-ring-color: var(--app-border) !important;
+}
+
+html.dark input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+  border-color: var(--app-border) !important;
+  background-color: var(--app-surface-soft) !important;
+  color: var(--app-text) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--app-text-faint) !important;
+  opacity: 1;
+}
+
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--app-text);
+  box-shadow: 0 0 0 1000px var(--app-surface-soft) inset;
+  transition: background-color 9999s ease-out;
+}
+
+html.dark .theme-switch-thumb {
+  background-color: #ffffff !important;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(119, 131, 148, 0.55);
 }

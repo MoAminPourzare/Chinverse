@@ -32,6 +32,11 @@ export interface SendMessageRequest {
     content: string;
 }
 
+export interface MarkConversationReadResponse {
+    updated: number;
+    message_ids: number[];
+}
+
 // ===== SERVICE =====
 
 export const chatService = {
@@ -56,6 +61,11 @@ export const chatService = {
         const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
             params: { after_id: afterId, limit: 100 }
         });
+        return response.data;
+    },
+
+    async markConversationRead(userId: number): Promise<MarkConversationReadResponse> {
+        const response = await api.post<MarkConversationReadResponse>(`/chat/${userId}/read`);
         return response.data;
     },
 

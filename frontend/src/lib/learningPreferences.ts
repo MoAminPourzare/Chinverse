@@ -6,8 +6,10 @@ export type FontSizeLevel = "small" | "normal" | "large" | "xlarge";
 export type LineSpacingLevel = "compact" | "normal" | "relaxed" | "loose";
 export type TextDisplayMode = "mixed" | "persian" | "chinese";
 export type HighlightColor = "amber" | "rose" | "sky" | "emerald" | "violet";
+export type ThemePreference = "light" | "dark" | "system";
 
 export interface LearningPreferences {
+    theme: ThemePreference;
     persianFontSize: FontSizeLevel;
     chineseFontSize: FontSizeLevel;
     persianLineSpacing: LineSpacingLevel;
@@ -26,6 +28,7 @@ export const LEARNING_PREFERENCES_STORAGE_KEY = "chinverse.learningPreferences.v
 export const LEARNING_PREFERENCES_EVENT = "chinverse-learning-preferences-change";
 
 export const defaultLearningPreferences: LearningPreferences = {
+    theme: "light",
     persianFontSize: "normal",
     chineseFontSize: "normal",
     persianLineSpacing: "relaxed",
@@ -39,6 +42,12 @@ export const defaultLearningPreferences: LearningPreferences = {
     dailyGoalMinutes: 15,
     dailyGoalWords: 5,
 };
+
+export const themeOptions: Array<{ value: ThemePreference; label: string; description: string }> = [
+    { value: "light", label: "روشن", description: "ظاهر روشن و آشنای چین ورس" },
+    { value: "dark", label: "تیره", description: "مناسب محیط کم نور و مطالعه شبانه" },
+    { value: "system", label: "مطابق دستگاه", description: "هماهنگ با تنظیمات گوشی یا سیستم" },
+];
 
 export const fontSizeOptions: Array<{ value: FontSizeLevel; label: string }> = [
     { value: "small", label: "کوچک" },
@@ -150,6 +159,9 @@ const sanitizePreferences = (value: unknown): LearningPreferences => {
     const input = value as Partial<LearningPreferences>;
     return {
         ...defaultLearningPreferences,
+        theme: isOptionValue(input.theme, themeOptions)
+            ? input.theme
+            : defaultLearningPreferences.theme,
         persianFontSize: isOptionValue(input.persianFontSize, fontSizeOptions)
             ? input.persianFontSize
             : defaultLearningPreferences.persianFontSize,

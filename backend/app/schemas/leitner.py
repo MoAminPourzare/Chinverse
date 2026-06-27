@@ -5,11 +5,7 @@ from pydantic import BaseModel, Field
 # Schemas for API requests/responses
 
 class LeitnerAddRequest(BaseModel):
-    word_id: Optional[int] = Field(default=None, ge=0)  # Can be None or 0 for mock vocabulary
-    chinese: Optional[str] = Field(default=None, max_length=80)  # Chinese characters to find/create word
-    pinyin: Optional[str] = Field(default=None, max_length=160)   # Pinyin for creating new word
-    persian_meaning: Optional[str] = Field(default=None, max_length=2000)
-    chinese_meaning: Optional[str] = Field(default=None, max_length=4000)
+    word_id: int = Field(gt=0)
 
 class FlashcardBase(BaseModel):
     id: int
@@ -22,14 +18,57 @@ class FlashcardBase(BaseModel):
     class Config:
         from_attributes = True
 
+class DictionaryWordDefinitionSimple(BaseModel):
+    id: int
+    lang_code: str
+    definition_text: str
+    part_of_speech: str
+    sense_order: int = 1
+    notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DictionaryWordExampleSimple(BaseModel):
+    id: int
+    zh_text: str
+    pinyin: str
+    target_text: str
+    sense_order: int = 1
+
+    class Config:
+        from_attributes = True
+
+
+class DictionaryWordCollocationSimple(BaseModel):
+    id: int
+    phrase_zh: str
+    phrase_pinyin: str
+    translation_target: str
+    sense_order: int = 1
+
+    class Config:
+        from_attributes = True
+
+
 class DictionaryWordSimple(BaseModel):
     id: int
     chinese: str
     pinyin: str
+    level: str
+    hsk_level: Optional[int] = None
+    source: str = "manual"
+    source_word_id: Optional[str] = None
+    status: str = "published"
     persian_meaning: Optional[str] = None
     chinese_meaning: Optional[str] = None
     composition: Optional[str] = None
     audio_url: Optional[str] = None
+    notes: Optional[str] = None
+    definitions: List[DictionaryWordDefinitionSimple] = Field(default_factory=list)
+    examples: List[DictionaryWordExampleSimple] = Field(default_factory=list)
+    collocations: List[DictionaryWordCollocationSimple] = Field(default_factory=list)
     
     class Config:
         from_attributes = True

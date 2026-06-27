@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import re
 from datetime import datetime
 from typing import Any, List, Optional
 
@@ -78,18 +79,22 @@ class AdminWordDefinitionIn(BaseModel):
     lang_code: str = Field(default="fa", max_length=12)
     definition_text: str = Field(min_length=1, max_length=4000)
     part_of_speech: str = Field(default="unknown", min_length=1, max_length=80)
+    sense_order: int = Field(default=1, ge=1)
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class AdminWordExampleIn(BaseModel):
     zh_text: str = Field(min_length=1, max_length=1000)
     pinyin: str = Field(default="", max_length=1000)
     target_text: str = Field(default="", max_length=1000)
+    sense_order: int = Field(default=1, ge=1)
 
 
 class AdminWordCollocationIn(BaseModel):
     phrase_zh: str = Field(min_length=1, max_length=500)
     phrase_pinyin: str = Field(default="", max_length=500)
     translation_target: str = Field(default="", max_length=500)
+    sense_order: int = Field(default=1, ge=1)
 
 
 class AdminDictionaryWordIn(BaseModel):
@@ -97,9 +102,14 @@ class AdminDictionaryWordIn(BaseModel):
     pinyin: str = Field(default="", max_length=160)
     audio_url: Optional[str] = Field(default=None, max_length=1000)
     level: str = Field(default="custom", min_length=1, max_length=80)
+    hsk_level: Optional[int] = Field(default=None, ge=1, le=9)
+    source: str = Field(default="manual", min_length=1, max_length=80)
+    source_word_id: Optional[str] = Field(default=None, max_length=80)
+    status: str = Field(default="published", min_length=1, max_length=40)
     persian_meaning: Optional[str] = Field(default=None, max_length=4000)
     chinese_meaning: Optional[str] = Field(default=None, max_length=4000)
     composition: Optional[str] = Field(default=None, max_length=4000)
+    notes: Optional[str] = Field(default=None, max_length=4000)
     definitions: List[AdminWordDefinitionIn] = Field(default_factory=list)
     examples: List[AdminWordExampleIn] = Field(default_factory=list)
     collocations: List[AdminWordCollocationIn] = Field(default_factory=list)
@@ -132,9 +142,14 @@ class AdminDictionaryWordOut(BaseModel):
     pinyin: str
     audio_url: Optional[str] = None
     level: str
+    hsk_level: Optional[int] = None
+    source: str = "manual"
+    source_word_id: Optional[str] = None
+    status: str = "published"
     persian_meaning: Optional[str] = None
     chinese_meaning: Optional[str] = None
     composition: Optional[str] = None
+    notes: Optional[str] = None
     definitions: List[AdminWordDefinitionOut] = Field(default_factory=list)
     examples: List[AdminWordExampleOut] = Field(default_factory=list)
     collocations: List[AdminWordCollocationOut] = Field(default_factory=list)
@@ -227,6 +242,8 @@ async def _replace_word_children(
                 lang_code=definition.lang_code.strip() or "fa",
                 definition_text=definition.definition_text.strip(),
                 part_of_speech=definition.part_of_speech.strip() or "unknown",
+                sense_order=definition.sense_order,
+                notes=_clean_optional(definition.notes),
             )
         )
 
@@ -237,6 +254,7 @@ async def _replace_word_children(
                 zh_text=example.zh_text.strip(),
                 pinyin=example.pinyin.strip(),
                 target_text=example.target_text.strip(),
+                sense_order=example.sense_order,
             )
         )
 
@@ -247,6 +265,7 @@ async def _replace_word_children(
                 phrase_zh=collocation.phrase_zh.strip(),
                 phrase_pinyin=collocation.phrase_pinyin.strip(),
                 translation_target=collocation.translation_target.strip(),
+                sense_order=collocation.sense_order,
             )
         )
 
@@ -255,6 +274,19 @@ def _text(value: Any, default: str = "") -> str:
     if value is None:
         return default
     return str(value).strip()
+
+
+def _int_or_none(value: Any) -> Optional[int]:
+    text = _text(value)
+    if not text:
+        return None
+    match = re.search(r"\d+", text)
+    if match:
+        return int(match.group(0))
+    try:
+        return int(text)
+    except ValueError:
+        return None
 
 
 def _items(value: Any) -> list[dict[str, Any]]:
@@ -276,6 +308,8 @@ def _dictionary_payload_from_record(data: dict[str, Any]) -> AdminDictionaryWord
             lang_code=_text(item.get("lang_code"), "fa") or "fa",
             definition_text=_text(item.get("definition_text")),
             part_of_speech=_text(item.get("part_of_speech"), "unknown") or "unknown",
+            sense_order=int(_text(item.get("sense_order"), "1") or 1),
+            notes=_clean_optional(_text(item.get("notes"))),
         )
         for item in _items(data.get("definitions"))
         if _text(item.get("definition_text"))
@@ -285,6 +319,7 @@ def _dictionary_payload_from_record(data: dict[str, Any]) -> AdminDictionaryWord
             zh_text=_text(item.get("zh_text")),
             pinyin=_text(item.get("pinyin")),
             target_text=_text(item.get("target_text")),
+            sense_order=int(_text(item.get("sense_order"), "1") or 1),
         )
         for item in _items(data.get("examples"))
         if _text(item.get("zh_text"))
@@ -294,6 +329,7 @@ def _dictionary_payload_from_record(data: dict[str, Any]) -> AdminDictionaryWord
             phrase_zh=_text(item.get("phrase_zh")),
             phrase_pinyin=_text(item.get("phrase_pinyin")),
             translation_target=_text(item.get("translation_target")),
+            sense_order=int(_text(item.get("sense_order"), "1") or 1),
         )
         for item in _items(data.get("collocations"))
         if _text(item.get("phrase_zh"))
@@ -304,9 +340,14 @@ def _dictionary_payload_from_record(data: dict[str, Any]) -> AdminDictionaryWord
         pinyin=_text(data.get("pinyin")),
         audio_url=_clean_optional(_text(data.get("audio_url"))),
         level=_text(data.get("level"), "custom") or "custom",
+        hsk_level=_int_or_none(data.get("hsk_level")),
+        source=_text(data.get("source"), "manual") or "manual",
+        source_word_id=_clean_optional(_text(data.get("source_word_id"))),
+        status=_text(data.get("status"), "published") or "published",
         persian_meaning=_clean_optional(_text(data.get("persian_meaning"))),
         chinese_meaning=_clean_optional(_text(data.get("chinese_meaning"))),
         composition=_clean_optional(_text(data.get("composition"))),
+        notes=_clean_optional(_text(data.get("notes"))),
         definitions=definitions,
         examples=examples,
         collocations=collocations,
@@ -327,6 +368,145 @@ def _parse_json_list(value: str) -> list[dict[str, Any]] | None:
     return [item for item in parsed if isinstance(item, dict)]
 
 
+def _normalize_hsk_level(value: str) -> str:
+    match = re.search(r"(\d+)", value or "")
+    return f"HSK{match.group(1)}" if match else (_text(value) or "HSK")
+
+
+def _parse_collocation_item(value: str) -> tuple[str, str]:
+    item = value.strip()
+    match = re.match(r"^(.*?)\s*\((.*?)\)\s*$", item)
+    if not match:
+        return item, ""
+    return match.group(1).strip(), match.group(2).strip()
+
+
+def _unique_join(values: list[str]) -> Optional[str]:
+    seen: set[str] = set()
+    clean_values: list[str] = []
+    for value in values:
+        clean_value = value.strip()
+        if clean_value and clean_value not in seen:
+            seen.add(clean_value)
+            clean_values.append(clean_value)
+    return "\n".join(clean_values) or None
+
+
+def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for row in rows:
+        data = {str(key or "").strip(): _text(value) for key, value in row.items()}
+        chinese = data.get("chinese_word") or data.get("chinese")
+        if not chinese:
+            continue
+
+        source_word_id = data.get("word_id") or chinese
+        group_key = (source_word_id, chinese)
+        record = grouped.setdefault(
+            group_key,
+            {
+                "chinese": chinese,
+                "pinyin": data.get("pinyin", ""),
+                "audio_url": data.get("audio_url", ""),
+                "level": _normalize_hsk_level(data.get("word_hsk_level") or data.get("level")),
+                "hsk_level": _int_or_none(data.get("word_hsk_level") or data.get("level")),
+                "source": "hsk",
+                "source_word_id": source_word_id,
+                "status": "published",
+                "persian_meaning_lines": [],
+                "chinese_meaning_lines": [],
+                "composition_lines": [],
+                "notes_lines": [],
+                "definitions": [],
+                "examples": [],
+                "collocations": [],
+            },
+        )
+
+        sense_order = _int_or_none(data.get("sense_id")) or len(record["persian_meaning_lines"]) + 1
+        chinese_meaning = data.get("chinese_meaning", "")
+        persian_meaning = data.get("persian_meaning", "")
+        chinese_pos = data.get("chinese_pos") or data.get("official_pos") or "unknown"
+        persian_pos = data.get("persian_pos") or "unknown"
+        notes = data.get("notes", "")
+
+        if chinese_meaning:
+            record["chinese_meaning_lines"].append(chinese_meaning)
+            record["definitions"].append(
+                {
+                    "lang_code": "zh",
+                    "definition_text": chinese_meaning,
+                    "part_of_speech": chinese_pos,
+                    "sense_order": sense_order,
+                    "notes": notes or None,
+                }
+            )
+        if persian_meaning:
+            record["persian_meaning_lines"].append(persian_meaning)
+            record["definitions"].append(
+                {
+                    "lang_code": "fa",
+                    "definition_text": persian_meaning,
+                    "part_of_speech": persian_pos,
+                    "sense_order": sense_order,
+                    "notes": notes or None,
+                }
+            )
+
+        if notes:
+            record["notes_lines"].append(f"{sense_order}: {notes}")
+
+        example_chinese = data.get("example_chinese", "")
+        if example_chinese:
+            record["examples"].append(
+                {
+                    "zh_text": example_chinese,
+                    "pinyin": data.get("example_pinyin", ""),
+                    "target_text": data.get("example_persian_translation", ""),
+                    "sense_order": sense_order,
+                }
+            )
+
+        for item in [part for part in data.get("collocations", "").split("|") if part.strip()]:
+            phrase_zh, phrase_pinyin = _parse_collocation_item(item)
+            if not phrase_zh:
+                continue
+            record["composition_lines"].append(item.strip())
+            record["collocations"].append(
+                {
+                    "phrase_zh": phrase_zh,
+                    "phrase_pinyin": phrase_pinyin,
+                    "translation_target": "",
+                    "sense_order": sense_order,
+                }
+            )
+
+    normalized_records: list[dict[str, Any]] = []
+    for record in grouped.values():
+        normalized_records.append(
+            {
+                "chinese": record["chinese"],
+                "pinyin": record["pinyin"],
+                "audio_url": _clean_optional(record["audio_url"]),
+                "level": record["level"],
+                "hsk_level": record["hsk_level"],
+                "source": record["source"],
+                "source_word_id": record["source_word_id"],
+                "status": record["status"],
+                "persian_meaning": _unique_join(record["persian_meaning_lines"]),
+                "chinese_meaning": _unique_join(record["chinese_meaning_lines"]),
+                "composition": _unique_join(record["composition_lines"]),
+                "notes": _unique_join(record["notes_lines"]),
+                "definitions": record["definitions"],
+                "examples": record["examples"],
+                "collocations": record["collocations"],
+            }
+        )
+
+    return normalized_records
+
+
 def _dictionary_payload_from_csv_row(row: dict[str, Any]) -> AdminDictionaryWordIn:
     data = {str(key or "").strip(): _text(value) for key, value in row.items()}
 
@@ -339,6 +519,7 @@ def _dictionary_payload_from_csv_row(row: dict[str, Any]) -> AdminDictionaryWord
             "part_of_speech": parts[0] if len(parts) > 1 else "unknown",
             "definition_text": parts[1] if len(parts) > 1 else parts[0],
             "lang_code": parts[2] if len(parts) > 2 else "fa",
+            "sense_order": parts[3] if len(parts) > 3 else 1,
         }
         for parts in ([part.strip() for part in item.split("|")] for item in _split_import_rows(data.get("definitions", "")))
         if parts and (parts[1] if len(parts) > 1 else parts[0])
@@ -348,6 +529,7 @@ def _dictionary_payload_from_csv_row(row: dict[str, Any]) -> AdminDictionaryWord
             "zh_text": parts[0],
             "pinyin": parts[1] if len(parts) > 1 else "",
             "target_text": parts[2] if len(parts) > 2 else "",
+            "sense_order": parts[3] if len(parts) > 3 else 1,
         }
         for parts in ([part.strip() for part in item.split("|")] for item in _split_import_rows(data.get("examples", "")))
         if parts and parts[0]
@@ -357,6 +539,7 @@ def _dictionary_payload_from_csv_row(row: dict[str, Any]) -> AdminDictionaryWord
             "phrase_zh": parts[0],
             "phrase_pinyin": parts[1] if len(parts) > 1 else "",
             "translation_target": parts[2] if len(parts) > 2 else "",
+            "sense_order": parts[3] if len(parts) > 3 else 1,
         }
         for parts in ([part.strip() for part in item.split("|")] for item in _split_import_rows(data.get("collocations", "")))
         if parts and parts[0]
@@ -396,7 +579,11 @@ def _parse_dictionary_import_file(filename: str, raw_content: bytes) -> list[dic
     reader = csv.DictReader(io.StringIO(content))
     if not reader.fieldnames:
         raise bad_request("CSV import file must include a header row")
-    return [dict(row) for row in reader]
+    rows = [dict(row) for row in reader]
+    fieldnames = {field.strip() for field in reader.fieldnames if field}
+    if {"word_id", "chinese_word", "sense_id"}.issubset(fieldnames):
+        return _hsk_csv_rows_to_records(rows)
+    return rows
 
 
 async def _upsert_dictionary_word(
@@ -418,9 +605,14 @@ async def _upsert_dictionary_word(
     word.pinyin = payload.pinyin.strip()
     word.audio_url = _clean_optional(payload.audio_url)
     word.level = payload.level.strip() or "custom"
+    word.hsk_level = payload.hsk_level
+    word.source = payload.source.strip() or "manual"
+    word.source_word_id = _clean_optional(payload.source_word_id)
+    word.status = payload.status.strip() or "published"
     word.persian_meaning = _clean_optional(payload.persian_meaning)
     word.chinese_meaning = _clean_optional(payload.chinese_meaning)
     word.composition = _clean_optional(payload.composition)
+    word.notes = _clean_optional(payload.notes)
     await _replace_word_children(db, word, payload)
     await db.flush()
     return word
@@ -478,9 +670,9 @@ async def admin_overview(
 
 @router.get("/me", response_model=AdminAccessOut)
 async def admin_me(
-    current_user: User = Depends(deps.get_current_admin_user),
+    current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    return {"is_admin": True, "email": current_user.email}
+    return {"is_admin": deps.is_admin_user(current_user), "email": current_user.email}
 
 
 @router.get("/users", response_model=List[AdminUserSummary])
@@ -518,9 +710,13 @@ async def admin_users(
 @router.get("/dictionary", response_model=List[AdminDictionaryWordOut])
 async def admin_dictionary_words(
     q: Optional[str] = Query(default=None, max_length=80),
+    status: Optional[str] = Query(default=None, max_length=40),
+    source: Optional[str] = Query(default=None, max_length=80),
+    hsk_level: Optional[int] = Query(default=None, ge=1, le=9),
+    missing: Optional[str] = Query(default=None, max_length=40),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
-    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=300, max_limit=1000)),
 ) -> Any:
     _ = current_user
     query = select(DictionaryWord).options(
@@ -537,9 +733,36 @@ async def admin_dictionary_words(
                 DictionaryWord.persian_meaning.ilike(term),
             )
         )
+    if status:
+        query = query.where(DictionaryWord.status == status.strip())
+    if source:
+        query = query.where(DictionaryWord.source == source.strip())
+    if hsk_level:
+        query = query.where(DictionaryWord.hsk_level == hsk_level)
+    if missing:
+        missing_key = missing.strip()
+        missing_text_fields = {
+            "pinyin": DictionaryWord.pinyin,
+            "audio": DictionaryWord.audio_url,
+            "persian": DictionaryWord.persian_meaning,
+            "chinese": DictionaryWord.chinese_meaning,
+            "composition": DictionaryWord.composition,
+            "notes": DictionaryWord.notes,
+        }
+        if missing_key in missing_text_fields:
+            column = missing_text_fields[missing_key]
+            query = query.where(or_(column.is_(None), column == ""))
+        elif missing_key == "definitions":
+            query = query.where(~DictionaryWord.definitions.any())
+        elif missing_key == "examples":
+            query = query.where(~DictionaryWord.examples.any())
+        elif missing_key == "collocations":
+            query = query.where(~DictionaryWord.collocations.any())
 
     result = await db.execute(
-        query.order_by(desc(DictionaryWord.updated_at)).offset(pagination.skip).limit(pagination.limit)
+        query.order_by(DictionaryWord.hsk_level, DictionaryWord.id)
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     return result.scalars().unique().all()
 
@@ -565,9 +788,14 @@ async def admin_create_dictionary_word(
         pinyin=payload.pinyin.strip(),
         audio_url=_clean_optional(payload.audio_url),
         level=payload.level.strip() or "custom",
+        hsk_level=payload.hsk_level,
+        source=payload.source.strip() or "manual",
+        source_word_id=_clean_optional(payload.source_word_id),
+        status=payload.status.strip() or "published",
         persian_meaning=_clean_optional(payload.persian_meaning),
         chinese_meaning=_clean_optional(payload.chinese_meaning),
         composition=_clean_optional(payload.composition),
+        notes=_clean_optional(payload.notes),
     )
     db.add(word)
     await db.flush()
@@ -593,9 +821,14 @@ async def admin_update_dictionary_word(
     word.pinyin = payload.pinyin.strip()
     word.audio_url = _clean_optional(payload.audio_url)
     word.level = payload.level.strip() or "custom"
+    word.hsk_level = payload.hsk_level
+    word.source = payload.source.strip() or "manual"
+    word.source_word_id = _clean_optional(payload.source_word_id)
+    word.status = payload.status.strip() or "published"
     word.persian_meaning = _clean_optional(payload.persian_meaning)
     word.chinese_meaning = _clean_optional(payload.chinese_meaning)
     word.composition = _clean_optional(payload.composition)
+    word.notes = _clean_optional(payload.notes)
 
     await _replace_word_children(db, word, payload)
     await db.commit()
@@ -652,16 +885,22 @@ async def admin_import_dictionary_words(
     start_index = 2 if is_csv else 1
 
     for index, row in enumerate(rows, start=start_index):
-        chinese = _text(row.get("chinese"))
+        chinese = _text(row.get("chinese") or row.get("chinese_word"))
         try:
-            payload = _dictionary_payload_from_csv_row(row) if is_csv else _dictionary_payload_from_record(row)
-            existed = await db.scalar(select(DictionaryWord.id).where(DictionaryWord.chinese == payload.chinese.strip()))
-            word = await _upsert_dictionary_word(db, payload)
-            imported_ids.append(word.id)
-            if existed:
-                updated += 1
-            else:
-                created += 1
+            async with db.begin_nested():
+                is_normalized_record = isinstance(row.get("definitions"), list)
+                payload = (
+                    _dictionary_payload_from_record(row)
+                    if is_normalized_record or not is_csv
+                    else _dictionary_payload_from_csv_row(row)
+                )
+                existed = await db.scalar(select(DictionaryWord.id).where(DictionaryWord.chinese == payload.chinese.strip()))
+                word = await _upsert_dictionary_word(db, payload)
+                imported_ids.append(word.id)
+                if existed:
+                    updated += 1
+                else:
+                    created += 1
         except Exception as error:
             errors.append(AdminDictionaryImportError(row=index, chinese=chinese or None, error=str(error)))
 

@@ -5,6 +5,8 @@ import type React from "react";
 import Link from "next/link";
 import {
     BookOpen,
+    AlertTriangle,
+    CheckCircle2,
     Database,
     Download,
     FileText,
@@ -13,6 +15,7 @@ import {
     Plus,
     RefreshCw,
     Save,
+    Search,
     ShieldCheck,
     Trash2,
     Upload,
@@ -57,10 +60,15 @@ const emptyWordForm = {
     chinese: "",
     pinyin: "",
     level: "custom",
+    hsk_level: "",
+    source: "manual",
+    source_word_id: "",
+    status: "published",
     audio_url: "",
     persian_meaning: "",
     chinese_meaning: "",
     composition: "",
+    notes: "",
     definitions_text: "",
     examples_text: "",
     collocations_text: "",
@@ -92,6 +100,49 @@ function formatDate(value?: string) {
 function toPersianDigits(value: string | number) {
     const digits = "۰۱۲۳۴۵۶۷۸۹";
     return String(value).replace(/\d/g, (digit) => digits[Number(digit)]);
+}
+
+type DictionaryMissingKey = "pinyin" | "audio" | "persian" | "chinese" | "composition" | "definitions" | "examples" | "collocations" | "notes";
+
+const dictionaryMissingOptions: Array<{ key: DictionaryMissingKey; label: string }> = [
+    { key: "pinyin", label: "پین‌یین" },
+    { key: "audio", label: "صدا" },
+    { key: "persian", label: "معنی فارسی" },
+    { key: "chinese", label: "معنی چینی" },
+    { key: "composition", label: "ترکیب واژگانی" },
+    { key: "definitions", label: "تعریف‌ها" },
+    { key: "examples", label: "مثال‌ها" },
+    { key: "collocations", label: "ترکیب‌ها" },
+    { key: "notes", label: "یادداشت" },
+];
+
+function isBlank(value?: string | null) {
+    return !value || !value.trim();
+}
+
+function getDictionaryMissingFields(word: AdminDictionaryWord): DictionaryMissingKey[] {
+    const missing: DictionaryMissingKey[] = [];
+    if (isBlank(word.pinyin)) missing.push("pinyin");
+    if (isBlank(word.audio_url)) missing.push("audio");
+    if (isBlank(word.persian_meaning)) missing.push("persian");
+    if (isBlank(word.chinese_meaning)) missing.push("chinese");
+    if (isBlank(word.composition)) missing.push("composition");
+    if (!word.definitions?.length) missing.push("definitions");
+    if (!word.examples?.length) missing.push("examples");
+    if (!word.collocations?.length) missing.push("collocations");
+    if (isBlank(word.notes)) missing.push("notes");
+    return missing;
+}
+
+function getMissingLabel(key: DictionaryMissingKey) {
+    return dictionaryMissingOptions.find((item) => item.key === key)?.label || key;
+}
+
+function getDictionaryReviewStats(words: AdminDictionaryWord[]) {
+    const withMissing = words.filter((word) => getDictionaryMissingFields(word).length > 0).length;
+    const complete = Math.max(words.length - withMissing, 0);
+    const missingAudio = words.filter((word) => isBlank(word.audio_url)).length;
+    return { total: words.length, complete, withMissing, missingAudio };
 }
 
 export default function AdminPanelPage() {
@@ -222,12 +273,29 @@ export default function AdminPanelPage() {
     }, [lessonForm.section_id, selectedCourse]);
 
     const refreshDictionary = async () => {
-        setWords(await adminService.listDictionary(dictionarySearch));
+        setSaving("dictionary-refresh");
+        try {
+            const loadedWords = await adminService.listDictionary(dictionarySearch, { limit: 1000 });
+            setWords(loadedWords);
+            setMessage(`${toPersianDigits(loadedWords.length)} کلمه از دیکشنری بارگذاری شد.`);
+        } catch (error) {
+            console.error("Failed to refresh dictionary", error);
+            setMessage("بارگذاری کلمات دیکشنری انجام نشد. بک‌اند را ری‌استارت کن و دوباره تلاش کن.");
+        } finally {
+            setSaving("");
+        }
     };
 
     const refreshUsers = async () => {
         setUsers(await adminService.listUsers(userSearch));
     };
+
+    useEffect(() => {
+        if (activeTab !== "dictionary") return;
+        void refreshDictionary();
+        // Dictionary tab should always pull the latest DB data when opened.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
 
     const updateCourse = (updatedCourse: Course) => {
         setCourses((current) => {
@@ -336,17 +404,22 @@ export default function AdminPanelPage() {
         pinyin: wordForm.pinyin.trim(),
         audio_url: wordForm.audio_url.trim() || null,
         level: wordForm.level.trim() || "custom",
+        hsk_level: wordForm.hsk_level.trim() ? Number(wordForm.hsk_level.trim()) : null,
+        source: wordForm.source.trim() || "manual",
+        source_word_id: wordForm.source_word_id.trim() || null,
+        status: wordForm.status.trim() || "published",
         persian_meaning: wordForm.persian_meaning.trim() || null,
         chinese_meaning: wordForm.chinese_meaning.trim() || null,
         composition: wordForm.composition.trim() || null,
-        definitions: parsePipeRows(wordForm.definitions_text, ([part, definition, lang]) =>
-            definition ? { part_of_speech: part || "unknown", definition_text: definition, lang_code: lang || "fa" } : null
+        notes: wordForm.notes.trim() || null,
+        definitions: parsePipeRows(wordForm.definitions_text, ([part, definition, lang, sense, notes]) =>
+            definition ? { part_of_speech: part || "unknown", definition_text: definition, lang_code: lang || "fa", sense_order: Number(sense || 1), notes: notes || null } : null
         ),
-        examples: parsePipeRows(wordForm.examples_text, ([zh, pinyin, target]) =>
-            zh ? { zh_text: zh, pinyin: pinyin || "", target_text: target || "" } : null
+        examples: parsePipeRows(wordForm.examples_text, ([zh, pinyin, target, sense]) =>
+            zh ? { zh_text: zh, pinyin: pinyin || "", target_text: target || "", sense_order: Number(sense || 1) } : null
         ),
-        collocations: parsePipeRows(wordForm.collocations_text, ([zh, pinyin, target]) =>
-            zh ? { phrase_zh: zh, phrase_pinyin: pinyin || "", translation_target: target || "" } : null
+        collocations: parsePipeRows(wordForm.collocations_text, ([zh, pinyin, target, sense]) =>
+            zh ? { phrase_zh: zh, phrase_pinyin: pinyin || "", translation_target: target || "", sense_order: Number(sense || 1) } : null
         ),
     });
 
@@ -379,13 +452,18 @@ export default function AdminPanelPage() {
             chinese: word.chinese || "",
             pinyin: word.pinyin || "",
             level: word.level || "custom",
+            hsk_level: word.hsk_level ? String(word.hsk_level) : "",
+            source: word.source || "manual",
+            source_word_id: word.source_word_id || "",
+            status: word.status || "published",
             audio_url: word.audio_url || "",
             persian_meaning: word.persian_meaning || "",
             chinese_meaning: word.chinese_meaning || "",
             composition: word.composition || "",
-            definitions_text: word.definitions.map((item) => `${item.part_of_speech} | ${item.definition_text} | ${item.lang_code}`).join("\n"),
-            examples_text: word.examples.map((item) => `${item.zh_text} | ${item.pinyin} | ${item.target_text}`).join("\n"),
-            collocations_text: word.collocations.map((item) => `${item.phrase_zh} | ${item.phrase_pinyin} | ${item.translation_target}`).join("\n"),
+            notes: word.notes || "",
+            definitions_text: word.definitions.map((item) => `${item.part_of_speech} | ${item.definition_text} | ${item.lang_code} | ${item.sense_order || 1} | ${item.notes || ""}`).join("\n"),
+            examples_text: word.examples.map((item) => `${item.zh_text} | ${item.pinyin} | ${item.target_text} | ${item.sense_order || 1}`).join("\n"),
+            collocations_text: word.collocations.map((item) => `${item.phrase_zh} | ${item.phrase_pinyin} | ${item.translation_target} | ${item.sense_order || 1}`).join("\n"),
         });
         setActiveTab("dictionary");
     };
@@ -749,22 +827,253 @@ function DictionaryTab(props: {
     onDelete: (word: AdminDictionaryWord) => void;
 }) {
     const { words, wordForm, saving, search, setSearch, setWordForm, onRefresh, onSave, onEdit, onDelete } = props;
+    const [missingFilter, setMissingFilter] = useState<DictionaryMissingKey | "">("");
+    const [hskFilter, setHskFilter] = useState("");
+    const [sourceFilter, setSourceFilter] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+
+    const stats = useMemo(() => getDictionaryReviewStats(words), [words]);
+    const hskLevels = useMemo(
+        () => [...new Set(words.map((word) => word.hsk_level).filter((level): level is number => typeof level === "number"))].sort((a, b) => a - b),
+        [words],
+    );
+    const sources = useMemo(
+        () => [...new Set(words.map((word) => word.source).filter((source): source is string => Boolean(source)))].sort(),
+        [words],
+    );
+    const statuses = useMemo(
+        () => [...new Set(words.map((word) => word.status).filter((status): status is string => Boolean(status)))].sort(),
+        [words],
+    );
+    const visibleWords = useMemo(() => {
+        return words.filter((word) => {
+            if (missingFilter && !getDictionaryMissingFields(word).includes(missingFilter)) return false;
+            if (hskFilter && String(word.hsk_level || "") !== hskFilter) return false;
+            if (sourceFilter && word.source !== sourceFilter) return false;
+            if (statusFilter && word.status !== statusFilter) return false;
+            return true;
+        });
+    }, [hskFilter, missingFilter, sourceFilter, statusFilter, words]);
+    const selectedWord = words.find((word) => word.id === wordForm.id) || null;
+
     return (
-        <div className="motion-list grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="motion-list grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+            <div className="space-y-4">
+                <Surface className={cn(panelClass, "p-4")}>
+                    <PanelTitle icon={<FileText size={18} />} title="بازبینی کلمات" subtitle="کلمات دیکشنری را ببین، فیلدهای خالی را پیدا کن و برای اصلاح انتخاب کن." />
+                    <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                        <DictionaryReviewStat label="کل کلمات" value={stats.total} tone="blue" />
+                        <DictionaryReviewStat label="کامل" value={stats.complete} tone="green" />
+                        <DictionaryReviewStat label="نیازمند بررسی" value={stats.withMissing} tone="amber" />
+                        <DictionaryReviewStat label="بدون صدا" value={stats.missingAudio} tone="slate" />
+                    </div>
+
+                    <div className="mt-4 grid gap-2 lg:grid-cols-[1.3fr_auto]">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className={`${fieldClass} pr-9`}
+                                placeholder="جست‌وجوی کلمه، پین‌یین یا معنی فارسی"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={onRefresh}
+                            disabled={saving === "dictionary-refresh"}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+                        >
+                            {saving === "dictionary-refresh" && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {saving === "dictionary-refresh" ? "در حال بارگذاری" : "جست‌وجو"}
+                        </button>
+                    </div>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                        <select value={missingFilter} onChange={(e) => setMissingFilter(e.target.value as DictionaryMissingKey | "")} className={fieldClass}>
+                            <option value="">همه فیلدها</option>
+                            {dictionaryMissingOptions.map((item) => (
+                                <option key={item.key} value={item.key}>خالی: {item.label}</option>
+                            ))}
+                        </select>
+                        <select value={hskFilter} onChange={(e) => setHskFilter(e.target.value)} className={fieldClass}>
+                            <option value="">همه HSKها</option>
+                            {hskLevels.map((level) => (
+                                <option key={level} value={String(level)}>HSK {level}</option>
+                            ))}
+                        </select>
+                        <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className={fieldClass}>
+                            <option value="">همه منابع</option>
+                            {sources.map((source) => (
+                                <option key={source} value={source}>{source}</option>
+                            ))}
+                        </select>
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={fieldClass}>
+                            <option value="">همه وضعیت‌ها</option>
+                            {statuses.map((status) => (
+                                <option key={status} value={status}>{status}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-500">
+                        <span>{toPersianDigits(visibleWords.length)} کلمه از {toPersianDigits(words.length)} مورد نمایش داده می‌شود</span>
+                        {(missingFilter || hskFilter || sourceFilter || statusFilter) && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMissingFilter("");
+                                    setHskFilter("");
+                                    setSourceFilter("");
+                                    setStatusFilter("");
+                                }}
+                                className="text-[#155aa6]"
+                            >
+                                پاک کردن فیلترها
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="mt-4 max-h-[760px] space-y-2 overflow-y-auto pr-1">
+                        {visibleWords.map((word) => {
+                            const missing = getDictionaryMissingFields(word);
+                            const isSelected = word.id === wordForm.id;
+                            return (
+                                <div key={word.id} className={cn("rounded-[22px] border bg-slate-50 p-3 transition", isSelected ? "border-[#155aa6]/50 bg-[#eef6ff]" : "border-slate-100")}>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <button type="button" onClick={() => onEdit(word)} className="min-w-0 flex-1 text-right">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="font-cjk truncate text-2xl font-black text-slate-950" dir="ltr" lang="zh-CN">{word.chinese}</p>
+                                                    <p className="truncate font-latin text-xs font-bold text-slate-500" dir="ltr">{word.pinyin || "pinyin خالی"}</p>
+                                                </div>
+                                                <div className="flex shrink-0 flex-col items-end gap-1">
+                                                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-[#155aa6]">
+                                                        {word.hsk_level ? `HSK ${word.hsk_level}` : word.level}
+                                                    </span>
+                                                    <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-black", missing.length ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700")}>
+                                                        {missing.length ? `${toPersianDigits(missing.length)} نقص` : "کامل"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="mt-2 line-clamp-2 text-xs leading-6 text-slate-600">{word.persian_meaning || "معنی فارسی خالی است"}</p>
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {missing.length ? missing.slice(0, 4).map((item) => (
+                                                    <span key={item} className="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-amber-700">
+                                                        {getMissingLabel(item)}
+                                                    </span>
+                                                )) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[11px] font-bold text-emerald-700">
+                                                        <CheckCircle2 size={12} />
+                                                        آماده نمایش
+                                                    </span>
+                                                )}
+                                                {missing.length > 4 && (
+                                                    <span className="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-slate-500">
+                                                        +{toPersianDigits(missing.length - 4)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </button>
+                                        <button type="button" onClick={() => onDelete(word)} className="rounded-2xl bg-white p-2 text-rose-500 transition hover:bg-rose-50" aria-label="حذف">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {!visibleWords.length && (
+                            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-bold text-slate-400">
+                                کلمه‌ای با این فیلتر پیدا نشد.
+                            </div>
+                        )}
+                    </div>
+                </Surface>
+            </div>
+
             <Surface className={cn(panelClass, "p-4")}>
-                <PanelTitle icon={<Database size={18} />} title={wordForm.id ? "ویرایش کلمه" : "افزودن کلمه"} subtitle="کلمات را دستی اصلاح کن یا از بخش ورود فایل، گروهی اضافه کن." />
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <input value={wordForm.chinese} onChange={(e) => setWordForm((current) => ({ ...current, chinese: e.target.value }))} className="font-cjk w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-left text-lg outline-none transition focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12" placeholder="中文" dir="ltr" />
-                    <input value={wordForm.pinyin} onChange={(e) => setWordForm((current) => ({ ...current, pinyin: e.target.value }))} className={fieldClass} placeholder="pinyin" dir="ltr" />
-                    <input value={wordForm.level} onChange={(e) => setWordForm((current) => ({ ...current, level: e.target.value }))} className={fieldClass} placeholder="سطح مثل HSK3 یا custom" />
-                    <input value={wordForm.audio_url} onChange={(e) => setWordForm((current) => ({ ...current, audio_url: e.target.value }))} className={fieldClass} placeholder="audio url" dir="ltr" />
-                    <textarea value={wordForm.persian_meaning} onChange={(e) => setWordForm((current) => ({ ...current, persian_meaning: e.target.value }))} className={textAreaClass} placeholder="معنی فارسی" />
-                    <textarea value={wordForm.chinese_meaning} onChange={(e) => setWordForm((current) => ({ ...current, chinese_meaning: e.target.value }))} className={textAreaClass} placeholder="توضیح چینی" />
-                    <textarea value={wordForm.composition} onChange={(e) => setWordForm((current) => ({ ...current, composition: e.target.value }))} className={`${textAreaClass} md:col-span-2`} placeholder="ترکیب واژگانی و توضیحات آموزشی" />
-                    <textarea value={wordForm.definitions_text} onChange={(e) => setWordForm((current) => ({ ...current, definitions_text: e.target.value }))} className={`${textAreaClass} md:col-span-2`} placeholder="تعریف‌ها: نقش دستوری | تعریف فارسی | fa" />
-                    <textarea value={wordForm.examples_text} onChange={(e) => setWordForm((current) => ({ ...current, examples_text: e.target.value }))} className={`${textAreaClass} md:col-span-2`} placeholder="مثال‌ها: جمله چینی | pinyin | ترجمه فارسی" />
-                    <textarea value={wordForm.collocations_text} onChange={(e) => setWordForm((current) => ({ ...current, collocations_text: e.target.value }))} className={`${textAreaClass} md:col-span-2`} placeholder="ترکیب‌ها: عبارت چینی | pinyin | ترجمه" />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <PanelTitle
+                        icon={<Database size={18} />}
+                        title={wordForm.id ? "ویرایش کلمه" : "افزودن کلمه"}
+                        subtitle={wordForm.id ? "بعد از اصلاح، ذخیره را بزن تا همین رکورد آپدیت شود." : "برای ساخت دستی کلمه جدید، فیلدهای اصلی را پر کن."}
+                    />
+                    {selectedWord ? (
+                        <div className="flex flex-wrap gap-1.5">
+                            {getDictionaryMissingFields(selectedWord).length ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700">
+                                    <AlertTriangle size={14} />
+                                    {toPersianDigits(getDictionaryMissingFields(selectedWord).length)} فیلد خالی
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">
+                                    <CheckCircle2 size={14} />
+                                    کامل
+                                </span>
+                            )}
+                        </div>
+                    ) : null}
                 </div>
+
+                <div className="mt-4 space-y-4">
+                    <DictionaryFormSection title="اطلاعات اصلی">
+                        <DictionaryField label="کلمه چینی">
+                            <input value={wordForm.chinese} onChange={(e) => setWordForm((current) => ({ ...current, chinese: e.target.value }))} className="font-cjk w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-left text-lg outline-none transition focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12" dir="ltr" lang="zh-CN" />
+                        </DictionaryField>
+                        <DictionaryField label="پین‌یین">
+                            <input value={wordForm.pinyin} onChange={(e) => setWordForm((current) => ({ ...current, pinyin: e.target.value }))} className={fieldClass} dir="ltr" />
+                        </DictionaryField>
+                        <DictionaryField label="سطح متنی">
+                            <input value={wordForm.level} onChange={(e) => setWordForm((current) => ({ ...current, level: e.target.value }))} className={fieldClass} />
+                        </DictionaryField>
+                        <DictionaryField label="شماره HSK">
+                            <input value={wordForm.hsk_level} onChange={(e) => setWordForm((current) => ({ ...current, hsk_level: e.target.value }))} className={fieldClass} type="number" min={1} max={9} />
+                        </DictionaryField>
+                        <DictionaryField label="منبع">
+                            <input value={wordForm.source} onChange={(e) => setWordForm((current) => ({ ...current, source: e.target.value }))} className={fieldClass} />
+                        </DictionaryField>
+                        <DictionaryField label="شناسه کلمه در منبع">
+                            <input value={wordForm.source_word_id} onChange={(e) => setWordForm((current) => ({ ...current, source_word_id: e.target.value }))} className={fieldClass} />
+                        </DictionaryField>
+                        <DictionaryField label="وضعیت انتشار" hint="published یعنی این کلمه برای کاربرها قابل نمایش است. draft یعنی فعلا فقط در ادمین بماند.">
+                            <select value={wordForm.status} onChange={(e) => setWordForm((current) => ({ ...current, status: e.target.value }))} className={fieldClass}>
+                                <option value="published">published</option>
+                                <option value="draft">draft</option>
+                            </select>
+                        </DictionaryField>
+                        <DictionaryField label="آدرس فایل صدا">
+                            <input value={wordForm.audio_url} onChange={(e) => setWordForm((current) => ({ ...current, audio_url: e.target.value }))} className={fieldClass} dir="ltr" />
+                        </DictionaryField>
+                    </DictionaryFormSection>
+
+                    <DictionaryFormSection title="معنی و یادداشت">
+                        <DictionaryField label="معنی فارسی">
+                            <textarea value={wordForm.persian_meaning} onChange={(e) => setWordForm((current) => ({ ...current, persian_meaning: e.target.value }))} className={textAreaClass} dir="rtl" />
+                        </DictionaryField>
+                        <DictionaryField label="توضیح چینی">
+                            <textarea value={wordForm.chinese_meaning} onChange={(e) => setWordForm((current) => ({ ...current, chinese_meaning: e.target.value }))} className={textAreaClass} dir="ltr" lang="zh-CN" />
+                        </DictionaryField>
+                        <DictionaryField label="ترکیب واژگانی و توضیحات آموزشی" wide>
+                            <textarea value={wordForm.composition} onChange={(e) => setWordForm((current) => ({ ...current, composition: e.target.value }))} className={textAreaClass} />
+                        </DictionaryField>
+                        <DictionaryField label="یادداشت داخلی یا نکته آموزشی" wide>
+                            <textarea value={wordForm.notes} onChange={(e) => setWordForm((current) => ({ ...current, notes: e.target.value }))} className={textAreaClass} />
+                        </DictionaryField>
+                    </DictionaryFormSection>
+
+                    <DictionaryFormSection title="داده‌های چندبخشی">
+                        <DictionaryField label="تعریف‌ها" hint="فرمت هر خط: نقش دستوری | تعریف | fa/zh | شماره معنا | یادداشت" wide>
+                            <textarea value={wordForm.definitions_text} onChange={(e) => setWordForm((current) => ({ ...current, definitions_text: e.target.value }))} className={textAreaClass} />
+                        </DictionaryField>
+                        <DictionaryField label="مثال‌ها" hint="فرمت هر خط: جمله چینی | pinyin | ترجمه فارسی | شماره معنا" wide>
+                            <textarea value={wordForm.examples_text} onChange={(e) => setWordForm((current) => ({ ...current, examples_text: e.target.value }))} className={textAreaClass} />
+                        </DictionaryField>
+                        <DictionaryField label="ترکیب‌ها" hint="فرمت هر خط: عبارت چینی | pinyin | ترجمه | شماره معنا" wide>
+                            <textarea value={wordForm.collocations_text} onChange={(e) => setWordForm((current) => ({ ...current, collocations_text: e.target.value }))} className={textAreaClass} />
+                        </DictionaryField>
+                    </DictionaryFormSection>
+                </div>
+
                 <div className="mt-4 flex flex-wrap gap-2">
                     <PrimaryButton onClick={onSave} disabled={saving === "word"} leadingIcon={saving === "word" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}>ذخیره کلمه</PrimaryButton>
                     {wordForm.id ? (
@@ -772,31 +1081,41 @@ function DictionaryTab(props: {
                     ) : null}
                 </div>
             </Surface>
-
-            <Surface className={cn(panelClass, "p-4")}>
-                <PanelTitle icon={<FileText size={18} />} title="کلمات ثبت‌شده" subtitle="جست‌وجو کن، ویرایش کن، یا حذف کن." />
-                <div className="mt-4 flex gap-2">
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="جست‌وجوی کلمه" />
-                    <button type="button" onClick={onRefresh} className="rounded-2xl bg-[#155aa6] px-4 text-sm font-black text-white">جست‌وجو</button>
-                </div>
-                <div className="mt-4 max-h-[640px] space-y-2 overflow-y-auto pr-1">
-                    {words.map((word) => (
-                        <div key={word.id} className="rounded-[22px] border border-slate-100 bg-slate-50 p-3">
-                            <div className="flex items-start justify-between gap-3">
-                                <button type="button" onClick={() => onEdit(word)} className="min-w-0 flex-1 text-right">
-                                    <p className="font-cjk truncate text-xl font-black text-slate-950" dir="ltr">{word.chinese}</p>
-                                    <p className="truncate text-xs font-bold text-slate-400">{word.pinyin || word.level}</p>
-                                    <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-500">{word.persian_meaning || "بدون معنی فارسی"}</p>
-                                </button>
-                                <button type="button" onClick={() => onDelete(word)} className="rounded-2xl bg-white p-2 text-rose-500 transition hover:bg-rose-50" aria-label="حذف">
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </Surface>
         </div>
+    );
+}
+
+function DictionaryReviewStat({ label, value, tone }: { label: string; value: number; tone: "blue" | "green" | "amber" | "slate" }) {
+    const toneClass = {
+        blue: "bg-[#eef6ff] text-[#155aa6]",
+        green: "bg-emerald-50 text-emerald-700",
+        amber: "bg-amber-50 text-amber-700",
+        slate: "bg-slate-100 text-slate-600",
+    }[tone];
+    return (
+        <div className={cn("rounded-[20px] px-3 py-3", toneClass)}>
+            <p className="text-[11px] font-black opacity-80">{label}</p>
+            <p className="mt-1 text-2xl font-black">{toPersianDigits(value)}</p>
+        </div>
+    );
+}
+
+function DictionaryFormSection({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <section className="rounded-[24px] border border-slate-100 bg-slate-50 p-3">
+            <h3 className="px-1 text-sm font-black text-slate-800">{title}</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">{children}</div>
+        </section>
+    );
+}
+
+function DictionaryField({ label, hint, wide, children }: { label: string; hint?: string; wide?: boolean; children: React.ReactNode }) {
+    return (
+        <label className={cn("block space-y-1.5 text-right", wide && "md:col-span-2")}>
+            <span className="block px-1 text-xs font-black text-slate-600">{label}</span>
+            {children}
+            {hint ? <span className="block px-1 text-[11px] font-bold leading-5 text-slate-400">{hint}</span> : null}
+        </label>
     );
 }
 

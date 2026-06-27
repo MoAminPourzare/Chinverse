@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import BottomNav from "@/components/layout/BottomNav";
 import NotificationToaster from "@/components/notifications/NotificationToaster";
 import RouteTransition from "@/components/layout/RouteTransition";
+import ThemeController from "@/components/layout/ThemeController";
 
 const navHiddenPrefixes = [
     "/login",
@@ -32,6 +33,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return (
         <div className="app-viewport">
             <div className="app-frame">
+                <ThemeController />
                 <NotificationToaster />
                 <div ref={scrollRef} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
                     <RouteTransition>{children}</RouteTransition>

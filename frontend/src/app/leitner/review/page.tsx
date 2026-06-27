@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import { Check, Loader2, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { getMediaUrl } from "@/lib/media";
 import { BackButton } from "@/components/ui/IconButton";
 import {
     getChineseTextStyle,
@@ -25,6 +26,24 @@ interface Example {
     sentence_fa?: string;
     target_text?: string;
     pinyin?: string;
+    sense_order?: number;
+}
+
+interface Definition {
+    id: number;
+    lang_code: string;
+    definition_text: string;
+    part_of_speech: string;
+    sense_order?: number;
+    notes?: string | null;
+}
+
+interface Collocation {
+    id: number;
+    phrase_zh: string;
+    phrase_pinyin?: string;
+    translation_target?: string;
+    sense_order?: number;
 }
 
 interface Word {
@@ -35,7 +54,9 @@ interface Word {
     persian_meaning?: string;
     chinese_meaning?: string;
     composition?: string;
+    definitions?: Definition[];
     examples?: Example[];
+    collocations?: Collocation[];
 }
 
 interface Flashcard {
@@ -76,39 +97,46 @@ export default function LeitnerReviewPage() {
     const [cards, setCards] = useState<Flashcard[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sessionComplete, setSessionComplete] = useState(false);
     const [activeBackTab, setActiveBackTab] = useState<BackTabType>("examples");
 
-    useEffect(() => {
-        const fetchReviewCards = async () => {
-            try {
-                const response = await api.get("/leitner/review");
-                setCards(response.data.cards);
-                if (response.data.cards.length === 0) {
-                    setSessionComplete(true);
-                }
-            } catch (error) {
-                console.error("Failed to fetch review cards:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        void fetchReviewCards();
+    const fetchReviewCards = useCallback(async () => {
+        setLoading(true);
+        setLoadError(null);
+        try {
+            const response = await api.get("/leitner/review", { params: { limit: 1000 } });
+            const nextCards = Array.isArray(response.data.cards) ? response.data.cards : [];
+            setCards(nextCards);
+            setCurrentIndex(0);
+            setSessionComplete(nextCards.length === 0);
+        } catch (error) {
+            console.error("Failed to fetch review cards:", error);
+            setLoadError("کارت‌های مرور دریافت نشدند. اتصال را بررسی و دوباره تلاش کن.");
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        void fetchReviewCards();
+    }, [fetchReviewCards]);
 
     const playAudio = (url?: string) => {
         if (!url) return;
-        void new Audio(url).play();
+        void new Audio(getMediaUrl(url)).play().catch((error) => {
+            console.error("Failed to play vocabulary audio:", error);
+        });
     };
 
     const handleReview = async (remembered: boolean) => {
         if (isSubmitting) return;
-        setIsSubmitting(true);
-
         const currentCard = cards[currentIndex];
+        if (!currentCard) return;
+        setLoadError(null);
+        setIsSubmitting(true);
 
         try {
             await api.post("/leitner/review", {
@@ -125,6 +153,7 @@ export default function LeitnerReviewPage() {
             }
         } catch (error) {
             console.error("Failed to submit review:", error);
+            setLoadError("نتیجه مرور ذخیره نشد. دوباره تلاش کن.");
         } finally {
             setIsSubmitting(false);
         }
@@ -154,6 +183,21 @@ export default function LeitnerReviewPage() {
         return (
             <div className="flex min-h-full items-center justify-center">
                 <Loader2 className="h-7 w-7 animate-spin text-[#155aa6]" />
+            </div>
+        );
+    }
+
+    if (loadError && cards.length === 0) {
+        return (
+            <div className="flex min-h-full flex-col items-center justify-center bg-[#f7f8fa] p-6 text-center" dir="rtl">
+                <p className="max-w-xs text-sm font-bold leading-7 text-red-600">{loadError}</p>
+                <button
+                    type="button"
+                    onClick={() => void fetchReviewCards()}
+                    className="mt-5 rounded-full bg-[#155aa6] px-7 py-3 text-sm font-black text-white"
+                >
+                    تلاش دوباره
+                </button>
             </div>
         );
     }
@@ -193,18 +237,11 @@ export default function LeitnerReviewPage() {
     const chineseTextStyle = getChineseTextStyle(preferences);
     const persianTextStyle = getPersianTextStyle(preferences);
 
-    const examples: Example[] = currentCard.word.examples || [
-        {
-            type: "text",
-            sentence_ch: `${currentCard.word.chinese}，我今天要好好练习。`,
-            sentence_fa: "امروز می‌خواهم این واژه را خوب تمرین کنم.",
-        },
-        {
-            type: "text",
-            sentence_ch: `他想学习${currentCard.word.chinese}这个词。`,
-            sentence_fa: "او می‌خواهد این واژه را یاد بگیرد.",
-        },
-    ];
+    const examples = sortBySense(currentCard.word.examples || []);
+    const collocations = sortBySense(currentCard.word.collocations || []);
+    const definitions = sortBySense(currentCard.word.definitions || []);
+    const persianDefinitions = definitions.filter((item) => item.lang_code === "fa");
+    const chineseDefinitions = definitions.filter((item) => item.lang_code === "zh");
 
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
@@ -238,7 +275,8 @@ export default function LeitnerReviewPage() {
                                 </span>
                                 <button
                                     onClick={() => playAudio(currentCard.word.audio_url)}
-                                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe]"
+                                    disabled={!currentCard.word.audio_url}
+                                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-35"
                                     aria-label="پخش تلفظ"
                                 >
                                     <Image
@@ -270,7 +308,8 @@ export default function LeitnerReviewPage() {
                                 <div className="flex items-center justify-center gap-3">
                                     <button
                                         onClick={() => playAudio(currentCard.word.audio_url)}
-                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#155aa6] shadow-sm"
+                                        disabled={!currentCard.word.audio_url}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#155aa6] shadow-sm disabled:cursor-not-allowed disabled:opacity-35"
                                         aria-label="پخش تلفظ"
                                     >
                                         <Image
@@ -317,7 +356,7 @@ export default function LeitnerReviewPage() {
                                             <EmptyText>مثالی موجود نیست</EmptyText>
                                         ) : (
                                             examples.map((example, i) => (
-                                                <div key={i} className="rounded-[14px] bg-slate-50 p-3">
+                                                <div key={example.id ?? i} className="rounded-[14px] bg-slate-50 p-3">
                                                     {example.type === "video" && example.url && (
                                                         <video
                                                             src={example.url}
@@ -327,8 +366,13 @@ export default function LeitnerReviewPage() {
                                                         />
                                                     )}
                                                     <p className="font-cjk text-slate-900" style={chineseTextStyle} dir="ltr" lang="zh-CN">
-                                                        {toPersianDigits(i + 1)}. {highlightKeyword(example.sentence_ch || example.zh_text || "", currentCard.word.chinese)}
+                                                        {toPersianDigits(example.sense_order || i + 1)}. {highlightKeyword(example.sentence_ch || example.zh_text || "", currentCard.word.chinese)}
                                                     </p>
+                                                    {example.pinyin && (
+                                                        <p className="font-latin mt-1 text-xs font-semibold leading-6 text-slate-400" dir="ltr" lang="en">
+                                                            {example.pinyin}
+                                                        </p>
+                                                    )}
                                                     {(example.sentence_fa || example.target_text) && (
                                                         <p className="mt-2 text-slate-500" style={persianTextStyle}>
                                                             {example.sentence_fa || example.target_text}
@@ -341,35 +385,57 @@ export default function LeitnerReviewPage() {
                                 )}
 
                                 {activeBackTab === "composition" && (
-                                    <TextLines
-                                        value={currentCard.word.composition}
-                                        empty="ترکیب واژگانی موجود نیست"
-                                        chinese
-                                        keyword={currentCard.word.chinese}
-                                        style={chineseTextStyle}
-                                        highlight={highlightKeyword}
-                                    />
+                                    collocations.length > 0 ? (
+                                        <CollocationList
+                                            items={collocations}
+                                            keyword={currentCard.word.chinese}
+                                            style={chineseTextStyle}
+                                            highlight={highlightKeyword}
+                                        />
+                                    ) : (
+                                        <TextLines
+                                            value={currentCard.word.composition}
+                                            empty="ترکیب واژگانی موجود نیست"
+                                            chinese
+                                            keyword={currentCard.word.chinese}
+                                            style={chineseTextStyle}
+                                            highlight={highlightKeyword}
+                                        />
+                                    )
                                 )}
 
                                 {activeBackTab === "persian" && (
-                                    <TextLines
-                                        value={currentCard.word.persian_meaning}
-                                        empty="معنی فارسی موجود نیست"
-                                        style={persianTextStyle}
-                                    />
+                                    persianDefinitions.length > 0 ? (
+                                        <DefinitionList items={persianDefinitions} style={persianTextStyle} />
+                                    ) : (
+                                        <TextLines
+                                            value={currentCard.word.persian_meaning}
+                                            empty="معنی فارسی موجود نیست"
+                                            style={persianTextStyle}
+                                        />
+                                    )
                                 )}
 
                                 {activeBackTab === "chinese" && (
-                                    <TextLines
-                                        value={currentCard.word.chinese_meaning}
-                                        empty="معنی چینی موجود نیست"
-                                        chinese
-                                        style={chineseTextStyle}
-                                    />
+                                    chineseDefinitions.length > 0 ? (
+                                        <DefinitionList items={chineseDefinitions} style={chineseTextStyle} chinese />
+                                    ) : (
+                                        <TextLines
+                                            value={currentCard.word.chinese_meaning}
+                                            empty="معنی چینی موجود نیست"
+                                            chinese
+                                            style={chineseTextStyle}
+                                        />
+                                    )
                                 )}
                             </div>
 
                             <div className="border-t border-slate-100 bg-white p-4">
+                                {loadError && (
+                                    <p className="mb-3 rounded-[12px] bg-red-50 px-3 py-2 text-center text-xs font-bold text-red-600" role="alert">
+                                        {loadError}
+                                    </p>
+                                )}
                                 <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
                                     <div className="rounded-[12px] bg-red-50 px-3 py-2 text-red-600">
                                         فراموش شد: جعبه ۱، مرور فردا
@@ -451,6 +517,76 @@ function TextLines({
     );
 }
 
+function DefinitionList({
+    items,
+    style,
+    chinese = false,
+}: {
+    items: Definition[];
+    style: CSSProperties;
+    chinese?: boolean;
+}) {
+    return (
+        <div className="space-y-3">
+            {items.map((item) => (
+                <div key={item.id} className="rounded-[14px] bg-slate-50 p-3">
+                    <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-bold text-slate-400">
+                        <span>{item.part_of_speech}</span>
+                        <span>{toPersianDigits(item.sense_order || 1)}</span>
+                    </div>
+                    <p
+                        className={cn("text-slate-800", chinese && "font-cjk")}
+                        style={style}
+                        dir={chinese ? "ltr" : "rtl"}
+                        lang={chinese ? "zh-CN" : "fa"}
+                    >
+                        {item.definition_text}
+                    </p>
+                    {item.notes && (
+                        <p className="mt-2 text-xs leading-6 text-slate-500" dir={chinese ? "ltr" : "rtl"}>
+                            {item.notes}
+                        </p>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function CollocationList({
+    items,
+    keyword,
+    style,
+    highlight,
+}: {
+    items: Collocation[];
+    keyword: string;
+    style: CSSProperties;
+    highlight: (text: string, keyword: string) => ReactNode;
+}) {
+    return (
+        <div className="space-y-3">
+            {items.map((item) => (
+                <div key={item.id} className="rounded-[14px] bg-slate-50 p-3">
+                    <p className="font-cjk text-slate-800" style={style} dir="ltr" lang="zh-CN">
+                        {toPersianDigits(item.sense_order || 1)}. {highlight(item.phrase_zh, keyword)}
+                    </p>
+                    {item.phrase_pinyin && (
+                        <p className="font-latin mt-1 text-xs font-semibold leading-6 text-slate-400" dir="ltr" lang="en">
+                            {item.phrase_pinyin}
+                        </p>
+                    )}
+                    {item.translation_target && (
+                        <p className="mt-2 text-sm leading-7 text-slate-500" dir="rtl" lang="fa">
+                            {item.translation_target}
+                        </p>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+}
+
 function EmptyText({ children }: { children: ReactNode }) {
     return (
         <p className="rounded-[14px] bg-slate-50 px-4 py-6 text-center text-sm font-bold text-slate-400">
@@ -461,6 +597,10 @@ function EmptyText({ children }: { children: ReactNode }) {
 
 function normalizeBoxNumber(value: number) {
     return Math.max(1, Math.min(5, value || 1));
+}
+
+function sortBySense<T extends { sense_order?: number }>(items: T[]) {
+    return [...items].sort((a, b) => (a.sense_order || 1) - (b.sense_order || 1));
 }
 
 function toPersianDigits(value: string | number) {

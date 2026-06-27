@@ -32,8 +32,8 @@ export const socialPlatforms: SocialPlatform[] = [
         icon: Instagram,
         placeholder: "chinverse_app",
         profileUrl: (handle) => `https://instagram.com/${handle}`,
-        handlePattern: /^[A-Za-z0-9._]{1,30}$/,
-        errorMessage: "آیدی Instagram فقط می‌تواند شامل حرف، عدد، نقطه و زیرخط باشد.",
+        handlePattern: /^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$/,
+        errorMessage: "آیدی Instagram معتبر نیست؛ مثل chinverse_app وارد کن.",
     },
     {
         id: "twitter",
@@ -42,16 +42,16 @@ export const socialPlatforms: SocialPlatform[] = [
         placeholder: "chinverse_app",
         profileUrl: (handle) => `https://x.com/${handle}`,
         handlePattern: /^[A-Za-z0-9_]{1,15}$/,
-        errorMessage: "آیدی X/Twitter باید فقط شامل حرف، عدد یا زیرخط و حداکثر ۱۵ کاراکتر باشد.",
+        errorMessage: "آیدی X/Twitter باید حداکثر ۱۵ کاراکتر باشد؛ مثل chinverse_app.",
     },
     {
         id: "linkedin",
         name: "LinkedIn",
         icon: Linkedin,
         placeholder: "chinverse-academy",
-        profileUrl: (handle) => handle.startsWith("in/") ? `https://linkedin.com/${handle}` : `https://linkedin.com/in/${handle}`,
-        handlePattern: /^(in\/)?[A-Za-z0-9-]{3,100}$/,
-        errorMessage: "آیدی LinkedIn باید فقط شامل حرف، عدد و خط تیره باشد.",
+        profileUrl: (handle) => `https://linkedin.com/in/${handle}`,
+        handlePattern: /^[A-Za-z0-9-]{3,100}$/,
+        errorMessage: "شناسه LinkedIn معتبر نیست؛ مثل chinverse-academy وارد کن.",
     },
     {
         id: "telegram",
@@ -59,8 +59,8 @@ export const socialPlatforms: SocialPlatform[] = [
         icon: Send,
         placeholder: "chinverse_app",
         profileUrl: (handle) => `https://t.me/${handle}`,
-        handlePattern: /^[A-Za-z0-9_]{5,32}$/,
-        errorMessage: "آیدی Telegram باید ۵ تا ۳۲ کاراکتر و شامل حرف، عدد یا زیرخط باشد.",
+        handlePattern: /^[A-Za-z][A-Za-z0-9_]{3,30}[A-Za-z0-9]$/,
+        errorMessage: "آیدی Telegram باید ۵ تا ۳۲ کاراکتر باشد؛ مثل chinverse_app.",
     },
     {
         id: "whatsapp",
@@ -69,7 +69,7 @@ export const socialPlatforms: SocialPlatform[] = [
         placeholder: "989123456789",
         profileUrl: (handle) => `https://wa.me/${handle}`,
         handlePattern: /^[1-9][0-9]{7,14}$/,
-        errorMessage: "شماره WhatsApp را با کد کشور، فقط عدد و بدون + وارد کن.",
+        errorMessage: "شماره WhatsApp را با کد کشور و بدون + وارد کن؛ مثل 989123456789.",
     },
     {
         id: "wechat",
@@ -78,7 +78,7 @@ export const socialPlatforms: SocialPlatform[] = [
         placeholder: "chinverse_id",
         profileUrl: (handle) => `weixin://dl/chat?${encodeURIComponent(handle)}`,
         handlePattern: /^[A-Za-z][A-Za-z0-9_-]{5,19}$/,
-        errorMessage: "WeChat ID باید با حرف شروع شود و ۶ تا ۲۰ کاراکتر شامل حرف، عدد، خط تیره یا زیرخط باشد.",
+        errorMessage: "WeChat ID باید با حرف شروع شود؛ مثل chinverse_id.",
     },
     {
         id: "facebook",
@@ -86,8 +86,8 @@ export const socialPlatforms: SocialPlatform[] = [
         icon: Facebook,
         placeholder: "chinverse.app",
         profileUrl: (handle) => `https://facebook.com/${handle}`,
-        handlePattern: /^[A-Za-z0-9.]{5,50}$/,
-        errorMessage: "آیدی Facebook فقط می‌تواند شامل حرف، عدد و نقطه باشد.",
+        handlePattern: /^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9.]{5,50}$/,
+        errorMessage: "آیدی Facebook معتبر نیست؛ مثل chinverse.app وارد کن.",
     },
 ];
 
@@ -125,7 +125,8 @@ export const normalizeSocialHandle = (platformId: string, rawHandle: string) => 
         handle = handle.replace(/^(weixin:\/\/dl\/chat\?|wechat:)/i, "");
     }
     if (platform.id === "linkedin") {
-        handle = handle.replace(/^(linkedin\.com\/)/i, "");
+        handle = handle.replace(/^linkedin\.com\/(in\/)?/i, "");
+        handle = handle.replace(/^in\//i, "");
     }
     if (platform.id === "facebook") {
         handle = handle.replace(/^(facebook\.com|fb\.com)\//i, "");

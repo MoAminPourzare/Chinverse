@@ -2,7 +2,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, and_, func, desc
+from sqlalchemy import select, or_, and_, func, desc, update
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
@@ -103,6 +103,19 @@ async def _broadcast_message(message: Message) -> None:
     await chat_manager.send_to_user(message.sender_id, payload)
 
 
+async def _broadcast_read_receipt(*, sender_id: int, reader_id: int, message_ids: list[int]) -> None:
+    if not message_ids:
+        return
+    await chat_manager.send_to_user(
+        sender_id,
+        {
+            "type": "messages:read",
+            "reader_id": reader_id,
+            "message_ids": message_ids,
+        },
+    )
+
+
 @router.websocket("/ws")
 async def chat_websocket(websocket: WebSocket, token: str = Query("")):
     user = await _get_user_from_ws_token(token)
@@ -179,6 +192,36 @@ async def send_message(
     await _broadcast_message(message)
 
     return _message_read(message)
+
+
+@router.post("/{user_id}/read")
+async def mark_conversation_read(
+    user_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    target_user = await db.get(User, user_id)
+    if not target_user:
+        raise not_found("User")
+
+    result = await db.execute(
+        update(Message)
+        .where(
+            Message.sender_id == user_id,
+            Message.receiver_id == current_user.id,
+            Message.is_read.is_(False),
+        )
+        .values(is_read=True)
+        .returning(Message.id)
+    )
+    message_ids = [int(message_id) for message_id in result.scalars().all()]
+    await db.commit()
+    await _broadcast_read_receipt(
+        sender_id=user_id,
+        reader_id=current_user.id,
+        message_ids=message_ids,
+    )
+    return {"updated": len(message_ids), "message_ids": message_ids}
 
 
 @router.get("/conversations", response_model=List[schemas.ConversationPreview])
@@ -293,10 +336,17 @@ async def get_message_history(
     result = await db.execute(query)
     messages = result.scalars().all()
 
-    # Mark received messages as read
+    # Mark received messages as read and notify the sender's active sessions.
+    read_message_ids: list[int] = []
     for msg in messages:
         if msg.receiver_id == current_user.id and not msg.is_read:
             msg.is_read = True
+            read_message_ids.append(msg.id)
     await db.commit()
+    await _broadcast_read_receipt(
+        sender_id=user_id,
+        reader_id=current_user.id,
+        message_ids=read_message_ids,
+    )
 
     return [_message_read(msg) for msg in messages]

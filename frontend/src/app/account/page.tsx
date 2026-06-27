@@ -12,7 +12,15 @@ import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import { IRAN_PROVINCE_OPTIONS, isKnownProfileHeadline, PRIMARY_COUNTRY_OPTIONS, PROFILE_HEADLINE_OPTIONS } from "@/profileOptions";
-import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
+import {
+    cleanApiValidationMessage,
+    hasOnlyPersianNameCharacters,
+    normalizePersianName,
+    validateImageFile,
+    validatePersianName,
+    validateTextLength,
+    validationMessage,
+} from "@/validation";
 
 interface AccountFormState extends UserProfile {
     email: string;
@@ -73,7 +81,12 @@ export default function AccountPage() {
             [name]: value,
             ...(name === "country" && value !== "ایران" ? { city: "" } : {}),
         }));
-        setFieldErrors((current) => ({ ...current, [name]: "" }));
+        setFieldErrors((current) => ({
+            ...current,
+            [name]: name === "display_name" && value && !hasOnlyPersianNameCharacters(value)
+                ? "نام را فقط با حروف فارسی بنویس؛ زبان صفحه‌کلید را روی فارسی بگذار."
+                : "",
+        }));
         setFormMessage(null);
     };
 
@@ -115,7 +128,7 @@ export default function AccountPage() {
         e.preventDefault();
         const nextErrors = {
             country: validationMessage(validateTextLength(formData.country || "", "کشور", { max: 80 })),
-            display_name: validationMessage(validateTextLength(formData.display_name || "", "نام و نام خانوادگی", { required: true, min: 2, max: 120 })),
+            display_name: validationMessage(validatePersianName(formData.display_name || "")),
             headline: validationMessage(validateTextLength(formData.headline || "", "عنوان شغلی", { required: true })),
             city: validationMessage(validateTextLength(formData.city || "", "شهر / کشور", { max: 80 })),
         };
@@ -134,7 +147,7 @@ export default function AccountPage() {
             }
 
             await userService.updateProfile({
-                display_name: (formData.display_name || "").trim(),
+                display_name: normalizePersianName(formData.display_name || ""),
                 headline: (formData.headline || "").trim(),
                 city: formData.country === "ایران" ? formData.city?.trim() : "",
                 country: formData.country?.trim(),
@@ -155,9 +168,19 @@ export default function AccountPage() {
             });
 
             setFormMessage({ type: "success", text: "تغییرات با موفقیت ذخیره شد." });
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Failed to update profile", error);
-            setFormMessage({ type: "error", text: "خطا در ذخیره تغییرات. لطفا فیلدها را بررسی کن و دوباره تلاش کن." });
+            const apiError = error as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };
+            const detail = apiError.response?.data?.detail;
+            const issue = Array.isArray(detail) ? detail[0] : null;
+            if (issue?.loc?.at(-1) === "display_name") {
+                setFieldErrors((current) => ({ ...current, display_name: cleanApiValidationMessage(issue.msg || "نام واردشده معتبر نیست.") }));
+            } else {
+                setFormMessage({
+                    type: "error",
+                    text: typeof detail === "string" ? detail : "خطا در ذخیره تغییرات. لطفا فیلدها را بررسی کن و دوباره تلاش کن.",
+                });
+            }
         } finally {
             setSaving(false);
         }
@@ -245,6 +268,13 @@ export default function AccountPage() {
                         name="display_name"
                         value={formData.display_name || ""}
                         onChange={handleInputChange}
+                        onBlur={() => setFieldErrors((current) => ({
+                            ...current,
+                            display_name: validationMessage(validatePersianName(formData.display_name || "")),
+                        }))}
+                        autoComplete="name"
+                        maxLength={120}
+                        aria-invalid={Boolean(fieldErrors.display_name)}
                         error={fieldErrors.display_name}
                     />
 
@@ -347,6 +377,7 @@ function AccountField({
                 className={cn(
                     "h-11 w-full rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none placeholder:text-slate-400",
                     inputProps.readOnly && "text-slate-500",
+                    error && "text-rose-700",
                 )}
             />
         </FloatingField>
