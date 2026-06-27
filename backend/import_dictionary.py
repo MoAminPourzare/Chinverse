@@ -132,7 +132,7 @@ async def bulk_import_after_reset(db, payloads) -> tuple[int, int, int]:
     return len(word_rows), 0, 0
 
 
-async def import_dictionary_file(path: Path, *, reset: bool = False) -> None:
+async def import_dictionary_file(path: Path, *, reset: bool = False, progress_every: int = 25) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Dictionary file not found: {path}")
 
@@ -147,6 +147,8 @@ async def import_dictionary_file(path: Path, *, reset: bool = False) -> None:
     failed = 0
 
     async with SessionLocal() as db:
+        await db.execute(text("SET LOCAL lock_timeout = '10s'"))
+        await db.execute(text("SET LOCAL statement_timeout = '60s'"))
         if reset:
             payloads, errors = _payloads_from_rows(rows, is_csv=is_csv)
             for index, chinese, error in errors:
@@ -156,14 +158,16 @@ async def import_dictionary_file(path: Path, *, reset: bool = False) -> None:
             created, updated, failed = await bulk_import_after_reset(db, payloads)
             failed += len(errors)
         else:
-            for index, row in enumerate(rows, start=2 if is_csv else 1):
+            payloads, errors = _payloads_from_rows(rows, is_csv=is_csv)
+            for index, chinese, error in errors:
+                failed += 1
+                print(f"[row {index}] failed to parse {chinese}: {error}", flush=True)
+
+            total = len(payloads)
+            print(f"Parsed {total} dictionary words. Updating existing dictionary without reset...", flush=True)
+            for processed, payload in enumerate(payloads, start=1):
+                display_row = processed + 1 if is_csv else processed
                 try:
-                    is_normalized_record = isinstance(row.get("definitions"), list)
-                    payload = (
-                        _dictionary_payload_from_record(row)
-                        if is_normalized_record or not is_csv
-                        else _dictionary_payload_from_csv_row(row)
-                    )
                     existed = await db.scalar(
                         select(DictionaryWord.id).where(DictionaryWord.chinese == payload.chinese.strip())
                     )
@@ -174,8 +178,15 @@ async def import_dictionary_file(path: Path, *, reset: bool = False) -> None:
                         created += 1
                 except Exception as error:
                     failed += 1
-                    chinese = row.get("chinese") or row.get("chinese_word") or "-"
-                    print(f"[row {index}] failed to import {chinese}: {error}")
+                    chinese = payload.chinese or "-"
+                    print(f"[row {display_row}] failed to import {chinese}: {error}", flush=True)
+
+                if processed % max(progress_every, 1) == 0 or processed == total:
+                    await db.commit()
+                    print(
+                        f"Progress: {processed}/{total} | Created: {created} | Updated: {updated} | Failed: {failed}",
+                        flush=True,
+                    )
 
         await db.commit()
 
@@ -198,11 +209,17 @@ def main() -> None:
         action="store_true",
         help="Clear dictionary-related tables and restart ids before importing.",
     )
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=25,
+        help="Print and commit progress after this many words when importing without --reset.",
+    )
     args = parser.parse_args()
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(import_dictionary_file(Path(args.file).resolve(), reset=args.reset))
+    asyncio.run(import_dictionary_file(Path(args.file).resolve(), reset=args.reset, progress_every=args.progress_every))
 
 
 if __name__ == "__main__":
