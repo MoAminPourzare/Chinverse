@@ -199,12 +199,13 @@ function VisualScaleSheet({
     children: ReactNode;
 }) {
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/45 px-0 pt-10 backdrop-blur-sm sm:items-center sm:px-3" onClick={onClose}>
+        <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-end justify-center overflow-y-auto bg-slate-950/45 px-4 pb-4 pt-10 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-t-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] sm:rounded-[30px]"
+                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
+                <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-200 dark:bg-[#344050]" />
                 <div className="flex justify-start px-4 pt-3">
                     <button
                         type="button"
@@ -215,7 +216,7 @@ function VisualScaleSheet({
                         <X size={19} />
                     </button>
                 </div>
-                <div className="max-h-[76vh] overflow-y-auto pb-5">
+                <div className="max-h-[72vh] overflow-y-auto pb-5">
                     {children}
                 </div>
             </div>

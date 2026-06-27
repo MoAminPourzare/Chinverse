@@ -98,13 +98,14 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
     };
 
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-slate-950/45 px-3 py-6 backdrop-blur-sm sm:items-center" onClick={onClose}>
+        <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-end justify-center overflow-y-auto bg-slate-950/45 px-4 pb-4 pt-10 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_24px_70px_rgba(0,0,0,0.5)]"
+                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
-                <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-[#f8fbff] px-5 py-4 dark:border-[#2b3542] dark:bg-[#1d2530]">
+                <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-200 dark:bg-[#344050]" />
+                <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 pb-4 pt-3 dark:border-[#2b3542]">
                     <div className="min-w-0">
                         <h2 className="text-base font-black text-slate-950 dark:text-[#e8edf4]">{sheet.title}</h2>
                         {sheet.subtitle && (
@@ -116,7 +117,7 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
                     </IconButton>
                 </div>
 
-                <div className="max-h-[64vh] overflow-y-auto p-3">
+                <div className="max-h-[62vh] overflow-y-auto p-3">
                     <div className="space-y-2">
                         {sheet.options.map((option) => {
                             const active = option.value === sheet.value;
