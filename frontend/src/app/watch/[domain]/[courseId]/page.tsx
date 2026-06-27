@@ -226,6 +226,7 @@ export default function SharedWatchPage() {
     const durationRef = useRef(0);
     const lessonIdRef = useRef<number | null>(null);
     const vocabularyRequestIdRef = useRef(0);
+    const resumeVideoAfterVocabularyRef = useRef(false);
     const usesFirstVideo = isPlaceholderVideoUrl(currentLesson?.video_url);
     const resolvedVideoUrl = resolveVideoUrl(usesFirstVideo ? FIRST_VIDEO_URL : currentLesson?.video_url);
 
@@ -436,7 +437,35 @@ export default function SharedWatchPage() {
         }
     };
 
+    const pauseVideoForVocabulary = useCallback(() => {
+        const video = videoRef.current;
+        const shouldResume = Boolean(video && !video.paused && !video.ended);
+        resumeVideoAfterVocabularyRef.current = shouldResume;
+
+        if (video && shouldResume) {
+            video.pause();
+            setIsPlaying(false);
+            void flushWatchProgress(true);
+        }
+    }, [flushWatchProgress]);
+
+    const resumeVideoAfterVocabulary = useCallback(() => {
+        const shouldResume = resumeVideoAfterVocabularyRef.current;
+        resumeVideoAfterVocabularyRef.current = false;
+        const video = videoRef.current;
+
+        if (!shouldResume || !video) return;
+
+        video.playbackRate = preferences.playbackSpeed;
+        void video.play()
+            .then(() => setIsPlaying(true))
+            .catch((error) => {
+                console.error("Failed to resume video after vocabulary modal", error);
+            });
+    }, [preferences.playbackSpeed]);
+
     const handleWordClick = async (word: string) => {
+        pauseVideoForVocabulary();
         const requestId = vocabularyRequestIdRef.current + 1;
         vocabularyRequestIdRef.current = requestId;
         setLoadingVocabularyWord(word);
@@ -452,6 +481,7 @@ export default function SharedWatchPage() {
             setSelectedWord(null);
             setShowVocabModal(false);
             setVocabularyError("اطلاعات این واژه دریافت نشد. دوباره روی آن بزن.");
+            resumeVideoAfterVocabulary();
         } finally {
             if (vocabularyRequestIdRef.current === requestId) {
                 setLoadingVocabularyWord(null);
@@ -461,7 +491,8 @@ export default function SharedWatchPage() {
 
     const handleCloseVocabulary = useCallback(() => {
         setShowVocabModal(false);
-    }, []);
+        resumeVideoAfterVocabulary();
+    }, [resumeVideoAfterVocabulary]);
 
     const renderChineseWithHighlights = (text: string, highlightedWords: string[]) => {
         const result: React.ReactNode[] = [];
