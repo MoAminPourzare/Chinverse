@@ -66,17 +66,17 @@ async def create_user_signup(
         await ensure_referral_storage(db)
         referrer_user_id = await get_referrer_id_by_code(db, code=referral_code)
         if not referrer_user_id:
-            raise bad_request("Referral code is invalid")
+            raise bad_request("کد دعوت معتبر نیست")
 
     result = await db.execute(select(User).where(func.lower(User.email) == email))
     user = result.scalar_one_or_none()
     if user:
-        raise conflict("The user with this email already exists in the system")
+        raise conflict("این ایمیل قبلاً ثبت شده است")
     
     result = await db.execute(select(User).where(User.phone == phone))
     user = result.scalar_one_or_none()
     if user:
-        raise conflict("The user with this phone number already exists in the system")
+        raise conflict("این شماره موبایل قبلاً ثبت شده است")
         
     user = User(
         email=email,

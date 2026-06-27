@@ -16,6 +16,9 @@ RUN poetry config virtualenvs.create false \
 
 COPY --chown=user . .
 
+RUN mkdir -p uploads/avatars uploads/videos uploads/thumbnails static/uploads/gallery static/uploads/services \
+    && chown -R user:user /home/user/app
+
 USER user
 
 EXPOSE 7860

@@ -5,6 +5,13 @@ import AppShell from "@/components/layout/AppShell";
 export const metadata: Metadata = {
   title: "چین‌ورس",
   description: "اپلیکیشن آموزش زبان چینی برای فارسی‌زبان‌ها",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -13,13 +20,31 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const themeBootstrapScript = `
+(() => {
+  try {
+    const raw = localStorage.getItem("chinverse.learningPreferences.v1");
+    const preference = raw ? JSON.parse(raw).theme : "light";
+    const isDark = preference === "dark" || (preference === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.dataset.theme = isDark ? "dark" : "light";
+    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+  } catch {
+    document.documentElement.dataset.theme = "light";
+  }
+})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa">
+    <html lang="fa" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#f7f8fb" />
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+      </head>
       <body className="antialiased text-slate-900">
         <AppShell>{children}</AppShell>
       </body>

@@ -11,7 +11,7 @@ import {
     socialPlatforms,
     validateSocialHandle,
 } from "@/lib/socialLinks";
-import { validateTextLength, validateUrl } from "@/validation";
+import { normalizeWebsiteUrl, validateTextLength, validateWebsiteUrl } from "@/validation";
 
 interface EditAboutMeModalProps {
     isOpen: boolean;
@@ -38,6 +38,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
         handleSubmit,
         reset,
         setError,
+        setValue,
         clearErrors,
         formState: { errors },
     } = useForm<FormValues>({
@@ -93,10 +94,10 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
 
             const websites = data.websites
                 .map((website, index) => {
-                    const url = website.url.trim();
+                    const url = normalizeWebsiteUrl(website.url);
                     if (!url) return "";
 
-                    const validation = validateUrl(url, "آدرس وبسایت");
+                    const validation = validateWebsiteUrl(url);
                     if (!validation.ok) {
                         setError(`websites.${index}.url`, {
                             type: "manual",
@@ -218,10 +219,38 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                     <div key={field.id}>
                                                         <div className="flex gap-2">
                                                             <input
-                                                                {...register(`websites.${index}.url` as const)}
-                                                                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
-                                                                placeholder="https://example.com"
+                                                                {...register(`websites.${index}.url` as const, {
+                                                                    onChange: (event) => {
+                                                                        if (!event.target.value.trim()) {
+                                                                            clearErrors(`websites.${index}.url`);
+                                                                        }
+                                                                    },
+                                                                    onBlur: (event) => {
+                                                                        const rawUrl = event.target.value.trim();
+                                                                        if (!rawUrl) {
+                                                                            clearErrors(`websites.${index}.url`);
+                                                                            return;
+                                                                        }
+                                                                        const normalizedUrl = normalizeWebsiteUrl(rawUrl);
+                                                                        const validation = validateWebsiteUrl(normalizedUrl);
+                                                                        if (!validation.ok) {
+                                                                            setError(`websites.${index}.url`, {
+                                                                                type: "manual",
+                                                                                message: validation.message,
+                                                                            });
+                                                                            return;
+                                                                        }
+                                                                        setValue(`websites.${index}.url`, normalizedUrl, { shouldDirty: true });
+                                                                        clearErrors(`websites.${index}.url`);
+                                                                    },
+                                                                })}
+                                                                className={`min-w-0 flex-1 rounded-lg border bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${errors.websites?.[index]?.url ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-[#155aa6] focus:ring-[#155aa6]/10"}`}
+                                                                placeholder="https://chinverse.ir"
                                                                 dir="ltr"
+                                                                inputMode="url"
+                                                                autoCapitalize="none"
+                                                                spellCheck={false}
+                                                                aria-invalid={Boolean(errors.websites?.[index]?.url)}
                                                             />
                                                             <button
                                                                 type="button"
@@ -324,10 +353,30 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                                             message: platform.errorMessage,
                                                                         });
                                                                     },
+                                                                    onBlur: (event) => {
+                                                                        const handle = normalizeSocialHandle(field.platform, event.target.value);
+                                                                        if (!handle) {
+                                                                            clearErrors(`socials.${index}.handle`);
+                                                                            return;
+                                                                        }
+                                                                        if (!validateSocialHandle(field.platform, handle)) {
+                                                                            setError(`socials.${index}.handle`, {
+                                                                                type: "manual",
+                                                                                message: platform.errorMessage,
+                                                                            });
+                                                                            return;
+                                                                        }
+                                                                        setValue(`socials.${index}.handle`, handle, { shouldDirty: true });
+                                                                        clearErrors(`socials.${index}.handle`);
+                                                                    },
                                                                 })}
-                                                                className="w-full rounded-xl border border-slate-200 bg-[#f8fafc] px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                                                className={`w-full rounded-xl border bg-[#f8fafc] px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${fieldError ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-[#155aa6] focus:ring-[#155aa6]/10"}`}
                                                                 placeholder={platform.placeholder}
                                                                 dir="ltr"
+                                                                autoCapitalize="none"
+                                                                spellCheck={false}
+                                                                aria-label={`آیدی ${platform.name}`}
+                                                                aria-invalid={Boolean(fieldError)}
                                                             />
                                                             {fieldError && (
                                                                 <p className="mt-2 text-xs leading-5 text-red-500">{fieldError}</p>

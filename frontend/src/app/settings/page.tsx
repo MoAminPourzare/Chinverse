@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,7 @@ type SettingsItem = {
     icon: string;
     danger?: boolean;
     action?: "logout";
+    auth?: "required" | "guest";
 };
 
 const settingsItems: SettingsItem[] = [
@@ -21,19 +23,22 @@ const settingsItems: SettingsItem[] = [
         title: "حساب کاربری",
         href: "/account",
         icon: "/assets/chinverse/icons/profile.svg",
+        auth: "required",
     },
     {
         title: "مدیریت اشتراک",
         href: "/settings/subscription",
         icon: "/assets/chinverse/icons/Membership.svg",
+        auth: "required",
     },
     {
         title: "هدف روزانه",
         href: "/settings/daily",
         icon: "/assets/chinverse/icons/Goal.svg",
+        auth: "required",
     },
     {
-        title: "تنظیمات نگارشی",
+        title: "ظاهر و نمایش",
         href: "/settings/appearance",
         icon: "/assets/chinverse/icons/Preferences 2.svg",
     },
@@ -46,38 +51,58 @@ const settingsItems: SettingsItem[] = [
         title: "معرفی چین ورس به دوستان",
         href: "/settings/referrals",
         icon: "/assets/chinverse/icons/invite friends.svg",
+        auth: "required",
     },
     {
         title: "امتیازات",
         href: "/settings/points",
         icon: "/assets/chinverse/icons/Star.svg",
+        auth: "required",
     },
     {
         title: "ورود",
         href: "/login",
         icon: "/assets/chinverse/icons/Exit.svg",
+        auth: "guest",
     },
     {
         title: "ثبت نام",
         href: "/signup",
         icon: "/assets/chinverse/icons/2 people.svg",
+        auth: "guest",
     },
     {
         title: "خروج از حساب کاربری",
         href: "/login",
         icon: "/assets/chinverse/icons/Log out.svg",
         action: "logout",
+        auth: "required",
     },
     {
         title: "حذف حساب کاربری",
         href: "/profile",
         icon: "/assets/chinverse/icons/Delete.svg",
         danger: true,
+        auth: "required",
     },
 ];
 
 export default function SettingsPage() {
     const router = useRouter();
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        const syncAuth = () => setIsAuthenticated(Boolean(localStorage.getItem("token")));
+        syncAuth();
+        window.addEventListener("chinverse-auth-change", syncAuth);
+        return () => window.removeEventListener("chinverse-auth-change", syncAuth);
+    }, []);
+
+    const visibleItems = settingsItems.filter((item) => {
+        if (!item.auth) return true;
+        if (isAuthenticated === null) return false;
+        return item.auth === "required" ? isAuthenticated : !isAuthenticated;
+    });
 
     const handleLogout = () => {
         authService.logout();
@@ -86,15 +111,15 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="min-h-full bg-[#f7f8fb] px-6 pb-8 pt-4" dir="rtl">
+        <div className="min-h-full bg-[#f7f8fb] px-6 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
             <header className="relative flex h-11 items-center justify-center">
                 <BackButton href="/profile" className="absolute right-0 top-0" />
-                <h1 className="text-[18px] font-black text-[#2f3238]">تنظیمات</h1>
+                <h1 className="text-[18px] font-black text-[#2f3238] dark:text-[#f4f7fb]">تنظیمات</h1>
             </header>
 
             <main className="mx-auto mt-6 flex w-full max-w-[430px] flex-col">
                 <div className="space-y-1">
-                    {settingsItems.map((item) => (
+                    {visibleItems.map((item) => (
                         <SettingsRow key={item.href + item.title} item={item} onLogout={handleLogout} />
                     ))}
                 </div>
@@ -134,7 +159,7 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
             <button
                 type="button"
                 onClick={onLogout}
-                className="group flex min-h-[53px] w-full items-center gap-3 rounded-[16px] px-1 text-right transition hover:bg-white/70"
+                className="group flex min-h-[53px] w-full items-center gap-3 rounded-[16px] px-1 text-right transition hover:bg-white/70 dark:hover:bg-[#1d2530]"
             >
                 {content}
             </button>
@@ -144,7 +169,7 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
     return (
         <Link
             href={item.href}
-            className="group flex min-h-[53px] items-center gap-3 rounded-[16px] px-1 transition hover:bg-white/70"
+            className="group flex min-h-[53px] items-center gap-3 rounded-[16px] px-1 transition hover:bg-white/70 dark:hover:bg-[#1d2530]"
         >
             {content}
         </Link>

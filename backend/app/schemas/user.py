@@ -1,7 +1,11 @@
 import re
 from typing import Optional
 from urllib.parse import urlparse
+from email_validator import EmailNotValidError, validate_email as validate_email_address
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+PERSIAN_NAME_PATTERN = re.compile(r"^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءئؤۀة\s‌]+$")
 
 ALLOWED_PROFILE_HEADLINES = {
     "مترجم زبان چینی",
@@ -41,11 +45,38 @@ def _normalize_iran_mobile(value: str) -> str:
 
 
 def _validate_password_strength(value: str) -> str:
+    if len(value) < 8:
+        raise ValueError("رمز عبور باید حداقل ۸ کاراکتر باشد")
     if len(value.encode("utf-8")) > 72:
-        raise ValueError("Password is too long")
+        raise ValueError("رمز عبور نباید بیشتر از ۷۲ بایت باشد")
     if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
-        raise ValueError("Password must contain at least one English letter and one number")
+        raise ValueError("رمز عبور باید حداقل یک حرف انگلیسی و یک عدد داشته باشد")
     return value
+
+
+def _normalize_persian_name(value: str) -> str:
+    normalized = value.translate(str.maketrans({"ي": "ی", "ى": "ی", "ك": "ک"}))
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _validate_persian_name(value: str) -> str:
+    display_name = _normalize_persian_name(value)
+    if len(display_name) < 2:
+        raise ValueError("نام و نام خانوادگی باید حداقل ۲ حرف باشد")
+    if len(display_name) > 120:
+        raise ValueError("نام و نام خانوادگی نباید بیشتر از ۱۲۰ کاراکتر باشد")
+    if not PERSIAN_NAME_PATTERN.fullmatch(display_name):
+        raise ValueError("نام و نام خانوادگی را فقط با حروف فارسی بنویسید")
+    return display_name
+
+
+def _validate_email(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("ایمیل را وارد کنید")
+    try:
+        return validate_email_address(value.strip(), check_deliverability=False).normalized.lower()
+    except EmailNotValidError as exc:
+        raise ValueError("ایمیل را با ساختار درست وارد کنید؛ مثل name@example.com") from exc
 
 
 def _validate_external_or_relative_url(value: str, *, field_name: str) -> str:
@@ -58,6 +89,66 @@ def _validate_external_or_relative_url(value: str, *, field_name: str) -> str:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ValueError(f"{field_name} must be a valid http(s) URL")
     return url
+
+
+def _normalize_profile_website(value: str) -> str:
+    url = value.strip()
+    if not url:
+        return url
+    if not re.match(r"^[a-z][a-z\d+.-]*://", url, flags=re.IGNORECASE):
+        url = f"https://{url}"
+    if len(url) > 500 or re.search(r"\s", url):
+        raise ValueError("آدرس وب‌سایت معتبر نیست؛ مثل https://chinverse.ir")
+
+    parsed = urlparse(url)
+    hostname = parsed.hostname or ""
+    try:
+        ascii_hostname = hostname.encode("idna").decode("ascii")
+    except UnicodeError as exc:
+        raise ValueError("آدرس وب‌سایت معتبر نیست؛ مثل https://chinverse.ir") from exc
+
+    labels = ascii_hostname.split(".")
+    valid_labels = all(
+        re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label)
+        for label in labels
+    )
+    valid_tld = bool(labels and (re.fullmatch(r"[A-Za-z]{2,63}", labels[-1]) or labels[-1].startswith("xn--")))
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not hostname
+        or parsed.username
+        or parsed.password
+        or len(labels) < 2
+        or not valid_labels
+        or not valid_tld
+    ):
+        raise ValueError("آدرس وب‌سایت معتبر نیست؛ مثل https://chinverse.ir")
+    return url
+
+
+def _normalize_social_handle(platform: str, raw_handle: str) -> str:
+    handle = raw_handle.strip()
+    handle = re.sub(r"^https?://(www\.)?", "", handle, flags=re.IGNORECASE)
+    handle = re.sub(r"^@+", "", handle)
+    handle = re.sub(r"/+$", "", handle)
+
+    prefixes = {
+        "instagram": r"^instagram\.com/",
+        "twitter": r"^(x\.com|twitter\.com)/",
+        "telegram": r"^(t\.me|telegram\.me)/",
+        "wechat": r"^(weixin://dl/chat\?|wechat:)",
+        "facebook": r"^(facebook\.com|fb\.com)/",
+    }
+    if platform in prefixes:
+        handle = re.sub(prefixes[platform], "", handle, flags=re.IGNORECASE)
+    elif platform == "linkedin":
+        handle = re.sub(r"^linkedin\.com/(in/)?", "", handle, flags=re.IGNORECASE)
+        handle = re.sub(r"^in/", "", handle, flags=re.IGNORECASE)
+    elif platform == "whatsapp":
+        handle = re.sub(r"^(wa\.me/|api\.whatsapp\.com/send\?phone=)", "", handle, flags=re.IGNORECASE)
+        return re.sub(r"\D", "", handle)
+
+    return re.split(r"[/?#]", handle, maxsplit=1)[0]
 
 # Shared properties
 class UserBase(BaseModel):
@@ -73,56 +164,58 @@ class UserCreate(UserBase):
     display_name: str = Field(min_length=1, max_length=120)
     referral_code: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
-    @field_validator("password")
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_signup_email(cls, value: object) -> str:
+        return _validate_email(value)
+
+    @field_validator("password", mode="before")
     @classmethod
     def password_must_fit_bcrypt(cls, value: str) -> str:
         return _validate_password_strength(value)
 
-    @field_validator("phone")
+    @field_validator("phone", mode="before")
     @classmethod
     def validate_signup_phone(cls, value: str) -> str:
         phone = _normalize_iran_mobile(value)
         if not re.fullmatch(r"09\d{9}", phone):
-            raise ValueError("Phone number must be a valid Iranian mobile number")
+            raise ValueError("شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567")
         return phone
 
-    @field_validator("display_name")
+    @field_validator("display_name", mode="before")
     @classmethod
     def validate_display_name(cls, value: str) -> str:
-        display_name = value.strip()
-        if len(display_name) < 2:
-            raise ValueError("Display name is too short")
-        return display_name
+        return _validate_persian_name(value)
 
-    @field_validator("referral_code")
+    @field_validator("referral_code", mode="before")
     @classmethod
     def normalize_referral_code(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
         normalized = value.strip().upper().replace("-", "").replace(" ", "")
-        if normalized and not re.fullmatch(r"[A-Z0-9]{4,32}", normalized):
-            raise ValueError("Referral code is invalid")
+        if normalized and (len(normalized) < 4 or len(normalized) > 32 or not re.fullmatch(r"[A-Z0-9]+", normalized)):
+            raise ValueError("ساختار کد دعوت درست نیست")
         return normalized or None
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
     password: Optional[str] = Field(default=None, min_length=8, max_length=72)
 
-    @field_validator("password")
+    @field_validator("password", mode="before")
     @classmethod
     def password_must_fit_bcrypt(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
         return _validate_password_strength(value)
 
-    @field_validator("phone")
+    @field_validator("phone", mode="before")
     @classmethod
     def validate_update_phone(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
         phone = _normalize_iran_mobile(value)
         if not re.fullmatch(r"09\d{9}", phone):
-            raise ValueError("Phone number must be a valid Iranian mobile number")
+            raise ValueError("شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567")
         return phone
 
 class UserInDBBase(UserBase):
@@ -145,17 +238,14 @@ class UserProfileBase(BaseModel):
     socials: Optional[list[dict]] = None
     resume: Optional[dict] = None
 
-    @field_validator("display_name")
+    @field_validator("display_name", mode="before")
     @classmethod
     def validate_profile_display_name(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
-        display_name = value.strip()
-        if not display_name:
+        if not value.strip():
             return None
-        if len(display_name) < 2:
-            raise ValueError("Display name is too short")
-        return display_name
+        return _validate_persian_name(value)
 
     @field_validator("city", "country")
     @classmethod
@@ -164,15 +254,22 @@ class UserProfileBase(BaseModel):
             return value
         return value.strip() or None
 
-    @field_validator("website_url", "avatar_url")
+    @field_validator("avatar_url")
     @classmethod
-    def validate_profile_url(cls, value: Optional[str]) -> Optional[str]:
+    def validate_avatar_url(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
         url = value.strip()
         if not url:
             return None
         return _validate_external_or_relative_url(url, field_name="URL")
+
+    @field_validator("website_url")
+    @classmethod
+    def validate_profile_website_url(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        return _normalize_profile_website(value) or None
 
     @field_validator("websites")
     @classmethod
@@ -181,16 +278,21 @@ class UserProfileBase(BaseModel):
             return value
 
         normalized_websites = []
+        seen_websites = set()
         for website in value:
             if not isinstance(website, str):
-                raise ValueError("Website must be a string")
+                raise ValueError("آدرس وب‌سایت معتبر نیست")
             url = website.strip()
             if not url:
                 continue
-            normalized_websites.append(_validate_external_or_relative_url(url, field_name="Website"))
+            normalized_url = _normalize_profile_website(url)
+            if normalized_url.lower() in seen_websites:
+                continue
+            seen_websites.add(normalized_url.lower())
+            normalized_websites.append(normalized_url)
 
         if len(normalized_websites) > 10:
-            raise ValueError("Too many websites")
+            raise ValueError("حداکثر ۱۰ وب‌سایت می‌توانید اضافه کنید")
         return normalized_websites
 
     @field_validator("headline")
@@ -211,17 +313,30 @@ class UserProfileBase(BaseModel):
             return value
 
         platform_patterns = {
-            "instagram": re.compile(r"^[A-Za-z0-9._]{1,30}$"),
+            "instagram": re.compile(r"^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$"),
             "twitter": re.compile(r"^[A-Za-z0-9_]{1,15}$"),
-            "linkedin": re.compile(r"^(in/)?[A-Za-z0-9-]{3,100}$"),
-            "telegram": re.compile(r"^[A-Za-z0-9_]{5,32}$"),
+            "linkedin": re.compile(r"^[A-Za-z0-9-]{3,100}$"),
+            "telegram": re.compile(r"^[A-Za-z][A-Za-z0-9_]{3,30}[A-Za-z0-9]$"),
             "whatsapp": re.compile(r"^[1-9][0-9]{7,14}$"),
             "wechat": re.compile(r"^[A-Za-z][A-Za-z0-9_-]{5,19}$"),
-            "facebook": re.compile(r"^[A-Za-z0-9.]{5,50}$"),
+            "facebook": re.compile(r"^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9.]{5,50}$"),
+        }
+
+        platform_errors = {
+            "instagram": "آیدی Instagram معتبر نیست؛ مثل chinverse_app",
+            "twitter": "آیدی X/Twitter معتبر نیست؛ مثل chinverse_app",
+            "linkedin": "شناسه LinkedIn معتبر نیست؛ مثل chinverse-academy",
+            "telegram": "آیدی Telegram معتبر نیست؛ مثل chinverse_app",
+            "whatsapp": "شماره WhatsApp را با کد کشور وارد کنید؛ مثل 989123456789",
+            "wechat": "WeChat ID معتبر نیست؛ مثل chinverse_id",
+            "facebook": "آیدی Facebook معتبر نیست؛ مثل chinverse.app",
         }
 
         normalized_socials = []
+        used_platforms = set()
         for item in value:
+            if not isinstance(item, dict):
+                raise ValueError("اطلاعات شبکه اجتماعی معتبر نیست")
             platform = str(item.get("platform", "")).strip().lower()
             handle = str(item.get("handle", "")).strip()
 
@@ -229,18 +344,21 @@ class UserProfileBase(BaseModel):
                 continue
 
             platform = "twitter" if platform == "x" else platform
-            handle = handle.lstrip("@").rstrip("/")
-            if platform == "whatsapp":
-                handle = re.sub(r"\D", "", handle)
+            handle = _normalize_social_handle(platform, handle)
 
             pattern = platform_patterns.get(platform)
             if not pattern:
-                raise ValueError(f"Unsupported social platform: {platform}")
+                raise ValueError("این شبکه اجتماعی پشتیبانی نمی‌شود")
+            if platform in used_platforms:
+                raise ValueError("هر شبکه اجتماعی را فقط یک‌بار اضافه کنید")
             if not pattern.fullmatch(handle):
-                raise ValueError(f"Invalid handle for {platform}")
+                raise ValueError(platform_errors[platform])
 
+            used_platforms.add(platform)
             normalized_socials.append({"platform": platform, "handle": handle})
 
+        if len(normalized_socials) > len(platform_patterns):
+            raise ValueError("تعداد شبکه‌های اجتماعی بیشتر از حد مجاز است")
         return normalized_socials
 
 class UserProfileUpdate(UserProfileBase):

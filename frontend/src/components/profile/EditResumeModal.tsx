@@ -351,8 +351,8 @@ function ResumeSection({
     return (
         <section dir="rtl" className="text-right">
             <h4 className="mb-3 flex w-full items-center justify-start gap-2 text-right text-[16px] font-black text-[#2f3238]">
-                {title}
                 <span className="text-[#155aa6]">{icon}</span>
+                <span>{title}</span>
             </h4>
             <button
                 type="button"

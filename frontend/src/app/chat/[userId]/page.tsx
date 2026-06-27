@@ -105,11 +105,25 @@ export default function ChatRoomPage() {
             socket.onmessage = (event) => {
                 try {
                     const payload = JSON.parse(event.data);
+
+                    if (payload.type === 'messages:read' && payload.reader_id === userId) {
+                        const readIds = new Set<number>(payload.message_ids || []);
+                        setMessages((current) => current.map((message) => (
+                            readIds.has(message.id) ? { ...message, is_read: true } : message
+                        )));
+                        return;
+                    }
+
                     if (payload.type !== 'message:new') return;
 
                     const message = payload.message as ChatMessage;
                     if (message.sender_id === userId || message.receiver_id === userId) {
                         appendMessages([message]);
+                        if (message.sender_id === userId && message.receiver_id === currentUserId) {
+                            void chatService.markConversationRead(userId).catch((error) => {
+                                console.error('Failed to mark live chat message as read', error);
+                            });
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to parse chat websocket event', error);
@@ -135,7 +149,7 @@ export default function ChatRoomPage() {
             socketRef.current?.close();
             socketRef.current = null;
         };
-    }, [appendMessages, userId]);
+    }, [appendMessages, currentUserId, userId]);
 
     useEffect(() => {
         let isActive = true;

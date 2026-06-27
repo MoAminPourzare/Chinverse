@@ -1,34 +1,52 @@
 from typing import Any, List, Optional
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api import deps
+from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
-from app.models.dictionary import DictionaryWord, WordExample, WordCollocation
+from app.models.dictionary import DictionaryWord
 
 router = APIRouter()
 
-# Schemas
+
+class WordDefinitionSchema(BaseModel):
+    id: int
+    lang_code: str
+    definition_text: str
+    part_of_speech: str
+    sense_order: int = 1
+    notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class WordExampleSchema(BaseModel):
     id: int
     zh_text: str
     pinyin: str
     target_text: str
+    sense_order: int = 1
 
     class Config:
         from_attributes = True
+
 
 class WordCollocationSchema(BaseModel):
     id: int
     phrase_zh: str
     phrase_pinyin: str
     translation_target: str
+    sense_order: int = 1
 
     class Config:
         from_attributes = True
+
 
 class VocabularyWordResponse(BaseModel):
     id: int
@@ -36,14 +54,58 @@ class VocabularyWordResponse(BaseModel):
     pinyin: str
     audio_url: Optional[str] = None
     level: str
+    hsk_level: Optional[int] = None
+    source: str = "manual"
+    source_word_id: Optional[str] = None
+    status: str = "published"
     persian_meaning: Optional[str] = None
     chinese_meaning: Optional[str] = None
     composition: Optional[str] = None
+    notes: Optional[str] = None
+    definitions: List[WordDefinitionSchema] = Field(default_factory=list)
     examples: List[WordExampleSchema] = Field(default_factory=list)
     collocations: List[WordCollocationSchema] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
+
+
+class VocabularyMatchRequest(BaseModel):
+    texts: List[str] = Field(min_length=1, max_length=300)
+
+
+class VocabularyMatchResponse(BaseModel):
+    matches: List[List[str]]
+
+
+def _word_options():
+    return (
+        selectinload(DictionaryWord.definitions),
+        selectinload(DictionaryWord.examples),
+        selectinload(DictionaryWord.collocations),
+    )
+
+
+@router.post("/matches", response_model=VocabularyMatchResponse)
+async def match_vocabulary_words(
+    payload: VocabularyMatchRequest,
+    db: AsyncSession = Depends(deps.get_db),
+) -> Any:
+    """Return curated dictionary words found inside each subtitle cue."""
+    clean_texts = [text.strip() for text in payload.texts]
+    result = await db.execute(
+        select(DictionaryWord.chinese)
+        .where(DictionaryWord.status == "published")
+        .order_by(func.length(DictionaryWord.chinese).desc(), DictionaryWord.id)
+    )
+    dictionary_words = [word for word in result.scalars().all() if word]
+
+    return {
+        "matches": [
+            [word for word in dictionary_words if word in text]
+            for text in clean_texts
+        ]
+    }
 
 
 @router.get("/{word}", response_model=VocabularyWordResponse)
@@ -52,106 +114,54 @@ async def get_vocabulary_word(
     db: AsyncSession = Depends(deps.get_db),
 ) -> Any:
     """
-    Get vocabulary word details by Chinese character.
-    Returns mock data for demo purposes.
+    Get vocabulary word details by exact Chinese word from the curated dictionary.
     """
-    # Mock vocabulary data for common words
-    mock_data = {
-        "打算": {
-            "pinyin": "dǎ suàn",
-            "persian_meaning": "قصد داشتن، خواستن",
-            "chinese_meaning": "1. 关于行动的方向、方法等的想法；念头\n2. 考虑；计划",
-            "composition": "打算盘\n另有打算",
-            "examples": [
-                {"id": 1, "zh_text": "他打算当医生", "pinyin": "Tā dǎsuàn dāng yīshēng", "target_text": "او قصد دارد پزشک شود"},
-                {"id": 2, "zh_text": "各有各的打算", "pinyin": "Gè yǒu gè de dǎsuàn", "target_text": "هر کسی برنامه خودش را دارد"},
-                {"id": 3, "zh_text": "为自己作打算", "pinyin": "Wèi zìjǐ zuò dǎsuàn", "target_text": "برای خودش برنامه‌ریزی کردن"},
-            ]
-        },
-        "标题": {
-            "pinyin": "biāo tí",
-            "persian_meaning": "عنوان، تیتر",
-            "chinese_meaning": "1. 标明文章、作品等内容的简短语句\n2. 题目",
-            "composition": "大标题\n小标题",
-            "examples": [
-                {"id": 1, "zh_text": "文章的标题很好", "pinyin": "Wénzhāng de biāotí hěn hǎo", "target_text": "عنوان مقاله خیلی خوب است"},
-                {"id": 2, "zh_text": "我们来读一下标题", "pinyin": "Wǒmen lái dú yīxià biāotí", "target_text": "بیایید عنوان را بخوانیم"},
-            ]
-        },
-        "学习": {
-            "pinyin": "xué xí",
-            "persian_meaning": "یادگیری، درس خواندن",
-            "chinese_meaning": "1. 从阅读、听讲、研究、实践中获得知识或技能\n2. 效法",
-            "composition": "学习方法\n学习计划",
-            "examples": [
-                {"id": 1, "zh_text": "我在学习中文", "pinyin": "Wǒ zài xuéxí zhōngwén", "target_text": "من در حال یادگیری چینی هستم"},
-                {"id": 2, "zh_text": "学习是很重要的", "pinyin": "Xuéxí shì hěn zhòngyào de", "target_text": "یادگیری خیلی مهم است"},
-            ]
-        },
-        "热身": {
-            "pinyin": "rè shēn",
-            "persian_meaning": "گرم کردن بدن",
-            "chinese_meaning": "1. 运动前使身体发热的准备活动\n2. 比喻正式活动前的准备",
-            "composition": "热身运动\n热身活动",
-            "examples": [
-                {"id": 1, "zh_text": "运动前要热身", "pinyin": "Yùndòng qián yào rèshēn", "target_text": "قبل از ورزش باید گرم کنی"},
-                {"id": 2, "zh_text": "这是热身环节", "pinyin": "Zhè shì rèshēn huánjié", "target_text": "این بخش گرم‌کردن است"},
-            ]
-        },
-        "第三级": {
-            "pinyin": "dì sān jí",
-            "persian_meaning": "سطح سوم",
-            "chinese_meaning": "第三个等级或阶段",
-            "composition": "第一级\n第二级",
-            "examples": [
-                {"id": 1, "zh_text": "HSK第三级", "pinyin": "HSK dì sān jí", "target_text": "سطح سوم آزمون HSK"},
-            ]
-        },
-    }
-    
-    # Get mock data or generate default
-    word_data = mock_data.get(word, {
-        "pinyin": "pīn yīn",
-        "persian_meaning": "معنی فارسی",
-        "chinese_meaning": "中文含义",
-        "composition": "词语组合",
-        "examples": [
-            {"id": 1, "zh_text": f"这是{word}的例句", "pinyin": "Zhè shì lìjù", "target_text": "این یک مثال است"}
-        ]
-    })
-    
-    return VocabularyWordResponse(
-        id=0,
-        chinese=word,
-        pinyin=word_data["pinyin"],
-        audio_url=None,
-        level="HSK3",
-        persian_meaning=word_data["persian_meaning"],
-        chinese_meaning=word_data["chinese_meaning"],
-        composition=word_data["composition"],
-        examples=[WordExampleSchema(**ex) for ex in word_data["examples"]],
-        collocations=[]
+    clean_word = word.strip()
+    result = await db.execute(
+        select(DictionaryWord)
+        .options(*_word_options())
+        .where(DictionaryWord.chinese == clean_word)
+        .where(DictionaryWord.status == "published")
     )
+    dictionary_word = result.scalars().unique().one_or_none()
+    if not dictionary_word:
+        raise not_found("Vocabulary word")
+    return dictionary_word
 
 
 @router.get("/", response_model=List[VocabularyWordResponse])
 async def search_vocabulary(
     q: str = Query(..., min_length=1, max_length=80),
+    level: Optional[str] = Query(default=None, max_length=80),
+    hsk_level: Optional[int] = Query(default=None, ge=1, le=9),
     db: AsyncSession = Depends(deps.get_db),
     pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
 ) -> Any:
     """
-    Search vocabulary words.
+    Search curated vocabulary words.
     """
-    result = await db.execute(
+    term = f"%{q.strip()}%"
+    query = (
         select(DictionaryWord)
-        .options(
-            selectinload(DictionaryWord.examples),
-            selectinload(DictionaryWord.collocations)
+        .options(*_word_options())
+        .where(DictionaryWord.status == "published")
+        .where(
+            or_(
+                DictionaryWord.chinese.ilike(term),
+                DictionaryWord.pinyin.ilike(term),
+                DictionaryWord.persian_meaning.ilike(term),
+                DictionaryWord.chinese_meaning.ilike(term),
+            )
         )
-        .where(DictionaryWord.chinese.ilike(f"%{q}%"))
+    )
+    if level:
+        query = query.where(DictionaryWord.level == level.strip())
+    if hsk_level:
+        query = query.where(DictionaryWord.hsk_level == hsk_level)
+
+    result = await db.execute(
+        query.order_by(DictionaryWord.hsk_level, DictionaryWord.id)
         .offset(pagination.skip)
         .limit(pagination.limit)
     )
-    words = result.scalars().all()
-    return words
+    return result.scalars().unique().all()

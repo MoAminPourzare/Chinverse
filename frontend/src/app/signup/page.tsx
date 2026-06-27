@@ -8,14 +8,18 @@ import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User } from "lucide-reac
 import AuthShell from "@/components/auth/AuthShell";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { authService } from "@/services/auth.service";
+import { referralService } from "@/services/referral.service";
 import { cn } from "@/lib/cn";
 import {
+    cleanApiValidationMessage,
+    hasOnlyPersianNameCharacters,
     normalizeIranMobile,
+    normalizePersianName,
     validateEmail,
     validateIranMobile,
     validatePassword,
+    validatePersianName,
     validateReferralCode,
-    validateTextLength,
     validationMessage,
 } from "@/validation";
 
@@ -44,12 +48,33 @@ export default function SignupPage() {
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.name === "referral_code"
+        const { name } = e.target;
+        const value = name === "referral_code"
             ? e.target.value.toUpperCase().replace(/[-\s]/g, "")
             : e.target.value;
 
-        setFormData({ ...formData, [e.target.name]: value });
-        setFieldErrors((current) => ({ ...current, [e.target.name]: "" }));
+        setFormData((current) => ({ ...current, [name]: value }));
+        setFieldErrors((current) => ({
+            ...current,
+            [name]: name === "display_name" && value && !hasOnlyPersianNameCharacters(value)
+                ? "نام را فقط با حروف فارسی بنویس؛ زبان صفحه‌کلید را روی فارسی بگذار."
+                : "",
+        }));
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const { name } = e.target;
+        const validators: Record<string, () => string> = {
+            display_name: () => validationMessage(validatePersianName(formData.display_name)),
+            email: () => validationMessage(validateEmail(formData.email)),
+            phone: () => validationMessage(validateIranMobile(formData.phone)),
+            password: () => validationMessage(validatePassword(formData.password)),
+            referral_code: () => validationMessage(validateReferralCode(formData.referral_code)),
+        };
+        const validate = validators[name];
+        if (validate) {
+            setFieldErrors((current) => ({ ...current, [name]: validate() }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +82,7 @@ export default function SignupPage() {
         setError("");
 
         const nextErrors = {
-            display_name: validationMessage(validateTextLength(formData.display_name, "نام و نام خانوادگی", { required: true, min: 2, max: 120 })),
+            display_name: validationMessage(validatePersianName(formData.display_name)),
             email: validationMessage(validateEmail(formData.email)),
             phone: validationMessage(validateIranMobile(formData.phone)),
             password: validationMessage(validatePassword(formData.password)),
@@ -70,18 +95,47 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
+            const referralCode = formData.referral_code.trim();
+            if (referralCode) {
+                const referral = await referralService.validateCode(referralCode);
+                if (!referral.valid) {
+                    setFieldErrors((current) => ({ ...current, referral_code: "کد دعوت معتبر نیست." }));
+                    return;
+                }
+            }
+
             await authService.signup({
                 ...formData,
                 email: formData.email.trim().toLowerCase(),
                 phone: normalizeIranMobile(formData.phone),
-                display_name: formData.display_name.trim(),
-                referral_code: formData.referral_code.trim() || undefined,
+                display_name: normalizePersianName(formData.display_name),
+                referral_code: referralCode || undefined,
             });
             router.push("/login");
         } catch (err: unknown) {
-            const apiError = err as { response?: { data?: { detail?: string } } };
-            const errorMessage = apiError.response?.data?.detail || "ثبت نام ناموفق بود. لطفا دوباره تلاش کن.";
-            setError(errorMessage);
+            const apiError = err as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };
+            const detail = apiError.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                const issue = detail[0];
+                const field = issue?.loc?.at(-1);
+                if (typeof field === "string" && ["display_name", "email", "phone", "password", "referral_code"].includes(field)) {
+                    setFieldErrors((current) => ({ ...current, [field]: cleanApiValidationMessage(issue.msg) }));
+                } else {
+                    setError(cleanApiValidationMessage(issue?.msg || "اطلاعات واردشده را بررسی کن."));
+                }
+            } else if (typeof detail === "string") {
+                if (detail.includes("ایمیل")) {
+                    setFieldErrors((current) => ({ ...current, email: detail }));
+                } else if (detail.includes("موبایل")) {
+                    setFieldErrors((current) => ({ ...current, phone: detail }));
+                } else if (detail.includes("دعوت")) {
+                    setFieldErrors((current) => ({ ...current, referral_code: detail }));
+                } else {
+                    setError(detail);
+                }
+            } else {
+                setError("ثبت نام ناموفق بود. لطفا دوباره تلاش کن.");
+            }
         } finally {
             setLoading(false);
         }
@@ -113,7 +167,7 @@ export default function SignupPage() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <label className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">نام و نام خانوادگی</span>
                     <div className="relative">
@@ -123,10 +177,16 @@ export default function SignupPage() {
                             name="display_name"
                             value={formData.display_name}
                             onChange={handleChange}
+                            onBlur={handleBlur}
+                            dir="rtl"
+                            autoComplete="name"
+                            maxLength={120}
+                            aria-invalid={Boolean(fieldErrors.display_name)}
                             placeholder="نام خودت را وارد کن"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
                                 "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.display_name && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
                             )}
                         />
                     </div>
@@ -142,11 +202,16 @@ export default function SignupPage() {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             dir="ltr"
+                            autoComplete="email"
+                            inputMode="email"
+                            aria-invalid={Boolean(fieldErrors.email)}
                             placeholder="example@mail.com"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
                                 "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.email && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
                             )}
                         />
                     </div>
@@ -162,11 +227,16 @@ export default function SignupPage() {
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             dir="ltr"
-                            placeholder="09120000000"
+                            inputMode="numeric"
+                            autoComplete="tel"
+                            aria-invalid={Boolean(fieldErrors.phone)}
+                            placeholder="09121234567"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
                                 "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.phone && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
                             )}
                         />
                     </div>
@@ -182,11 +252,15 @@ export default function SignupPage() {
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             dir="ltr"
+                            autoComplete="new-password"
+                            aria-invalid={Boolean(fieldErrors.password)}
                             placeholder="••••••••"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
                                 "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.password && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
                             )}
                         />
                     </div>
@@ -202,12 +276,16 @@ export default function SignupPage() {
                             name="referral_code"
                             value={formData.referral_code}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             dir="ltr"
+                            autoComplete="off"
+                            aria-invalid={Boolean(fieldErrors.referral_code)}
                             placeholder="اختیاری، مثلا CH12AB"
                             maxLength={32}
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-left font-latin text-sm font-black uppercase tracking-[0.10em] text-slate-900 outline-none transition-all placeholder:text-right placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400",
                                 "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.referral_code && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
                             )}
                         />
                     </div>

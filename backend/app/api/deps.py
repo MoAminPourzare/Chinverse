@@ -54,14 +54,18 @@ def _get_admin_emails() -> set[str]:
     }
 
 
+def is_admin_user(user: User) -> bool:
+    admin_emails = _get_admin_emails()
+    return bool(admin_emails and user.email.lower() in admin_emails)
+
+
 async def get_current_admin_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    admin_emails = _get_admin_emails()
-    if not admin_emails:
+    if not _get_admin_emails():
         raise forbidden("Admin access is not configured")
 
-    if current_user.email.lower() not in admin_emails:
+    if not is_admin_user(current_user):
         raise forbidden()
 
     return current_user

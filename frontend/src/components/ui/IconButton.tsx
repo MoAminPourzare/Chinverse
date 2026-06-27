@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const baseIconButtonClass =
-    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30";
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30 dark:border-[#344050] dark:bg-[#1b232e]/90 dark:text-[#aeb9c7] dark:hover:bg-[#243142] dark:hover:text-[#72b6ff]";
 
 interface BackButtonProps {
     href?: string;
@@ -86,7 +86,7 @@ export function HeaderIcon({ children, className }: HeaderIconProps) {
 }
 
 export const headerContainerClass =
-    "sticky top-3 z-40 mb-5 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl";
+    "sticky top-3 z-40 mb-5 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-[#303a48] dark:bg-[#171d26]/92 dark:shadow-[0_18px_48px_rgba(0,0,0,0.3)]";
 
 interface AppHeaderProps {
     title: ReactNode;
@@ -110,7 +110,7 @@ export function AppHeader({
     return (
         <header
             className={cn(
-                "sticky top-3 z-40 mb-5 min-h-[66px] rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl",
+                "sticky top-3 z-40 mb-5 min-h-[66px] rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-[#303a48] dark:bg-[#171d26]/92 dark:shadow-[0_18px_48px_rgba(0,0,0,0.3)]",
                 className,
             )}
         >

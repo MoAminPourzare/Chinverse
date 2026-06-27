@@ -16,7 +16,40 @@ export const normalizeIranMobile = (value: string) => {
     return phone;
 };
 
+const PERSIAN_NAME_PATTERN = /^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءئؤۀة\s‌]+$/u;
+
+export const normalizePersianName = (value: string) => value
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const hasOnlyPersianNameCharacters = (value: string) => {
+    const normalized = normalizePersianName(value);
+    return !normalized || PERSIAN_NAME_PATTERN.test(normalized);
+};
+
+export const validatePersianName = (value: string): ValidationResult => {
+    const name = normalizePersianName(value);
+    if (!name) {
+        return { ok: false, message: "نام و نام خانوادگی را وارد کن." };
+    }
+    if (!PERSIAN_NAME_PATTERN.test(name)) {
+        return { ok: false, message: "نام را فقط با حروف فارسی بنویس؛ زبان صفحه‌کلید را روی فارسی بگذار." };
+    }
+    if (name.length < 2) {
+        return { ok: false, message: "نام و نام خانوادگی باید حداقل ۲ حرف باشد." };
+    }
+    if (name.length > 120) {
+        return { ok: false, message: "نام و نام خانوادگی نباید بیشتر از ۱۲۰ کاراکتر باشد." };
+    }
+    return { ok: true };
+};
+
 export const validationMessage = (result: ValidationResult) => (result.ok ? "" : result.message);
+
+export const cleanApiValidationMessage = (message?: string) =>
+    (message || "مقدار واردشده معتبر نیست.").replace(/^Value error,\s*/i, "");
 
 export const validateRequired = (value: string, label: string): ValidationResult => {
     if (!value.trim()) {
@@ -49,8 +82,8 @@ export const validateEmail = (value: string): ValidationResult => {
     if (!email) {
         return { ok: false, message: "ایمیل را وارد کن." };
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return { ok: false, message: "فرمت ایمیل درست نیست." };
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(email)) {
+        return { ok: false, message: "ایمیل را با ساختار درست وارد کن؛ مثل name@example.com" };
     }
     return { ok: true };
 };
@@ -61,7 +94,7 @@ export const validateIranMobile = (value: string): ValidationResult => {
         return { ok: false, message: "شماره موبایل را وارد کن." };
     }
     if (!/^09\d{9}$/.test(phone)) {
-        return { ok: false, message: "شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد." };
+        return { ok: false, message: "شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567" };
     }
     return { ok: true };
 };
@@ -88,7 +121,7 @@ export const validateReferralCode = (value: string): ValidationResult => {
         return { ok: true };
     }
     if (!/^[A-Z0-9]{4,32}$/.test(code)) {
-        return { ok: false, message: "کد دعوت باید ۴ تا ۳۲ کاراکتر و فقط شامل حرف انگلیسی یا عدد باشد." };
+        return { ok: false, message: "ساختار کد دعوت درست نیست؛ فقط ۴ تا ۳۲ حرف انگلیسی یا عدد وارد کن." };
     }
     return { ok: true };
 };
@@ -129,6 +162,44 @@ export const validateUrl = (
         return { ok: true };
     } catch {
         return { ok: false, message: `${label} معتبر نیست.` };
+    }
+};
+
+export const normalizeWebsiteUrl = (value: string) => {
+    const url = value.trim();
+    if (!url) return "";
+    return /^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `https://${url}`;
+};
+
+export const validateWebsiteUrl = (value: string): ValidationResult => {
+    const normalized = normalizeWebsiteUrl(value);
+    if (!normalized) {
+        return { ok: false, message: "آدرس وب‌سایت را وارد کن." };
+    }
+    if (normalized.length > 500 || /\s/.test(normalized)) {
+        return { ok: false, message: "آدرس وب‌سایت معتبر نیست؛ مثل https://chinverse.ir" };
+    }
+
+    try {
+        const parsed = new URL(normalized);
+        const hostname = parsed.hostname.toLowerCase();
+        const labels = hostname.split(".");
+        const validLabels = labels.every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label));
+        const validTld = /^[a-z]{2,63}$/i.test(labels.at(-1) || "") || (labels.at(-1) || "").startsWith("xn--");
+
+        if (
+            !["http:", "https:"].includes(parsed.protocol)
+            || parsed.username
+            || parsed.password
+            || labels.length < 2
+            || !validLabels
+            || !validTld
+        ) {
+            return { ok: false, message: "آدرس وب‌سایت معتبر نیست؛ مثل https://chinverse.ir" };
+        }
+        return { ok: true };
+    } catch {
+        return { ok: false, message: "آدرس وب‌سایت معتبر نیست؛ مثل https://chinverse.ir" };
     }
 };
 
