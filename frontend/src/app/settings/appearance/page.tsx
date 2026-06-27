@@ -1,8 +1,8 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import Surface from "@/components/ui/Surface";
 import { AppHeader } from "@/components/ui/IconButton";
 import {
@@ -29,6 +29,8 @@ type ScaleOption<T extends string> = {
     value: T;
     label: string;
 };
+
+type VisualSettingId = "persianFontSize" | "chineseFontSize" | "persianLineSpacing" | "chineseLineSpacing";
 
 const persianFontLabels: Array<ScaleOption<FontSizeLevel>> = [
     { value: "small", label: "کوچک" },
@@ -189,9 +191,44 @@ function VisualScaleSetting<T extends string>({
     );
 }
 
+function VisualScaleSheet({
+    onClose,
+    children,
+}: {
+    onClose: () => void;
+    children: ReactNode;
+}) {
+    return (
+        <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/45 px-0 pt-10 backdrop-blur-sm sm:items-center sm:px-3" onClick={onClose}>
+            <div
+                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-t-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] sm:rounded-[30px]"
+                onClick={(event) => event.stopPropagation()}
+                dir="rtl"
+            >
+                <div className="flex justify-start px-4 pt-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white text-slate-500 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] dark:border-[#344050] dark:bg-[#202936] dark:text-[#c5ced9]"
+                        aria-label="بستن"
+                    >
+                        <X size={19} />
+                    </button>
+                </div>
+                <div className="max-h-[76vh] overflow-y-auto pb-5">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function AppearanceSettingsPage() {
     const { preferences, setPreference, resetPreferences } = useLearningPreferences();
     const { activeSheet, openSheet, closeSheet } = useOptionSheet();
+    const [activeVisualSetting, setActiveVisualSetting] = useState<VisualSettingId | null>(null);
+
+    const closeVisualSetting = () => setActiveVisualSetting(null);
 
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
@@ -219,52 +256,32 @@ export default function AppearanceSettingsPage() {
                             })}
                         />
 
-                        <VisualScaleSetting
-                            title="سایز متن فارسی"
+                        <SelectSettingRow
+                            label="سایز متن فارسی"
                             value={preferences.persianFontSize}
                             options={persianFontLabels}
-                            onChange={(nextValue) => setPreference("persianFontSize", nextValue)}
-                            previewText={persianPreviewText}
-                            previewLang="fa"
-                            previewDir="rtl"
-                            previewStyle={persianPreviewTextStyle[preferences.persianFontSize]}
-                            labelStyle={(optionValue) => persianFontPreview[optionValue as FontSizeLevel]}
+                            onOpen={() => setActiveVisualSetting("persianFontSize")}
                         />
 
-                        <VisualScaleSetting
-                            title="سایز متن چینی"
+                        <SelectSettingRow
+                            label="سایز متن چینی"
                             value={preferences.chineseFontSize}
                             options={chineseFontLabels}
-                            onChange={(nextValue) => setPreference("chineseFontSize", nextValue)}
-                            previewText={chinesePreviewText}
-                            previewLang="zh-CN"
-                            previewDir="ltr"
-                            previewClassName="font-cjk"
-                            previewStyle={chinesePreviewTextStyle[preferences.chineseFontSize]}
-                            labelStyle={(optionValue) => chineseFontPreview[optionValue as FontSizeLevel]}
+                            onOpen={() => setActiveVisualSetting("chineseFontSize")}
                         />
 
-                        <VisualScaleSetting
-                            title="فاصله بین خطوط فارسی"
+                        <SelectSettingRow
+                            label="فاصله بین خطوط فارسی"
                             value={preferences.persianLineSpacing}
                             options={persianLineLabels}
-                            onChange={(nextValue) => setPreference("persianLineSpacing", nextValue)}
-                            previewText={persianPreviewText}
-                            previewLang="fa"
-                            previewDir="rtl"
-                            previewStyle={{ fontSize: 13, ...lineSpacingPreview[preferences.persianLineSpacing] }}
+                            onOpen={() => setActiveVisualSetting("persianLineSpacing")}
                         />
 
-                        <VisualScaleSetting
-                            title="فاصله بین خطوط چینی"
+                        <SelectSettingRow
+                            label="فاصله بین خطوط چینی"
                             value={preferences.chineseLineSpacing}
                             options={chineseLineLabels}
-                            onChange={(nextValue) => setPreference("chineseLineSpacing", nextValue)}
-                            previewText={chinesePreviewText}
-                            previewLang="zh-CN"
-                            previewDir="ltr"
-                            previewClassName="font-cjk"
-                            previewStyle={{ fontSize: 16, ...lineSpacingPreview[preferences.chineseLineSpacing] }}
+                            onOpen={() => setActiveVisualSetting("chineseLineSpacing")}
                         />
 
                         <SelectSettingRow
@@ -352,6 +369,63 @@ export default function AppearanceSettingsPage() {
                     sheet={activeSheet}
                     onClose={closeSheet}
                 />
+            )}
+
+            {activeVisualSetting && (
+                <VisualScaleSheet onClose={closeVisualSetting}>
+                    {activeVisualSetting === "persianFontSize" && (
+                        <VisualScaleSetting
+                            title="سایز متن فارسی"
+                            value={preferences.persianFontSize}
+                            options={persianFontLabels}
+                            onChange={(nextValue) => setPreference("persianFontSize", nextValue)}
+                            previewText={persianPreviewText}
+                            previewLang="fa"
+                            previewDir="rtl"
+                            previewStyle={persianPreviewTextStyle[preferences.persianFontSize]}
+                            labelStyle={(optionValue) => persianFontPreview[optionValue as FontSizeLevel]}
+                        />
+                    )}
+                    {activeVisualSetting === "chineseFontSize" && (
+                        <VisualScaleSetting
+                            title="سایز متن چینی"
+                            value={preferences.chineseFontSize}
+                            options={chineseFontLabels}
+                            onChange={(nextValue) => setPreference("chineseFontSize", nextValue)}
+                            previewText={chinesePreviewText}
+                            previewLang="zh-CN"
+                            previewDir="ltr"
+                            previewClassName="font-cjk"
+                            previewStyle={chinesePreviewTextStyle[preferences.chineseFontSize]}
+                            labelStyle={(optionValue) => chineseFontPreview[optionValue as FontSizeLevel]}
+                        />
+                    )}
+                    {activeVisualSetting === "persianLineSpacing" && (
+                        <VisualScaleSetting
+                            title="فاصله بین خطوط فارسی"
+                            value={preferences.persianLineSpacing}
+                            options={persianLineLabels}
+                            onChange={(nextValue) => setPreference("persianLineSpacing", nextValue)}
+                            previewText={persianPreviewText}
+                            previewLang="fa"
+                            previewDir="rtl"
+                            previewStyle={{ fontSize: 13, ...lineSpacingPreview[preferences.persianLineSpacing] }}
+                        />
+                    )}
+                    {activeVisualSetting === "chineseLineSpacing" && (
+                        <VisualScaleSetting
+                            title="فاصله بین خطوط چینی"
+                            value={preferences.chineseLineSpacing}
+                            options={chineseLineLabels}
+                            onChange={(nextValue) => setPreference("chineseLineSpacing", nextValue)}
+                            previewText={chinesePreviewText}
+                            previewLang="zh-CN"
+                            previewDir="ltr"
+                            previewClassName="font-cjk"
+                            previewStyle={{ fontSize: 16, ...lineSpacingPreview[preferences.chineseLineSpacing] }}
+                        />
+                    )}
+                </VisualScaleSheet>
             )}
         </div>
     );

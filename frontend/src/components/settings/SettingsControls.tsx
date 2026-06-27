@@ -47,7 +47,7 @@ export function SelectSettingRow({ label, value, options, onOpen, swatches = fal
             onClick={() => onOpen(value, options)}
             className="flex min-h-[62px] w-full items-center justify-between gap-3 px-4 py-3 text-right transition hover:bg-[#f8fbff] active:bg-[#eef6ff] dark:hover:bg-[#202936] dark:active:bg-[#253347]"
         >
-            <span className="text-sm font-black text-slate-800">{label}</span>
+            <span className="text-sm font-black text-slate-800 dark:text-[#e8edf4]">{label}</span>
             <span className="flex min-w-0 items-center gap-2 text-left">
                 {swatches && activeOption?.swatch && (
                     <span
@@ -55,7 +55,7 @@ export function SelectSettingRow({ label, value, options, onOpen, swatches = fal
                         style={{ backgroundColor: activeOption.swatch }}
                     />
                 )}
-                <span className="max-w-[130px] truncate text-xs font-bold text-slate-500">{activeOption?.label}</span>
+                <span className="max-w-[130px] truncate text-xs font-bold text-slate-500 dark:text-[#98a6b7]">{activeOption?.label}</span>
                 <ChevronLeft className="h-4 w-4 shrink-0 text-[#155aa6]" />
             </span>
         </button>
@@ -71,7 +71,7 @@ interface SwitchSettingRowProps {
 export function SwitchSettingRow({ label, checked, onChange }: SwitchSettingRowProps) {
     return (
         <div className="flex min-h-[62px] items-center justify-between gap-3 px-4 py-3">
-            <span className="text-sm font-black text-slate-800">{label}</span>
+            <span className="text-sm font-black text-slate-800 dark:text-[#e8edf4]">{label}</span>
             <button
                 type="button"
                 onClick={() => onChange(!checked)}
@@ -106,9 +106,9 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
             >
                 <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-[#f8fbff] px-5 py-4 dark:border-[#2b3542] dark:bg-[#1d2530]">
                     <div className="min-w-0">
-                        <h2 className="text-base font-black text-slate-950">{sheet.title}</h2>
+                        <h2 className="text-base font-black text-slate-950 dark:text-[#e8edf4]">{sheet.title}</h2>
                         {sheet.subtitle && (
-                            <p className="mt-1 text-xs font-semibold leading-6 text-slate-500">{sheet.subtitle}</p>
+                            <p className="mt-1 text-xs font-semibold leading-6 text-slate-500 dark:text-[#98a6b7]">{sheet.subtitle}</p>
                         )}
                     </div>
                     <IconButton onClick={onClose} label="بستن">
@@ -141,13 +141,13 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
                                         <span className="min-w-0">
                                             <span className="block text-sm font-black">{option.label}</span>
                                             {option.description && (
-                                                <span className="mt-1 block text-xs font-semibold leading-5 text-slate-400">{option.description}</span>
+                                                <span className="mt-1 block text-xs font-semibold leading-5 text-slate-400 dark:text-[#8390a3]">{option.description}</span>
                                             )}
                                         </span>
                                     </span>
                                     <span
                                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl ${
-                                            active ? "bg-[#155aa6] text-white" : "bg-white text-transparent"
+                                            active ? "bg-[#155aa6] text-white" : "bg-white text-transparent dark:bg-[#111821]"
                                         }`}
                                     >
                                         <Check size={16} />
