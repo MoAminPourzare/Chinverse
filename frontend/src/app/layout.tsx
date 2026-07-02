@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="fa" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#f7f8fb" />
+        <meta name="theme-color" content="#fafafb" />
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body className="antialiased text-slate-900">

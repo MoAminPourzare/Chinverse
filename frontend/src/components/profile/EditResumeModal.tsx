@@ -147,7 +147,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         <ResumeSection
                                             title="سوابق کاری"
                                             icon={<Briefcase className="h-5 w-5" />}
-                                            addLabel="سوابق کاری رو اضافه کن"
+                                            addLabel="سوابق کاریتو اضافه کن"
                                             onAdd={() => work.append({ company: "", job_title: "", start_date: "", end_date: "" })}
                                         >
                                             {work.fields.map((field, index) => (

@@ -406,12 +406,12 @@ export default function ProfilePage() {
             <div className="mx-auto flex w-full max-w-[430px] flex-col">
                 <header className="sticky top-0 z-50 flex h-[70px] items-center justify-between border-b border-[#dfe3ea] bg-[#eef0f3] px-5">
                     <div className="flex items-center gap-3">
-                        <Link href="/community" className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white" aria-label="گفتگو">
-                            <MessageCircle className="h-5 w-5" strokeWidth={1.9} />
-                        </Link>
-                        <NotificationBellLink />
                         <Link href="/settings" className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white" aria-label="تنظیمات">
                             <Settings className="h-5 w-5" strokeWidth={1.9} />
+                        </Link>
+                        <NotificationBellLink />
+                        <Link href="/community" className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white" aria-label="گفتگو">
+                            <MessageCircle className="h-5 w-5" strokeWidth={1.9} />
                         </Link>
                     </div>
 

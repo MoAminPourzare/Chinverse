@@ -7,6 +7,7 @@ import {
     ImageIcon,
     MessageCircle,
     Sparkles,
+    Settings,
     User as UserIcon,
 } from "lucide-react";
 import api from "@/lib/api";
@@ -15,6 +16,7 @@ import { getMediaUrl } from "@/lib/media";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostViewerModal from "@/components/engagement/PostViewerModal";
 import DailyPracticeContent from "@/components/daily/DailyPracticeContent";
+import NotificationBellLink from "@/components/notifications/NotificationBellLink";
 
 type HomeTab = "activities" | "daily";
 
@@ -85,17 +87,40 @@ export default function HomePage() {
     }, []);
 
     return (
-        <div className="min-h-full bg-[#f7f8fa] pb-24" dir="rtl">
+        <div className="min-h-full bg-[#fafafb] pb-24" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col px-4 pt-4">
-                <header className="flex flex-col items-center">
-                    <Image
-                        src="/assets/chinverse/logos/chinverse-logo.png"
-                        alt="چین‌ورس"
-                        width={118}
-                        height={58}
-                        className="h-[58px] w-auto object-contain"
-                        priority
-                    />
+                <header className="relative flex flex-col items-center pt-1">
+                    <div className="absolute right-0 top-1 flex items-center gap-1">
+                        <Link
+                            href="/settings"
+                            className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white"
+                            aria-label="تنظیمات"
+                        >
+                            <Settings className="h-5 w-5" strokeWidth={1.9} />
+                        </Link>
+                        <NotificationBellLink />
+                        <Link
+                            href="/chat"
+                            className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white"
+                            aria-label="پیام‌ها"
+                        >
+                            <MessageCircle className="h-5 w-5" strokeWidth={1.9} />
+                        </Link>
+                    </div>
+
+                    <Link href="/" className="flex items-center justify-center gap-3 pt-1" aria-label="چینورس">
+                        <Image
+                            src="/assets/chinverse/logos/chinverse-logo.png"
+                            alt="چین ورس"
+                            width={76}
+                            height={74}
+                            className="h-[72px] w-auto object-contain"
+                            priority
+                        />
+                        <span className="text-[29px] font-black leading-none text-[#155aa6]">
+                            چینورس
+                        </span>
+                    </Link>
 
                     <div className="mt-3 grid h-[48px] w-full grid-cols-2 border-b border-[#c8d0dc]">
                         {homeTabs.map((tab) => (

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, Compass, Home, ShieldCheck, User, Users } from "lucide-react";
+import { Brain, Home, Search, ShieldCheck, User, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { adminService } from "@/lib/admin";
 
@@ -45,7 +45,7 @@ export default function BottomNav() {
     const navItems = [
         { name: "خانه", href: "/", icon: Home },
         { name: "لایتنر", href: "/leitner", icon: Brain },
-        { name: "کاوش", href: "/explore", icon: Compass },
+        { name: "کاوش", href: "/explore", icon: Search },
         { name: "ویترین", href: "/showcase", icon: Users },
         { name: "پروفایل", href: "/profile", icon: User },
         ...(isAdmin ? [{ name: "ادمین", href: "/admin", icon: ShieldCheck }] : []),
