@@ -22,11 +22,7 @@ export const galleryService = {
             formData.append('caption', caption);
         }
 
-        const response = await api.post<GalleryItem>('/users/me/gallery', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await api.post<GalleryItem>('/users/me/gallery', formData);
         return response.data;
     },
 

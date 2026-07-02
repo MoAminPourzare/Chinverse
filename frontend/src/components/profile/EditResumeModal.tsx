@@ -5,7 +5,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Award, Briefcase, FileText, GraduationCap, Languages, Plus, Trash2, Wrench, X } from "lucide-react";
 import { SubmitHandler, useFieldArray, useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { ResumeData, User, userService } from "@/services/user.service";
-import { EDUCATION_DEGREE_OPTIONS, PROFILE_HEADLINE_OPTIONS, UNIVERSITY_OPTIONS } from "@/profileOptions";
+import { EDUCATION_DEGREE_OPTIONS, UNIVERSITY_OPTIONS } from "@/profileOptions";
 
 interface EditResumeModalProps {
     isOpen: boolean;
@@ -153,7 +153,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             {work.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => work.remove(index)}>
                                                     <input {...register(`work_experiences.${index}.company`)} placeholder="نام شرکت" dir="auto" className={inputClass} />
-                                                    <OptionSelect registration={register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" options={PROFILE_HEADLINE_OPTIONS} />
+                                                    <input {...register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" dir="auto" className={inputClass} />
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <YearSelect registration={register(`work_experiences.${index}.start_date`)} placeholder="سال شروع" />
                                                         <YearSelect registration={register(`work_experiences.${index}.end_date`)} placeholder="سال پایان" />

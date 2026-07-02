@@ -11,6 +11,7 @@ interface ImageAdjustModalProps {
     title?: string;
     aspectRatio?: number;
     frameClassName?: string;
+    fitMode?: "cover" | "contain";
     outputType?: "image/jpeg" | "image/png" | "image/webp";
     outputQuality?: number;
     onCancel: () => void;
@@ -33,6 +34,7 @@ export default function ImageAdjustModal({
     title = "تنظیم تصویر",
     aspectRatio = 1,
     frameClassName,
+    fitMode = "cover",
     outputType = "image/jpeg",
     outputQuality = 0.92,
     onCancel,
@@ -108,7 +110,9 @@ export default function ImageAdjustModal({
     const getBaseScale = () => {
         const frame = getFrameSize();
         if (!imageSize.width || !imageSize.height) return 1;
-        return Math.max(frame.width / imageSize.width, frame.height / imageSize.height);
+        const scaleX = frame.width / imageSize.width;
+        const scaleY = frame.height / imageSize.height;
+        return fitMode === "contain" ? Math.min(scaleX, scaleY) : Math.max(scaleX, scaleY);
     };
 
     const constrainOffset = (nextOffset: { x: number; y: number }, nextZoom = zoom) => {
@@ -192,6 +196,33 @@ export default function ImageAdjustModal({
             const frame = getFrameSize();
             const baseScale = getBaseScale();
             const totalScale = baseScale * zoom;
+
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, outputWidth, outputHeight);
+
+            if (fitMode === "contain") {
+                const frameToCanvasScale = outputWidth / frame.width;
+                const drawWidth = imageSize.width * totalScale * frameToCanvasScale;
+                const drawHeight = imageSize.height * totalScale * frameToCanvasScale;
+                const drawX = (outputWidth - drawWidth) / 2 + offset.x * frameToCanvasScale;
+                const drawY = (outputHeight - drawHeight) / 2 + offset.y * frameToCanvasScale;
+
+                context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+                const blob = await new Promise<Blob | null>((resolve) => {
+                    canvas.toBlob(resolve, outputType, outputQuality);
+                });
+                if (!blob) return;
+
+                const originalName = file.name.replace(/\.[^.]+$/, "");
+                const adjustedFile = new File([blob], `${originalName}-adjusted.${outputExtension}`, {
+                    type: outputType,
+                    lastModified: Date.now(),
+                });
+                const previewUrl = canvas.toDataURL(outputType, outputQuality);
+                onConfirm(adjustedFile, previewUrl);
+                return;
+            }
+
             const visibleWidthInSource = frame.width / totalScale;
             const visibleHeightInSource = frame.height / totalScale;
             const sourceCenterX = imageSize.width / 2 - offset.x / totalScale;

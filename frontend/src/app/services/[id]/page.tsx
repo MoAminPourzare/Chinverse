@@ -86,13 +86,13 @@ export default function ServiceDetailPage() {
                         </h1>
                     </div>
 
-                    <div className="relative mx-5 aspect-[4/3] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#eef6ff] to-[#fff6df]">
+                    <div className="relative mx-5 aspect-[16/10] overflow-hidden rounded-[24px] bg-gradient-to-br from-[#eef6ff] to-[#fff6df]">
                         {service.banner_url ? (
                             <Image
                                 src={getMediaUrl(service.banner_url)}
                                 alt={service.title}
                                 fill
-                                className="object-cover"
+                                className="object-contain"
                                 sizes="430px"
                                 priority
                                 unoptimized

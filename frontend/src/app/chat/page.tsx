@@ -167,6 +167,9 @@ function EmptyMessagesState() {
                 className="h-[168px] w-[168px] object-contain"
             />
             <h2 className="mt-7 text-lg font-black text-slate-900">هنوز پیامی دریافت نکردی!</h2>
+            <p className="mt-3 max-w-[310px] text-sm leading-7 text-slate-500">
+                در این بخش میتونی با افراد شبکه ات در تماس باشی، با زبان آموز های دیگه گفت و گو کنی، از پشتیبانی کمک بگیری یا حتی پیام های شغلی از کارفرما ها دریافت کنی.
+            </p>
         </div>
     );
 }

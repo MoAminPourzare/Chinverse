@@ -9,13 +9,16 @@ import {
     ChevronUp,
     Headphones,
     Loader2,
+    PenLine,
     Search,
     Send,
+    Trash2,
     User as UserIcon,
     X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { validateTextLength, validationMessage } from "@/validation";
@@ -34,8 +37,8 @@ type MainTab = "forum" | "messages";
 type ForumSubTab = "questions" | "articles";
 
 const tabs: Array<{ id: MainTab; label: string }> = [
-    { id: "forum", label: "تالار گفتگو" },
     { id: "messages", label: "پیام‌ها" },
+    { id: "forum", label: "تالار گفتگو" },
 ];
 
 const forumTabs: Array<{ id: ForumSubTab; label: string }> = [
@@ -44,7 +47,8 @@ const forumTabs: Array<{ id: ForumSubTab; label: string }> = [
 ];
 
 export default function CommunityPage() {
-    const [activeTab, setActiveTab] = useState<MainTab>("forum");
+    const currentUserId = useOptionalCurrentUserId();
+    const [activeTab, setActiveTab] = useState<MainTab>("messages");
     const [questions, setQuestions] = useState<ForumQuestion[]>([]);
     const [articles, setArticles] = useState<Article[]>([]);
     const [conversations, setConversations] = useState<ConversationPreview[]>([]);
@@ -154,22 +158,27 @@ export default function CommunityPage() {
                         questions={questions}
                         articles={articles}
                         isLoading={isLoading}
+                        currentUserId={currentUserId}
                         setQuestions={setQuestions}
                         setArticles={setArticles}
                     />
                 )}
             </main>
 
-            <div className="mt-10 flex justify-start" dir="ltr">
-                <Link
-                    href="/support"
-                    className="flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
-                    aria-label="پشتیبانی"
-                >
-                    <Headphones className="h-6 w-6" />
-                </Link>
-            </div>
+            <SupportFloatingButton />
         </div>
+    );
+}
+
+function SupportFloatingButton() {
+    return (
+        <Link
+            href="/support"
+            className="fixed bottom-24 right-4 z-30 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92] min-[430px]:right-[calc(50%_-_199px)]"
+            aria-label="پشتیبانی"
+        >
+            <Headphones className="h-6 w-6" />
+        </Link>
     );
 }
 
@@ -177,12 +186,14 @@ function ForumTab({
     questions,
     articles,
     isLoading,
+    currentUserId,
     setQuestions,
     setArticles,
 }: {
     questions: ForumQuestion[];
     articles: Article[];
     isLoading: boolean;
+    currentUserId: number | null;
     setQuestions: React.Dispatch<React.SetStateAction<ForumQuestion[]>>;
     setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
 }) {
@@ -209,7 +220,7 @@ function ForumTab({
             </nav>
 
             {activeForumTab === "questions" ? (
-                <QuestionsSection questions={questions} isLoading={isLoading} setQuestions={setQuestions} />
+                <QuestionsSection questions={questions} isLoading={isLoading} currentUserId={currentUserId} setQuestions={setQuestions} />
             ) : (
                 <ArticlesSection articles={articles} isLoading={isLoading} setArticles={setArticles} />
             )}
@@ -220,15 +231,22 @@ function ForumTab({
 function QuestionsSection({
     questions,
     isLoading,
+    currentUserId,
     setQuestions,
 }: {
     questions: ForumQuestion[];
     isLoading: boolean;
+    currentUserId: number | null;
     setQuestions: React.Dispatch<React.SetStateAction<ForumQuestion[]>>;
 }) {
     const [draft, setDraft] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
+    const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
+    const [editDraft, setEditDraft] = useState("");
+    const [editError, setEditError] = useState("");
+    const [savingQuestionId, setSavingQuestionId] = useState<number | null>(null);
+    const [deletingQuestionId, setDeletingQuestionId] = useState<number | null>(null);
     const [details, setDetails] = useState<Record<number, ForumQuestionDetail>>({});
     const [answerInputs, setAnswerInputs] = useState<Record<number, string>>({});
     const [draftError, setDraftError] = useState("");
@@ -267,6 +285,73 @@ function QuestionsSection({
             setDetails((current) => ({ ...current, [questionId]: detail }));
         } catch (error) {
             console.error("Failed to fetch question detail:", error);
+        }
+    };
+
+    const startEditQuestion = (question: ForumQuestion) => {
+        setEditingQuestionId(question.id);
+        setEditDraft(question.content);
+        setEditError("");
+        setOpenQuestionId(question.id);
+    };
+
+    const cancelEditQuestion = () => {
+        setEditingQuestionId(null);
+        setEditDraft("");
+        setEditError("");
+    };
+
+    const submitQuestionEdit = async (questionId: number) => {
+        const content = editDraft.trim();
+        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 8, max: 8000 }));
+        setEditError(validationError);
+        if (validationError || savingQuestionId) return;
+
+        setSavingQuestionId(questionId);
+        try {
+            const title = content.length > 55 ? content.slice(0, 55).trim() : content;
+            const updated = await communityService.updateForumQuestion(questionId, { title, content });
+            setQuestions((current) => current.map((question) => (question.id === questionId ? updated : question)));
+            setDetails((current) => {
+                const detail = current[questionId];
+                if (!detail) return current;
+                return {
+                    ...current,
+                    [questionId]: {
+                        ...detail,
+                        ...updated,
+                        answers: detail.answers,
+                    },
+                };
+            });
+            cancelEditQuestion();
+        } catch (error) {
+            console.error("Failed to update question:", error);
+            setEditError("ویرایش سوال انجام نشد. لطفا دوباره تلاش کن.");
+        } finally {
+            setSavingQuestionId(null);
+        }
+    };
+
+    const deleteQuestion = async (questionId: number) => {
+        if (!window.confirm("این سوال و پاسخ‌های آن حذف شود؟")) return;
+
+        setDeletingQuestionId(questionId);
+        try {
+            await communityService.deleteForumQuestion(questionId);
+            setQuestions((current) => current.filter((question) => question.id !== questionId));
+            setDetails((current) => {
+                const nextDetails = { ...current };
+                delete nextDetails[questionId];
+                return nextDetails;
+            });
+            if (openQuestionId === questionId) setOpenQuestionId(null);
+            if (editingQuestionId === questionId) cancelEditQuestion();
+        } catch (error) {
+            console.error("Failed to delete question:", error);
+            alert("حذف سوال انجام نشد. لطفا دوباره تلاش کن.");
+        } finally {
+            setDeletingQuestionId(null);
         }
     };
 
@@ -310,7 +395,7 @@ function QuestionsSection({
         <section>
             <SectionHeader
                 title="سوالات شما"
-                description="اگر درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چین‌ورس بهتر پاسخ میدن."
+                description="اگه درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چینورس بهت پاسخ میدن."
             />
 
             <div className="mt-4 flex items-stretch gap-2">
@@ -350,7 +435,21 @@ function QuestionsSection({
                             answerText={answerInputs[question.id] || ""}
                             answerError={answerErrors[question.id] || ""}
                             isSubmittingAnswer={submittingAnswerId === question.id}
+                            isOwner={currentUserId === question.author_user_id}
+                            isEditing={editingQuestionId === question.id}
+                            editText={editingQuestionId === question.id ? editDraft : ""}
+                            editError={editingQuestionId === question.id ? editError : ""}
+                            isSavingEdit={savingQuestionId === question.id}
+                            isDeleting={deletingQuestionId === question.id}
                             onToggle={() => toggleQuestion(question.id)}
+                            onEdit={() => startEditQuestion(question)}
+                            onDelete={() => void deleteQuestion(question.id)}
+                            onCancelEdit={cancelEditQuestion}
+                            onEditChange={(value) => {
+                                setEditDraft(value);
+                                if (editError) setEditError("");
+                            }}
+                            onSubmitEdit={() => void submitQuestionEdit(question.id)}
                             onAnswerChange={(value) => {
                                 setAnswerInputs((current) => ({ ...current, [question.id]: value }));
                                 setAnswerErrors((current) => ({ ...current, [question.id]: "" }));
@@ -434,7 +533,7 @@ function ArticlesSection({
         <section>
             <SectionHeader
                 title="مقالات"
-                description="در این بخش مقاله‌های آموزشی و نکته‌های تکمیلی چین‌ورس را می‌خوانی."
+                description="در این بخش، سوالات پر تکرار یا موضوعات جالب توسط تیم ما تبدیل به مقاله میشه. میتونی مقاله ها رو بخونی، زیرش نظر بدی یا سوال جدید مطرح کنی."
             />
 
             <div className="motion-list mt-4 space-y-3">
@@ -468,6 +567,7 @@ function ArticlesSection({
 
 function SectionHeader({
     title,
+    description,
     action,
 }: {
     title: string;
@@ -480,6 +580,11 @@ function SectionHeader({
                 <h2 className="text-right text-[18px] font-black text-[#2f3238]">{title}</h2>
                 {action}
             </div>
+            {description && (
+                <p className="mt-2 text-sm font-medium leading-7 text-slate-500">
+                    {description}
+                </p>
+            )}
         </div>
     );
 }
@@ -491,7 +596,18 @@ function QuestionCard({
     answerText,
     answerError,
     isSubmittingAnswer,
+    isOwner,
+    isEditing,
+    editText,
+    editError,
+    isSavingEdit,
+    isDeleting,
     onToggle,
+    onEdit,
+    onDelete,
+    onCancelEdit,
+    onEditChange,
+    onSubmitEdit,
     onAnswerChange,
     onSubmitAnswer,
 }: {
@@ -501,16 +617,29 @@ function QuestionCard({
     answerText: string;
     answerError: string;
     isSubmittingAnswer: boolean;
+    isOwner: boolean;
+    isEditing: boolean;
+    editText: string;
+    editError: string;
+    isSavingEdit: boolean;
+    isDeleting: boolean;
     onToggle: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+    onCancelEdit: () => void;
+    onEditChange: (value: string) => void;
+    onSubmitEdit: () => void;
     onAnswerChange: (value: string) => void;
     onSubmitAnswer: () => void;
 }) {
     return (
         <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white text-right shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-            <button type="button" onClick={onToggle} className="w-full p-4 text-right">
-                <div className="flex items-start gap-3">
-                    <Avatar src={question.author?.avatar_url} name={question.author?.display_name} />
-                    <div className="min-w-0 flex-1 text-right">
+            <div className="p-4">
+                <div className="flex items-start gap-3 text-right">
+                    <button type="button" onClick={onToggle} className="shrink-0">
+                        <Avatar src={question.author?.avatar_url} name={question.author?.display_name} />
+                    </button>
+                    <button type="button" onClick={onToggle} className="min-w-0 flex-1 text-right">
                         <div className="flex items-center justify-between gap-3">
                             <p className={cn("text-xs font-black text-[#155aa6]", getTextAlign(question.author?.display_name))} {...getDirectionalTextProps(question.author?.display_name)}>{question.author?.display_name || "کاربر چین‌ورس"}</p>
                             <span className="text-[11px] text-slate-400">{formatDate(question.created_at)}</span>
@@ -522,12 +651,66 @@ function QuestionCard({
                             </span>
                             {isOpen ? <ChevronUp className="h-4 w-4 text-[#155aa6]" /> : <ChevronDown className="h-4 w-4 text-[#155aa6]" />}
                         </div>
-                    </div>
+                    </button>
+                    {isOwner && (
+                        <div className="flex shrink-0 items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={onEdit}
+                                disabled={isDeleting}
+                                className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dcecff] disabled:opacity-50"
+                                aria-label="ویرایش سوال"
+                            >
+                                <PenLine className="h-4 w-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onDelete}
+                                disabled={isDeleting}
+                                className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+                                aria-label="حذف سوال"
+                            >
+                                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </button>
+                        </div>
+                    )}
                 </div>
-            </button>
+            </div>
 
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
+                    {isEditing && (
+                        <div className="mb-4 rounded-[18px] border border-[#d6e1ee] bg-white p-3 shadow-sm">
+                            <textarea
+                                value={editText}
+                                onChange={(event) => onEditChange(event.target.value)}
+                                rows={4}
+                                dir={editText.trim() ? "auto" : "rtl"}
+                                className="min-h-[108px] w-full resize-none rounded-2xl bg-slate-50 px-3 py-3 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
+                                placeholder="متن سوال را ویرایش کن"
+                            />
+                            {editError && <p className="mt-2 text-xs font-bold leading-5 text-rose-600">{editError}</p>}
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={onCancelEdit}
+                                    disabled={isSavingEdit}
+                                    className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-200 disabled:opacity-60"
+                                >
+                                    لغو
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onSubmitEdit}
+                                    disabled={!editText.trim() || isSavingEdit}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-300"
+                                >
+                                    {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
+                                    ذخیره
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div className="mt-4 space-y-3">
                         {detail ? (
                             detail.answers.length > 0 ? (
@@ -704,6 +887,9 @@ function MessagesTab({
                     <Image src="/assets/chinverse/icons/chat-message-hover-pinch.svg" alt="" fill sizes="150px" className="object-contain" />
                 </div>
                 <h2 className="text-[17px] font-black text-[#25272d]">هنوز پیامی دریافت نکردی!</h2>
+                <p className="mt-3 max-w-[310px] text-sm leading-7 text-slate-500">
+                    در این بخش میتونی با افراد شبکه ات در تماس باشی، با زبان آموز های دیگه گفت و گو کنی، از پشتیبانی کمک بگیری یا حتی پیام های شغلی از کارفرما ها دریافت کنی.
+                </p>
             </div>
         );
     }

@@ -90,11 +90,7 @@ export const userService = {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.post<User>('/users/me/avatar', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await api.post<User>('/users/me/avatar', formData);
         return response.data;
     },
 
@@ -124,11 +120,13 @@ export const userService = {
 
     // ایجاد خدمت جدید
     async createService(data: FormData): Promise<UserService> {
-        const response = await api.post<UserService>('/users/me/services', data, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await api.post<UserService>('/users/me/services', data);
+        return response.data;
+    },
+
+    // ویرایش خدمت
+    async updateService(serviceId: number, data: FormData): Promise<UserService> {
+        const response = await api.patch<UserService>(`/users/me/services/${serviceId}`, data);
         return response.data;
     },
 

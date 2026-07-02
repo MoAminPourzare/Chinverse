@@ -4,7 +4,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, Plus, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, PenLine, Plus, Trash2, Upload, X } from "lucide-react";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import LikeButton from "@/components/engagement/LikeButton";
 import { cn } from "@/lib/cn";
@@ -30,6 +30,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState<string | null>(null);
     const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
+    const [editingService, setEditingService] = useState<UserService | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isOwner = !userId && !readOnly;
@@ -58,7 +59,24 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         setBannerFile(null);
         setBannerPreview(null);
         setPendingBannerFile(null);
+        setEditingService(null);
         setError("");
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (service: UserService) => {
+        setEditingService(service);
+        setTitle(service.title);
+        setDescription(service.description);
+        setBannerFile(null);
+        setBannerPreview(service.banner_url ? getMediaUrl(service.banner_url) : null);
+        setPendingBannerFile(null);
+        setError("");
+        setIsModalOpen(true);
     };
 
     const closeModal = () => {
@@ -103,11 +121,15 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
             formData.append("description", cleanDescription);
             if (bannerFile) formData.append("banner", bannerFile);
 
-            await userService.createService(formData);
-            setIsModalOpen(false);
+            if (editingService) {
+                await userService.updateService(editingService.id, formData);
+            } else {
+                await userService.createService(formData);
+            }
             await fetchServices();
+            setIsModalOpen(false);
         } catch (submitError) {
-            setError(getServiceErrorMessage(submitError, false, "ثبت خدمت انجام نشد. لطفا دوباره امتحان کن."));
+            setError(getServiceErrorMessage(submitError, false, editingService ? "ویرایش خدمت انجام نشد. لطفا دوباره امتحان کن." : "ثبت خدمت انجام نشد. لطفا دوباره امتحان کن."));
         } finally {
             setSubmitting(false);
         }
@@ -173,7 +195,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                     {isOwner ? (
                         <button
                             type="button"
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={openCreateModal}
                             className="mt-7 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
                             aria-label="افزودن خدمت"
                         >
@@ -187,6 +209,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                     description={description}
                     bannerPreview={bannerPreview}
                     error={error}
+                    isEditing={Boolean(editingService)}
                     submitting={submitting}
                     pendingBannerFile={pendingBannerFile}
                     fileInputRef={fileInputRef}
@@ -216,6 +239,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                         service={service}
                         userId={userId}
                         isOwner={isOwner}
+                        onEdit={() => openEditModal(service)}
                         onDelete={() => handleDelete(service.id)}
                     />
                 ))}
@@ -223,7 +247,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                 {isOwner && (
                     <button
                         type="button"
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={openCreateModal}
                         className="mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:-translate-y-0.5 hover:bg-[#0f4e92]"
                         aria-label="افزودن خدمت"
                     >
@@ -238,6 +262,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                 description={description}
                 bannerPreview={bannerPreview}
                 error={error}
+                isEditing={Boolean(editingService)}
                 submitting={submitting}
                 pendingBannerFile={pendingBannerFile}
                 fileInputRef={fileInputRef}
@@ -284,6 +309,7 @@ interface ServiceModalProps {
     description: string;
     bannerPreview: string | null;
     error: string;
+    isEditing: boolean;
     submitting: boolean;
     pendingBannerFile: File | null;
     fileInputRef: RefObject<HTMLInputElement | null>;
@@ -303,6 +329,7 @@ function ServiceModal({
     description,
     bannerPreview,
     error,
+    isEditing,
     submitting,
     pendingBannerFile,
     fileInputRef,
@@ -353,7 +380,7 @@ function ServiceModal({
                                 <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
                                     <div className="min-w-0 flex-1 text-center">
                                         <Dialog.Title as="h2" className="text-base font-black text-slate-900">
-                                            افزودن خدمت جدید
+                                            {isEditing ? "ویرایش خدمت" : "افزودن خدمت جدید"}
                                         </Dialog.Title>
                                     </div>
                                     <button
@@ -381,18 +408,18 @@ function ServiceModal({
                                         </div>
 
                                         <div>
-                                            <label className="mb-2 block text-sm font-bold text-slate-700">تصویر خدمت</label>
+                                            <label className="mb-2 block text-sm font-bold text-slate-700">تصویر پوستر تبلیغاتی</label>
                                             <button
                                                 type="button"
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="relative h-44 w-full overflow-hidden rounded-[24px] border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#155aa6] hover:bg-[#eef6ff]"
+                                                className="relative h-52 w-full overflow-hidden rounded-[24px] border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#155aa6] hover:bg-[#eef6ff]"
                                             >
                                                 {bannerPreview ? (
-                                                    <Image src={bannerPreview} alt="پیش‌نمایش خدمت" fill className="object-cover" />
+                                                    <Image src={bannerPreview} alt="پیش‌نمایش پوستر تبلیغاتی" fill className="object-contain" />
                                                 ) : (
                                                     <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                                                         <Upload className="h-8 w-8" />
-                                                        <span className="text-sm font-bold">انتخاب تصویر</span>
+                                                        <span className="text-sm font-bold">انتخاب پوستر</span>
                                                         <span className="text-xs">JPG، PNG یا WEBP تا ۵MB</span>
                                                     </span>
                                                 )}
@@ -432,7 +459,7 @@ function ServiceModal({
                                             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-3 text-sm font-black text-white shadow-[0_12px_24px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <BriefcaseBusiness className="h-5 w-5" />}
-                                            {submitting ? "در حال ثبت…" : "ثبت خدمت"}
+                                            {submitting ? (isEditing ? "در حال ذخیره…" : "در حال ثبت…") : (isEditing ? "ذخیره تغییرات" : "ثبت خدمت")}
                                         </button>
                                     </div>
                                 </form>
@@ -443,8 +470,9 @@ function ServiceModal({
                 <ImageAdjustModal
                     file={pendingBannerFile}
                     isOpen={!!pendingBannerFile}
-                    title="تنظیم تصویر خدمت"
+                    title="تنظیم پوستر تبلیغاتی"
                     aspectRatio={16 / 9}
+                    fitMode="contain"
                     onCancel={onCancelAdjust}
                     onConfirm={onConfirmAdjust}
                 />
@@ -457,24 +485,25 @@ interface ServiceCardProps {
     service: UserService;
     userId?: number;
     isOwner: boolean;
+    onEdit: () => void;
     onDelete: () => void;
 }
 
-function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
+function ServiceCard({ service, userId, isOwner, onEdit, onDelete }: ServiceCardProps) {
     const chatUserId = userId || service.user_id;
     const titleProps = getDirectionalTextProps(service.title);
     const descriptionProps = getDirectionalTextProps(service.description);
 
     return (
-        <article className="overflow-hidden rounded-[16px] border border-[#cfd3da] bg-[#e1e4ea] p-2 text-right shadow-[0_6px_14px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
+        <article className="overflow-hidden rounded-[18px] border border-[#cfd3da] bg-[#e7ebf1] p-2.5 text-right shadow-[0_8px_18px_rgba(15,23,42,0.12)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
             <Link href={`/services/${service.id}`} className="block">
-                <div className="relative h-40 overflow-hidden rounded-[12px] bg-gradient-to-br from-slate-200 to-[#eef6ff] shadow-sm">
+                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[14px] bg-gradient-to-br from-slate-100 to-[#eef6ff] shadow-sm">
                     {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
                             alt={service.title}
                             fill
-                            className="object-cover"
+                            className="object-contain"
                             sizes="430px"
                             unoptimized
                         />
@@ -492,32 +521,42 @@ function ServiceCard({ service, userId, isOwner, onDelete }: ServiceCardProps) {
                         <h3 className={cn("line-clamp-2 text-base font-black leading-7 text-[#25272d]", getTextAlign(service.title))} {...titleProps}>{service.title}</h3>
                     </Link>
                     {isOwner && (
-                        <button
-                            type="button"
-                            onClick={onDelete}
-                            className="rounded-2xl bg-white/70 p-2 text-red-500 shadow-sm transition hover:bg-red-50 hover:text-red-700"
-                            aria-label="حذف خدمت"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={onEdit}
+                                className="rounded-2xl bg-white/80 p-2 text-[#155aa6] shadow-sm transition hover:bg-[#eef6ff]"
+                                aria-label="ویرایش خدمت"
+                            >
+                                <PenLine className="h-4 w-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onDelete}
+                                className="rounded-2xl bg-white/80 p-2 text-red-500 shadow-sm transition hover:bg-red-50 hover:text-red-700"
+                                aria-label="حذف خدمت"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
                     )}
                 </div>
 
                 <p className={cn("line-clamp-3 text-sm leading-7 text-[#555c68]", getTextAlign(service.description))} {...descriptionProps}>{service.description}</p>
 
-                <div className="mt-4">
-                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Link href={`/services/${service.id}`} className="flex items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white/85 px-3 py-2 text-sm font-bold text-[#155aa6] shadow-sm transition hover:bg-white">
+                <div className="mt-3 flex justify-start">
+                    <Link href={`/services/${service.id}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white/85 px-3 py-2 text-sm font-bold text-[#155aa6] shadow-sm transition hover:bg-white">
                         <ArrowLeft className="h-4 w-4" />
                         جزئیات
                     </Link>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
                     {!isOwner && chatUserId && (
-                        <Link href={`/chat/${chatUserId}`} className="flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-3 py-2 text-sm font-bold text-white shadow-[0_8px_18px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]">
+                        <Link href={`/chat/${chatUserId}`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-3 py-2 text-sm font-bold text-white shadow-[0_8px_18px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]">
                             <MessageCircle className="h-4 w-4" />
-                            مشاوره
+                            درخواست مشاوره
                         </Link>
                     )}
                 </div>

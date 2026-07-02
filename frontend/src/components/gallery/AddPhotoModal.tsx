@@ -7,7 +7,7 @@ import Image from "next/image";
 import { galleryService } from "@/services/gallery.service";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { IconButton } from "@/components/ui/IconButton";
-import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
+import { cleanApiValidationMessage, validateImageFile, validateTextLength, validationMessage } from "@/validation";
 
 interface AddPhotoModalProps {
     isOpen: boolean;
@@ -54,7 +54,9 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
             handleClose();
         } catch (error) {
             console.error("Failed to upload image", error);
-            setError("بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
+            const requestError = error as { response?: { data?: { detail?: string } } };
+            const detail = requestError.response?.data?.detail;
+            setError(detail ? cleanApiValidationMessage(detail) : "بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
         } finally {
             setUploading(false);
         }
@@ -108,7 +110,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                         >
                             <Dialog.Panel className="flex h-[min(720px,92vh)] w-full max-w-md transform flex-col overflow-hidden rounded-[30px] bg-[#f9fafc] shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-all">
                                 <div className="grid shrink-0 grid-cols-[40px_1fr_40px] items-center px-5 py-4">
-                                    <IconButton onClick={handleClose} label="Ø¨Ø³ØªÙ†" className="justify-self-end">
+                                    <IconButton onClick={handleClose} label="بستن" className="justify-self-end">
                                         <X className="h-5 w-5" />
                                     </IconButton>
                                     <h2 className="text-center text-base font-black text-slate-900">افزودن عکس جدید</h2>
@@ -154,8 +156,8 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                                 if (error) setError("");
                                             }}
                                             rows={5}
-                                            dir="auto"
-                                            className="w-full resize-none rounded-2xl border border-[#d6e1ee] bg-white px-4 py-3 text-start text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                            dir="rtl"
+                                            className="w-full resize-none rounded-2xl border border-[#d6e1ee] bg-white px-4 py-3 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             placeholder="هر عکسی یه داستانی داره؛ داستانتو اینجا بنویس!"
                                         />
                                         {error && (

@@ -23,6 +23,11 @@ export interface ForumQuestionCreate {
     content: string;
 }
 
+export interface ForumQuestionUpdate {
+    title?: string;
+    content?: string;
+}
+
 export interface ForumAnswer {
     id: number;
     question_id: number;
@@ -104,6 +109,15 @@ export const communityService = {
     async createForumQuestion(data: ForumQuestionCreate): Promise<ForumQuestion> {
         const response = await api.post<ForumQuestion>('/community/forum/questions', data);
         return response.data;
+    },
+
+    async updateForumQuestion(questionId: number, data: ForumQuestionUpdate): Promise<ForumQuestion> {
+        const response = await api.patch<ForumQuestion>(`/community/forum/questions/${questionId}`, data);
+        return response.data;
+    },
+
+    async deleteForumQuestion(questionId: number): Promise<void> {
+        await api.delete(`/community/forum/questions/${questionId}`);
     },
 
     async getForumQuestion(questionId: number): Promise<ForumQuestionDetail> {
