@@ -54,7 +54,7 @@ export default function GalleryTab() {
                 <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
                     <div className="relative mb-6 h-[100px] w-[100px]">
                         <Image
-                            src="/assets/chinverse/icons/photo.svg"
+                            src="/assets/chinverse/icons/Photo.svg"
                             alt=""
                             fill
                             sizes="100px"

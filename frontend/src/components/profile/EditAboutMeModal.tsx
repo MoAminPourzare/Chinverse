@@ -199,7 +199,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                             rows={9}
                                             dir="auto"
                                             className="min-h-[210px] w-full rounded-[10px] border-2 border-[#155aa6] bg-white p-4 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
-                                            placeholder="درباره خودت بنویس"
+                                            placeholder="در این بخش میتونی به سابقه کاری، مهارت ها، تخصص ها یا دستاورد های مهمت اشاره کنی. بعضی ها هم در مورد مسیر شغلی یا یا زمینه های مورد علاقشون توضیح میدن."
                                         />
                                         {errors.bio?.message && (
                                             <p className="mt-2 text-xs leading-5 text-red-500">{errors.bio.message}</p>

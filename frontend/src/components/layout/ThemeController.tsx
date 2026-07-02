@@ -30,7 +30,7 @@ const applyTheme = (preference: ThemePreference, systemDark: boolean) => {
     root.style.colorScheme = isDark ? "dark" : "light";
 
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = isDark ? "#10151c" : "#f7f8fb";
+    if (themeColor) themeColor.content = isDark ? "#10151c" : "#fafafb";
 };
 
 export default function ThemeController() {

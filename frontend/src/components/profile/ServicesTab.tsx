@@ -155,7 +155,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                 <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
                     <div className="relative mb-6 h-[100px] w-[100px]">
                         <Image
-                            src="/assets/chinverse/icons/services.svg"
+                            src="/assets/chinverse/icons/Services.svg"
                             alt=""
                             fill
                             sizes="100px"
