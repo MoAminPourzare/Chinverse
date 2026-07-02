@@ -3,6 +3,12 @@
 This folder stores curated dictionary import files. HSK words are the primary
 source for the app dictionary.
 
+Canonical files currently included:
+
+- `hsk1_words_dictionary.csv`
+- `hsk2_words_dictionary.csv`
+- `hsk3_words_dictionary.csv`
+
 ## Canonical HSK CSV Format
 
 The importer recognizes the HSK sense-based CSV shape when these columns exist:
@@ -64,10 +70,22 @@ Import the default HSK1 file:
 poetry run python import_dictionary.py
 ```
 
+Import HSK1, HSK2, and HSK3 together:
+
+```powershell
+poetry run python import_dictionary.py --all-hsk
+```
+
 Rebuild the dictionary from scratch and restart word ids from 1:
 
 ```powershell
 poetry run python import_dictionary.py --reset
+```
+
+Rebuild from scratch with all canonical HSK files:
+
+```powershell
+poetry run python import_dictionary.py --all-hsk --reset
 ```
 
 Import another file:

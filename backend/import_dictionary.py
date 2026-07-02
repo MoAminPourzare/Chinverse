@@ -15,7 +15,12 @@ from app.db.session import SessionLocal
 from app.models.dictionary import DictionaryWord, WordCollocation, WordDefinition, WordExample
 
 
-DEFAULT_DICTIONARY_FILE = Path(__file__).resolve().parent / "data" / "dictionary" / "hsk1_words_dictionary.csv"
+DEFAULT_DICTIONARY_DIR = Path(__file__).resolve().parent / "data" / "dictionary"
+DEFAULT_DICTIONARY_FILE = DEFAULT_DICTIONARY_DIR / "hsk1_words_dictionary.csv"
+DEFAULT_HSK_DICTIONARY_FILES = tuple(
+    DEFAULT_DICTIONARY_DIR / f"hsk{level}_words_dictionary.csv"
+    for level in (1, 2, 3)
+)
 
 
 async def reset_dictionary(db) -> None:
@@ -196,18 +201,30 @@ async def import_dictionary_file(path: Path, *, reset: bool = False, progress_ev
     print(f"Created: {created} | Updated: {updated} | Failed: {failed}")
 
 
+async def import_dictionary_files(paths: list[Path], *, reset: bool = False, progress_every: int = 25) -> None:
+    for index, path in enumerate(paths):
+        should_reset = reset and index == 0
+        print(f"\n=== Importing {path.name} ===", flush=True)
+        await import_dictionary_file(path, reset=should_reset, progress_every=progress_every)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Import HSK/manual dictionary CSV or JSON into Chinverse.")
     parser.add_argument(
         "file",
         nargs="?",
-        default=str(DEFAULT_DICTIONARY_FILE),
+        default=None,
         help=f"Path to CSV/JSON file. Default: {DEFAULT_DICTIONARY_FILE}",
+    )
+    parser.add_argument(
+        "--all-hsk",
+        action="store_true",
+        help="Import the canonical HSK1, HSK2, and HSK3 CSV files in order.",
     )
     parser.add_argument(
         "--reset",
         action="store_true",
-        help="Clear dictionary-related tables and restart ids before importing.",
+        help="Clear dictionary-related tables and restart ids before importing. With --all-hsk, reset runs once before HSK1.",
     )
     parser.add_argument(
         "--progress-every",
@@ -219,7 +236,15 @@ def main() -> None:
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(import_dictionary_file(Path(args.file).resolve(), reset=args.reset, progress_every=args.progress_every))
+    if args.all_hsk:
+        if args.file:
+            parser.error("--all-hsk cannot be combined with an explicit file path")
+        paths = [path.resolve() for path in DEFAULT_HSK_DICTIONARY_FILES]
+        asyncio.run(import_dictionary_files(paths, reset=args.reset, progress_every=args.progress_every))
+        return
+
+    path = Path(args.file).resolve() if args.file else DEFAULT_DICTIONARY_FILE.resolve()
+    asyncio.run(import_dictionary_file(path, reset=args.reset, progress_every=args.progress_every))
 
 
 if __name__ == "__main__":
