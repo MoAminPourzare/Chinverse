@@ -125,6 +125,71 @@ async def create_service(
     return service
 
 
+@router.patch("/{service_id}", response_model=Service)
+async def update_service(
+    service_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    title: str | None = Form(None, max_length=160),
+    description: str | None = Form(None, max_length=4000),
+    price_label: str | None = Form(None, max_length=80),
+    banner: UploadFile = File(None),
+    _rate_limit: None = Depends(write_rate_limit),
+) -> Any:
+    """
+    Update one of the current user's services.
+    """
+    result = await db.execute(
+        select(UserService).where(
+            UserService.id == service_id,
+            UserService.user_id == current_user.id
+        )
+    )
+    service = result.scalar_one_or_none()
+
+    if not service:
+        raise not_found("Service")
+
+    if title is not None:
+        title = title.strip()
+        if not title:
+            raise bad_request("Title cannot be empty")
+        service.title = title
+
+    if description is not None:
+        description = description.strip()
+        if not description:
+            raise bad_request("Description cannot be empty")
+        service.description = description
+
+    if price_label is not None:
+        service.price_label = price_label.strip() or None
+
+    old_banner_url = service.banner_url
+    new_banner_url = None
+    if banner and banner.filename:
+        new_banner_url = await save_image_upload(
+            banner,
+            destination_dir=SERVICE_UPLOAD_DIR,
+            public_url_prefix="/uploads/services",
+        )
+        service.banner_url = new_banner_url
+
+    try:
+        await db.commit()
+        await db.refresh(service)
+    except Exception:
+        await db.rollback()
+        if new_banner_url:
+            delete_public_file(new_banner_url)
+        raise
+
+    if new_banner_url and old_banner_url:
+        safe_unlink(resolve_backend_file_url(old_banner_url))
+
+    return service
+
+
 @router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_service(
     service_id: int,

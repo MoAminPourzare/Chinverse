@@ -16,6 +16,18 @@ class ForumQuestionBase(BaseModel):
 class ForumQuestionCreate(ForumQuestionBase):
     pass
 
+
+class ForumQuestionUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=3, max_length=180)
+    content: Optional[str] = Field(default=None, min_length=3, max_length=8000)
+
+    @field_validator("title", "content", mode="before")
+    @classmethod
+    def strip_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        return value.strip() or None
+
 class UserSummary(BaseModel):
     """Minimal user info for display in lists"""
     id: int

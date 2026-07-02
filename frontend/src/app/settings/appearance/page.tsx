@@ -60,20 +60,6 @@ const chineseLineLabels: Array<ScaleOption<LineSpacingLevel>> = [
     { value: "loose", label: "超宽" },
 ];
 
-const persianFontPreview: Record<FontSizeLevel, CSSProperties> = {
-    small: { fontSize: 12 },
-    normal: { fontSize: 14 },
-    large: { fontSize: 16 },
-    xlarge: { fontSize: 18 },
-};
-
-const chineseFontPreview: Record<FontSizeLevel, CSSProperties> = {
-    small: { fontSize: 16 },
-    normal: { fontSize: 20 },
-    large: { fontSize: 24 },
-    xlarge: { fontSize: 30 },
-};
-
 const persianPreviewTextStyle: Record<FontSizeLevel, CSSProperties> = {
     small: { fontSize: 12, lineHeight: 1.85 },
     normal: { fontSize: 14, lineHeight: 1.95 },
@@ -108,7 +94,6 @@ function VisualScaleSetting<T extends string>({
     previewDir,
     previewClassName,
     previewStyle,
-    labelStyle,
 }: {
     title: string;
     value: T;
@@ -119,7 +104,6 @@ function VisualScaleSetting<T extends string>({
     previewDir: "rtl" | "ltr";
     previewClassName?: string;
     previewStyle?: CSSProperties;
-    labelStyle?: (value: T) => CSSProperties;
 }) {
     const activeIndex = Math.max(0, options.findIndex((option) => option.value === value));
     const progress = options.length > 1 ? (activeIndex / (options.length - 1)) * 100 : 0;
@@ -136,12 +120,12 @@ function VisualScaleSetting<T extends string>({
             </div>
 
             <div className="relative px-1 pb-2 pt-1" dir="ltr">
-                <div className="absolute left-3 right-3 top-[38px] h-1 rounded-full bg-slate-300 dark:bg-[#475466]" />
+                <div className="absolute left-3 right-3 top-[34px] h-1 rounded-full bg-slate-300 dark:bg-[#475466]" />
                 <div
-                    className="absolute left-3 top-[38px] h-1 rounded-full bg-[#ea8a66] transition-all duration-300"
+                    className="absolute left-3 top-[34px] h-1 rounded-full bg-[#ea8a66] transition-all duration-300"
                     style={{ right: `calc(100% - ${progress}%)` }}
                 />
-                <div className="relative grid grid-cols-4 gap-0">
+                <div className="relative grid grid-cols-4 gap-0.5">
                     {options.map((option) => {
                         const active = option.value === value;
                         return (
@@ -149,16 +133,15 @@ function VisualScaleSetting<T extends string>({
                                 key={option.value}
                                 type="button"
                                 onClick={() => onChange(option.value)}
-                                className="group flex min-h-16 flex-col items-center justify-start gap-2 text-center"
+                                className="group flex min-h-14 flex-col items-center justify-start gap-1 text-center"
                                 aria-pressed={active}
                             >
                                 <span
                                     className={cn(
-                                        "min-h-7 text-xs font-black leading-7 text-slate-700 transition-colors dark:text-[#cad3df]",
+                                        "min-h-6 whitespace-nowrap text-[11px] font-black leading-6 text-slate-700 transition-colors dark:text-[#cad3df]",
                                         active && "text-[#e9815f] dark:text-[#f0a080]",
                                         previewClassName,
                                     )}
-                                    style={labelStyle?.(option.value)}
                                 >
                                     {option.label}
                                 </span>
@@ -176,17 +159,16 @@ function VisualScaleSetting<T extends string>({
                 </div>
             </div>
 
-            <p
-                className={cn(
-                    "mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-slate-700 dark:bg-[#111821] dark:text-[#d4dce7]",
-                    previewClassName,
-                )}
-                dir={previewDir}
-                lang={previewLang}
-                style={previewStyle}
-            >
-                {previewText}
-            </p>
+            <div className="mt-3 h-[180px] overflow-y-auto rounded-2xl bg-slate-50 px-4 py-3 text-slate-700 dark:bg-[#111821] dark:text-[#d4dce7]">
+                <p
+                    className={cn("min-h-full", previewClassName)}
+                    dir={previewDir}
+                    lang={previewLang}
+                    style={previewStyle}
+                >
+                    {previewText}
+                </p>
+            </div>
         </section>
     );
 }
@@ -384,7 +366,6 @@ export default function AppearanceSettingsPage() {
                             previewLang="fa"
                             previewDir="rtl"
                             previewStyle={persianPreviewTextStyle[preferences.persianFontSize]}
-                            labelStyle={(optionValue) => persianFontPreview[optionValue as FontSizeLevel]}
                         />
                     )}
                     {activeVisualSetting === "chineseFontSize" && (
@@ -398,7 +379,6 @@ export default function AppearanceSettingsPage() {
                             previewDir="ltr"
                             previewClassName="font-cjk"
                             previewStyle={chinesePreviewTextStyle[preferences.chineseFontSize]}
-                            labelStyle={(optionValue) => chineseFontPreview[optionValue as FontSizeLevel]}
                         />
                     )}
                     {activeVisualSetting === "persianLineSpacing" && (

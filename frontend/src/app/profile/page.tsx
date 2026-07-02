@@ -224,7 +224,7 @@ export default function ProfilePage() {
                     {user?.profile?.bio && (
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-lg">درباره من</h3>
-                            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm" {...getDirectionalTextProps(user.profile.bio)}>
+                            <p className="whitespace-pre-wrap text-justify text-sm leading-8 text-gray-600" {...getDirectionalTextProps(user.profile.bio)}>
                                 {user.profile.bio}
                             </p>
                         </div>
@@ -236,10 +236,20 @@ export default function ProfilePage() {
                                 <Globe className="w-4 h-4" />
                                 وبسایت‌ها
                             </h3>
-                            <div className="flex flex-col gap-2">
+                            <div className="grid gap-2">
                                 {user?.profile?.websites?.map((url, idx) => (
-                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="dir-ltr truncate text-left text-sm text-[#155aa6] hover:underline">
-                                        {url}
+                                    <a
+                                        key={idx}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 rounded-[18px] border border-[#d8e8f7] bg-[#f3f8ff] px-3 py-2.5 text-sm text-slate-700 shadow-[0_6px_14px_rgba(21,90,166,0.06)] transition hover:border-[#b8d8f4] hover:bg-[#eef6ff] hover:text-[#155aa6]"
+                                    >
+                                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-[0_6px_12px_rgba(21,90,166,0.12)]">
+                                            <Globe className="h-4 w-4" />
+                                        </span>
+                                        <span className="min-w-0 flex-1 text-right font-bold">وبسایت</span>
+                                        <span className="dir-ltr truncate text-left text-xs text-slate-500">{url}</span>
                                     </a>
                                 ))}
                             </div>

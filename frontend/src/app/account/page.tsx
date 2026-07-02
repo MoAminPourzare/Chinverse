@@ -211,7 +211,7 @@ export default function AccountPage() {
                     </div>
                 </header>
 
-                <div className="flex flex-col items-center pt-2">
+                <div className="flex flex-col items-center pb-4 pt-2">
                     <input
                         type="file"
                         ref={fileInputRef}

@@ -150,12 +150,18 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
     useEffect(() => {
         if (!isOpen) return;
 
+        const previousBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") onClose();
         };
 
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            window.removeEventListener("keydown", handleKeyDown);
+        };
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
@@ -202,14 +208,14 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
     );
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4 py-5">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden overscroll-none px-4 py-5">
             <div className="modal-backdrop-motion absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} />
 
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="vocabulary-word-title"
-                className="modal-panel-motion relative flex max-h-[calc(100dvh-40px)] w-full max-w-[390px] flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
+                className="modal-panel-motion relative flex h-[min(720px,calc(100dvh-40px))] w-full max-w-[390px] flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
             >
                 <div className="shrink-0 border-b border-slate-100 px-5 pb-4 pt-5 text-center">
                     <button
@@ -260,7 +266,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     ))}
                 </div>
 
-                <div key={activeTab} className="tab-content-motion min-h-0 flex-1 overflow-y-auto px-5 py-4" dir="rtl">
+                <div key={activeTab} className="tab-content-motion min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4" dir="rtl">
                     {activeTab === "persian" && (
                         <div className="space-y-3">
                             {persianDefinitions.length > 0

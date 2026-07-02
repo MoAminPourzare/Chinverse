@@ -1,11 +1,11 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import delete, select, func
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.api.errors import bad_request, not_found
+from app.api.errors import bad_request, forbidden, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
 from app.models.social import ForumQuestion, ForumAnswer, Article, ArticleComment, SupportTicket
@@ -191,6 +191,75 @@ async def get_forum_question_detail(
         answers_count=len(answers),
         answers=[build_answer_read(answer) for answer in answers],
     )
+
+
+@router.patch("/forum/questions/{question_id}", response_model=schemas.ForumQuestionRead)
+async def update_forum_question(
+    question_id: int,
+    question_in: schemas.ForumQuestionUpdate,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
+):
+    result = await db.execute(
+        select(ForumQuestion)
+        .options(selectinload(ForumQuestion.author).selectinload(User.profile))
+        .where(ForumQuestion.id == question_id)
+    )
+    question = result.scalar_one_or_none()
+    if not question:
+        raise not_found("Forum question")
+    if question.author_user_id != current_user.id:
+        raise forbidden("You can only edit your own question")
+
+    if question_in.title is not None:
+        title = question_in.title.strip()
+        if not title:
+            raise bad_request("Question title cannot be empty")
+        question.title = title
+
+    if question_in.content is not None:
+        content = question_in.content.strip()
+        if not content:
+            raise bad_request("Question cannot be empty")
+        question.body = content
+
+    await db.commit()
+    await db.refresh(question)
+
+    answers_count = await db.scalar(
+        select(func.count(ForumAnswer.id)).where(ForumAnswer.question_id == question_id)
+    )
+
+    return schemas.ForumQuestionRead(
+        id=question.id,
+        title=question.title,
+        content=question.body,
+        author_user_id=question.author_user_id,
+        created_at=question.created_at,
+        author=build_user_summary(current_user),
+        answers_count=int(answers_count or 0),
+    )
+
+
+@router.delete("/forum/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_forum_question(
+    question_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
+):
+    result = await db.execute(select(ForumQuestion).where(ForumQuestion.id == question_id))
+    question = result.scalar_one_or_none()
+    if not question:
+        raise not_found("Forum question")
+    if question.author_user_id != current_user.id:
+        raise forbidden("You can only delete your own question")
+
+    await db.execute(delete(ForumAnswer).where(ForumAnswer.question_id == question_id))
+    await db.delete(question)
+    await db.commit()
+    return None
 
 
 @router.post("/forum/questions/{question_id}/answers", response_model=schemas.ForumAnswerRead)

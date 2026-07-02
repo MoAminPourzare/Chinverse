@@ -212,15 +212,15 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
         <article className="overflow-hidden rounded-[10px] bg-[#dfe2e8] p-3 shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
             <PostAuthor provider={provider} />
 
-            <div className="mt-3 grid grid-cols-[128px_1fr] gap-3" dir="ltr">
-                <Link href={`/services/${service.id}`} className="relative h-[116px] overflow-hidden rounded-[10px] bg-slate-200">
+            <div className="mt-3 grid grid-cols-[142px_1fr] gap-3" dir="ltr">
+                <Link href={`/services/${service.id}`} className="relative h-[134px] overflow-hidden rounded-[10px] bg-slate-100">
                     {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
                             alt={service.title}
                             fill
-                            className="object-cover"
-                            sizes="128px"
+                            className="object-contain"
+                            sizes="142px"
                             unoptimized
                         />
                     ) : (
@@ -237,23 +237,29 @@ function ServiceFeedCard({ item }: { item: FeedItem }) {
                     <p className="mt-1 line-clamp-4 text-[10px] font-medium leading-5 text-slate-700">
                         {service.description}
                     </p>
-                    <Link href={`/services/${service.id}`} className="text-[10px] font-black text-[#155aa6]">
-                        بیشتر
-                    </Link>
+                    <div className="mt-2 space-y-2 text-right">
+                        <div>
+                            <Link href={`/services/${service.id}`} className="inline-flex text-[10px] font-black text-[#155aa6]">
+                                بیشتر
+                            </Link>
+                        </div>
+                        {provider?.id ? (
+                            <div>
+                                <Link
+                                    href={`/chat/${provider.id}`}
+                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[8px] bg-[#155aa6] px-4 text-xs font-black text-white shadow-[0_6px_12px_rgba(21,90,166,0.25)] transition hover:bg-[#0f4e92]"
+                                >
+                                    <MessageCircle size={15} />
+                                    درخواست مشاوره
+                                </Link>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="mt-3 flex justify-start">
                 <LikeButton targetType="service" targetId={service.id} initialCount={item.likes_count || 0} compact />
-                {provider?.id ? (
-                    <Link
-                        href={`/chat/${provider.id}`}
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[8px] bg-[#155aa6] px-4 text-xs font-black text-white shadow-[0_6px_12px_rgba(21,90,166,0.25)] transition hover:bg-[#0f4e92]"
-                    >
-                        <MessageCircle size={15} />
-                        درخواست مشاوره
-                    </Link>
-                ) : null}
             </div>
         </article>
     );

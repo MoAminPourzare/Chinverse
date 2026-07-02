@@ -124,13 +124,13 @@ export default function SettingsPage() {
                     ))}
                 </div>
 
-                <div className="pointer-events-none mt-9 pr-2">
+                <div className="pointer-events-none mt-8 flex justify-start pl-2" dir="ltr">
                     <Image
                         src="/assets/chinverse/icons/Setting.svg"
                         alt=""
-                        width={160}
-                        height={160}
-                        className="h-36 w-36 object-contain"
+                        width={190}
+                        height={190}
+                        className="h-44 w-44 object-contain"
                     />
                 </div>
             </main>

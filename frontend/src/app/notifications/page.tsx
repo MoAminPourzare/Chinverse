@@ -126,6 +126,7 @@ export default function NotificationsPage() {
                     <EmptyNotifications
                         image="/assets/chinverse/icons/notification.svg"
                         title="هنوز هیچ اعلانی نداری!"
+                        description="اینجا محل نمایش همه ی اعلان هاست. هر وقت کسی بهت پیام بده یا اتفاقی بیفته، باخبر میشی."
                     />
                 )}
             </main>
