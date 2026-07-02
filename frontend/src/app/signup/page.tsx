@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User } from "lucide-react";
+import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User, Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { authService } from "@/services/auth.service";
@@ -32,6 +32,7 @@ export default function SignupPage() {
         display_name: "",
         referral_code: "",
     });
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -248,7 +249,7 @@ export default function SignupPage() {
                     <div className="relative">
                         <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
@@ -263,6 +264,14 @@ export default function SignupPage() {
                                 fieldErrors.password && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
                             )}
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                            aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
+                        >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                     </div>
                     <FieldError message={fieldErrors.password} />
                 </label>
