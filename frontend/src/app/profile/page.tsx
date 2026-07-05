@@ -42,7 +42,7 @@ const tabs: Tab[] = [
 ];
 
 const profileAssets = {
-    logo: "/assets/chinverse/logos/chinverse-logo.png",
+    logo: "/assets/chinverse/logos/chinverse-wordmark.png",
     about: "/assets/chinverse/icons/about-me.svg",
     resume: "/assets/chinverse/icons/cv-light.svg",
     gallery: "/assets/chinverse/icons/photo.svg",
