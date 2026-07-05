@@ -7,7 +7,6 @@ import {
     BookOpen,
     ChevronDown,
     ChevronUp,
-    Headphones,
     Loader2,
     PenLine,
     Search,
@@ -165,20 +164,7 @@ export default function CommunityPage() {
                 )}
             </main>
 
-            <SupportFloatingButton />
         </div>
-    );
-}
-
-function SupportFloatingButton() {
-    return (
-        <Link
-            href="/support"
-            className="fixed bottom-24 right-4 z-30 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92] min-[430px]:right-[calc(50%_-_199px)]"
-            aria-label="پشتیبانی"
-        >
-            <Headphones className="h-6 w-6" />
-        </Link>
     );
 }
 

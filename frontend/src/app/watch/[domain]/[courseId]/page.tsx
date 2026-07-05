@@ -24,9 +24,9 @@ import {
     firstVideoTranscript as firstVideoTranscriptData,
 } from "@/data/firstVideoTranscript";
 import {
-    PRONUNCIATION_LESSON_7_HLS_URL,
-    pronunciationLesson7Transcript,
-} from "@/data/pronunciationLesson7Transcript";
+    FIRST_PRONUNCIATION_LESSON_HLS_URL,
+    firstPronunciationLessonTranscript,
+} from "@/data/firstPronunciationLessonTranscript";
 
 const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), {
     ssr: false,
@@ -231,11 +231,11 @@ export default function SharedWatchPage() {
     const lessonIdRef = useRef<number | null>(null);
     const vocabularyRequestIdRef = useRef(0);
     const resumeVideoAfterVocabularyRef = useRef(false);
-    const usesPronunciationLesson7Video = domain === "pronunciation" && courseId === "7";
-    const usesFirstVideo = !usesPronunciationLesson7Video && isPlaceholderVideoUrl(currentLesson?.video_url);
+    const usesFirstPronunciationLessonVideo = domain === "pronunciation" && courseId === "7";
+    const usesFirstVideo = !usesFirstPronunciationLessonVideo && isPlaceholderVideoUrl(currentLesson?.video_url);
     const resolvedVideoUrl = resolveVideoUrl(
-        usesPronunciationLesson7Video
-            ? PRONUNCIATION_LESSON_7_HLS_URL
+        usesFirstPronunciationLessonVideo
+            ? FIRST_PRONUNCIATION_LESSON_HLS_URL
             : usesFirstVideo
                 ? FIRST_VIDEO_URL
                 : currentLesson?.video_url,
@@ -565,24 +565,24 @@ export default function SharedWatchPage() {
         [usesFirstVideo],
     );
 
-    const pronunciationLesson7VideoTranscript = useMemo<TranscriptEntry[]>(
-        () => (usesPronunciationLesson7Video ? pronunciationLesson7Transcript : []),
-        [usesPronunciationLesson7Video],
+    const firstPronunciationLessonVideoTranscript = useMemo<TranscriptEntry[]>(
+        () => (usesFirstPronunciationLessonVideo ? firstPronunciationLessonTranscript : []),
+        [usesFirstPronunciationLessonVideo],
     );
 
     const baseTranscript = useMemo(
         () => {
-            if (usesPronunciationLesson7Video) {
-                return pronunciationLesson7VideoTranscript;
+            if (usesFirstPronunciationLessonVideo) {
+                return firstPronunciationLessonVideoTranscript;
             }
             return usesFirstVideo ? firstVideoTranscript : embeddedTranscript;
         },
         [
             embeddedTranscript,
+            firstPronunciationLessonVideoTranscript,
             firstVideoTranscript,
-            pronunciationLesson7VideoTranscript,
+            usesFirstPronunciationLessonVideo,
             usesFirstVideo,
-            usesPronunciationLesson7Video,
         ],
     );
 

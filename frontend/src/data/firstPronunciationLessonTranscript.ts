@@ -1,8 +1,8 @@
 import type { FirstVideoTranscriptEntry } from "./firstVideoTranscript";
 
-export const PRONUNCIATION_LESSON_7_HLS_URL = "https://chinverse-test.arvanvod.ir/wYPdKwd32N/DdMY469Pz0/h_,144_200,240_319,360_319,480_319,720_319,k.mp4.list/master.m3u8";
+export const FIRST_PRONUNCIATION_LESSON_HLS_URL = "https://chinverse-test.arvanvod.ir/wYPdKwd32N/DdMY469Pz0/h_,144_200,240_319,360_319,480_319,720_319,k.mp4.list/master.m3u8";
 
-export const pronunciationLesson7Transcript: FirstVideoTranscriptEntry[] = [
+export const firstPronunciationLessonTranscript: FirstVideoTranscriptEntry[] = [
     {
         id: 1,
         start: 20.369,
