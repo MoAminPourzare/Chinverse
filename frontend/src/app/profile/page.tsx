@@ -425,12 +425,12 @@ export default function ProfilePage() {
                         </Link>
                     </div>
 
-                    <Link href="/" className="relative block h-11 w-32" aria-label="چین‌ورس">
+                    <Link href="/" className="relative block h-14 w-44" aria-label="چین‌ورس">
                         <Image
                             src={profileAssets.logo}
                             alt="لوگوی چین‌ورس"
                             fill
-                            sizes="128px"
+                            sizes="176px"
                             className="object-contain object-left"
                             priority
                         />
@@ -596,9 +596,9 @@ export default function ProfilePage() {
 
                 {/* Settings Modal */}
                 {isSettingsOpen && (
-                    <div className="modal-backdrop-motion fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}>
+                    <div className="modal-backdrop-motion fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-slate-950/55 p-3 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}>
                         <div
-                            className="modal-panel-motion max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+                            className="modal-panel-motion max-h-[calc(100dvh-24px)] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
                             onClick={(e) => e.stopPropagation()}
                             dir="rtl"
                         >

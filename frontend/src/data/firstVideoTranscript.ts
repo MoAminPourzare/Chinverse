@@ -3,6 +3,7 @@ export interface FirstVideoTranscriptEntry {
     start: number;
     end: number;
     chinese: string;
+    pinyin?: string;
     persian: string;
     highlightedWords: string[];
 }

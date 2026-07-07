@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
     Bookmark,
     BookmarkCheck,
@@ -26,6 +25,7 @@ import {
     unsaveCourse,
 } from "@/lib/courses";
 import { getMediaUrl } from "@/lib/media";
+import { getReturnToHref } from "@/lib/returnTo";
 import { getDirectionalTextProps } from "@/lib/textDirection";
 import Surface from "@/components/ui/Surface";
 import LessonCard from "@/components/course/LessonCard";
@@ -86,6 +86,7 @@ export default function CourseDetailPage({
     countKeys = ["episodes_count", "lesson_count"],
 }: CourseDetailPageProps) {
     const params = useParams();
+    const router = useRouter();
     const id = params?.id as string;
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -95,6 +96,9 @@ export default function CourseDetailPage({
 
     const label = domainLabels[domain] || (isBrokenText(eyebrow) ? "دوره" : eyebrow);
     const cleanCountLabel = isBrokenText(countLabel) ? "درس" : countLabel;
+    const openAppearanceSettings = () => {
+        router.push(getReturnToHref("/settings/appearance"));
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -249,13 +253,14 @@ export default function CourseDetailPage({
                             >
                                 {savingBookmark ? <Loader2 size={19} className="animate-spin" /> : isSaved ? <BookmarkCheck size={19} /> : <Bookmark size={19} />}
                             </button>
-                            <Link
-                                href="/settings/appearance"
+                            <button
+                                type="button"
+                                onClick={openAppearanceSettings}
                                 aria-label="تنظیمات نمایش درس"
                                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0] transition hover:bg-[#eef6ff]"
                             >
                                 <MoreVertical size={20} />
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </header>
