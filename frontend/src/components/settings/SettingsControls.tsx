@@ -98,9 +98,9 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
     };
 
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-end justify-center overflow-y-auto bg-slate-950/45 px-4 pb-4 pt-10 backdrop-blur-sm" onClick={onClose}>
+        <div className="modal-backdrop-motion fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-slate-950/45 px-4 py-4 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
+                className="modal-panel-motion flex max-h-[calc(100dvh-32px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
@@ -117,7 +117,7 @@ export function OptionSheet({ sheet, onClose }: { sheet: ActiveSheet; onClose: (
                     </IconButton>
                 </div>
 
-                <div className="max-h-[62vh] overflow-y-auto p-3">
+                <div className="min-h-0 overflow-y-auto p-3">
                     <div className="space-y-2">
                         {sheet.options.map((option) => {
                             const active = option.value === sheet.value;

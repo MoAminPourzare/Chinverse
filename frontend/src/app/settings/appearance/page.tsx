@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { RotateCcw, X } from "lucide-react";
 import Surface from "@/components/ui/Surface";
 import { AppHeader } from "@/components/ui/IconButton";
@@ -24,6 +25,7 @@ import {
     type ThemePreference,
     type TextDisplayMode,
 } from "@/lib/learningPreferences";
+import { getSafeReturnTo } from "@/lib/returnTo";
 
 type ScaleOption<T extends string> = {
     value: T;
@@ -181,9 +183,9 @@ function VisualScaleSheet({
     children: ReactNode;
 }) {
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-end justify-center overflow-y-auto bg-slate-950/45 px-4 pb-4 pt-10 backdrop-blur-sm" onClick={onClose}>
+        <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-center justify-center overflow-hidden bg-slate-950/45 px-4 py-4 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
+                className="modal-panel-motion flex max-h-[calc(100dvh-32px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
@@ -198,7 +200,7 @@ function VisualScaleSheet({
                         <X size={19} />
                     </button>
                 </div>
-                <div className="max-h-[72vh] overflow-y-auto pb-5">
+                <div className="min-h-0 overflow-y-auto pb-5">
                     {children}
                 </div>
             </div>
@@ -207,17 +209,21 @@ function VisualScaleSheet({
 }
 
 export default function AppearanceSettingsPage() {
+    const router = useRouter();
     const { preferences, setPreference, resetPreferences } = useLearningPreferences();
     const { activeSheet, openSheet, closeSheet } = useOptionSheet();
     const [activeVisualSetting, setActiveVisualSetting] = useState<VisualSettingId | null>(null);
 
     const closeVisualSetting = () => setActiveVisualSetting(null);
+    const handleBack = () => {
+        router.push(getSafeReturnTo(window.location.search, "/settings"));
+    };
 
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
             <AppHeader
                 title="ظاهر و نمایش"
-                backHref="/settings"
+                onBack={handleBack}
                 iconClassName="bg-transparent shadow-none ring-0"
                 icon={<Image src="/assets/chinverse/icons/Preferences 2.svg" alt="" width={32} height={32} className="h-8 w-8 object-contain" />}
             />

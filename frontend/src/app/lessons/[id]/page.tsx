@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { BookOpenText, MoreVertical } from "lucide-react";
 import Surface from "@/components/ui/Surface";
 import { BackButton } from "@/components/ui/IconButton";
 import { getChineseTextStyle, getPersianTextStyle, useLearningPreferences } from "@/lib/learningPreferences";
+import { getReturnToHref } from "@/lib/returnTo";
 
 export default function LessonPlayerPage() {
     const params = useParams();
@@ -16,6 +16,9 @@ export default function LessonPlayerPage() {
     const id = params?.id;
     const chineseTextStyle = getChineseTextStyle(preferences);
     const persianTextStyle = getPersianTextStyle(preferences);
+    const openAppearanceSettings = () => {
+        router.push(getReturnToHref("/settings/appearance"));
+    };
 
     useEffect(() => {
         if (videoRef.current) {
@@ -31,9 +34,9 @@ export default function LessonPlayerPage() {
                     <h1 className="truncate text-base font-black text-slate-900">درس {id}</h1>
                     <p className="mt-0.5 text-xs font-medium text-slate-500">پخش و تمرین درس</p>
                 </div>
-                <Link href="/settings/appearance" className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0] transition hover:bg-[#eef6ff]" aria-label="تنظیمات نمایش درس">
+                <button type="button" onClick={openAppearanceSettings} className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0] transition hover:bg-[#eef6ff]" aria-label="تنظیمات نمایش درس">
                     <MoreVertical size={20} />
-                </Link>
+                </button>
             </header>
 
             <main className="mx-auto mt-4 flex w-full max-w-[430px] flex-1 flex-col gap-4">

@@ -506,6 +506,10 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   padding-bottom: max(76px, env(safe-area-inset-bottom));
 }
 
+.lesson-video-shell:fullscreen .lesson-fullscreen-captions-bottom {
+  justify-content: flex-end;
+}
+
 .lesson-video-shell:fullscreen .lesson-video-center-controls {
   opacity: 0;
   pointer-events: none;
@@ -586,6 +590,14 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   font-size: clamp(16px, 3.8vw, 25px);
   font-weight: 900;
   line-height: 1.7;
+}
+
+.lesson-caption-pinyin {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: clamp(12px, 2.5vw, 18px);
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .lesson-video-shell:fullscreen .lesson-caption-bottom button {

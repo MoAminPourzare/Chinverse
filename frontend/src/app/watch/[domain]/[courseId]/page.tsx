@@ -12,6 +12,7 @@ import { isHttpStatus } from "@/lib/http";
 import { getMediaUrl } from "@/lib/media";
 import { persianNumbers } from "@/lib/videoUtils";
 import { getDirectionalTextProps } from "@/lib/textDirection";
+import { getReturnToHref } from "@/lib/returnTo";
 import {
     getHighlightStyle,
     useLearningPreferences,
@@ -75,6 +76,7 @@ interface VocabularyWord {
 interface TranscriptEntry {
     id: number;
     chinese: string;
+    pinyin?: string;
     persian: string;
     highlightedWords: string[];
     start: number;
@@ -154,9 +156,9 @@ const getTranscriptEntries = (meta: Record<string, unknown> | undefined): Transc
     }
 
     return value
-        .map((item, index) => {
+        .reduce<TranscriptEntry[]>((entries, item, index) => {
             if (!item || typeof item !== "object") {
-                return null;
+                return entries;
             }
 
             const entry = item as Record<string, unknown>;
@@ -172,8 +174,9 @@ const getTranscriptEntries = (meta: Record<string, unknown> | undefined): Transc
                     : typeof entry.translation === "string"
                         ? entry.translation
                         : "";
+            const pinyin = typeof entry.pinyin === "string" ? entry.pinyin : "";
             if (!chinese && !persian) {
-                return null;
+                return entries;
             }
 
             const highlightedWords = Array.isArray(entry.highlightedWords)
@@ -182,16 +185,17 @@ const getTranscriptEntries = (meta: Record<string, unknown> | undefined): Transc
             const start = getOptionalNumber(entry.start) ?? getOptionalNumber(entry.start_time) ?? getOptionalNumber(entry.timestamp_start) ?? index * 4;
             const end = getOptionalNumber(entry.end) ?? getOptionalNumber(entry.end_time) ?? getOptionalNumber(entry.timestamp_end) ?? start + 4;
 
-            return {
+            entries.push({
                 id: typeof entry.id === "number" ? entry.id : index + 1,
                 chinese,
+                pinyin,
                 persian,
                 highlightedWords,
                 start,
                 end: Math.max(end, start + 0.6),
-            };
-        })
-        .filter((item): item is TranscriptEntry => Boolean(item))
+            });
+            return entries;
+        }, [])
         .sort((a, b) => a.start - b.start);
 };
 
@@ -206,6 +210,9 @@ export default function SharedWatchPage() {
     const lessonIdParam = searchParams.get("lesson");
 
     const config = domainConfig[domain] || domainConfig.hsk;
+    const openAppearanceSettings = useCallback(() => {
+        router.push(getReturnToHref("/settings/appearance"));
+    }, [router]);
 
     const [course, setCourse] = useState<Course | null>(null);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -676,6 +683,7 @@ export default function SharedWatchPage() {
     const lessonTranscript = syncedTranscript;
     const showChineseText = preferences.textDisplayMode !== "persian";
     const showPersianText = preferences.textDisplayMode !== "chinese";
+    const showPinyinText = preferences.showPinyin && showChineseText;
     const previousLesson = lessonIndex > 0 ? allLessons[lessonIndex - 1] : null;
     const nextLesson = lessonIndex >= 0 ? allLessons[lessonIndex + 1] : null;
 
@@ -709,13 +717,14 @@ export default function SharedWatchPage() {
                             <p className={`text-[11px] font-black ${config.color}`}>{config.label}</p>
                             <h1 className="truncate text-sm font-black text-slate-900">{headerTitle}</h1>
                         </div>
-                        <Link
-                            href="/settings/appearance"
+                        <button
+                            type="button"
+                            onClick={openAppearanceSettings}
                             aria-label="تنظیمات نمایش درس"
                             className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0] transition hover:bg-[#eef6ff]"
                         >
                             <MoreVertical size={20} />
-                        </Link>
+                        </button>
                     </div>
                 </header>
 
@@ -738,11 +747,22 @@ export default function SharedWatchPage() {
                         </video>
 
                         {activeSubtitle && (
-                            <div className="lesson-fullscreen-captions" aria-hidden={!isFullscreen}>
+                            <div
+                                className={cn(
+                                    "lesson-fullscreen-captions",
+                                    !(showPersianText && showChineseText) && "lesson-fullscreen-captions-bottom",
+                                )}
+                                aria-hidden={!isFullscreen}
+                            >
                                 {showPersianText && <div className="lesson-caption-top">{activeSubtitle.persian}</div>}
                                 {showChineseText && (
                                     <div className="lesson-caption-bottom font-cjk" lang="zh-CN" dir="ltr">
-                                        {renderChineseWithHighlights(activeSubtitle.chinese, activeSubtitle.highlightedWords)}
+                                        <div>{renderChineseWithHighlights(activeSubtitle.chinese, activeSubtitle.highlightedWords)}</div>
+                                        {showPinyinText && activeSubtitle.pinyin && (
+                                            <div className="lesson-caption-pinyin font-latin" lang="zh-Latn">
+                                                {activeSubtitle.pinyin}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -822,6 +842,11 @@ export default function SharedWatchPage() {
                                             lang="zh-CN"
                                         >
                                             {renderChineseWithHighlights(item.chinese, item.highlightedWords)}
+                                        </p>
+                                    )}
+                                    {showPinyinText && item.pinyin && (
+                                        <p className={cn("font-latin text-[12px] font-bold leading-5", active ? "text-[#4d7fb7]" : "text-slate-400")} dir="ltr" lang="zh-Latn">
+                                            {item.pinyin}
                                         </p>
                                     )}
                                     {showPersianText && (
