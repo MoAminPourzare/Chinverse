@@ -1,4 +1,5 @@
 import logging
+import re
 
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
@@ -42,9 +43,24 @@ if settings.CORS_ORIGINS:
     )
 
 
+def _is_allowed_browser_origin(origin: str) -> bool:
+    if origin in settings.CORS_ORIGINS:
+        return True
+
+    origin_regex = settings.BACKEND_CORS_ORIGIN_REGEX
+    return bool(origin_regex and re.fullmatch(origin_regex, origin))
+
+
 @app.middleware("http")
 async def add_security_headers(request, call_next):
-    response = await call_next(request)
+    origin = request.headers.get("origin")
+    if origin and not _is_allowed_browser_origin(origin):
+        response = JSONResponse(
+            status_code=403,
+            content={"detail": "Origin not allowed"},
+        )
+    else:
+        response = await call_next(request)
 
     if settings.SECURE_HEADERS_ENABLED:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")

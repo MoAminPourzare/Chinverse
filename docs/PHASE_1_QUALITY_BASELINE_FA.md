@@ -36,6 +36,10 @@
 - هدرهای `nosniff`، جلوگیری از iframe، Referrer Policy، Permissions Policy و
   HSTS روی فرانت‌اند تنظیم شدند؛ بک‌اند نیز هدرهای متناظر را با تنظیم محیطی
   اعمال می‌کند.
+- علاوه بر CORS استاندارد، بک‌اند درخواست واقعی مرورگر با `Origin` نامعتبر را
+  پیش از اجرای endpoint با `403` متوقف می‌کند. این دفاع برای میزبان آزمایشی
+  Hugging Face لازم است، چون پراکسی عمومی آن preflight و هدر CORS را مستقل از
+  برنامه بازنویسی می‌کند.
 - فایل تصویر فقط بر اساس پسوند یا MIME پذیرفته نمی‌شود؛ محتوای واقعی با
   Pillow باز و verify می‌شود و فایل جعلی حذف می‌گردد.
 - سقف ۴۰ میلیون پیکسل برای جلوگیری از تصویرهای فشرده ولی بسیار بزرگ اضافه شد.
@@ -109,9 +113,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1 -WithIntegration -W
 | Frontend coverage | statement: ۹۳٫۳۹٪، branch: ۸۰٫۷۰٪، function: ۹۸٫۵۰٪، line: ۹۴٫۲۰٪ |
 | Next.js production build | موفق؛ ۵۴ صفحه static تولید شد |
 | Playwright | ۲۴ از ۲۴ روی Chromium دسکتاپ، Android و WebKit آیفون |
-| Backend unit tests | ۲۱ از ۲۱ پاس |
+| Backend unit tests | ۲۳ از ۲۳ پاس |
 | Backend integration | ۲ از ۲؛ جریان احراز هویت/پروفایل و CRUD کامل سوال پاس |
-| Backend coverage | ۵۶٫۰۷٪ |
+| Backend coverage | ۵۶٫۱۶٪ |
 | Dependency audit | production npm و Python هر دو صفر vulnerability شناخته‌شده |
 | Migration | upgrade، parity، downgrade تا base و rebuild کامل پاس |
 | Docker | image تولیدی دومرحله‌ای با کاربر non-root با موفقیت build شد |
