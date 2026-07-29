@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select, func
+from sqlalchemy import delete, select, func, update
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
@@ -256,6 +256,11 @@ async def delete_forum_question(
     if question.author_user_id != current_user.id:
         raise forbidden("You can only delete your own question")
 
+    await db.execute(
+        update(ForumAnswer)
+        .where(ForumAnswer.question_id == question_id)
+        .values(parent_id=None)
+    )
     await db.execute(delete(ForumAnswer).where(ForumAnswer.question_id == question_id))
     await db.delete(question)
     await db.commit()

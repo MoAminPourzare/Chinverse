@@ -1,45 +1,94 @@
 # ChinVerse
 
-ChinVerse is a Persian-first Chinese learning app with a Next.js frontend and a
-FastAPI backend.
+Persian-first Chinese learning and professional-networking web application.
 
-## Structure
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS
+- Backend: FastAPI, SQLAlchemy, Alembic, PostgreSQL
+- Test deployment: Vercel, Hugging Face Spaces, Neon
 
-- `backend/`: FastAPI, SQLAlchemy, Alembic, Poetry
-- `frontend/`: Next.js 16, React 19, TypeScript, Tailwind CSS
+## Pinned Toolchain
 
-## Development
+- Node.js `22.23.0` (`.nvmrc`)
+- npm `10.9.2` (`frontend/package.json`)
+- Python `3.11.15` (`.python-version` and backend image)
+- Poetry `2.4.1` (`backend/Dockerfile` and CI)
+- PostgreSQL `16.14` for isolated integration tests
 
-### Backend
+Use the lockfiles. Local development and CI install with `npm ci` and
+`poetry sync`; do not replace them with unlocked installs.
 
-```powershell
-cd backend
-poetry install
-poetry run uvicorn app.main:app --reload
-```
-
-The backend runs on `http://127.0.0.1:8000` by default.
+## Bootstrap
 
 ### Frontend
 
 ```powershell
 cd frontend
-npm install
+Copy-Item .env.example .env.local
+npm ci
 npm run dev
 ```
 
-The frontend runs on `http://localhost:3000` by default.
+The frontend runs at `http://127.0.0.1:3000`.
 
-## Checks
-
-```powershell
-cd frontend
-npm run lint
-npm exec tsc -- --noEmit --incremental false
-npm run build
-```
+### Backend
 
 ```powershell
 cd backend
-poetry run python -m compileall app
+Copy-Item .env.example .env
+py -3.11 -m venv .venv
+py -3.11 -m venv ..\.tmp\poetry-tool
+& ..\.tmp\poetry-tool\Scripts\python.exe -m pip install poetry==2.4.1
+$env:POETRY_VIRTUALENVS_IN_PROJECT = "true"
+& ..\.tmp\poetry-tool\Scripts\poetry.exe sync --with dev --no-root
+& .\.venv\Scripts\python.exe -m alembic upgrade head
+& .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
+
+The backend runs at `http://127.0.0.1:8000`.
+Poetry intentionally lives outside the project virtual environment so
+`poetry sync` cannot remove its own executable.
+
+Do not use the example credentials in production. Production startup rejects
+placeholder secrets, wildcard hosts, local-only CORS, debug mode, and enabled
+API documentation when `ENVIRONMENT=production`.
+
+## Quality Gates
+
+Fast local checks:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
+```
+
+Complete checks with an isolated PostgreSQL database and browser matrix:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1 -WithIntegration -WithE2E
+```
+
+The complete gate includes:
+
+- locked dependency consistency and production dependency audits
+- ESLint, Ruff, TypeScript, and Python bytecode compilation
+- frontend and backend unit tests with enforced coverage floors
+- production Next.js build
+- Alembic single-head, upgrade, metadata parity, rollback, and rebuild checks
+- real signup, login, JWT, profile, upload, and database-readiness tests
+- desktop Chromium, Android-sized Chromium, and iPhone-sized WebKit tests
+- production backend container build
+
+The same checks run in `.github/workflows/quality-gates.yml`.
+
+## Health Checks
+
+- Frontend: `GET /api/health`
+- Backend liveness: `GET /health`
+- Backend readiness, including PostgreSQL: `GET /health/ready`
+
+The frontend health response includes the Vercel Git commit when available,
+which allows a deployment to be matched to a pushed revision.
+
+## Release Notes
+
+The detailed Persian report for the current hardening phase is in
+[`docs/PHASE_1_QUALITY_BASELINE_FA.md`](docs/PHASE_1_QUALITY_BASELINE_FA.md).

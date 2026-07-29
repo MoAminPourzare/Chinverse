@@ -1,12 +1,19 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.paths import STATIC_DIR, UPLOADS_DIR, ensure_upload_dirs
+from app.db.session import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -70,3 +77,18 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    try:
+        async with SessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception:
+        logger.exception("Database readiness check failed")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "checks": {"database": "failed"}},
+        )
+
+    return {"status": "ok", "checks": {"database": "ok"}}

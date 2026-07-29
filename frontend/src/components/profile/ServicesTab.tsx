@@ -11,7 +11,15 @@ import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { userService, UserService } from "@/services/user.service";
-import { validateImageFile, validateTextLength, validationMessage } from "@/validation";
+import {
+    IMAGE_FILE_ACCEPT,
+    IMAGE_FILE_FORMAT_LABEL,
+    isAdjustableImageFile,
+    isImageConvertedOnUpload,
+    validateImageFile,
+    validateTextLength,
+    validationMessage,
+} from "@/validation";
 
 interface ServicesTabProps {
     userId?: number;
@@ -96,7 +104,14 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
         }
 
         setError("");
-        setPendingBannerFile(file);
+        if (isAdjustableImageFile(file)) {
+            setPendingBannerFile(file);
+            return;
+        }
+
+        setBannerFile(file);
+        setBannerPreview(null);
+        setPendingBannerFile(null);
     };
 
     const handleSubmit = async (event: FormEvent) => {
@@ -172,6 +187,14 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
     }
 
     if (services.length === 0) {
+        if (!isOwner) {
+            return (
+                <div className="text-center py-12 text-gray-400">
+                    خدمتی ثبت نشده است
+                </div>
+            );
+        }
+
         return (
             <>
                 <div className="flex min-h-[360px] flex-col items-center justify-start px-8 pb-8 pt-8 text-center">
@@ -208,6 +231,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                     title={title}
                     description={description}
                     bannerPreview={bannerPreview}
+                    selectedBannerFile={bannerFile}
                     error={error}
                     isEditing={Boolean(editingService)}
                     submitting={submitting}
@@ -261,6 +285,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                 title={title}
                 description={description}
                 bannerPreview={bannerPreview}
+                selectedBannerFile={bannerFile}
                 error={error}
                 isEditing={Boolean(editingService)}
                 submitting={submitting}
@@ -308,6 +333,7 @@ interface ServiceModalProps {
     title: string;
     description: string;
     bannerPreview: string | null;
+    selectedBannerFile: File | null;
     error: string;
     isEditing: boolean;
     submitting: boolean;
@@ -328,6 +354,7 @@ function ServiceModal({
     title,
     description,
     bannerPreview,
+    selectedBannerFile,
     error,
     isEditing,
     submitting,
@@ -416,18 +443,28 @@ function ServiceModal({
                                             >
                                                 {bannerPreview ? (
                                                     <Image src={bannerPreview} alt="پیش‌نمایش پوستر تبلیغاتی" fill className="object-contain" />
+                                                ) : selectedBannerFile ? (
+                                                    <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-5 text-center">
+                                                        <Upload className="h-8 w-8" />
+                                                        <span className="break-all text-sm font-bold text-[#155aa6]">{selectedBannerFile.name}</span>
+                                                        <span className="text-xs leading-5 text-slate-400">
+                                                            {isImageConvertedOnUpload(selectedBannerFile)
+                                                                ? "بعد از بارگذاری به JPG تبدیل می‌شود."
+                                                                : "بدون تنظیم دستی بارگذاری می‌شود."}
+                                                        </span>
+                                                    </span>
                                                 ) : (
                                                     <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                                                         <Upload className="h-8 w-8" />
                                                         <span className="text-sm font-bold">انتخاب پوستر</span>
-                                                        <span className="text-xs">JPG، PNG یا WEBP تا ۵MB</span>
+                                                        <span className="text-xs">{IMAGE_FILE_FORMAT_LABEL} تا ۵MB</span>
                                                     </span>
                                                 )}
                                             </button>
                                             <input
                                                 ref={fileInputRef}
                                                 type="file"
-                                                accept="image/*"
+                                                accept={IMAGE_FILE_ACCEPT}
                                                 onChange={onBannerChange}
                                                 className="hidden"
                                             />

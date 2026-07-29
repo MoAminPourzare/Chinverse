@@ -14,6 +14,9 @@ const parseTimestamp = (value: string): number => {
     }
 
     const [, hours, minutes, seconds, milliseconds] = match;
+    if (Number(minutes) >= 60 || Number(seconds) >= 60) {
+        throw new Error(`Invalid SRT timestamp: ${value}`);
+    }
     return (
         Number(hours) * 3600
         + Number(minutes) * 60

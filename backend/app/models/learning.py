@@ -1,8 +1,13 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from datetime import date
-from sqlalchemy import String, ForeignKey, Text, BigInteger, Integer, Date, UniqueConstraint, Index
+from sqlalchemy import ForeignKey, Text, BigInteger, Integer, Date, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.course import Course
+    from app.models.dictionary import DictionaryWord
+    from app.models.user import User
 
 class LeitnerCard(Base, TimestampMixin):
     __tablename__ = "leitner_cards"
@@ -27,6 +32,7 @@ class StudySession(Base, TimestampMixin):
     __tablename__ = "study_sessions"
     __table_args__ = (
         Index("ix_study_sessions_user_date", "user_id", "date"),
+        Index("uq_study_sessions_user_date", "user_id", "date", unique=True),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
@@ -39,7 +45,6 @@ class StudySession(Base, TimestampMixin):
 
     # Relationships
     user: Mapped["User"] = relationship()
-
 class UserStreak(Base, TimestampMixin):
     __tablename__ = "user_streaks"
 
@@ -62,8 +67,3 @@ class CourseReview(Base, TimestampMixin):
     # Relationships
     course: Mapped["Course"] = relationship()
     user: Mapped["User"] = relationship()
-
-# Forward references
-from app.models.user import User
-from app.models.dictionary import DictionaryWord
-from app.models.course import Course

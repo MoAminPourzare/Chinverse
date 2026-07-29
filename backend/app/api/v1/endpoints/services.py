@@ -57,7 +57,19 @@ async def get_my_services(
     )
     services = result.scalars().all()
     like_counts = await _service_likes_counts(db, [service.id for service in services])
-    return services
+    return [
+        {
+            "id": service.id,
+            "user_id": service.user_id,
+            "title": service.title,
+            "description": service.description,
+            "banner_url": service.banner_url,
+            "price_label": service.price_label,
+            "created_at": service.created_at,
+            "likes_count": like_counts.get(service.id, 0),
+        }
+        for service in services
+    ]
 
 
 @router.post("", response_model=Service, status_code=status.HTTP_201_CREATED)

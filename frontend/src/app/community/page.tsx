@@ -313,7 +313,7 @@ function QuestionsSection({
             cancelEditQuestion();
         } catch (error) {
             console.error("Failed to update question:", error);
-            setEditError("ویرایش سوال انجام نشد. لطفا دوباره تلاش کن.");
+            setEditError(getCommunityErrorMessage(error, "ویرایش سوال انجام نشد. لطفا دوباره تلاش کن."));
         } finally {
             setSavingQuestionId(null);
         }
@@ -335,7 +335,7 @@ function QuestionsSection({
             if (editingQuestionId === questionId) cancelEditQuestion();
         } catch (error) {
             console.error("Failed to delete question:", error);
-            alert("حذف سوال انجام نشد. لطفا دوباره تلاش کن.");
+            alert(getCommunityErrorMessage(error, "حذف سوال انجام نشد. لطفا دوباره تلاش کن."));
         } finally {
             setDeletingQuestionId(null);
         }
@@ -573,6 +573,27 @@ function SectionHeader({
             )}
         </div>
     );
+}
+
+function getCommunityErrorMessage(error: unknown, fallback: string) {
+    const axiosError = error as {
+        response?: { status?: number; data?: { detail?: string } };
+    };
+
+    if (!axiosError.response) {
+        return "ارتباط با سرور برقرار نشد. لطفا دوباره تلاش کن.";
+    }
+    if (axiosError.response.status === 401) {
+        return "برای انجام این کار باید وارد حساب شوی.";
+    }
+    if (axiosError.response.status === 403) {
+        return "فقط نویسنده سوال می‌تواند آن را ویرایش یا حذف کند.";
+    }
+    if (axiosError.response.status === 429) {
+        return "درخواست‌ها زیاد شده؛ کمی صبر کن و دوباره امتحان کن.";
+    }
+
+    return axiosError.response.data?.detail || fallback;
 }
 
 function QuestionCard({

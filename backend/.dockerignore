@@ -1,4 +1,4 @@
-.venv
+.venv*
 __pycache__
 *.pyc
 *.pyo
@@ -6,6 +6,9 @@ __pycache__
 .pytest_cache
 .mypy_cache
 .ruff_cache
+.coverage*
+htmlcov
+tests
 .env
 uploads
 *.log

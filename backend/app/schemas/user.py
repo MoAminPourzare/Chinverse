@@ -2,7 +2,7 @@ import re
 from typing import Optional
 from urllib.parse import urlparse
 from email_validator import EmailNotValidError, validate_email as validate_email_address
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 PERSIAN_NAME_PATTERN = re.compile(r"^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءئؤۀة\s‌]+$")
@@ -18,6 +18,12 @@ ALLOWED_PROFILE_HEADLINES = {
     "بازرگان و واردات از چین",
     "متخصص فرهنگ چین",
     "زیرنویس و دوبله چینی",
+}
+
+ALLOWED_PROFILE_GENDERS = {
+    "خانم",
+    "آقا",
+    "ترجیح می‌دهم نگویم",
 }
 
 
@@ -221,8 +227,7 @@ class UserUpdate(UserBase):
 class UserInDBBase(UserBase):
     id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Profile schemas
 class UserProfileBase(BaseModel):
@@ -231,6 +236,8 @@ class UserProfileBase(BaseModel):
     about_me: Optional[str] = Field(default=None, max_length=4000)
     country: Optional[str] = Field(default=None, max_length=80)
     city: Optional[str] = Field(default=None, max_length=80)
+    gender: Optional[str] = Field(default=None, max_length=32)
+    profile_truth_confirmed: bool = False
     website_url: Optional[str] = Field(default=None, max_length=500)
     avatar_url: Optional[str] = Field(default=None, max_length=500)
     bio: Optional[str] = Field(default=None, max_length=4000)
@@ -253,6 +260,19 @@ class UserProfileBase(BaseModel):
         if value is None:
             return value
         return value.strip() or None
+
+    @field_validator("gender")
+    @classmethod
+    def validate_gender(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if normalized not in ALLOWED_PROFILE_GENDERS:
+            raise ValueError("گزینه جنسیت معتبر نیست")
+        return normalized
 
     @field_validator("avatar_url")
     @classmethod
@@ -378,8 +398,7 @@ class UserProfileUpdate(UserProfileBase):
 class UserProfile(UserProfileBase):
     user_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Additional properties to return via API
 class User(UserInDBBase):

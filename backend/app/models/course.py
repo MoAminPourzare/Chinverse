@@ -1,8 +1,12 @@
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, Index, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.dictionary import DictionaryWord
+    from app.models.media import MediaAsset
 
 class Category(Base, TimestampMixin):
     __tablename__ = "categories"
@@ -154,7 +158,3 @@ class LessonWordMap(Base, TimestampMixin):
     # Relationships
     lesson: Mapped["Lesson"] = relationship(back_populates="word_maps")
     word: Mapped["DictionaryWord"] = relationship()
-
-# Forward reference for DictionaryWord and MediaAsset
-from app.models.dictionary import DictionaryWord
-from app.models.media import MediaAsset

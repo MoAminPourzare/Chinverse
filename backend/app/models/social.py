@@ -1,8 +1,12 @@
 from enum import Enum
-from typing import Optional, List
+from typing import TYPE_CHECKING, Optional, List
 from sqlalchemy import String, ForeignKey, Text, BigInteger, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.media import MediaAsset
+    from app.models.user import User
 
 class FollowStatus(str, Enum):
     PENDING = "pending"
@@ -166,9 +170,24 @@ class ArticleComment(Base, TimestampMixin):
     __tablename__ = "article_comments"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    article_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("articles.id"), nullable=False, index=True)
-    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
-    parent_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("article_comments.id"), nullable=True, index=True)
+    article_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("articles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    parent_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("article_comments.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     body: Mapped[str] = mapped_column(Text, nullable=False)
 
     article: Mapped["Article"] = relationship(back_populates="comments")
@@ -201,7 +220,3 @@ class Message(Base, TimestampMixin):
     # Relationships
     sender: Mapped["User"] = relationship(foreign_keys=[sender_id])
     receiver: Mapped["User"] = relationship(foreign_keys=[receiver_id])
-
-# Forward references
-from app.models.user import User
-from app.models.media import MediaAsset

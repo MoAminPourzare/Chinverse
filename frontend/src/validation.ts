@@ -126,15 +126,94 @@ export const validateReferralCode = (value: string): ValidationResult => {
     return { ok: true };
 };
 
+export const IMAGE_FILE_EXTENSIONS = [
+    "jpg",
+    "jpeg",
+    "jfif",
+    "png",
+    "webp",
+    "heic",
+    "heif",
+    "gif",
+    "avif",
+    "bmp",
+    "tif",
+    "tiff",
+] as const;
+
+export const IMAGE_FILE_MIME_TYPES = [
+    "image/jpeg",
+    "image/pjpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+    "image/heic-sequence",
+    "image/heif-sequence",
+    "image/gif",
+    "image/avif",
+    "image/bmp",
+    "image/x-ms-bmp",
+    "image/tiff",
+] as const;
+
+const ADJUSTABLE_IMAGE_EXTENSIONS = ["jpg", "jpeg", "jfif", "png", "webp"] as const;
+const ADJUSTABLE_IMAGE_MIME_TYPES = ["image/jpeg", "image/pjpeg", "image/png", "image/webp"] as const;
+const CONVERTED_ON_UPLOAD_EXTENSIONS = ["heic", "heif", "bmp", "tif", "tiff"] as const;
+const CONVERTED_ON_UPLOAD_MIME_TYPES = [
+    "image/heic",
+    "image/heif",
+    "image/heic-sequence",
+    "image/heif-sequence",
+    "image/bmp",
+    "image/x-ms-bmp",
+    "image/tiff",
+] as const;
+
+export const IMAGE_FILE_FORMAT_LABEL = "JPG، PNG، WEBP، HEIC، HEIF، GIF، AVIF، BMP یا TIFF";
+export const IMAGE_FILE_ACCEPT = [
+    ...IMAGE_FILE_EXTENSIONS.map((extension) => `.${extension}`),
+    ...IMAGE_FILE_MIME_TYPES,
+].join(",");
+
+const getFileExtension = (file: File) => {
+    const lastDot = file.name.lastIndexOf(".");
+    if (lastDot <= 0 || lastDot === file.name.length - 1) return "";
+    return file.name.slice(lastDot + 1).toLowerCase();
+};
+const isOneOf = <T extends readonly string[]>(value: string, values: T) => values.includes(value as T[number]);
+
+export const isAdjustableImageFile = (file: File) => {
+    const extension = getFileExtension(file);
+    const mimeType = file.type.toLowerCase();
+    if (isOneOf(extension, IMAGE_FILE_EXTENSIONS)) {
+        return isOneOf(extension, ADJUSTABLE_IMAGE_EXTENSIONS);
+    }
+    return isOneOf(extension, ADJUSTABLE_IMAGE_EXTENSIONS) || isOneOf(mimeType, ADJUSTABLE_IMAGE_MIME_TYPES);
+};
+
+export const isImageConvertedOnUpload = (file: File) => {
+    const extension = getFileExtension(file);
+    const mimeType = file.type.toLowerCase();
+    if (isOneOf(extension, IMAGE_FILE_EXTENSIONS)) {
+        return isOneOf(extension, CONVERTED_ON_UPLOAD_EXTENSIONS);
+    }
+    return isOneOf(extension, CONVERTED_ON_UPLOAD_EXTENSIONS) || isOneOf(mimeType, CONVERTED_ON_UPLOAD_MIME_TYPES);
+};
+
 export const validateImageFile = (file: File | null, options: { required?: boolean; maxMb?: number } = {}): ValidationResult => {
     const maxMb = options.maxMb ?? 5;
     if (!file) {
         return options.required ? { ok: false, message: "یک تصویر انتخاب کن." } : { ok: true };
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-        return { ok: false, message: "فرمت تصویر باید JPG، PNG یا WEBP باشد." };
+    const extension = getFileExtension(file);
+    const mimeType = file.type.toLowerCase();
+    const hasAllowedExtension = isOneOf(extension, IMAGE_FILE_EXTENSIONS);
+    const hasAllowedMimeType = isOneOf(mimeType, IMAGE_FILE_MIME_TYPES);
+
+    if (!hasAllowedExtension || (mimeType && !hasAllowedMimeType && mimeType !== "application/octet-stream")) {
+        return { ok: false, message: `فرمت تصویر باید ${IMAGE_FILE_FORMAT_LABEL} باشد.` };
     }
     if (file.size > maxMb * 1024 * 1024) {
         return { ok: false, message: `حجم تصویر نباید بیشتر از ${maxMb} مگابایت باشد.` };

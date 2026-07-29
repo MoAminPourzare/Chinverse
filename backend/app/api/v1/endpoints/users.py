@@ -61,7 +61,7 @@ async def delete_user_account(
         UserFollow, Message, SupportTicket
     )
     from app.models.service import UserService
-    from app.models.user import UserGalleryItem, UserProfile, UserSocialLink
+    from app.models.user import UserSocialLink
     
     user_id = current_user.id
 
@@ -259,6 +259,34 @@ async def upload_avatar(
 
     return await get_user_with_profile(db, current_user.id)
 
+
+@router.delete("/me/avatar", response_model=schemas.User)
+async def delete_avatar(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
+) -> Any:
+    """
+    Delete current user's avatar image.
+    """
+    old_avatar_url = current_user.profile.avatar_url if current_user.profile else None
+
+    if current_user.profile and current_user.profile.avatar_url:
+        current_user.profile.avatar_url = None
+        db.add(current_user.profile)
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+
+    if old_avatar_url:
+        delete_public_file(old_avatar_url)
+
+    return await get_user_with_profile(db, current_user.id)
+
+
 # ===== PUBLIC ENDPOINTS (No auth required) =====
 
 @router.get("/showcase", response_model=List[ShowcaseUser])
@@ -330,6 +358,7 @@ async def get_showcase_users(
             headline=user.profile.headline,
             city=user.profile.city,
             country=user.profile.country,
+            gender=user.profile.gender,
             avatar_url=user.profile.avatar_url,
             education=education,
             job_titles=job_titles,
@@ -370,6 +399,7 @@ async def get_public_user_profile(
             headline=user.profile.headline,
             city=user.profile.city,
             country=user.profile.country,
+            gender=user.profile.gender,
             avatar_url=user.profile.avatar_url,
             bio=user.profile.bio,
             websites=user.profile.websites,

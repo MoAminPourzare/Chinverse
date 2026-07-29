@@ -10,14 +10,16 @@ import { authService } from "@/services/auth.service";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
+import ProfileStatsLine from "@/components/profile/ProfileStatsLine";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount } from "@/lib/courses";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
-import { validateImageFile } from "@/validation";
+import { IMAGE_FILE_ACCEPT, isAdjustableImageFile, validateImageFile } from "@/validation";
 
 const EditAboutMeModal = dynamic(() => import("@/components/profile/EditAboutMeModal"), {
     ssr: false,
@@ -48,8 +50,7 @@ const profileAssets = {
     gallery: "/assets/chinverse/icons/photo.svg",
     services: "/assets/chinverse/icons/services.svg",
     collections: "/assets/chinverse/icons/pin.svg",
-    location: "/assets/chinverse/icons/location.svg",
-    people: "/assets/chinverse/icons/people.svg",
+    profile: "/assets/chinverse/icons/profile.svg",
 };
 
 export default function ProfilePage() {
@@ -171,7 +172,11 @@ export default function ProfilePage() {
         }
 
         setAvatarError("");
-        setPendingAvatarFile(file);
+        if (isAdjustableImageFile(file)) {
+            setPendingAvatarFile(file);
+        } else {
+            void handleAdjustedAvatar(file);
+        }
     };
 
     const handleAdjustedAvatar = async (file: File) => {
@@ -194,10 +199,10 @@ export default function ProfilePage() {
         }
 
         if (activeTab === "about") {
-            const hasBio = user?.profile?.bio;
-            const hasWebsites = user?.profile?.websites && user.profile.websites.length > 0;
-            const hasSocials = user?.profile?.socials && user.profile.socials.length > 0;
-            const isEmpty = !hasBio && !hasWebsites && !hasSocials;
+            const bio = cleanProfileText(user?.profile?.bio);
+            const websites = getVisibleWebsites(user?.profile?.websites);
+            const socials = getVisibleSocials(user?.profile?.socials);
+            const isEmpty = !bio && websites.length === 0 && socials.length === 0;
 
             if (isEmpty) {
                 return (
@@ -221,23 +226,23 @@ export default function ProfilePage() {
                         <PenLine className="w-5 h-5" />
                     </button>
 
-                    {user?.profile?.bio && (
+                    {bio && (
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-lg">درباره من</h3>
-                            <p className="whitespace-pre-wrap text-justify text-sm leading-8 text-gray-600" {...getDirectionalTextProps(user.profile.bio)}>
-                                {user.profile.bio}
+                            <p className="whitespace-pre-wrap text-justify text-sm leading-8 text-gray-600" {...getDirectionalTextProps(bio)}>
+                                {bio}
                             </p>
                         </div>
                     )}
 
-                    {(user?.profile?.websites?.length ?? 0) > 0 && (
+                    {websites.length > 0 && (
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-sm flex items-center gap-2">
                                 <Globe className="w-4 h-4" />
                                 وبسایت‌ها
                             </h3>
                             <div className="grid gap-2">
-                                {user?.profile?.websites?.map((url, idx) => (
+                                {websites.map((url, idx) => (
                                     <a
                                         key={idx}
                                         href={url}
@@ -256,11 +261,11 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {(user?.profile?.socials?.length ?? 0) > 0 && (
+                    {socials.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-3 text-sm">شبکه‌های اجتماعی</h3>
                             <div className="grid gap-2">
-                                {user?.profile?.socials?.map((social, idx) => {
+                                {socials.map((social, idx) => {
                                     const platform = getSocialPlatform(social.platform);
                                     const Icon = platform.icon;
                                     const href = getSocialProfileUrl(social.platform, social.handle);
@@ -291,9 +296,9 @@ export default function ProfilePage() {
 
         if (activeTab === "resume") {
             const resume = user?.profile?.resume;
-            const isEmpty = !resume || Object.values(resume).every((arr) => !arr || arr.length === 0);
+            const isEmpty = isResumeEmpty(resume);
 
-            if (isEmpty) {
+            if (isEmpty || !resume) {
                 return (
                     <ProfileEmptyState
                         asset={profileAssets.resume}
@@ -315,7 +320,7 @@ export default function ProfilePage() {
                         title: work.job_title || work.company,
                         subtitle: work.company,
                         meta: formatResumeDateRange(work.start_date, work.end_date),
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "education",
@@ -325,7 +330,7 @@ export default function ProfilePage() {
                         title: edu.university,
                         subtitle: [edu.degree, edu.field].filter(Boolean).join("، "),
                         meta: formatResumeDateRange(edu.start_date, edu.end_date),
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "certificates",
@@ -335,7 +340,7 @@ export default function ProfilePage() {
                         title: certificate.title,
                         subtitle: certificate.issuer,
                         meta: certificate.date,
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "awards",
@@ -345,7 +350,7 @@ export default function ProfilePage() {
                         title: award.title,
                         subtitle: award.issuer,
                         meta: award.date,
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "skills",
@@ -355,7 +360,7 @@ export default function ProfilePage() {
                         title: skill.name,
                         subtitle: skill.level,
                         meta: "",
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "languages",
@@ -365,7 +370,7 @@ export default function ProfilePage() {
                         title: language.name,
                         subtitle: language.level,
                         meta: "",
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
             ].filter((section) => section.items.length > 0);
 
@@ -442,7 +447,7 @@ export default function ProfilePage() {
                         <input
                             ref={avatarInputRef}
                             type="file"
-                            accept="image/*"
+                            accept={IMAGE_FILE_ACCEPT}
                             className="hidden"
                             onChange={handleAvatarFileChange}
                         />
@@ -466,8 +471,8 @@ export default function ProfilePage() {
                                             unoptimized
                                         />
                                     ) : (
-                                        <span className="flex h-full w-full items-center justify-center bg-slate-50 text-slate-400">
-                                            <UserIcon className="h-10 w-10" />
+                                        <span className="flex h-full w-full items-center justify-center bg-white">
+                                            <Image src={profileAssets.profile} alt="" width={92} height={92} className="h-full w-full object-contain" />
                                         </span>
                                     )}
                                     <span className="absolute inset-0 hidden items-center justify-center bg-slate-950/35 text-white group-hover:flex">
@@ -492,18 +497,13 @@ export default function ProfilePage() {
                             </p>
                         )}
 
-                        <div className="mt-2 flex items-center justify-center gap-2 text-[12px] font-medium text-[#7a808c]">
-                            <Link href="/profile/network" className="inline-flex items-center gap-1 text-[#155aa6]">
-                                <span className="font-latin text-sm font-bold">{followersCount}</span>
-                                <Image src={profileAssets.people} alt="" width={18} height={18} />
-                            </Link>
-                            {locationParts.length > 0 && (
-                                <>
-                                    <span {...getDirectionalTextProps(locationParts.join("، "))}>{locationParts.join("، ")}</span>
-                                    <Image src={profileAssets.location} alt="" width={18} height={18} />
-                                </>
-                            )}
-                        </div>
+                        <ProfileStatsLine
+                            followersCount={followersCount}
+                            location={locationParts.join("، ")}
+                            followersHref="/profile/network"
+                            className="mt-2 text-[#7a808c]"
+                            followersClassName="text-[#155aa6]"
+                        />
                     </section>
 
                     <nav className="relative mt-3 px-2">

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 
 # ===== FORUM QUESTION SCHEMAS =====
@@ -34,8 +34,7 @@ class UserSummary(BaseModel):
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ForumQuestionRead(ForumQuestionBase):
     id: int
@@ -44,8 +43,7 @@ class ForumQuestionRead(ForumQuestionBase):
     author: Optional[UserSummary] = None
     answers_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===== FORUM ANSWER SCHEMAS =====
 
@@ -68,8 +66,7 @@ class ForumAnswerRead(ForumAnswerBase):
     created_at: datetime
     author: Optional[UserSummary] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ForumQuestionDetailRead(ForumQuestionRead):
@@ -105,8 +102,7 @@ class ArticleRead(ArticleBase):
     created_at: datetime
     comments_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ArticleCommentBase(BaseModel):
@@ -130,8 +126,7 @@ class ArticleCommentRead(ArticleCommentBase):
     created_at: datetime
     author: Optional[UserSummary] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ArticleDetailRead(ArticleRead):
@@ -154,8 +149,7 @@ class SupportTicketRead(BaseModel):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SupportTicketResponse(BaseModel):
     success: bool

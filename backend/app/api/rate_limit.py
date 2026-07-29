@@ -13,9 +13,13 @@ _LOCK = Lock()
 
 
 def _client_ip(request: Request) -> str:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",", 1)[0].strip() or "unknown"
+    if settings.TRUST_PROXY_HEADERS:
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            addresses = [address.strip() for address in forwarded_for.split(",") if address.strip()]
+            trusted_proxy_count = max(1, settings.TRUSTED_PROXY_COUNT)
+            if len(addresses) >= trusted_proxy_count:
+                return addresses[-trusted_proxy_count]
 
     if request.client and request.client.host:
         return request.client.host

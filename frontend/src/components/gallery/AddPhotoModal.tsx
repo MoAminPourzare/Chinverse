@@ -7,7 +7,16 @@ import Image from "next/image";
 import { galleryService } from "@/services/gallery.service";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { IconButton } from "@/components/ui/IconButton";
-import { cleanApiValidationMessage, validateImageFile, validateTextLength, validationMessage } from "@/validation";
+import {
+    cleanApiValidationMessage,
+    IMAGE_FILE_ACCEPT,
+    IMAGE_FILE_FORMAT_LABEL,
+    isAdjustableImageFile,
+    isImageConvertedOnUpload,
+    validateImageFile,
+    validateTextLength,
+    validationMessage,
+} from "@/validation";
 
 interface AddPhotoModalProps {
     isOpen: boolean;
@@ -33,7 +42,14 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
         }
 
         setError("");
-        setPendingFile(file || null);
+        if (file && isAdjustableImageFile(file)) {
+            setPendingFile(file);
+            return;
+        }
+
+        setSelectedFile(file || null);
+        setPreview(null);
+        setPendingFile(null);
     };
 
     const handleUpload = async () => {
@@ -135,14 +151,28 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                                     className="object-cover"
                                                 />
                                             </button>
+                                        ) : selectedFile ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedFile(null)}
+                                                className="flex min-h-[250px] w-full flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-[#155aa6] bg-white px-5 text-center text-[#155aa6] transition hover:bg-[#eef6ff]"
+                                            >
+                                                <Upload className="mb-4 h-8 w-8" />
+                                                <span className="break-all text-[14px] font-black">{selectedFile.name}</span>
+                                                <span className="mt-2 text-xs leading-6 text-slate-400">
+                                                    {isImageConvertedOnUpload(selectedFile)
+                                                        ? "این فرمت بعد از بارگذاری به JPG تبدیل می‌شود."
+                                                        : "این فرمت بدون تنظیم دستی بارگذاری می‌شود."}
+                                                </span>
+                                            </button>
                                         ) : (
                                             <label className="flex min-h-[250px] cursor-pointer flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-[#155aa6] bg-white text-center text-[#155aa6] transition hover:bg-[#eef6ff]">
                                                 <Upload className="mb-4 h-8 w-8" />
                                                 <span className="text-[16px] font-black">بارگذاری عکس</span>
-                                                <span className="mt-2 text-xs text-slate-400">JPG، PNG یا WEBP</span>
+                                                <span className="mt-2 text-xs text-slate-400">{IMAGE_FILE_FORMAT_LABEL}</span>
                                                 <input
                                                     type="file"
-                                                    accept="image/*"
+                                                    accept={IMAGE_FILE_ACCEPT}
                                                     onChange={handleFileSelect}
                                                     className="hidden"
                                                 />

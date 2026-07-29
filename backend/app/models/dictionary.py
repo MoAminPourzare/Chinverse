@@ -1,14 +1,21 @@
-from typing import Optional, List
-from sqlalchemy import String, ForeignKey, Text, BigInteger, Integer
+from typing import TYPE_CHECKING, Optional, List
+from sqlalchemy import String, ForeignKey, Text, BigInteger, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.media import MediaAsset
 
 
 class DictionaryWord(Base, TimestampMixin):
     __tablename__ = "dictionary_words"
+    __table_args__ = (
+        Index("ix_dictionary_words_chinese", "chinese"),
+        Index("ux_dictionary_words_chinese", "chinese", unique=True),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    chinese: Mapped[str] = mapped_column(String, index=True, unique=True, nullable=False)
+    chinese: Mapped[str] = mapped_column(String, nullable=False)
     pinyin: Mapped[str] = mapped_column(String, index=True, nullable=False)
     audio_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     level: Mapped[str] = mapped_column(String, index=True, nullable=False) # HSK1, HSK2, etc.
@@ -41,6 +48,9 @@ class DictionaryWord(Base, TimestampMixin):
 
 class WordDefinition(Base, TimestampMixin):
     __tablename__ = "word_definitions"
+    __table_args__ = (
+        Index("ix_word_definitions_word_sense", "word_id", "sense_order"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
@@ -55,6 +65,9 @@ class WordDefinition(Base, TimestampMixin):
 
 class WordCollocation(Base, TimestampMixin):
     __tablename__ = "word_collocations"
+    __table_args__ = (
+        Index("ix_word_collocations_word_sense", "word_id", "sense_order"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
@@ -68,6 +81,9 @@ class WordCollocation(Base, TimestampMixin):
 
 class WordExample(Base, TimestampMixin):
     __tablename__ = "word_examples"
+    __table_args__ = (
+        Index("ix_word_examples_word_sense", "word_id", "sense_order"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id"), nullable=False, index=True)
@@ -80,6 +96,3 @@ class WordExample(Base, TimestampMixin):
     # Relationships
     word: Mapped["DictionaryWord"] = relationship(back_populates="examples")
     media: Mapped[Optional["MediaAsset"]] = relationship()
-
-# Forward reference for MediaAsset
-from app.models.media import MediaAsset

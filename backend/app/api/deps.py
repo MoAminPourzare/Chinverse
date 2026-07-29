@@ -1,7 +1,8 @@
 from typing import Generator
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+import jwt
+from jwt.exceptions import PyJWTError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -31,7 +32,7 @@ async def get_current_user(
         )
         token_data = TokenPayload(**payload)
         user_id = int(token_data.sub)
-    except (JWTError, ValidationError, TypeError, ValueError):
+    except (PyJWTError, ValidationError, TypeError, ValueError):
         raise unauthorized()
     
     result = await session.execute(

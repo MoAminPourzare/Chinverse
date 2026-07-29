@@ -1,9 +1,12 @@
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from sqlalchemy import String, ForeignKey, BigInteger, Float, Integer, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 class MediaType(str, Enum):
     IMAGE = "image"

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Dict, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # Schemas for API requests/responses
 
@@ -15,8 +15,7 @@ class FlashcardBase(BaseModel):
     next_review_at: datetime
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DictionaryWordDefinitionSimple(BaseModel):
     id: int
@@ -26,8 +25,7 @@ class DictionaryWordDefinitionSimple(BaseModel):
     sense_order: int = 1
     notes: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DictionaryWordExampleSimple(BaseModel):
@@ -37,8 +35,7 @@ class DictionaryWordExampleSimple(BaseModel):
     target_text: str
     sense_order: int = 1
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DictionaryWordCollocationSimple(BaseModel):
@@ -48,8 +45,7 @@ class DictionaryWordCollocationSimple(BaseModel):
     translation_target: str
     sense_order: int = 1
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DictionaryWordSimple(BaseModel):
@@ -70,8 +66,7 @@ class DictionaryWordSimple(BaseModel):
     examples: List[DictionaryWordExampleSimple] = Field(default_factory=list)
     collocations: List[DictionaryWordCollocationSimple] = Field(default_factory=list)
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class FlashcardRead(FlashcardBase):
     word: DictionaryWordSimple

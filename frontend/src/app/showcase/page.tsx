@@ -15,7 +15,6 @@ import {
     Search,
     SlidersHorizontal,
     Tag,
-    User as UserIcon,
     Users,
     X,
 } from "lucide-react";
@@ -398,6 +397,11 @@ function TalentFilterPanel({
                 ) : (
                     <div className="mt-5 flex min-h-0 flex-1 flex-col">
                         <div className="min-h-0 flex-1 overflow-y-auto rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+                            {activeFilterKey === "jobTitles" && (
+                                <p className="mb-3 rounded-[18px] border border-amber-100 bg-amber-50 px-4 py-3 text-[12px] font-bold leading-6 text-amber-800">
+                                    عنوان شغلی توسط خود کاربر انتخاب می‌شود و به معنی تأیید تخصص، مجوز یا سابقه کاری فرد توسط چین‌ورس نیست.
+                                </p>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => onClearFilter(activeFilterKey)}
@@ -593,7 +597,7 @@ function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
                     unoptimized
                 />
             ) : (
-                <UserIcon size={22} className="text-slate-400" />
+                <Image src="/assets/chinverse/icons/profile.svg" alt="" width={52} height={52} className="h-full w-full object-contain" />
             )}
         </div>
     );

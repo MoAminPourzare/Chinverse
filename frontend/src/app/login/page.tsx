@@ -55,7 +55,7 @@ export default function LoginPage() {
         <AuthShell
             backHref="/settings"
             title="ورود"
-            icon={<Image src="/assets/chinverse/icons/Exit.svg" alt="" width={30} height={30} className="h-8 w-8 object-contain" />}
+            icon={<Image src="/assets/chinverse/icons/Exit.svg" alt="" width={30} height={30} className="h-8 w-8 object-contain" priority />}
             iconClassName="bg-transparent shadow-none ring-0"
             footer={
                 <p className="text-center text-sm leading-6 text-slate-600">
@@ -100,18 +100,21 @@ export default function LoginPage() {
                     <FieldError message={fieldErrors.email} />
                 </label>
 
-                <label className="block space-y-2">
+                <label htmlFor="login-password" className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">رمز عبور</span>
                     <div className="relative">
                         <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            id="login-password"
                             type={showPassword ? "text" : "password"}
+                            name="password"
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value);
                                 setFieldErrors((current) => ({ ...current, password: "" }));
                             }}
                             dir="ltr"
+                            autoComplete="current-password"
                             placeholder="••••••••"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -120,7 +123,7 @@ export default function LoginPage() {
                         />
                         <button
                             type="button"
-                            onClick={() => setShowPassword(!showPassword)}
+                            onClick={() => setShowPassword((visible) => !visible)}
                             className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none"
                             aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
                         >

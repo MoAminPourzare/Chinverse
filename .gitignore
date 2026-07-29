@@ -23,11 +23,17 @@ share/python-wheels/
 MANIFEST
 .env
 .venv
+.venv*/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # Node.js
 node_modules/
@@ -38,8 +44,17 @@ yarn-error.log
 .next/
 out/
 build/
+coverage/
+playwright-report/
+test-results/
+.tmp/
 .DS_Store
 *.local
+*.log
+
+# Runtime uploads are external state, not source code
+backend/uploads/
+backend/static/uploads/
 
 # IDEs
 .vscode/

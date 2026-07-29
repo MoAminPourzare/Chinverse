@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from math import ceil
 from typing import Any
 from zoneinfo import ZoneInfo
 

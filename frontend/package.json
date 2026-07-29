@@ -2,34 +2,55 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "cross-env BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true next dev --webpack",
     "build": "cross-env BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
-    "axios": "^1.13.2",
+    "axios": "^1.18.1",
     "hls.js": "^1.6.16",
     "lucide-react": "^0.555.0",
-    "next": "^16.2.9",
-    "next-pwa": "^5.6.0",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "next": "^16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "react-hook-form": "^7.67.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.10",
     "baseline-browser-mapping": "^2.10.36",
     "cross-env": "^10.1.0",
     "eslint": "^9",
-    "eslint-config-next": "16.0.4",
+    "eslint-config-next": "16.2.12",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "form-data": "4.0.6",
+    "postcss": "8.5.18",
+    "sharp": "0.35.3"
   }
 }

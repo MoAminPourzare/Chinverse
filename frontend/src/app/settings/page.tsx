@@ -90,6 +90,7 @@ const settingsItems: SettingsItem[] = [
 export default function SettingsPage() {
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
     useEffect(() => {
         const syncAuth = () => setIsAuthenticated(Boolean(localStorage.getItem("token")));
@@ -104,8 +105,13 @@ export default function SettingsPage() {
         return item.auth === "required" ? isAuthenticated : !isAuthenticated;
     });
 
+    const openLogoutConfirm = () => {
+        setIsLogoutConfirmOpen(true);
+    };
+
     const handleLogout = () => {
         authService.logout();
+        setIsLogoutConfirmOpen(false);
         router.replace("/login");
         router.refresh();
     };
@@ -120,7 +126,7 @@ export default function SettingsPage() {
             <main className="mx-auto mt-6 flex w-full max-w-[430px] flex-col">
                 <div className="space-y-1">
                     {visibleItems.map((item) => (
-                        <SettingsRow key={item.href + item.title} item={item} onLogout={handleLogout} />
+                        <SettingsRow key={item.href + item.title} item={item} onLogout={openLogoutConfirm} />
                     ))}
                 </div>
 
@@ -134,6 +140,13 @@ export default function SettingsPage() {
                     />
                 </div>
             </main>
+
+            {isLogoutConfirmOpen && (
+                <LogoutConfirmDialog
+                    onCancel={() => setIsLogoutConfirmOpen(false)}
+                    onConfirm={handleLogout}
+                />
+            )}
         </div>
     );
 }
@@ -173,5 +186,46 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
         >
             {content}
         </Link>
+    );
+}
+
+function LogoutConfirmDialog({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+    return (
+        <div
+            className="modal-backdrop-motion fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/45 px-5 backdrop-blur-sm"
+            dir="rtl"
+            onClick={onCancel}
+        >
+            <div
+                className="modal-panel-motion w-full max-w-[360px] rounded-[28px] border border-white/80 bg-white p-5 text-right shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26]"
+                onClick={(event) => event.stopPropagation()}
+            >
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-50">
+                    <Image src="/assets/chinverse/icons/Log out.svg" alt="" width={34} height={34} className="h-9 w-9 object-contain" />
+                </div>
+                <h2 className="text-center text-[17px] font-black text-[#2f3238] dark:text-[#f4f7fb]">
+                    خروج از حساب کاربری؟
+                </h2>
+                <p className="mt-3 text-center text-sm font-bold leading-7 text-slate-600 dark:text-[#c5ced9]">
+                    مطمئنی می‌خوای از حسابت خارج بشی؟
+                </p>
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="h-12 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-[#344050] dark:bg-[#202936] dark:text-[#c5ced9]"
+                    >
+                        انصراف
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="h-12 rounded-2xl bg-rose-600 text-sm font-black text-white shadow-[0_12px_24px_rgba(225,29,72,0.22)] transition hover:bg-rose-700"
+                    >
+                        خروج از حساب
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }

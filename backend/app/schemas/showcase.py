@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class GalleryItemPublic(BaseModel):
     """Public gallery item - no user_id exposed"""
@@ -7,8 +7,7 @@ class GalleryItemPublic(BaseModel):
     image_url: str
     caption: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class EducationSummary(BaseModel):
     """Summary of first education entry for showcase card"""
@@ -23,14 +22,14 @@ class ShowcaseUser(BaseModel):
     headline: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
+    gender: Optional[str] = None
     avatar_url: Optional[str] = None
     education: Optional[EducationSummary] = None
     job_titles: List[str] = Field(default_factory=list)
     gallery_preview: List[str] = Field(default_factory=list)  # First 3 image URLs
     hsk_level: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PublicUserProfile(BaseModel):
     """Full public profile data"""
@@ -38,14 +37,14 @@ class PublicUserProfile(BaseModel):
     headline: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
+    gender: Optional[str] = None
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     websites: Optional[List[str]] = None
     socials: Optional[List[dict]] = None
     resume: Optional[dict] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PublicUser(BaseModel):
     """Full public user for profile view - excludes email, phone, password"""
@@ -53,5 +52,4 @@ class PublicUser(BaseModel):
     profile: Optional[PublicUserProfile] = None
     gallery_items: List[GalleryItemPublic] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
