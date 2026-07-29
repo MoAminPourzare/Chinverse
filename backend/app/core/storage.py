@@ -1,13 +1,20 @@
-from dataclasses import dataclass
-from pathlib import Path
+from dataclasses import dataclass, replace
+from functools import lru_cache
+import logging
+from pathlib import Path, PurePosixPath
+from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
-from fastapi import UploadFile
+from anyio import to_thread
+from fastapi import HTTPException, UploadFile, status
 
 from app.api.errors import bad_request
+from app.core.config import settings
 
 
 CHUNK_SIZE_BYTES = 1024 * 1024
+CACHE_CONTROL_IMMUTABLE = "public, max-age=31536000, immutable"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -18,6 +25,43 @@ class StoredFile:
     content_type: str
     size_bytes: int
     extension: str
+
+
+def _storage_key(public_url_prefix: str, filename: str) -> str:
+    key = f"{public_url_prefix.strip('/')}/{filename}"
+    normalized = PurePosixPath(key)
+    if not key or normalized.is_absolute() or ".." in normalized.parts:
+        raise ValueError("Invalid object storage key")
+    return normalized.as_posix()
+
+
+def _object_public_url(storage_key: str) -> str:
+    return f"{settings.OBJECT_STORAGE_PUBLIC_BASE_URL.rstrip('/')}/{storage_key}"
+
+
+@lru_cache(maxsize=1)
+def get_object_storage_client():
+    import boto3
+    from botocore.config import Config
+
+    return boto3.client(
+        service_name="s3",
+        endpoint_url=settings.OBJECT_STORAGE_ENDPOINT_URL,
+        aws_access_key_id=settings.OBJECT_STORAGE_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+        region_name=settings.OBJECT_STORAGE_REGION,
+        config=Config(
+            signature_version="s3v4",
+            retries={"max_attempts": 4, "mode": "standard"},
+            s3={"addressing_style": settings.OBJECT_STORAGE_ADDRESSING_STYLE},
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
+    )
+
+
+def reset_storage_client_cache() -> None:
+    get_object_storage_client.cache_clear()
 
 
 async def store_upload_file(
@@ -68,15 +112,50 @@ async def store_upload_file(
         file_path.unlink(missing_ok=True)
         raise bad_request("Uploaded file is empty")
 
-    public_url = f"{public_url_prefix.rstrip('/')}/{filename}"
+    storage_key = _storage_key(public_url_prefix, filename)
     return StoredFile(
-        public_url=public_url,
-        storage_key=public_url.lstrip("/"),
+        public_url=f"/{storage_key}",
+        storage_key=storage_key,
         filename=filename,
         content_type=content_type,
         size_bytes=bytes_written,
         extension=extension,
     )
+
+
+def _upload_file_to_object_storage(file_path: Path, stored: StoredFile) -> None:
+    get_object_storage_client().upload_file(
+        str(file_path),
+        settings.OBJECT_STORAGE_BUCKET_NAME,
+        stored.storage_key,
+        ExtraArgs={
+            "ContentType": stored.content_type or "application/octet-stream",
+            "CacheControl": CACHE_CONTROL_IMMUTABLE,
+        },
+    )
+
+
+async def persist_stored_file(
+    stored: StoredFile,
+    *,
+    destination_dir: Path,
+) -> StoredFile:
+    if settings.FILE_STORAGE_MODE == "local":
+        return stored
+
+    file_path = destination_dir / stored.filename
+    try:
+        await to_thread.run_sync(_upload_file_to_object_storage, file_path, stored)
+    except Exception as exc:
+        file_path.unlink(missing_ok=True)
+        logger.exception("Object storage upload failed for key %s", stored.storage_key)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is temporarily unavailable",
+        ) from exc
+
+    file_path.unlink(missing_ok=True)
+    return replace(stored, public_url=_object_public_url(stored.storage_key))
 
 
 def resolve_public_storage_path(public_url: str | None) -> Path | None:
@@ -88,10 +167,54 @@ def resolve_public_storage_path(public_url: str | None) -> Path | None:
     return resolve_backend_file_url(public_url)
 
 
-def delete_public_file(public_url: str | None) -> None:
+def object_storage_key_from_url(public_url: str | None) -> str | None:
+    if not public_url or not settings.OBJECT_STORAGE_PUBLIC_BASE_URL:
+        return None
+
+    expected = urlsplit(settings.OBJECT_STORAGE_PUBLIC_BASE_URL.rstrip("/"))
+    candidate = urlsplit(public_url)
+    if (
+        candidate.scheme.lower() != expected.scheme.lower()
+        or candidate.netloc.lower() != expected.netloc.lower()
+    ):
+        return None
+
+    expected_path = expected.path.rstrip("/")
+    candidate_path = unquote(candidate.path)
+    if expected_path and not candidate_path.startswith(f"{expected_path}/"):
+        return None
+
+    key = candidate_path[len(expected_path) :].lstrip("/")
+    normalized = PurePosixPath(key)
+    if not key or normalized.is_absolute() or ".." in normalized.parts:
+        return None
+    return normalized.as_posix()
+
+
+def _delete_object(storage_key: str) -> None:
+    get_object_storage_client().delete_object(
+        Bucket=settings.OBJECT_STORAGE_BUCKET_NAME,
+        Key=storage_key,
+    )
+
+
+async def delete_public_file(public_url: str | None) -> bool:
     path = resolve_public_storage_path(public_url)
     if path and path.exists() and path.is_file():
         try:
             path.unlink()
+            return True
         except OSError:
-            pass
+            logger.warning("Could not delete local upload %s", path)
+            return False
+
+    storage_key = object_storage_key_from_url(public_url)
+    if not storage_key or settings.FILE_STORAGE_MODE != "s3":
+        return False
+
+    try:
+        await to_thread.run_sync(_delete_object, storage_key)
+        return True
+    except Exception:
+        logger.exception("Could not delete object storage key %s", storage_key)
+        return False

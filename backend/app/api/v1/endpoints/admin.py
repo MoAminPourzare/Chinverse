@@ -15,7 +15,7 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
-from app.models.business import UserSubscription
+from app.models.subscription import UserSubscription
 from app.models.course import Course, Lesson, LessonSubtitle, LessonWordMap
 from app.models.dictionary import (
     DictionaryWord,

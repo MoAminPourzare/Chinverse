@@ -11,7 +11,7 @@ from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.models.user import User, UserGalleryItem
 from app.models.social import ContentComment, ContentLike
-from app.core.paths import GALLERY_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
+from app.core.paths import GALLERY_UPLOAD_DIR
 from app.schemas.gallery import GalleryItem
 from app.db.session import get_db
 from app.services.notifications import notify_followers
@@ -68,7 +68,7 @@ async def upload_gallery_image(
         await db.refresh(gallery_item)
     except Exception:
         await db.rollback()
-        delete_public_file(image_url)
+        await delete_public_file(image_url)
         raise
 
     try:
@@ -109,12 +109,12 @@ async def delete_gallery_item(
     if not gallery_item:
         raise not_found("Gallery item")
     
-    # Delete file from filesystem
-    safe_unlink(resolve_backend_file_url(gallery_item.image_url))
+    image_url = gallery_item.image_url
     await db.execute(delete(ContentComment).where(ContentComment.target_type == "post", ContentComment.target_id == item_id))
     await db.execute(delete(ContentLike).where(ContentLike.target_type == "post", ContentLike.target_id == item_id))
     
     await db.delete(gallery_item)
     await db.commit()
+    await delete_public_file(image_url)
     
     return None

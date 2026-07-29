@@ -49,111 +49,6 @@ SUBSCRIPTION_FEATURES = [
 ]
 
 
-async def ensure_subscription_storage(db: AsyncSession) -> None:
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS subscription_plans (
-                id BIGINT PRIMARY KEY,
-                name VARCHAR NOT NULL,
-                duration_months BIGINT NOT NULL,
-                price DOUBLE PRECISION NOT NULL,
-                is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_subscriptions (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                plan_id BIGINT NOT NULL REFERENCES subscription_plans(id),
-                start_date DATE NOT NULL,
-                end_date DATE NOT NULL,
-                status VARCHAR NOT NULL DEFAULT 'active',
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_subscriptions_user_status_end
-            ON user_subscriptions (user_id, status, end_date DESC)
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS subscription_orders (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                plan_id BIGINT NOT NULL REFERENCES subscription_plans(id),
-                amount DOUBLE PRECISION NOT NULL,
-                currency VARCHAR(16) NOT NULL DEFAULT 'IRT',
-                status VARCHAR(32) NOT NULL DEFAULT 'created',
-                provider VARCHAR(64),
-                provider_reference VARCHAR(255),
-                checkout_url TEXT,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_subscription_orders_user_created
-            ON subscription_orders (user_id, created_at DESC)
-            """
-        )
-    )
-
-    for plan in DEFAULT_SUBSCRIPTION_PLANS:
-        await db.execute(
-            text(
-                """
-                INSERT INTO subscription_plans (
-                    id,
-                    name,
-                    duration_months,
-                    price,
-                    is_active,
-                    updated_at
-                )
-                VALUES (
-                    :id,
-                    :name,
-                    :duration_months,
-                    :price,
-                    TRUE,
-                    now()
-                )
-                ON CONFLICT (id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    duration_months = EXCLUDED.duration_months,
-                    price = EXCLUDED.price,
-                    is_active = TRUE,
-                    updated_at = now()
-                """
-            ),
-            {
-                "id": plan["id"],
-                "name": plan["name"],
-                "duration_months": plan["duration_months"],
-                "price": plan["price"],
-            },
-        )
-
-
 def _plan_meta(duration_months: int) -> dict[str, Any]:
     for plan in DEFAULT_SUBSCRIPTION_PLANS:
         if plan["duration_months"] == duration_months:
@@ -184,7 +79,6 @@ def _serialize_plan(row: dict[str, Any]) -> dict[str, Any]:
 
 
 async def list_subscription_plans(db: AsyncSession) -> list[dict[str, Any]]:
-    await ensure_subscription_storage(db)
     result = await db.execute(
         text(
             """
@@ -206,7 +100,6 @@ async def list_subscription_plans(db: AsyncSession) -> list[dict[str, Any]]:
 
 
 async def get_current_subscription(db: AsyncSession, *, user_id: int) -> dict[str, Any] | None:
-    await ensure_subscription_storage(db)
     result = await db.execute(
         text(
             """
@@ -269,7 +162,6 @@ async def create_subscription_checkout(
     user_id: int,
     plan_id: int,
 ) -> dict[str, Any]:
-    await ensure_subscription_storage(db)
     result = await db.execute(
         text(
             """

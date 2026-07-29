@@ -48,6 +48,13 @@ async def test_signup_login_and_authenticated_profile_round_trip():
         assert me.status_code == 200, me.text
         assert me.json()["profile"]["display_name"] == "کاربر آزمایشی"
 
+        activity = await client.get(
+            "/api/v1/daily-activity/summary?days=7",
+            headers=headers,
+        )
+        assert activity.status_code == 200, activity.text
+        assert activity.json()["streak"]["current_days"] == 0
+
         update = await client.put(
             "/api/v1/users/me/profile",
             headers=headers,

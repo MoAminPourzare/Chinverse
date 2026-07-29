@@ -236,8 +236,8 @@ async def create_lesson_with_upload(
         await db.commit()
     except Exception:
         await db.rollback()
-        delete_public_file(stored_video.public_url)
+        await delete_public_file(stored_video.public_url)
         if thumbnail_url:
-            delete_public_file(thumbnail_url)
+            await delete_public_file(thumbnail_url)
         raise
     return await _load_course(db, course_id)
