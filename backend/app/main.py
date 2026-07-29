@@ -68,6 +68,10 @@ async def add_security_headers(request, call_next):
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 
+    response.headers.setdefault("X-Chinverse-Deployment-Tier", settings.DEPLOYMENT_TIER.lower())
+    if not settings.IS_PUBLIC_RELEASE:
+        response.headers.setdefault("X-Robots-Tag", "noindex, nofollow, noarchive")
+
     if settings.HSTS_ENABLED:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
@@ -92,7 +96,12 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "chinverse-api",
+        "deployment_tier": settings.DEPLOYMENT_TIER.lower(),
+        "release": settings.RELEASE_SHA,
+    }
 
 
 @app.get("/health/ready")

@@ -1,11 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
+import { releaseConfig } from "@/config/release";
 
 export const metadata: Metadata = {
   title: "چین‌ورس",
   description: "اپلیکیشن آموزش زبان چینی برای فارسی‌زبان‌ها",
   manifest: "/manifest.json",
+  robots: releaseConfig.isPublicRelease
+    ? {
+        index: true,
+        follow: true,
+      }
+    : {
+        index: false,
+        follow: false,
+        noarchive: true,
+        nocache: true,
+      },
   icons: {
     icon: [
       { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },

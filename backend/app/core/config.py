@@ -13,6 +13,7 @@ PLACEHOLDER_SECRET_KEYS = {
     "generate-with-python-secrets-token-urlsafe",
 }
 PRODUCTION_ENVIRONMENTS = {"prod", "production"}
+DEPLOYMENT_TIERS = {"local", "staging", "production"}
 
 
 def parse_setting_list(value) -> list[str]:
@@ -36,6 +37,8 @@ def parse_setting_list(value) -> list[str]:
 class Settings(BaseSettings):
     PROJECT_NAME: str = "ChinVerse API"
     ENVIRONMENT: str = "local"
+    DEPLOYMENT_TIER: str = "staging"
+    RELEASE_SHA: str = "local"
     DEBUG: bool = False
 
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/chinverse_db"
@@ -85,10 +88,19 @@ class Settings(BaseSettings):
     HSTS_ENABLED: bool = False
 
     ADMIN_EMAILS: str = ""
+    FEATURE_SUBSCRIPTIONS_ENABLED: bool = False
+    FEATURE_REFERRALS_ENABLED: bool = False
+    FEATURE_POINTS_ENABLED: bool = False
 
     @model_validator(mode="after")
     def validate_production_settings(self):
         environment = self.ENVIRONMENT.lower()
+        deployment_tier = self.DEPLOYMENT_TIER.lower()
+        if deployment_tier not in DEPLOYMENT_TIERS:
+            raise ValueError(
+                "DEPLOYMENT_TIER must be one of: " + ", ".join(sorted(DEPLOYMENT_TIERS))
+            )
+
         if environment not in PRODUCTION_ENVIRONMENTS:
             return self
 
@@ -137,6 +149,11 @@ class Settings(BaseSettings):
     @property
     def TRUSTED_HOSTS(self) -> list[str]:
         return parse_setting_list(self.ALLOWED_HOSTS)
+
+    @computed_field
+    @property
+    def IS_PUBLIC_RELEASE(self) -> bool:
+        return self.DEPLOYMENT_TIER.lower() == "production"
 
     @computed_field
     @property

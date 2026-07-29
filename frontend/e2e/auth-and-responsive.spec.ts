@@ -8,10 +8,26 @@ test("frontend health endpoint is observable and uncached", async ({ request }) 
   expect(response.headers()["x-content-type-options"]).toBe("nosniff");
   expect(response.headers()["x-frame-options"]).toBe("DENY");
   expect(response.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(response.headers()["x-robots-tag"]).toContain("noindex");
+  expect(response.headers()["x-chinverse-deployment-tier"]).toBe("staging");
   expect(await response.json()).toMatchObject({
     status: "ok",
     service: "chinverse-web",
+    deployment_tier: "staging",
+    indexable: false,
   });
+});
+
+test("staging blocks search indexing and incomplete routes", async ({ request }) => {
+  const robots = await request.get("/robots.txt");
+  expect(robots.ok()).toBe(true);
+  expect(await robots.text()).toContain("Disallow: /");
+
+  for (const route of ["/settings/subscription", "/settings/referrals", "/settings/points"]) {
+    const response = await request.get(route, { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    expect(response.headers()["location"]).toBe("/settings");
+  }
 });
 
 test.describe("authentication forms", () => {

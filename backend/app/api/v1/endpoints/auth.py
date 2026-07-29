@@ -58,7 +58,7 @@ async def create_user_signup(
     email = str(user_in.email).strip().lower()
     phone = user_in.phone.strip()
     display_name = user_in.display_name.strip()
-    referral_code = user_in.referral_code
+    referral_code = user_in.referral_code if settings.FEATURE_REFERRALS_ENABLED else None
     if not phone or not display_name:
         raise bad_request("Phone and display name cannot be empty")
 
@@ -94,8 +94,9 @@ async def create_user_signup(
         display_name=display_name
     )
     db.add(profile)
-    await get_or_create_referral_code(db, user_id=user.id, commit=False)
-    if referral_code:
+    if settings.FEATURE_REFERRALS_ENABLED:
+        await get_or_create_referral_code(db, user_id=user.id, commit=False)
+    if settings.FEATURE_REFERRALS_ENABLED and referral_code:
         await apply_referral_code(
             db,
             referred_user_id=user.id,

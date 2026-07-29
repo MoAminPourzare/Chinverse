@@ -9,6 +9,7 @@ import AuthShell from "@/components/auth/AuthShell";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { authService } from "@/services/auth.service";
 import { referralService } from "@/services/referral.service";
+import { releaseConfig } from "@/config/release";
 import { cn } from "@/lib/cn";
 import {
     cleanApiValidationMessage,
@@ -39,6 +40,7 @@ export default function SignupPage() {
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
+        if (!releaseConfig.features.referrals) return;
         const referralCode = params.get("ref") || params.get("invite") || params.get("code") || "";
         if (!referralCode) return;
 
@@ -87,7 +89,9 @@ export default function SignupPage() {
             email: validationMessage(validateEmail(formData.email)),
             phone: validationMessage(validateIranMobile(formData.phone)),
             password: validationMessage(validatePassword(formData.password)),
-            referral_code: validationMessage(validateReferralCode(formData.referral_code)),
+            referral_code: releaseConfig.features.referrals
+                ? validationMessage(validateReferralCode(formData.referral_code))
+                : "",
         };
         const hasErrors = Object.values(nextErrors).some(Boolean);
         setFieldErrors(nextErrors);
@@ -96,7 +100,7 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            const referralCode = formData.referral_code.trim();
+            const referralCode = releaseConfig.features.referrals ? formData.referral_code.trim() : "";
             if (referralCode) {
                 const referral = await referralService.validateCode(referralCode);
                 if (!referral.valid) {
@@ -277,30 +281,32 @@ export default function SignupPage() {
                     <FieldError message={fieldErrors.password} />
                 </label>
 
-                <label className="block space-y-2">
-                    <span className="text-sm font-semibold text-slate-700">کد دعوت دوستان</span>
-                    <div className="relative">
-                        <Gift className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            name="referral_code"
-                            value={formData.referral_code}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            dir="ltr"
-                            autoComplete="off"
-                            aria-invalid={Boolean(fieldErrors.referral_code)}
-                            placeholder="اختیاری، مثلا CH12AB"
-                            maxLength={32}
-                            className={cn(
-                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-left font-latin text-sm font-black uppercase tracking-[0.10em] text-slate-900 outline-none transition-all placeholder:text-right placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400",
-                                "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
-                                fieldErrors.referral_code && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
-                            )}
-                        />
-                    </div>
-                    <FieldError message={fieldErrors.referral_code} />
-                </label>
+                {releaseConfig.features.referrals && (
+                    <label className="block space-y-2">
+                        <span className="text-sm font-semibold text-slate-700">کد دعوت دوستان</span>
+                        <div className="relative">
+                            <Gift className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                name="referral_code"
+                                value={formData.referral_code}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                dir="ltr"
+                                autoComplete="off"
+                                aria-invalid={Boolean(fieldErrors.referral_code)}
+                                placeholder="اختیاری، مثلا CH12AB"
+                                maxLength={32}
+                                className={cn(
+                                    "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-left font-latin text-sm font-black uppercase tracking-[0.10em] text-slate-900 outline-none transition-all placeholder:text-right placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400",
+                                    "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                    fieldErrors.referral_code && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
+                                )}
+                            />
+                        </div>
+                        <FieldError message={fieldErrors.referral_code} />
+                    </label>
+                )}
 
                 <PrimaryButton type="submit" className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
                     {loading ? "در حال ثبت…" : "ثبت نام"}
