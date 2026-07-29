@@ -61,7 +61,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_user_notifications_user_unread", table_name="user_notifications")
-    op.drop_index("ix_user_notifications_user_created", table_name="user_notifications")
-    op.drop_index(op.f("ix_user_notifications_id"), table_name="user_notifications")
-    op.drop_table("user_notifications")
+    op.execute("DROP INDEX IF EXISTS ix_user_notifications_user_unread")
+    op.execute("DROP INDEX IF EXISTS ix_user_notifications_user_created")
+    op.execute("DROP INDEX IF EXISTS ix_user_notifications_id")
+    op.execute("DROP TABLE IF EXISTS user_notifications")

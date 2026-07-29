@@ -11,6 +11,7 @@ import {
     socialPlatforms,
     validateSocialHandle,
 } from "@/lib/socialLinks";
+import { cleanProfileText, getVisibleSocials, getVisibleWebsites } from "@/lib/profileContent";
 import { normalizeWebsiteUrl, validateTextLength, validateWebsiteUrl } from "@/validation";
 
 interface EditAboutMeModalProps {
@@ -65,9 +66,9 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
 
     const resetToUser = useCallback(() => {
         reset({
-            bio: user?.profile?.bio || "",
-            websites: user?.profile?.websites?.map((url: string) => ({ url })) || [],
-            socials: user?.profile?.socials || [],
+            bio: cleanProfileText(user?.profile?.bio),
+            websites: getVisibleWebsites(user?.profile?.websites).map((url: string) => ({ url })),
+            socials: getVisibleSocials(user?.profile?.socials),
         });
         clearErrors();
         setShowSocialDropdown(false);
@@ -131,7 +132,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
             });
 
             await userService.updateProfile({
-                bio: data.bio,
+                bio: cleanProfileText(data.bio),
                 websites,
                 socials,
             });

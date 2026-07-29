@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Check, ChevronDown, Loader2, LogOut, Pencil } from "lucide-react";
+import { Check, ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
@@ -11,10 +11,21 @@ import { BackButton } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
-import { IRAN_PROVINCE_OPTIONS, isKnownProfileHeadline, PRIMARY_COUNTRY_OPTIONS, PROFILE_HEADLINE_OPTIONS } from "@/profileOptions";
+import {
+    COUNTRY_REGION_OPTIONS,
+    GENDER_OPTIONS,
+    PROFILE_HEADLINE_OPTIONS,
+    getProvinceOptions,
+    isKnownProfileHeadline,
+    isKnownProvinceForCountry,
+    requiresProvince,
+} from "@/profileOptions";
 import {
     cleanApiValidationMessage,
     hasOnlyPersianNameCharacters,
+    IMAGE_FILE_ACCEPT,
+    isAdjustableImageFile,
+    isImageConvertedOnUpload,
     normalizePersianName,
     validateImageFile,
     validatePersianName,
@@ -35,19 +46,22 @@ export default function AccountPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [avatarMarkedForDeletion, setAvatarMarkedForDeletion] = useState(false);
     const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formMessage, setFormMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-    const [openPicker, setOpenPicker] = useState<"headline" | "country" | "city" | null>(null);
+    const [openPicker, setOpenPicker] = useState<"headline" | "gender" | "country" | "city" | null>(null);
 
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
         headline: "",
+        gender: "",
         city: "",
         country: "",
         email: "",
         phone: "",
         avatar_url: "",
+        profile_truth_confirmed: false,
     });
 
     useEffect(() => {
@@ -57,12 +71,15 @@ export default function AccountPage() {
                 setFormData({
                     display_name: userData.profile?.display_name || "",
                     headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
+                    gender: userData.profile?.gender || "",
                     city: userData.profile?.city || "",
                     country: userData.profile?.country || "",
                     email: userData.email || "",
                     phone: userData.phone || "",
                     avatar_url: userData.profile?.avatar_url || "",
+                    profile_truth_confirmed: Boolean(userData.profile?.profile_truth_confirmed),
                 });
+                setAvatarMarkedForDeletion(false);
             } catch (error) {
                 console.error("Failed to fetch user", error);
                 router.push("/login");
@@ -79,7 +96,7 @@ export default function AccountPage() {
         setFormData((prev) => ({
             ...prev,
             [name]: value,
-            ...(name === "country" && value !== "ایران" ? { city: "" } : {}),
+            ...(name === "country" && (!requiresProvince(value) || !isKnownProvinceForCountry(value, prev.city)) ? { city: "" } : {}),
         }));
         setFieldErrors((current) => ({
             ...current,
@@ -90,11 +107,11 @@ export default function AccountPage() {
         setFormMessage(null);
     };
 
-    const handleOptionSelect = (name: "headline" | "country" | "city", value: string) => {
+    const handleOptionSelect = (name: "headline" | "gender" | "country" | "city", value: string) => {
         setFormData((prev) => ({
             ...prev,
             [name]: value,
-            ...(name === "country" && value !== "ایران" ? { city: "" } : {}),
+            ...(name === "country" && (!requiresProvince(value) || !isKnownProvinceForCountry(value, prev.city)) ? { city: "" } : {}),
         }));
         setFieldErrors((current) => ({
             ...current,
@@ -103,6 +120,13 @@ export default function AccountPage() {
         }));
         setFormMessage(null);
         setOpenPicker(null);
+    };
+
+    const handleTruthConfirmChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { checked } = e.target;
+        setFormData((prev) => ({ ...prev, profile_truth_confirmed: checked }));
+        setFieldErrors((current) => ({ ...current, profile_truth_confirmed: "" }));
+        setFormMessage(null);
     };
 
     const handleAvatarClick = () => {
@@ -121,19 +145,42 @@ export default function AccountPage() {
         }
 
         setFormMessage(null);
-        setPendingAvatarFile(file);
+        setAvatarMarkedForDeletion(false);
+        if (isAdjustableImageFile(file)) {
+            setPendingAvatarFile(file);
+            return;
+        }
+
+        setAvatarFile(file);
+        setAvatarPreview(null);
+    };
+
+    const handleDeleteAvatar = () => {
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        setPendingAvatarFile(null);
+        setAvatarMarkedForDeletion(Boolean(formData.avatar_url));
+        setFormData((prev) => ({ ...prev, avatar_url: "" }));
+        setFormMessage(null);
     };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        const shouldValidateProvince = requiresProvince(formData.country);
         const nextErrors = {
-            country: validationMessage(validateTextLength(formData.country || "", "کشور", { max: 80 })),
+            country: validationMessage(validateTextLength(formData.country || "", "کشور/منطقه", { max: 80 })),
             display_name: validationMessage(validatePersianName(formData.display_name || "")),
             headline: validationMessage(validateTextLength(formData.headline || "", "عنوان شغلی", { required: true })),
-            city: validationMessage(validateTextLength(formData.city || "", "شهر / کشور", { max: 80 })),
+            gender: validationMessage(validateTextLength(formData.gender || "", "جنسیت", { max: 32 })),
+            city: validationMessage(validateTextLength(formData.city || "", "استان", { max: 80 })),
+            profile_truth_confirmed: formData.profile_truth_confirmed
+                ? ""
+                : "برای ذخیره اطلاعات، تایید صحت پروفایل را تیک بزن.",
         };
-        if (formData.country === "ایران" && !formData.city) {
+        if (shouldValidateProvince && !formData.city) {
             nextErrors.city = "استان را انتخاب کن.";
+        } else if (shouldValidateProvince && !isKnownProvinceForCountry(formData.country, formData.city)) {
+            nextErrors.city = "استان انتخاب‌شده با کشور/منطقه سازگار نیست.";
         }
         setFieldErrors(nextErrors);
         setFormMessage(null);
@@ -144,13 +191,17 @@ export default function AccountPage() {
         try {
             if (avatarFile) {
                 await userService.uploadAvatar(avatarFile);
+            } else if (avatarMarkedForDeletion) {
+                await userService.deleteAvatar();
             }
 
             await userService.updateProfile({
                 display_name: normalizePersianName(formData.display_name || ""),
                 headline: (formData.headline || "").trim(),
-                city: formData.country === "ایران" ? formData.city?.trim() : "",
+                gender: formData.gender?.trim() || "",
+                city: shouldValidateProvince ? formData.city?.trim() : "",
                 country: formData.country?.trim(),
+                profile_truth_confirmed: Boolean(formData.profile_truth_confirmed),
             });
 
             setAvatarFile(null);
@@ -160,12 +211,15 @@ export default function AccountPage() {
             setFormData({
                 display_name: userData.profile?.display_name || "",
                 headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
+                gender: userData.profile?.gender || "",
                 city: userData.profile?.city || "",
                 country: userData.profile?.country || "",
                 email: userData.email || "",
                 phone: userData.phone || "",
                 avatar_url: userData.profile?.avatar_url || "",
+                profile_truth_confirmed: Boolean(userData.profile?.profile_truth_confirmed),
             });
+            setAvatarMarkedForDeletion(false);
 
             setFormMessage({ type: "success", text: "تغییرات با موفقیت ذخیره شد." });
         } catch (error: unknown) {
@@ -200,6 +254,10 @@ export default function AccountPage() {
         );
     }
 
+    const provinceOptions = getProvinceOptions(formData.country);
+    const shouldShowProvince = provinceOptions.length > 0;
+    const hasAvatarImage = Boolean(avatarPreview || avatarFile || formData.avatar_url);
+
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5">
@@ -216,28 +274,46 @@ export default function AccountPage() {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleFileChange}
-                        accept="image/*"
+                        accept={IMAGE_FILE_ACCEPT}
                         className="hidden"
                     />
 
-                    <button type="button" onClick={handleAvatarClick} className="group relative">
-                        <div className="flex h-[128px] w-[128px] items-center justify-center overflow-hidden rounded-full bg-white">
-                            {avatarPreview ? (
-                                <Image src={avatarPreview} alt="پیش‌نمایش تصویر پروفایل" width={128} height={128} className="h-full w-full object-cover" />
-                            ) : formData.avatar_url ? (
-                                <Image
-                                    src={getMediaUrl(formData.avatar_url)}
-                                    alt="تصویر پروفایل"
-                                    width={128}
-                                    height={128}
-                                    className="h-full w-full object-cover"
-                                    unoptimized
-                                />
-                            ) : (
-                                <Image src={accountIcon} alt="" width={128} height={128} className="h-[128px] w-[128px] object-contain" />
-                            )}
-                        </div>
-                    </button>
+                    <div className="relative">
+                        <button type="button" onClick={handleAvatarClick} className="group relative">
+                            <div className="flex h-[128px] w-[128px] items-center justify-center overflow-hidden rounded-full bg-white">
+                                {avatarPreview ? (
+                                    <Image src={avatarPreview} alt="پیش‌نمایش تصویر پروفایل" width={128} height={128} className="h-full w-full object-cover" />
+                                ) : formData.avatar_url ? (
+                                    <Image
+                                        src={getMediaUrl(formData.avatar_url)}
+                                        alt="تصویر پروفایل"
+                                        width={128}
+                                        height={128}
+                                        className="h-full w-full object-cover"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <Image src={accountIcon} alt="" width={128} height={128} className="h-[128px] w-[128px] object-contain" />
+                                )}
+                            </div>
+                        </button>
+                        {hasAvatarImage && (
+                            <button
+                                type="button"
+                                onClick={handleDeleteAvatar}
+                                className="absolute bottom-1 left-1 flex h-10 w-10 items-center justify-center rounded-full border border-rose-100 bg-white text-rose-600 shadow-[0_10px_24px_rgba(190,18,60,0.18)] transition hover:bg-rose-50"
+                                aria-label="حذف تصویر پروفایل"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                    {avatarFile && !avatarPreview && (
+                        <p className="mt-3 max-w-[260px] break-all rounded-2xl border border-[#d6e1ee] bg-white px-4 py-2 text-center text-xs font-bold leading-6 text-[#6f7785]">
+                            {avatarFile.name}
+                            {isImageConvertedOnUpload(avatarFile) ? " بعد از ذخیره به JPG تبدیل می‌شود." : " برای ذخیره آماده است."}
+                        </p>
+                    )}
 
                     <button
                         type="button"
@@ -289,24 +365,36 @@ export default function AccountPage() {
                         />
                     </FloatingField>
 
-                    <FloatingField label="کشور" error={fieldErrors.country}>
+                    <FloatingField label="جنسیت" error={fieldErrors.gender}>
+                        <OptionPicker
+                            value={formData.gender || ""}
+                            placeholder="انتخاب جنسیت"
+                            options={GENDER_OPTIONS}
+                            isOpen={openPicker === "gender"}
+                            clearLabel="بدون جنسیت"
+                            onToggle={() => setOpenPicker((current) => current === "gender" ? null : "gender")}
+                            onSelect={(value) => handleOptionSelect("gender", value)}
+                        />
+                    </FloatingField>
+
+                    <FloatingField label="کشور/منطقه" error={fieldErrors.country}>
                         <OptionPicker
                             value={formData.country || ""}
-                            placeholder="انتخاب کشور"
-                            options={PRIMARY_COUNTRY_OPTIONS}
+                            placeholder="انتخاب کشور/منطقه"
+                            options={COUNTRY_REGION_OPTIONS}
                             isOpen={openPicker === "country"}
-                            clearLabel="بدون کشور"
+                            clearLabel="بدون کشور/منطقه"
                             onToggle={() => setOpenPicker((current) => current === "country" ? null : "country")}
                             onSelect={(value) => handleOptionSelect("country", value)}
                         />
                     </FloatingField>
 
-                    {formData.country === "ایران" && (
+                    {shouldShowProvince && (
                         <FloatingField label="استان" error={fieldErrors.city}>
                             <OptionPicker
                                 value={formData.city || ""}
                                 placeholder="انتخاب استان"
-                                options={IRAN_PROVINCE_OPTIONS}
+                                options={provinceOptions}
                                 isOpen={openPicker === "city"}
                                 onToggle={() => setOpenPicker((current) => current === "city" ? null : "city")}
                                 onSelect={(value) => handleOptionSelect("city", value)}
@@ -325,6 +413,21 @@ export default function AccountPage() {
 
                     <AccountField label="شماره موبایل" name="phone" value={formData.phone || ""} readOnly dir="ltr" />
                     <AccountField label="ایمیل" name="email" value={formData.email || ""} readOnly dir="ltr" />
+
+                    <div>
+                        <label className="flex items-start gap-3 rounded-[16px] border border-[#d6e1ee] bg-white/70 px-4 py-3 text-right">
+                            <input
+                                type="checkbox"
+                                checked={Boolean(formData.profile_truth_confirmed)}
+                                onChange={handleTruthConfirmChange}
+                                className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
+                            />
+                            <span className="text-[13px] font-bold leading-7 text-[#2f3238]">
+                                تایید میکنم اطلاعات پروفایل، عناوین شغلی، مهارت ها و خدماتم درست و واقعی است و مسئولیت آن ها با خودم است.
+                            </span>
+                        </label>
+                        <FieldError message={fieldErrors.profile_truth_confirmed} />
+                    </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-1">
                         <button
@@ -352,6 +455,7 @@ export default function AccountPage() {
                 onConfirm={(file, previewUrl) => {
                     setAvatarFile(file);
                     setAvatarPreview(previewUrl);
+                    setAvatarMarkedForDeletion(false);
                     setPendingAvatarFile(null);
                 }}
             />

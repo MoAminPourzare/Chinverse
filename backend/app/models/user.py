@@ -1,9 +1,14 @@
 from enum import Enum
-from typing import Optional, List
+from typing import TYPE_CHECKING, Optional, List
 from sqlalchemy import String, Boolean, ForeignKey, Text, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 from sqlalchemy.dialects.postgresql import JSON
+
+if TYPE_CHECKING:
+    from app.models.leitner import UserFlashcard
+    from app.models.service import UserService
+    from app.models.settings import UserLanguageSetting, UserPreference
 
 class UserStatus(str, Enum):
     ACTIVE = "active"
@@ -46,6 +51,8 @@ class UserProfile(Base, TimestampMixin):
     about_me: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     country: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     city: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    gender: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    profile_truth_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     website_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(String, nullable=True)

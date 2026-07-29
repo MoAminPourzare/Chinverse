@@ -31,8 +31,8 @@ export const defaultLearningPreferences: LearningPreferences = {
     theme: "light",
     persianFontSize: "normal",
     chineseFontSize: "normal",
-    persianLineSpacing: "relaxed",
-    chineseLineSpacing: "relaxed",
+    persianLineSpacing: "normal",
+    chineseLineSpacing: "normal",
     playbackSpeed: 1,
     textDisplayMode: "mixed",
     newWordHighlightColor: "amber",
@@ -72,7 +72,7 @@ export const lineSpacingOptions: Array<{ value: LineSpacingLevel; label: string 
 
 export const chineseLineSpacingOptions: Array<{ value: LineSpacingLevel; label: string }> = [
     { value: "compact", label: "紧凑" },
-    { value: "normal", label: "正常" },
+    { value: "normal", label: "适中" },
     { value: "relaxed", label: "宽松" },
     { value: "loose", label: "很宽松" },
 ];
@@ -92,13 +92,17 @@ export const textDisplayModeOptions: Array<{ value: TextDisplayMode; label: stri
 ];
 
 export const dailyGoalMinuteOptions = [
-    { value: 5, label: "۵ دقیقه" },
+    { value: 0, label: "۰ دقیقه" },
     { value: 10, label: "۱۰ دقیقه" },
-    { value: 15, label: "۱۵ دقیقه" },
     { value: 20, label: "۲۰ دقیقه" },
     { value: 30, label: "۳۰ دقیقه" },
-    { value: 45, label: "۴۵ دقیقه" },
+    { value: 40, label: "۴۰ دقیقه" },
+    { value: 50, label: "۵۰ دقیقه" },
     { value: 60, label: "۶۰ دقیقه" },
+    { value: 70, label: "۷۰ دقیقه" },
+    { value: 80, label: "۸۰ دقیقه" },
+    { value: 90, label: "۹۰ دقیقه" },
+    { value: 100, label: "۱۰۰ دقیقه" },
 ];
 
 export const dailyGoalWordOptions = [
@@ -188,8 +192,8 @@ const sanitizePreferences = (value: unknown): LearningPreferences => {
             : defaultLearningPreferences.leitnerHighlightColor,
         showPinyin: typeof input.showPinyin === "boolean" ? input.showPinyin : defaultLearningPreferences.showPinyin,
         autoplayNext: typeof input.autoplayNext === "boolean" ? input.autoplayNext : defaultLearningPreferences.autoplayNext,
-        dailyGoalMinutes: dailyGoalMinuteOptions.some((option) => option.value === input.dailyGoalMinutes)
-            ? Number(input.dailyGoalMinutes)
+        dailyGoalMinutes: typeof input.dailyGoalMinutes === "number" && Number.isFinite(input.dailyGoalMinutes) && input.dailyGoalMinutes >= 0 && input.dailyGoalMinutes <= 300
+            ? Math.round(input.dailyGoalMinutes)
             : defaultLearningPreferences.dailyGoalMinutes,
         dailyGoalWords: dailyGoalWordOptions.some((option) => option.value === input.dailyGoalWords)
             ? Number(input.dailyGoalWords)

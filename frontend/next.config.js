@@ -7,23 +7,26 @@ fs.mkdirSync(localTempDir, { recursive: true });
 process.env.TMP = localTempDir;
 process.env.TEMP = localTempDir;
 
-const enablePWA = process.env.NEXT_ENABLE_PWA === '1';
-
 /** @type {import('next').NextConfig} */
-const withPWA = enablePWA
-    ? require('next-pwa')({
-        dest: 'public',
-        register: true,
-        skipWaiting: true,
-        disable: process.env.NODE_ENV === 'development',
-    })
-    : (config) => config;
-
 const nextConfig = {
     reactStrictMode: true,
     experimental: {
         cpus: 1,
         webpackBuildWorker: false,
+    },
+    async headers() {
+        return [
+            {
+                source: "/:path*",
+                headers: [
+                    { key: "X-Content-Type-Options", value: "nosniff" },
+                    { key: "X-Frame-Options", value: "DENY" },
+                    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                    { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+                    { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+                ],
+            },
+        ];
     },
 };
 
@@ -31,6 +34,6 @@ if (!process.env.VERCEL) {
     nextConfig.outputFileTracingRoot = path.join(__dirname, '..');
 }
 
-module.exports = withPWA(nextConfig);
+module.exports = nextConfig;
 
 

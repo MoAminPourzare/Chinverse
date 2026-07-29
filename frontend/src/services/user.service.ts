@@ -56,6 +56,8 @@ export interface UserProfile {
     is_verified?: boolean;
     country?: string;
     city?: string;
+    gender?: string;
+    profile_truth_confirmed?: boolean;
     website_url?: string;
     avatar_url?: string;
     bio?: string;
@@ -91,6 +93,11 @@ export const userService = {
         formData.append('file', file);
 
         const response = await api.post<User>('/users/me/avatar', formData);
+        return response.data;
+    },
+
+    async deleteAvatar(): Promise<User> {
+        const response = await api.delete<User>('/users/me/avatar');
         return response.data;
     },
 
@@ -229,6 +236,7 @@ export interface ShowcaseUser {
     headline?: string;
     city?: string;
     country?: string;
+    gender?: string;
     avatar_url?: string;
     education?: EducationSummary;
     job_titles?: string[];

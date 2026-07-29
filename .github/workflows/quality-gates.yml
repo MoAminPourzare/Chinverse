@@ -1,0 +1,143 @@
+name: Quality gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --omit=dev --audit-level=low
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests and coverage
+        run: npm run test:coverage
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Browser tests
+        run: npm run test:e2e
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql://chinverse_test:chinverse_test@127.0.0.1:5432/chinverse_test
+      SECRET_KEY: test-secret-key-that-is-long-enough-for-automated-tests
+      RATE_LIMIT_ENABLED: "false"
+      ENABLE_API_DOCS: "true"
+      SECURE_HEADERS_ENABLED: "true"
+    services:
+      postgres:
+        image: postgres:16.14-alpine3.24
+        env:
+          POSTGRES_DB: chinverse_test
+          POSTGRES_USER: chinverse_test
+          POSTGRES_PASSWORD: chinverse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chinverse_test -d chinverse_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install Poetry
+        run: python -m pip install poetry==2.4.1
+
+      - name: Install locked dependencies
+        run: |
+          poetry check --lock
+          poetry sync --with dev --no-root --no-interaction
+          poetry run python -m pip check
+
+      - name: Audit dependencies
+        run: poetry run pip-audit
+
+      - name: Static checks
+        run: |
+          poetry run ruff check --no-cache app tests
+          poetry run python -m compileall -q app tests
+
+      - name: Unit tests and coverage
+        run: poetry run pytest -m "not integration" --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=50
+
+      - name: Upgrade an empty database
+        run: poetry run alembic upgrade head
+
+      - name: Check model and migration parity
+        run: poetry run alembic check
+
+      - name: Integration tests
+        run: poetry run pytest -m integration
+
+      - name: Verify migration rollback and rebuild
+        run: |
+          poetry run alembic downgrade base
+          poetry run alembic upgrade head
+          poetry run alembic check
+
+      - name: Build production container
+        run: docker build --tag chinverse-backend:phase-1 .

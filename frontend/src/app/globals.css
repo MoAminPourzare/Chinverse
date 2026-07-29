@@ -183,14 +183,11 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
 .route-stage {
   position: relative;
   min-height: 100%;
-  perspective: 1200px;
-  transform-style: preserve-3d;
 }
 
 .route-panel {
   min-height: 100%;
   transform-origin: center;
-  will-change: opacity, transform, filter;
   backface-visibility: hidden;
 }
 
@@ -200,31 +197,31 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
 }
 
 .route-panel[data-phase="enter"][data-motion="soft"] {
-  animation: route-soft-in 360ms var(--motion-ease-smooth, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  animation: route-soft-in 360ms var(--motion-ease-smooth, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .route-panel[data-phase="enter"][data-motion="tab"] {
-  animation: route-tab-in 420ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation: route-tab-in 420ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .route-panel[data-phase="enter"][data-motion="forward"] {
-  animation: route-forward-in 430ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation: route-forward-in 430ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .route-panel[data-phase="enter"][data-motion="back"] {
-  animation: route-back-in 390ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation: route-back-in 390ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .route-panel[data-phase="enter"][data-motion="cover"] {
-  animation: route-cover-in 460ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation: route-cover-in 460ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .route-panel[data-phase="enter"][data-motion="uncover"] {
-  animation: route-uncover-in 400ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation: route-uncover-in 400ms var(--motion-ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .route-panel[data-phase="enter"][data-motion="inline"] {
-  animation: route-inline-in 260ms ease-out both;
+  animation: route-inline-in 260ms ease-out;
 }
 
 #headlessui-portal-root {
@@ -281,8 +278,8 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+    transform: none;
   }
 }
 
@@ -294,8 +291,8 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+    transform: none;
   }
 }
 
@@ -303,12 +300,12 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   from {
     opacity: 0;
     filter: blur(7px);
-    transform: translate3d(-34px, 0, 0) rotateY(5deg) scale(0.985);
+    transform: perspective(1200px) translate3d(-34px, 0, 0) rotateY(5deg) scale(0.985);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0) rotateY(0) scale(1);
+    filter: none;
+    transform: none;
   }
 }
 
@@ -316,12 +313,12 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   from {
     opacity: 0;
     filter: blur(7px);
-    transform: translate3d(32px, 0, 0) rotateY(-4deg) scale(0.985);
+    transform: perspective(1200px) translate3d(32px, 0, 0) rotateY(-4deg) scale(0.985);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0) rotateY(0) scale(1);
+    filter: none;
+    transform: none;
   }
 }
 
@@ -333,8 +330,8 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+    transform: none;
   }
 }
 
@@ -346,8 +343,8 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
+    transform: none;
   }
 }
 
@@ -358,7 +355,7 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: none;
   }
 }
 

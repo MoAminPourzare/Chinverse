@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field, field_validator
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ServiceBase(BaseModel):
@@ -49,8 +49,7 @@ class Service(ServiceBase):
     created_at: datetime
     likes_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ServicePublic(BaseModel):
@@ -62,8 +61,7 @@ class ServicePublic(BaseModel):
     price_label: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ===== PUBLIC SHOWCASE SCHEMAS =====
@@ -75,8 +73,7 @@ class ServiceProviderInfo(BaseModel):
     avatar_url: Optional[str] = None
     headline: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ServiceWithProvider(BaseModel):
@@ -90,5 +87,4 @@ class ServiceWithProvider(BaseModel):
     likes_count: int = 0
     provider: Optional[ServiceProviderInfo] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

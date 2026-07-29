@@ -8,7 +8,7 @@ from app.api import deps
 from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
-from app.models.course import Course, CourseSection, Lesson, Category, Subcategory
+from app.models.course import Course, Category, Subcategory
 from app.models.social import ContentLike
 from app.schemas import course as schemas
 

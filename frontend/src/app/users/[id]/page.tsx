@@ -7,8 +7,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
     Share2,
     Users,
-    MapPin,
-    User as UserIcon,
     Globe,
     MessageCircle,
     Briefcase,
@@ -20,11 +18,13 @@ import {
 } from "lucide-react";
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
 import ServicesTab from "@/components/profile/ServicesTab";
+import ProfileStatsLine from "@/components/profile/ProfileStatsLine";
 import PostViewerModal from "@/components/engagement/PostViewerModal";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { BackButton } from "@/components/ui/IconButton";
 
 interface Tab {
@@ -38,6 +38,8 @@ const tabs: Tab[] = [
     { id: "gallery", label: "گالری" },
     { id: "services", label: "خدمات" },
 ];
+
+const profileIcon = "/assets/chinverse/icons/profile.svg";
 
 export default function PublicProfilePage() {
     const params = useParams();
@@ -138,24 +140,27 @@ export default function PublicProfilePage() {
         if (!user?.profile) return null;
 
         if (activeTab === "about") {
+            const bio = cleanProfileText(user.profile.bio);
+            const websites = getVisibleWebsites(user.profile.websites);
+            const socials = getVisibleSocials(user.profile.socials);
             return (
                 <div className="p-6">
-                    {user.profile.bio && (
+                    {bio && (
                         <div className="mb-6">
-                            <p className="whitespace-pre-wrap text-justify text-sm leading-8 text-gray-600" {...getDirectionalTextProps(user.profile.bio)}>
-                                {user.profile.bio}
+                            <p className="whitespace-pre-wrap text-justify text-sm leading-8 text-gray-600" {...getDirectionalTextProps(bio)}>
+                                {bio}
                             </p>
                         </div>
                     )}
 
-                    {(user.profile.websites?.length ?? 0) > 0 && (
+                    {websites.length > 0 && (
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-sm flex items-center gap-2">
                                 <Globe className="w-4 h-4" />
                                 وبسایت
                             </h3>
                             <div className="grid gap-2">
-                                {user.profile.websites?.map((url, idx) => (
+                                {websites.map((url, idx) => (
                                     <a
                                         key={idx}
                                         href={url}
@@ -174,13 +179,13 @@ export default function PublicProfilePage() {
                         </div>
                     )}
 
-                    {(user.profile.socials?.length ?? 0) > 0 && (
+                    {socials.length > 0 && (
                         <div>
                             <h3 className="font-bold text-gray-900 mb-3 text-sm flex items-center gap-2">
                                 ✏️ شبکه‌های اجتماعی
                             </h3>
                             <div className="grid gap-2">
-                                {user.profile.socials?.map((social, idx) => {
+                                {socials.map((social, idx) => {
                                     const platform = getSocialPlatform(social.platform);
                                     const Icon = platform.icon;
                                     const href = getSocialProfileUrl(social.platform, social.handle);
@@ -206,10 +211,8 @@ export default function PublicProfilePage() {
                         </div>
                     )}
 
-                    {!user.profile.bio && !user.profile.websites?.length && !user.profile.socials?.length && (
-                        <div className="text-center py-12 text-gray-400">
-                            اطلاعاتی ثبت نشده است
-                        </div>
+                    {!bio && websites.length === 0 && socials.length === 0 && (
+                        <PublicTabEmptyState text="اطلاعاتی ثبت نشده است" />
                     )}
                     </div>
             );
@@ -217,13 +220,11 @@ export default function PublicProfilePage() {
 
         if (activeTab === "resume") {
             const resume = user.profile.resume;
-            const isEmpty = !resume || Object.values(resume).every((arr) => !arr || arr.length === 0);
+            const isEmpty = isResumeEmpty(resume);
 
-            if (isEmpty) {
+            if (isEmpty || !resume) {
                 return (
-                    <div className="text-center py-12 text-gray-400">
-                        رزومه‌ای ثبت نشده است
-                    </div>
+                    <PublicTabEmptyState text="رزومه‌ای ثبت نشده است" />
                 );
             }
 
@@ -236,7 +237,7 @@ export default function PublicProfilePage() {
                         title: work.job_title || work.company,
                         subtitle: work.company,
                         meta: formatResumeDateRange(work.start_date, work.end_date),
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "education",
@@ -246,7 +247,7 @@ export default function PublicProfilePage() {
                         title: edu.university,
                         subtitle: [edu.degree, edu.field].filter(Boolean).join("، "),
                         meta: formatResumeDateRange(edu.start_date, edu.end_date),
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "certificates",
@@ -256,7 +257,7 @@ export default function PublicProfilePage() {
                         title: cert.title,
                         subtitle: cert.issuer,
                         meta: cert.date,
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "awards",
@@ -266,7 +267,7 @@ export default function PublicProfilePage() {
                         title: award.title,
                         subtitle: award.issuer,
                         meta: award.date,
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "skills",
@@ -276,7 +277,7 @@ export default function PublicProfilePage() {
                         title: skill.name,
                         subtitle: skill.level,
                         meta: "",
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
                 {
                     id: "languages",
@@ -286,7 +287,7 @@ export default function PublicProfilePage() {
                         title: lang.name,
                         subtitle: lang.level,
                         meta: "",
-                    })) || [],
+                    })).filter(hasResumePreviewItemContent) || [],
                 },
             ].filter((section) => section.items.length > 0);
 
@@ -401,9 +402,7 @@ export default function PublicProfilePage() {
 
             if (galleryItems.length === 0) {
                 return (
-                    <div className="text-center py-12 text-gray-400">
-                        تصویری در گالری نیست
-                    </div>
+                    <PublicTabEmptyState text="تصویری در گالری نیست" />
                 );
             }
 
@@ -456,6 +455,8 @@ export default function PublicProfilePage() {
         );
     }
 
+    const publicLocation = [user.profile?.city?.trim(), user.profile?.country?.trim()].filter(Boolean).join("، ");
+
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             {/* Header */}
@@ -485,7 +486,7 @@ export default function PublicProfilePage() {
                                     unoptimized
                                 />
                             ) : (
-                                <UserIcon className="w-12 h-12 text-gray-400" />
+                                <Image src={profileIcon} alt="" width={112} height={112} className="h-full w-full object-contain" />
                             )}
                         </div>
                     </div>
@@ -498,17 +499,11 @@ export default function PublicProfilePage() {
                         {user.profile?.headline || ""}
                     </p>
 
-                    <div className="mb-5 flex flex-wrap items-center justify-center gap-2 text-xs text-white/65">
-                        <div className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span {...getDirectionalTextProps([user.profile?.city, user.profile?.country].filter(Boolean).join("، "))}>{[user.profile?.city, user.profile?.country].filter(Boolean).join("، ") || "موقعیت نامشخص"}</span>
-                        </div>
-                        <span className="text-white/25">|</span>
-                        <div className="flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{followersCount}</span>
-                        </div>
-                    </div>
+                    <ProfileStatsLine
+                        followersCount={followersCount}
+                        location={publicLocation || "موقعیت نامشخص"}
+                        className="mb-5 text-xs text-white/75"
+                    />
 
                     {/* Action Buttons */}
                     <div className="grid w-full max-w-lg grid-cols-3 gap-3">
@@ -619,6 +614,14 @@ function PublicResumePreviewCard({
             </div>
 
         </section>
+    );
+}
+
+function PublicTabEmptyState({ text }: { text: string }) {
+    return (
+        <div className="text-center py-12 text-gray-400">
+            {text}
+        </div>
     );
 }
 

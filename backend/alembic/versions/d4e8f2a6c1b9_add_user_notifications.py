@@ -50,4 +50,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP TABLE IF EXISTS user_notifications")
+    # The table is owned by the earlier f4b8c2d9a1e0 revision. This revision
+    # only backfilled deployments where runtime DDL had not created it.
+    pass

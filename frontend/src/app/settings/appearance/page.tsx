@@ -161,7 +161,7 @@ function VisualScaleSetting<T extends string>({
                 </div>
             </div>
 
-            <div className="mt-3 h-[180px] overflow-y-auto rounded-2xl bg-slate-50 px-4 py-3 text-slate-700 dark:bg-[#111821] dark:text-[#d4dce7]">
+            <div className="mt-3 min-h-[260px] max-h-[48dvh] overflow-y-auto rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 dark:bg-[#111821] dark:text-[#d4dce7]">
                 <p
                     className={cn("min-h-full", previewClassName)}
                     dir={previewDir}
@@ -185,7 +185,7 @@ function VisualScaleSheet({
     return (
         <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-center justify-center overflow-hidden bg-slate-950/45 px-4 py-4 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="modal-panel-motion flex max-h-[calc(100dvh-32px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
+                className="modal-panel-motion flex h-[min(760px,calc(100dvh-16px))] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
                 onClick={(event) => event.stopPropagation()}
                 dir="rtl"
             >
@@ -225,7 +225,7 @@ export default function AppearanceSettingsPage() {
                 title="ظاهر و نمایش"
                 onBack={handleBack}
                 iconClassName="bg-transparent shadow-none ring-0"
-                icon={<Image src="/assets/chinverse/icons/Preferences 2.svg" alt="" width={32} height={32} className="h-8 w-8 object-contain" />}
+                icon={<Image src="/assets/chinverse/icons/Preferences 2.svg" alt="" width={32} height={32} className="h-8 w-8 object-contain" priority />}
             />
 
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">

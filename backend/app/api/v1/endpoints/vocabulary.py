@@ -1,7 +1,7 @@
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,8 +22,7 @@ class WordDefinitionSchema(BaseModel):
     sense_order: int = 1
     notes: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WordExampleSchema(BaseModel):
@@ -33,8 +32,7 @@ class WordExampleSchema(BaseModel):
     target_text: str
     sense_order: int = 1
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WordCollocationSchema(BaseModel):
@@ -44,8 +42,7 @@ class WordCollocationSchema(BaseModel):
     translation_target: str
     sense_order: int = 1
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VocabularyWordResponse(BaseModel):
@@ -66,8 +63,7 @@ class VocabularyWordResponse(BaseModel):
     examples: List[WordExampleSchema] = Field(default_factory=list)
     collocations: List[WordCollocationSchema] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VocabularyMatchRequest(BaseModel):

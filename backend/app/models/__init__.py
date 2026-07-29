@@ -14,3 +14,10 @@ from app.models.business import Service, ConsultationRequest, SubscriptionPlan, 
 from app.models.learning import LeitnerCard, StudySession, UserStreak, CourseReview
 from app.models.leitner import UserFlashcard
 from app.models.service import UserService
+from app.models.operational import (
+    SubscriptionOrder,
+    UserLessonWatchProgress,
+    UserNotification,
+    UserReferral,
+    UserReferralCode,
+)

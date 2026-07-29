@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -118,22 +118,19 @@ class AdminDictionaryWordIn(BaseModel):
 class AdminWordDefinitionOut(AdminWordDefinitionIn):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminWordExampleOut(AdminWordExampleIn):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminWordCollocationOut(AdminWordCollocationIn):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminDictionaryWordOut(BaseModel):
@@ -156,8 +153,7 @@ class AdminDictionaryWordOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminDictionaryImportError(BaseModel):
@@ -185,8 +181,7 @@ class AdminSubtitleOut(AdminSubtitleIn):
     id: int
     lesson_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminLessonWordMapIn(BaseModel):
@@ -199,8 +194,7 @@ class AdminLessonWordMapOut(AdminLessonWordMapIn):
     lesson_id: int
     word: AdminWordSummary
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 async def _get_word(db: AsyncSession, word_id: int) -> DictionaryWord:

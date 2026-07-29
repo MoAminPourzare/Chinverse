@@ -1,8 +1,11 @@
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import String, Boolean, ForeignKey, Float, Integer, UniqueConstraint, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 class TextDisplayMode(str, Enum):
     FA = "fa"
@@ -37,7 +40,3 @@ class UserLanguageSetting(Base, TimestampMixin):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="language_settings")
-
-# Avoid circular imports by importing User only for type checking if needed, 
-# but here we use string forward references in relationship definitions which is fine.
-from app.models.user import User

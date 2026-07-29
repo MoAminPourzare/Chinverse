@@ -1,5 +1,5 @@
-from typing import Optional, List
-from pydantic import BaseModel, Field, field_validator
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 
 # ===== USER SUMMARY =====
@@ -10,8 +10,7 @@ class ChatUserSummary(BaseModel):
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===== MESSAGE SCHEMAS =====
 
@@ -34,8 +33,7 @@ class MessageRead(BaseModel):
     sender: Optional[ChatUserSummary] = None
     receiver: Optional[ChatUserSummary] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===== CONVERSATION SCHEMAS =====
 

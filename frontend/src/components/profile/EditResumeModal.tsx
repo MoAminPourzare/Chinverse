@@ -6,6 +6,7 @@ import { Award, Briefcase, FileText, GraduationCap, Languages, Plus, Trash2, Wre
 import { SubmitHandler, useFieldArray, useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { ResumeData, User, userService } from "@/services/user.service";
 import { EDUCATION_DEGREE_OPTIONS, UNIVERSITY_OPTIONS } from "@/profileOptions";
+import { cleanResumeData } from "@/lib/profileContent";
 
 interface EditResumeModalProps {
     isOpen: boolean;
@@ -50,7 +51,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
 
     const resetToUser = useCallback(() => {
         if (user?.profile?.resume) {
-            reset(user.profile.resume as ResumeData);
+            reset(cleanResumeData(user.profile.resume));
         } else {
             reset({
                 work_experiences: [],
@@ -75,7 +76,8 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
     };
 
     const onSubmit: SubmitHandler<ResumeData> = async (data) => {
-        const dateError = validateResumeDateRanges(data);
+        const resume = cleanResumeData(data);
+        const dateError = validateResumeDateRanges(resume);
         if (dateError) {
             setResumeDateError(dateError);
             return;
@@ -83,7 +85,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
 
         try {
             setResumeDateError("");
-            await userService.updateProfile({ resume: data });
+            await userService.updateProfile({ resume });
             onUpdate();
             onClose();
         } catch (error) {

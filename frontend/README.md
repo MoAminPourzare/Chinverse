@@ -5,7 +5,7 @@ Next.js frontend for the ChinVerse Persian/Chinese learning app.
 ## Development
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
@@ -15,11 +15,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ```powershell
 npm run lint
-npm exec tsc -- --noEmit --incremental false
+npm run typecheck
+npm run test:coverage
 npm run build
 ```
 
 ## Notes
 
 - API calls use the backend URL configured in `.env.local`.
-- Production PWA output is enabled only when `NEXT_ENABLE_PWA=1`.
+- The web manifest and install icons are present. Offline service-worker support
+  is intentionally disabled until it is reintroduced with a maintained Next.js
+  integration and dedicated cache-update tests.

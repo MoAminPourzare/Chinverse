@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def _validate_http_or_relative_url(value: str, *, field_name: str) -> str:
@@ -26,8 +26,7 @@ class Content(ContentBase):
     id: int
     lesson_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubcategorySummary(BaseModel):
@@ -36,8 +35,7 @@ class SubcategorySummary(BaseModel):
     slug: str
     category_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CategorySummary(BaseModel):
@@ -47,8 +45,7 @@ class CategorySummary(BaseModel):
     icon_url: Optional[str] = None
     subcategories: List[SubcategorySummary] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LessonBase(BaseModel):
     title: str = Field(min_length=1, max_length=180)
@@ -82,8 +79,7 @@ class Lesson(LessonBase):
     course_id: int
     section_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CourseSectionBase(BaseModel):
     title: str = Field(min_length=1, max_length=180)
@@ -102,8 +98,7 @@ class CourseSection(CourseSectionBase):
     id: int
     lessons: List[Lesson] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CourseBase(BaseModel):
     title: str = Field(min_length=1, max_length=180)
@@ -142,8 +137,7 @@ class CourseSummary(CourseBase):
     subcategory_id: int
     subcategory_slug: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Course(CourseBase):
@@ -153,8 +147,7 @@ class Course(CourseBase):
     sections: List[CourseSection] = Field(default_factory=list)
     likes_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SavedCourseState(BaseModel):

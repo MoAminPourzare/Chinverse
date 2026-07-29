@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.api import deps
 from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
-from app.models.user import User, UserProfile, UserGalleryItem
+from app.models.user import User, UserGalleryItem
 from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
 

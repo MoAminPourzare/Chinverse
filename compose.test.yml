@@ -1,0 +1,18 @@
+name: chinverse-test
+
+services:
+  postgres:
+    image: postgres:16.14-alpine3.24
+    environment:
+      POSTGRES_DB: chinverse_test
+      POSTGRES_USER: chinverse_test
+      POSTGRES_PASSWORD: chinverse_test
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chinverse_test -d chinverse_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data

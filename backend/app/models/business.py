@@ -1,9 +1,12 @@
 from enum import Enum
-from typing import Optional, List
+from typing import TYPE_CHECKING, List
 from datetime import date
-from sqlalchemy import String, ForeignKey, Text, BigInteger, Boolean, Float, Date
+from sqlalchemy import String, ForeignKey, Text, BigInteger, Boolean, Float, Date, Index, desc
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 class ConsultationStatus(str, Enum):
     OPEN = "open"
@@ -55,6 +58,14 @@ class SubscriptionPlan(Base, TimestampMixin):
 
 class UserSubscription(Base, TimestampMixin):
     __tablename__ = "user_subscriptions"
+    __table_args__ = (
+        Index(
+            "ix_user_subscriptions_user_status_end",
+            "user_id",
+            "status",
+            desc("end_date"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
@@ -66,6 +77,3 @@ class UserSubscription(Base, TimestampMixin):
     # Relationships
     user: Mapped["User"] = relationship()
     plan: Mapped["SubscriptionPlan"] = relationship(back_populates="subscriptions")
-
-# Forward references
-from app.models.user import User

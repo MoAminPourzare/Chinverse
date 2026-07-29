@@ -1,8 +1,9 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, and_, func, desc, update
+from sqlalchemy import select, or_, and_, desc, update
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
@@ -56,7 +57,7 @@ async def _get_user_from_ws_token(token: str) -> User | None:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_data = TokenPayload(**payload)
         user_id = int(token_data.sub)
-    except (JWTError, TypeError, ValueError):
+    except (PyJWTError, TypeError, ValueError):
         return None
 
     async with SessionLocal() as session:

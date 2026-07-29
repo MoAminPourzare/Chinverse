@@ -146,7 +146,7 @@ export default function SignupPage() {
         <AuthShell
             backHref="/settings"
             title="ثبت نام"
-            icon={<Image src="/assets/chinverse/icons/2 people.svg" alt="" width={30} height={30} className="h-8 w-8 object-contain" />}
+            icon={<Image src="/assets/chinverse/icons/2 people.svg" alt="" width={30} height={30} className="h-8 w-8 object-contain" priority />}
             iconClassName="bg-transparent shadow-none ring-0"
             footer={
                 <p className="text-center text-sm leading-6 text-slate-600">
@@ -244,11 +244,12 @@ export default function SignupPage() {
                     <FieldError message={fieldErrors.phone} />
                 </label>
 
-                <label className="block space-y-2">
+                <label htmlFor="signup-password" className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">رمز عبور</span>
                     <div className="relative">
                         <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            id="signup-password"
                             type={showPassword ? "text" : "password"}
                             name="password"
                             value={formData.password}
@@ -266,7 +267,7 @@ export default function SignupPage() {
                         />
                         <button
                             type="button"
-                            onClick={() => setShowPassword(!showPassword)}
+                            onClick={() => setShowPassword((visible) => !visible)}
                             className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none"
                             aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
                         >

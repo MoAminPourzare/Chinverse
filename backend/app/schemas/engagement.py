@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EngagementState(BaseModel):
@@ -38,5 +38,4 @@ class EngagementCommentRead(BaseModel):
     created_at: datetime
     author: Optional[EngagementUserSummary] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

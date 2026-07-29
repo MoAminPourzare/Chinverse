@@ -58,10 +58,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_WRITE_WINDOW_SECONDS: int = 60
     RATE_LIMIT_UPLOAD_REQUESTS: int = 20
     RATE_LIMIT_UPLOAD_WINDOW_SECONDS: int = 300
+    TRUST_PROXY_HEADERS: bool = False
+    TRUSTED_PROXY_COUNT: int = 1
 
     MAX_IMAGE_UPLOAD_SIZE_BYTES: int = 5 * 1024 * 1024
-    ALLOWED_IMAGE_EXTENSIONS: str = "jpg,jpeg,png,webp"
-    ALLOWED_IMAGE_CONTENT_TYPES: str = "image/jpeg,image/png,image/webp"
+    MAX_IMAGE_PIXEL_COUNT: int = 40_000_000
+    ALLOWED_IMAGE_EXTENSIONS: str = "jpg,jpeg,jfif,png,webp,heic,heif,gif,avif,bmp,tif,tiff"
+    ALLOWED_IMAGE_CONTENT_TYPES: str = "image/jpeg,image/pjpeg,image/png,image/webp,image/heic,image/heif,image/heic-sequence,image/heif-sequence,image/gif,image/avif,image/bmp,image/x-ms-bmp,image/tiff,application/octet-stream"
     MAX_VIDEO_UPLOAD_SIZE_BYTES: int = 500 * 1024 * 1024
     ALLOWED_VIDEO_EXTENSIONS: str = "mp4,webm,mov,m4v"
     ALLOWED_VIDEO_CONTENT_TYPES: str = "video/mp4,video/webm,video/quicktime,video/x-m4v"
