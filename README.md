@@ -90,5 +90,9 @@ which allows a deployment to be matched to a pushed revision.
 
 ## Release Notes
 
+The fixed release scope, staging policy, privacy guard, and 29 accepted change
+groups are documented in
+[`docs/PHASE_0_RELEASE_BASELINE_FA.md`](docs/PHASE_0_RELEASE_BASELINE_FA.md).
+
 The detailed Persian report for the current hardening phase is in
 [`docs/PHASE_1_QUALITY_BASELINE_FA.md`](docs/PHASE_1_QUALITY_BASELINE_FA.md).

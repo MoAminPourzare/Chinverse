@@ -29,6 +29,9 @@ if (-not (Test-Path -LiteralPath $Python)) {
     throw "Python test environment not found at '$Python'. Follow the bootstrap steps in README.md."
 }
 
+& (Join-Path $PSScriptRoot "check-release-baseline.ps1")
+Assert-NativeSuccess "Release baseline guard"
+
 Write-Host "`n[1/2] Frontend quality gates" -ForegroundColor Cyan
 Push-Location $frontend
 try {

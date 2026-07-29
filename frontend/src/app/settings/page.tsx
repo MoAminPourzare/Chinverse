@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
+import { IncompleteFeature, releaseConfig } from "@/config/release";
 import { cn } from "@/lib/cn";
 import { authService } from "@/services/auth.service";
 
@@ -16,6 +17,7 @@ type SettingsItem = {
     danger?: boolean;
     action?: "logout";
     auth?: "required" | "guest";
+    feature?: IncompleteFeature;
 };
 
 const settingsItems: SettingsItem[] = [
@@ -30,6 +32,7 @@ const settingsItems: SettingsItem[] = [
         href: "/settings/subscription",
         icon: "/assets/chinverse/icons/Membership.svg",
         auth: "required",
+        feature: "subscriptions",
     },
     {
         title: "هدف روزانه",
@@ -52,12 +55,14 @@ const settingsItems: SettingsItem[] = [
         href: "/settings/referrals",
         icon: "/assets/chinverse/icons/invite friends.svg",
         auth: "required",
+        feature: "referrals",
     },
     {
         title: "امتیازات",
         href: "/settings/points",
         icon: "/assets/chinverse/icons/Star.svg",
         auth: "required",
+        feature: "points",
     },
     {
         title: "ورود",
@@ -100,6 +105,7 @@ export default function SettingsPage() {
     }, []);
 
     const visibleItems = settingsItems.filter((item) => {
+        if (item.feature && !releaseConfig.features[item.feature]) return false;
         if (!item.auth) return true;
         if (isAuthenticated === null) return false;
         return item.auth === "required" ? isAuthenticated : !isAuthenticated;

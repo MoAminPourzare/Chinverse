@@ -10,10 +10,17 @@ async def test_health_endpoint_and_security_headers():
         response = await client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "status": "ok",
+        "service": "chinverse-api",
+        "deployment_tier": "staging",
+        "release": "local",
+    }
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    assert response.headers["x-chinverse-deployment-tier"] == "staging"
+    assert "noindex" in response.headers["x-robots-tag"]
 
 
 @pytest.mark.asyncio
@@ -48,3 +55,13 @@ async def test_disallowed_browser_origin_is_rejected_before_endpoint_execution()
     assert response.status_code == 403
     assert response.json() == {"detail": "Origin not allowed"}
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+@pytest.mark.asyncio
+async def test_incomplete_public_features_are_not_routed_by_default():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        subscription = await client.get("/api/v1/subscriptions/me")
+        referrals = await client.get("/api/v1/referrals/me")
+
+    assert subscription.status_code == 404
+    assert referrals.status_code == 404
