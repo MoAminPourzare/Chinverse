@@ -5,44 +5,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def ensure_notifications_storage(db: AsyncSession) -> None:
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_notifications (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                actor_user_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
-                type VARCHAR(40) NOT NULL,
-                title VARCHAR(180) NOT NULL,
-                body TEXT NULL,
-                target_url VARCHAR(500) NULL,
-                metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
-                is_read BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_notifications_user_created
-            ON user_notifications (user_id, created_at DESC)
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_notifications_user_unread
-            ON user_notifications (user_id, is_read)
-            """
-        )
-    )
-
-
 def _notification_row(row: Any) -> dict[str, Any]:
     metadata = row.get("metadata_json") or {}
     if isinstance(metadata, str):
@@ -84,7 +46,6 @@ async def create_notification(
     metadata: dict[str, Any] | None = None,
     commit: bool = True,
 ) -> int:
-    await ensure_notifications_storage(db)
     result = await db.execute(
         text(
             """
@@ -123,7 +84,6 @@ async def list_notifications(
     unread_only: bool = False,
     after_id: int | None = None,
 ) -> list[dict[str, Any]]:
-    await ensure_notifications_storage(db)
     filters = ["n.user_id = :user_id"]
     params: dict[str, Any] = {"user_id": user_id, "skip": skip, "limit": limit}
 
@@ -163,7 +123,6 @@ async def list_notifications(
 
 
 async def unread_count(db: AsyncSession, *, user_id: int) -> int:
-    await ensure_notifications_storage(db)
     result = await db.execute(
         text(
             """
@@ -178,7 +137,6 @@ async def unread_count(db: AsyncSession, *, user_id: int) -> int:
 
 
 async def mark_notification_read(db: AsyncSession, *, user_id: int, notification_id: int) -> bool:
-    await ensure_notifications_storage(db)
     result = await db.execute(
         text(
             """
@@ -194,7 +152,6 @@ async def mark_notification_read(db: AsyncSession, *, user_id: int, notification
 
 
 async def mark_all_notifications_read(db: AsyncSession, *, user_id: int) -> int:
-    await ensure_notifications_storage(db)
     result = await db.execute(
         text(
             """
@@ -219,7 +176,6 @@ async def notify_followers(
     target_url: str | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> int:
-    await ensure_notifications_storage(db)
     followers_result = await db.execute(
         text(
             """

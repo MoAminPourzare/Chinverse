@@ -10,55 +10,6 @@ from app.api.errors import bad_request, conflict
 REFERRAL_CODE_ALPHABET = string.ascii_uppercase + string.digits
 
 
-async def ensure_referral_storage(db: AsyncSession) -> None:
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_referral_codes (
-                user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-                code VARCHAR(32) NOT NULL UNIQUE,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_referral_codes_code
-            ON user_referral_codes (code)
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_referrals (
-                id BIGSERIAL PRIMARY KEY,
-                referrer_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                referred_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                referral_code VARCHAR(32) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'joined',
-                reward_status VARCHAR(32) NOT NULL DEFAULT 'pending',
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                CONSTRAINT uq_user_referrals_referred_user UNIQUE (referred_user_id),
-                CONSTRAINT ck_user_referrals_not_self CHECK (referrer_user_id <> referred_user_id)
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_referrals_referrer_created
-            ON user_referrals (referrer_user_id, created_at DESC)
-            """
-        )
-    )
-
-
 def normalize_referral_code(value: str | None) -> str | None:
     if value is None:
         return None
@@ -81,7 +32,6 @@ def _random_suffix(length: int = 4) -> str:
 
 
 async def get_or_create_referral_code(db: AsyncSession, *, user_id: int, commit: bool = True) -> str:
-    await ensure_referral_storage(db)
     result = await db.execute(
         text("SELECT code FROM user_referral_codes WHERE user_id = :user_id"),
         {"user_id": user_id},
@@ -113,7 +63,6 @@ async def get_or_create_referral_code(db: AsyncSession, *, user_id: int, commit:
 
 
 async def get_referrer_id_by_code(db: AsyncSession, *, code: str | None) -> int | None:
-    await ensure_referral_storage(db)
     normalized = normalize_referral_code(code)
     if not normalized:
         return None
@@ -132,7 +81,6 @@ async def apply_referral_code(
     code: str,
     commit: bool = True,
 ) -> dict[str, Any]:
-    await ensure_referral_storage(db)
     normalized = normalize_referral_code(code)
     if not normalized:
         raise bad_request("Referral code is required")
@@ -187,7 +135,6 @@ async def apply_referral_code(
 
 
 async def get_referral_dashboard(db: AsyncSession, *, user_id: int) -> dict[str, Any]:
-    await ensure_referral_storage(db)
     code = await get_or_create_referral_code(db, user_id=user_id, commit=False)
 
     stats_result = await db.execute(

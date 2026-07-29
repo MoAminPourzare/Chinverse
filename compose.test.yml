@@ -2,7 +2,7 @@ name: chinverse-test
 
 services:
   postgres:
-    image: postgres:16.14-alpine3.24
+    image: postgres:18.4-alpine3.24
     environment:
       POSTGRES_DB: chinverse_test
       POSTGRES_USER: chinverse_test
@@ -15,4 +15,4 @@ services:
       timeout: 3s
       retries: 30
     tmpfs:
-      - /var/lib/postgresql/data
+      - /var/lib/postgresql

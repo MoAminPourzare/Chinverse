@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from fastapi import HTTPException, UploadFile
@@ -6,7 +7,13 @@ from PIL import Image
 from starlette.datastructures import Headers
 
 from app.core.paths import resolve_backend_file_url
-from app.core.storage import store_upload_file
+from app.core.config import settings
+from app.core import storage
+from app.core.storage import (
+    delete_public_file,
+    object_storage_key_from_url,
+    store_upload_file,
+)
 from app.core.uploads import save_image_upload
 
 
@@ -89,3 +96,82 @@ def test_storage_path_resolution_rejects_traversal_and_external_urls():
     assert resolve_backend_file_url("/uploads/avatars/avatar.jpg") is not None
     assert resolve_backend_file_url("/uploads/avatars/../../.env") is None
     assert resolve_backend_file_url("https://example.com/avatar.jpg") is None
+
+
+class FakeObjectStorageClient:
+    def __init__(self):
+        self.objects = {}
+        self.deleted = []
+
+    def upload_file(self, path, bucket, key, ExtraArgs):
+        self.objects[(bucket, key)] = {
+            "body": Path(path).read_bytes(),
+            "metadata": ExtraArgs,
+        }
+
+    def delete_object(self, *, Bucket, Key):
+        self.deleted.append((Bucket, Key))
+        self.objects.pop((Bucket, Key), None)
+
+
+@pytest.mark.asyncio
+async def test_object_upload_survives_local_staging_cleanup_and_can_be_deleted(
+    tmp_path,
+    monkeypatch,
+):
+    fake_client = FakeObjectStorageClient()
+    monkeypatch.setattr(settings, "FILE_STORAGE_MODE", "s3")
+    monkeypatch.setattr(settings, "OBJECT_STORAGE_BUCKET_NAME", "chinverse-test")
+    monkeypatch.setattr(
+        settings,
+        "OBJECT_STORAGE_PUBLIC_BASE_URL",
+        "https://assets.example.test",
+    )
+    monkeypatch.setattr(storage, "get_object_storage_client", lambda: fake_client)
+
+    source = BytesIO()
+    Image.new("RGB", (8, 8), (20, 40, 60)).save(source, format="PNG")
+    public_url = await save_image_upload(
+        make_upload("avatar.png", source.getvalue(), "image/png"),
+        destination_dir=tmp_path,
+        public_url_prefix="/uploads/avatars",
+    )
+
+    storage_key = object_storage_key_from_url(public_url)
+    assert storage_key is not None
+    stored = fake_client.objects[("chinverse-test", storage_key)]
+    assert stored["body"] == source.getvalue()
+    assert stored["metadata"]["ContentType"] == "image/png"
+    assert stored["metadata"]["CacheControl"].endswith("immutable")
+    assert not list(tmp_path.iterdir())
+
+    assert await delete_public_file(public_url) is True
+    assert fake_client.deleted == [("chinverse-test", storage_key)]
+    assert not fake_client.objects
+
+
+def test_object_url_parser_rejects_foreign_hosts_and_traversal(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "OBJECT_STORAGE_PUBLIC_BASE_URL",
+        "https://assets.example.test/media",
+    )
+
+    assert (
+        object_storage_key_from_url(
+            "https://assets.example.test/media/uploads/avatars/avatar.png"
+        )
+        == "uploads/avatars/avatar.png"
+    )
+    assert (
+        object_storage_key_from_url(
+            "https://assets.example.test.evil/media/file"
+        )
+        is None
+    )
+    assert (
+        object_storage_key_from_url(
+            "https://assets.example.test/media/../secret"
+        )
+        is None
+    )

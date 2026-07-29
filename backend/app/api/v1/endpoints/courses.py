@@ -15,40 +15,6 @@ from app.schemas import course as schemas
 router = APIRouter()
 
 
-async def _ensure_saved_courses_storage(db: AsyncSession) -> None:
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_saved_courses (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                CONSTRAINT uq_user_saved_courses_user_course UNIQUE (user_id, course_id)
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_saved_courses_user_created
-            ON user_saved_courses (user_id, created_at)
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_saved_courses_course_id
-            ON user_saved_courses (course_id)
-            """
-        )
-    )
-    await db.commit()
-
-
 async def _read_lessons_for_courses(
     db: AsyncSession,
     course_ids: list[int],
@@ -294,7 +260,6 @@ async def read_saved_courses(
     """
     Return courses bookmarked by the current user.
     """
-    await _ensure_saved_courses_storage(db)
     result = await db.execute(
         text(
             """
@@ -326,7 +291,6 @@ async def read_saved_course_state(
     current_user=Depends(deps.get_current_user),
     id: int,
 ) -> Any:
-    await _ensure_saved_courses_storage(db)
     result = await db.execute(
         text(
             """
@@ -356,7 +320,6 @@ async def save_course_for_user(
     current_user=Depends(deps.get_current_user),
     id: int,
 ) -> Any:
-    await _ensure_saved_courses_storage(db)
     course_exists = await db.scalar(select(Course.id).where(Course.id == id))
     if not course_exists:
         raise not_found("Course")
@@ -391,7 +354,6 @@ async def unsave_course_for_user(
     current_user=Depends(deps.get_current_user),
     id: int,
 ) -> Any:
-    await _ensure_saved_courses_storage(db)
     await db.execute(
         text(
             """

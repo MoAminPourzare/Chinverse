@@ -92,7 +92,7 @@ jobs:
       SECURE_HEADERS_ENABLED: "true"
     services:
       postgres:
-        image: postgres:16.14-alpine3.24
+        image: postgres:18.4-alpine3.24
         env:
           POSTGRES_DB: chinverse_test
           POSTGRES_USER: chinverse_test
@@ -130,8 +130,8 @@ jobs:
 
       - name: Static checks
         run: |
-          poetry run ruff check --no-cache app tests
-          poetry run python -m compileall -q app tests
+          poetry run ruff check --no-cache app tests scripts
+          poetry run python -m compileall -q app tests scripts
 
       - name: Unit tests and coverage
         run: poetry run python -m pytest -m "not integration" --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=50
@@ -140,7 +140,9 @@ jobs:
         run: poetry run alembic upgrade head
 
       - name: Check model and migration parity
-        run: poetry run alembic check
+        run: |
+          poetry run alembic check
+          poetry run python scripts/verify_phase2_schema.py
 
       - name: Integration tests
         run: poetry run python -m pytest -m integration
@@ -150,6 +152,7 @@ jobs:
           poetry run alembic downgrade base
           poetry run alembic upgrade head
           poetry run alembic check
+          poetry run python scripts/verify_phase2_schema.py
 
       - name: Build production container
-        run: docker build --tag chinverse-backend:phase-1 .
+        run: docker build --tag chinverse-backend:ci .

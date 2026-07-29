@@ -14,7 +14,7 @@ from app.api.rate_limit import auth_login_rate_limit, auth_signup_rate_limit
 from app.core import security
 from app.core.config import settings
 from app.models.user import User, UserProfile, UserStatus
-from app.services.referrals import apply_referral_code, ensure_referral_storage, get_or_create_referral_code, get_referrer_id_by_code
+from app.services.referrals import apply_referral_code, get_or_create_referral_code, get_referrer_id_by_code
 
 router = APIRouter()
 
@@ -63,7 +63,6 @@ async def create_user_signup(
         raise bad_request("Phone and display name cannot be empty")
 
     if referral_code:
-        await ensure_referral_storage(db)
         referrer_user_id = await get_referrer_id_by_code(db, code=referral_code)
         if not referrer_user_id:
             raise bad_request("کد دعوت معتبر نیست")

@@ -47,7 +47,10 @@ build/
 coverage/
 playwright-report/
 test-results/
+.playwright-browsers/
 .tmp/
+.backups/
+.migration-state/
 .DS_Store
 *.local
 *.log

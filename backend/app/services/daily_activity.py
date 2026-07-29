@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -14,109 +14,7 @@ def today_local() -> date:
     try:
         return datetime.now(ZoneInfo(APP_TIMEZONE)).date()
     except Exception:
-        return datetime.utcnow().date()
-
-
-async def ensure_daily_activity_storage(db: AsyncSession) -> None:
-    await db.execute(
-        text(
-            """
-            ALTER TABLE study_sessions
-            ADD COLUMN IF NOT EXISTS watched_seconds INTEGER NOT NULL DEFAULT 0
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            ALTER TABLE study_sessions
-            ADD COLUMN IF NOT EXISTS reviewed_words_count INTEGER NOT NULL DEFAULT 0
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            UPDATE study_sessions
-            SET watched_seconds = GREATEST(watched_seconds, minutes * 60)
-            WHERE watched_seconds = 0 AND minutes > 0
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            WITH grouped AS (
-                SELECT
-                    user_id,
-                    date,
-                    MIN(id) AS keep_id,
-                    SUM(minutes) AS total_minutes,
-                    SUM(learned_words_count) AS total_learned_words,
-                    SUM(watched_seconds) AS total_watched_seconds,
-                    SUM(reviewed_words_count) AS total_reviewed_words
-                FROM study_sessions
-                GROUP BY user_id, date
-                HAVING COUNT(*) > 1
-            )
-            UPDATE study_sessions s
-            SET
-                minutes = grouped.total_minutes,
-                learned_words_count = grouped.total_learned_words,
-                watched_seconds = grouped.total_watched_seconds,
-                reviewed_words_count = grouped.total_reviewed_words,
-                updated_at = now()
-            FROM grouped
-            WHERE s.id = grouped.keep_id
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            DELETE FROM study_sessions s
-            USING study_sessions keep
-            WHERE
-                s.user_id = keep.user_id
-                AND s.date = keep.date
-                AND s.id > keep.id
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE UNIQUE INDEX IF NOT EXISTS uq_study_sessions_user_date
-            ON study_sessions (user_id, date)
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_lesson_watch_progress (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                lesson_id BIGINT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
-                date DATE NOT NULL,
-                watched_seconds INTEGER NOT NULL DEFAULT 0,
-                last_position_seconds INTEGER NOT NULL DEFAULT 0,
-                completed BOOLEAN NOT NULL DEFAULT false,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                CONSTRAINT uq_user_lesson_watch_progress_day UNIQUE (user_id, lesson_id, date)
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_lesson_watch_progress_user_date
-            ON user_lesson_watch_progress (user_id, date)
-            """
-        )
-    )
+        return datetime.now(timezone.utc).date()
 
 
 async def record_video_watch(
@@ -128,7 +26,6 @@ async def record_video_watch(
     position_seconds: int = 0,
     duration_seconds: int = 0,
 ) -> dict[str, Any]:
-    await ensure_daily_activity_storage(db)
     safe_delta = max(0, min(int(seconds_delta), 300))
     activity_date = today_local()
     if safe_delta <= 0:
@@ -184,7 +81,6 @@ async def record_words_learned(
     count: int = 1,
     commit: bool = True,
 ) -> None:
-    await ensure_daily_activity_storage(db)
     activity_date = today_local()
     safe_count = max(0, min(int(count), 100))
     if safe_count <= 0:
@@ -250,7 +146,6 @@ async def _increment_study_session(
 
 
 async def get_today_activity(db: AsyncSession, *, user_id: int) -> dict[str, Any]:
-    await ensure_daily_activity_storage(db)
     activity_date = today_local()
     result = await db.execute(
         text(
@@ -287,7 +182,6 @@ async def get_today_activity(db: AsyncSession, *, user_id: int) -> dict[str, Any
 
 
 async def get_activity_summary(db: AsyncSession, *, user_id: int, days: int = 42) -> dict[str, Any]:
-    await ensure_daily_activity_storage(db)
     resolved_days = max(7, min(days, 370))
     today = today_local()
     start_date = today - timedelta(days=resolved_days - 1)
@@ -348,7 +242,7 @@ async def get_activity_summary(db: AsyncSession, *, user_id: int, days: int = 42
     )
     totals = total_result.mappings().one()
 
-    streak = await refresh_user_streak(db, user_id=user_id, commit=False)
+    streak = await refresh_user_streak(db, user_id=user_id)
     today_activity = await get_today_activity(db, user_id=user_id)
     learning_stats = await _learning_stats(db, user_id=user_id)
     await db.commit()
@@ -384,9 +278,7 @@ async def refresh_user_streak(
     db: AsyncSession,
     *,
     user_id: int,
-    commit: bool = True,
 ) -> dict[str, int | str | None]:
-    await ensure_daily_activity_storage(db)
     result = await db.execute(
         text(
             """
@@ -418,23 +310,6 @@ async def refresh_user_streak(
             running = 1
         longest = max(longest, running)
         previous = active_date
-
-    await db.execute(
-        text(
-            """
-            INSERT INTO user_streaks (user_id, current_streak_days, longest_streak_days)
-            VALUES (:user_id, :current, :longest)
-            ON CONFLICT (user_id)
-            DO UPDATE SET
-                current_streak_days = EXCLUDED.current_streak_days,
-                longest_streak_days = GREATEST(user_streaks.longest_streak_days, EXCLUDED.longest_streak_days),
-                updated_at = now()
-            """
-        ),
-        {"user_id": user_id, "current": current, "longest": longest},
-    )
-    if commit:
-        await db.commit()
 
     return {
         "current_days": current,

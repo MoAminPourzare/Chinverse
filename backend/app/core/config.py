@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -14,6 +15,28 @@ PLACEHOLDER_SECRET_KEYS = {
 }
 PRODUCTION_ENVIRONMENTS = {"prod", "production"}
 DEPLOYMENT_TIERS = {"local", "staging", "production"}
+
+
+def build_async_database_url(database_url: str) -> str:
+    """Translate provider-style PostgreSQL URLs for SQLAlchemy's asyncpg driver."""
+    if not database_url:
+        return database_url
+
+    parsed_url = make_url(database_url)
+    if parsed_url.get_backend_name() not in {"postgres", "postgresql"}:
+        return database_url
+
+    query = dict(parsed_url.query)
+    ssl_mode = query.pop("sslmode", None)
+    if ssl_mode and "ssl" not in query:
+        query["ssl"] = ssl_mode
+
+    # libpq supports these parameters, but asyncpg expects different APIs.
+    query.pop("channel_binding", None)
+    query.pop("application_name", None)
+
+    async_url = parsed_url.set(drivername="postgresql+asyncpg", query=query)
+    return async_url.render_as_string(hide_password=False)
 
 
 def parse_setting_list(value) -> list[str]:
@@ -72,6 +95,13 @@ class Settings(BaseSettings):
     ALLOWED_VIDEO_EXTENSIONS: str = "mp4,webm,mov,m4v"
     ALLOWED_VIDEO_CONTENT_TYPES: str = "video/mp4,video/webm,video/quicktime,video/x-m4v"
     FILE_STORAGE_MODE: str = "local"
+    OBJECT_STORAGE_ENDPOINT_URL: str = ""
+    OBJECT_STORAGE_BUCKET_NAME: str = ""
+    OBJECT_STORAGE_ACCESS_KEY_ID: str = ""
+    OBJECT_STORAGE_SECRET_ACCESS_KEY: str = ""
+    OBJECT_STORAGE_PUBLIC_BASE_URL: str = ""
+    OBJECT_STORAGE_REGION: str = "us-east-1"
+    OBJECT_STORAGE_ADDRESSING_STYLE: str = "path"
 
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://0.0.0.0:3000"
     BACKEND_CORS_ORIGIN_REGEX: str = (
@@ -96,15 +126,45 @@ class Settings(BaseSettings):
     def validate_production_settings(self):
         environment = self.ENVIRONMENT.lower()
         deployment_tier = self.DEPLOYMENT_TIER.lower()
+        storage_mode = self.FILE_STORAGE_MODE.strip().lower()
+        self.FILE_STORAGE_MODE = storage_mode
+
         if deployment_tier not in DEPLOYMENT_TIERS:
             raise ValueError(
                 "DEPLOYMENT_TIER must be one of: " + ", ".join(sorted(DEPLOYMENT_TIERS))
             )
 
+        errors: list[str] = []
+        if storage_mode not in {"local", "s3"}:
+            errors.append("FILE_STORAGE_MODE must be either 'local' or 's3'")
+
+        if storage_mode == "s3":
+            object_storage_settings = {
+                "OBJECT_STORAGE_ENDPOINT_URL": self.OBJECT_STORAGE_ENDPOINT_URL,
+                "OBJECT_STORAGE_BUCKET_NAME": self.OBJECT_STORAGE_BUCKET_NAME,
+                "OBJECT_STORAGE_ACCESS_KEY_ID": self.OBJECT_STORAGE_ACCESS_KEY_ID,
+                "OBJECT_STORAGE_SECRET_ACCESS_KEY": self.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+                "OBJECT_STORAGE_PUBLIC_BASE_URL": self.OBJECT_STORAGE_PUBLIC_BASE_URL,
+            }
+            missing = [
+                name
+                for name, value in object_storage_settings.items()
+                if not value.strip()
+            ]
+            if missing:
+                errors.append(
+                    "Object storage settings are missing: " + ", ".join(missing)
+                )
+            if self.OBJECT_STORAGE_ADDRESSING_STYLE not in {"path", "virtual"}:
+                errors.append(
+                    "OBJECT_STORAGE_ADDRESSING_STYLE must be either 'path' or 'virtual'"
+                )
+
         if environment not in PRODUCTION_ENVIRONMENTS:
+            if errors:
+                raise ValueError("Invalid configuration: " + "; ".join(errors))
             return self
 
-        errors: list[str] = []
         cors_origins = parse_setting_list(self.BACKEND_CORS_ORIGINS)
         allowed_hosts = parse_setting_list(self.ALLOWED_HOSTS)
 
@@ -119,6 +179,16 @@ class Settings(BaseSettings):
 
         if "user:password" in self.DATABASE_URL or "postgres:postgres" in self.DATABASE_URL:
             errors.append("DATABASE_URL still uses the placeholder username/password")
+
+        if storage_mode != "s3":
+            errors.append("FILE_STORAGE_MODE must be 's3' in production")
+        else:
+            if not self.OBJECT_STORAGE_ENDPOINT_URL.startswith("https://"):
+                errors.append("OBJECT_STORAGE_ENDPOINT_URL must use HTTPS in production")
+            if not self.OBJECT_STORAGE_PUBLIC_BASE_URL.startswith("https://"):
+                errors.append(
+                    "OBJECT_STORAGE_PUBLIC_BASE_URL must use HTTPS in production"
+                )
 
         if not cors_origins:
             errors.append("BACKEND_CORS_ORIGINS must include the production frontend origin")
@@ -177,10 +247,13 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
+    def USES_OBJECT_STORAGE(self) -> bool:
+        return self.FILE_STORAGE_MODE == "s3"
+
+    @computed_field
+    @property
     def ASYNC_DATABASE_URL(self) -> str:
-        if self.DATABASE_URL and self.DATABASE_URL.startswith("postgresql://"):
-            return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return self.DATABASE_URL
+        return build_async_database_url(self.DATABASE_URL)
 
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", extra="ignore")
 

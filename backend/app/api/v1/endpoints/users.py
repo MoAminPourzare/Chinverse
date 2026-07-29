@@ -9,7 +9,7 @@ from app.api import deps
 from app.api.errors import bad_request, conflict, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import upload_rate_limit, write_rate_limit
-from app.core.paths import AVATARS_DIR, resolve_backend_file_url, safe_unlink
+from app.core.paths import AVATARS_DIR
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.models.user import User, UserProfile, UserGalleryItem
@@ -50,9 +50,9 @@ async def delete_user_account(
     Manual cascade delete to handle foreign key constraints.
     """
     from sqlalchemy import delete, or_, update
-    from app.models.business import ConsultationRequest, Service as BusinessService, UserSubscription
+    from app.models.subscription import UserSubscription
     from app.models.dictionary import WordExample
-    from app.models.learning import LeitnerCard, StudySession, UserStreak, CourseReview
+    from app.models.activity import StudySession
     from app.models.leitner import UserFlashcard
     from app.models.media import MediaAsset
     from app.models.settings import UserLanguageSetting, UserPreference
@@ -95,9 +95,6 @@ async def delete_user_account(
     owned_article_comment_ids = select(ArticleComment.id).where(ArticleComment.author_user_id == user_id)
     owned_media_ids = select(MediaAsset.id).where(MediaAsset.user_id == user_id)
     owned_gallery_ids = select(UserGalleryItem.id).where(UserGalleryItem.user_id == user_id)
-    owned_business_service_ids = select(BusinessService.id).where(
-        BusinessService.provider_user_id == user_id
-    )
     owned_user_service_ids = select(UserService.id).where(UserService.user_id == user_id)
 
     await db.execute(update(ForumAnswer).where(ForumAnswer.parent_id.in_(owned_answer_ids)).values(parent_id=None))
@@ -144,13 +141,6 @@ async def delete_user_account(
         )
     ))
 
-    await db.execute(delete(ConsultationRequest).where(
-        or_(
-            ConsultationRequest.requester_user_id == user_id,
-            ConsultationRequest.service_id.in_(owned_business_service_ids),
-        )
-    ))
-    await db.execute(delete(BusinessService).where(BusinessService.provider_user_id == user_id))
     await db.execute(delete(UserSubscription).where(UserSubscription.user_id == user_id))
 
     await db.execute(delete(UserService).where(UserService.user_id == user_id))
@@ -159,10 +149,7 @@ async def delete_user_account(
     ).values(media_id=None))
     await db.execute(delete(MediaAsset).where(MediaAsset.user_id == user_id))
     await db.execute(delete(UserFlashcard).where(UserFlashcard.user_id == user_id))
-    await db.execute(delete(LeitnerCard).where(LeitnerCard.user_id == user_id))
     await db.execute(delete(StudySession).where(StudySession.user_id == user_id))
-    await db.execute(delete(UserStreak).where(UserStreak.user_id == user_id))
-    await db.execute(delete(CourseReview).where(CourseReview.user_id == user_id))
 
     await db.execute(delete(Message).where(
         (Message.sender_id == user_id) | (Message.receiver_id == user_id)
@@ -181,7 +168,7 @@ async def delete_user_account(
     await db.commit()
 
     for file_url in file_urls:
-        safe_unlink(resolve_backend_file_url(file_url))
+        await delete_public_file(file_url)
     
     return {"message": "حساب کاربری با موفقیت حذف شد"}
 
@@ -251,11 +238,11 @@ async def upload_avatar(
         await db.commit()
     except Exception:
         await db.rollback()
-        delete_public_file(avatar_url)
+        await delete_public_file(avatar_url)
         raise
 
     if old_avatar_url:
-        delete_public_file(old_avatar_url)
+        await delete_public_file(old_avatar_url)
 
     return await get_user_with_profile(db, current_user.id)
 
@@ -282,7 +269,7 @@ async def delete_avatar(
             raise
 
     if old_avatar_url:
-        delete_public_file(old_avatar_url)
+        await delete_public_file(old_avatar_url)
 
     return await get_user_with_profile(db, current_user.id)
 
