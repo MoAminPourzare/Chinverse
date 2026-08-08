@@ -272,7 +272,12 @@ async def test_report_claim_remove_role_boundary_suspend_and_audit_survival():
         )
         assert restored_login.status_code == 200, restored_login.text
 
-        deleted = await client.delete("/api/v1/users/me", headers=reporter_headers)
+        deleted = await client.request(
+            "DELETE",
+            "/api/v1/users/me",
+            headers=reporter_headers,
+            json={"current_password": PASSWORD, "confirm": True},
+        )
         assert deleted.status_code == 200, deleted.text
         assert "Max-Age=0" in deleted.headers.get("set-cookie", "")
         async with SessionLocal() as db:
