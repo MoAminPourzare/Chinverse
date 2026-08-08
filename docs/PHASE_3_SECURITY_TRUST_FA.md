@@ -1,6 +1,6 @@
 # گزارش فاز ۳: امنیت و اعتماد
 
-تاریخ اجرا: ۱۰ مرداد ۱۴۰۵، برابر با ۱ اوت ۲۰۲۶
+تاریخ تکمیل و بازبینی نهایی: ۱۷ مرداد ۱۴۰۵، برابر با ۸ اوت ۲۰۲۶
 
 ## معیار پذیرش
 
@@ -113,7 +113,7 @@ database: alembic upgrade/check/downgrade/rebuild و verifierهای فاز ۲ و
 release: secret/privacy baseline guard و بررسی فایل‌های track‌شده
 ```
 
-نتیجه آخرین اجرای کامل در ۱ اوت ۲۰۲۶:
+نتیجه آخرین اجرای کامل در ۸ اوت ۲۰۲۶:
 
 | دروازه | نتیجه |
 | --- | --- |
@@ -122,9 +122,9 @@ release: secret/privacy baseline guard و بررسی فایل‌های track‌�
 | frontend coverage | statements: ۹۳٫۴۸٪، branches: ۸۰٫۷۰٪، functions: ۹۸٫۵۰٪، lines: ۹۴٫۲۸٪ |
 | Next.js production build | پاس، ۶۲ صفحه تولید شد |
 | Playwright | ۳۶ سناریو پاس روی Chromium دسکتاپ، Chromium موبایل و WebKit/iPhone |
-| backend unit | ۵۵ تست پاس، ۹ integration از این اجرا جدا شد |
+| backend unit | ۵۸ تست پاس، ۹ integration از این اجرا جدا شد |
 | backend integration | ۹ تست پاس روی PostgreSQL 18 ایزوله |
-| backend coverage | ۵۶٫۳۷٪، بالاتر از gate فعلی ۵۰٪ |
+| backend coverage | ۵۶٫۵۱٪، بالاتر از gate فعلی ۵۰٪ |
 | migration | `head -> check -> base -> head -> check` پاس |
 | schema verifier | فاز ۲ و ۳ پاس؛ ۹ جدول، ۱۰ ستون امنیتی و ۴ index حیاتی فاز ۳ تأیید شد |
 | npm audit | صفر vulnerability در dependencyهای production |
@@ -132,6 +132,16 @@ release: secret/privacy baseline guard و بررسی فایل‌های track‌�
 | Bandit | صفر finding با شدت Medium یا High |
 | secret scan | صفر الگوی پرریسک در فایل‌های فعلی و کل تاریخچه Git |
 | release baseline | پاس |
+
+اجرای مرجع CI روی commit `01a862d4e0ea1866c40222ba499066ebc83f194b`:
+
+- [GitHub Actions، اجرای 31264739698](https://github.com/MoAminPourzare/Chinverse/actions/runs/31264739698): سه job مربوط به release baseline، frontend و backend موفق
+- [Vercel Preview](https://chinverse-84nsvtlxg-death-stroke.vercel.app): deployment موفق برای همان commit
+- [Hugging Face staging](https://moamin9-chinverse-api.hf.space): وضعیت `RUNNING` و release برابر همان commit
+- `GET /health/ready`: پاسخ ۲۰۰ و `database: ok` پس از اجرای migration روی Neon staging
+- `/docs`: پاسخ ۴۰۴، مسیر محافظت‌شده بدون token: پاسخ ۴۰۱، Origin نامعتبر: پاسخ ۴۰۳
+- CSP، HSTS، noindex staging، deployment tier و `Cache-Control: no-store` روی پاسخ API تأیید شد
+- bucket خصوصی `MoAmin9/chinverse-api-storage` با دسترسی read/write در `/data` mount شد؛ شروع موفق برنامه ایجاد مسیرهای runtime روی mount را تأیید می‌کند
 
 نتیجه امنیتی این فاز: در ابزارهای خودکار و تست‌های نوشته‌شده مورد باز
 `Critical` یا `High` باقی نمانده است. این نتیجه معادل تضمین نبود مطلق آسیب‌پذیری
@@ -186,9 +196,14 @@ poetry run python scripts/reset_admin_mfa.py `
 
 ## وضعیت فعلی
 
-کد، migration و تست‌های خودکار برای staging آماده‌اند. build محلی container
-به‌دلیل در دسترس نبودن Docker Desktop روی این دستگاه اجرا نشد و همان build در
-CI به‌عنوان gate اجباری باقی مانده است. عبارت «آماده production» فقط پس از
-اعمال تنظیمات بالا، migration دیتابیس مقصد، smoke test providerهای واقعی و
-نهایی‌شدن موارد حقوقی معتبر است. نبود provider واقعی در staging به معنی نقص
-کنترل کد نیست، اما gate عملیاتی انتشار عمومی است.
+کد، migration، تست‌های خودکار و deployment محیط staging کامل‌اند. خطای checkout
+تمیز مربوط به نبود پوشه خالی `static` در Linux نیز بازتولید شد، ساخت صریح ریشه
+runtime و تست رگرسیون برای آن اضافه شد و gate نهایی CI سبز است. backend روی
+Hugging Face با Neon staging و storage خصوصی mounted در حال اجراست و frontend
+preview نیز deploy شده است.
+
+عبارت «آماده انتشار عمومی production» فقط پس از اعمال تنظیمات عملیاتی بالا،
+smoke test واقعی providerهای ایمیل/SMS و Turnstile، انتخاب storage سازگار با
+S3 برای tier عمومی، تست نفوذ مستقل و نهایی‌شدن متن‌های حقوقی معتبر است. این‌ها
+gateهای بهره‌برداری و حقوقی‌اند؛ در دامنه کد و اسکن خودکار فاز ۳ مورد باز
+Critical یا High وجود ندارد.
