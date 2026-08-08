@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
+import { headers } from "next/headers";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import { releaseConfig } from "@/config/release";
@@ -46,16 +48,23 @@ const themeBootstrapScript = `
   }
 })();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="fa" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#fafafb" />
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeBootstrapScript }}
+        />
       </head>
       <body className="antialiased text-slate-900">
         <AppShell>{children}</AppShell>

@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
+import ReportContentButton from "@/components/trust/ReportContentButton";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { validateTextLength, validationMessage } from "@/validation";
@@ -681,6 +682,7 @@ function QuestionCard({
                             </button>
                         </div>
                     )}
+                    {!isOwner && <ReportContentButton targetType="question" targetId={question.id} />}
                 </div>
             </div>
 
@@ -764,6 +766,7 @@ function ArticleCard({
 }) {
     return (
         <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+            <div className="relative">
             <button type="button" onClick={onToggle} className="w-full p-4 text-right">
                 <div className="flex gap-3">
                     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px] bg-[#eef6ff] text-[#155aa6]">
@@ -788,6 +791,8 @@ function ArticleCard({
                     </div>
                 </div>
             </button>
+            <ReportContentButton targetType="article" targetId={article.id} className="absolute left-3 top-3" />
+            </div>
 
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
@@ -827,7 +832,14 @@ function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
                 <div className="min-w-0 flex-1 text-right">
                     <div className="flex items-center justify-between gap-2">
                         <p className={cn("truncate text-xs font-black text-slate-900", getTextAlign(item.author?.display_name))} {...getDirectionalTextProps(item.author?.display_name)}>{item.author?.display_name || "کاربر چین‌ورس"}</p>
-                        <span className="shrink-0 text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
+                        <div className="flex shrink-0 items-center gap-1">
+                            <span className="text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
+                            <ReportContentButton
+                                targetType={"question_id" in item ? "answer" : "article_comment"}
+                                targetId={item.id}
+                                className="h-7 w-7 border-0 bg-transparent"
+                            />
+                        </div>
                     </div>
                     <p className={cn("mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600", getTextAlign(item.content))} {...getDirectionalTextProps(item.content)}>{item.content}</p>
                 </div>

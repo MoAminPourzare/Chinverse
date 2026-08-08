@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
+from app.core.config import settings
 from app.models.subscription import UserSubscription
 from app.models.course import Course, Lesson, LessonSubtitle, LessonWordMap
 from app.models.dictionary import (
@@ -24,9 +25,20 @@ from app.models.dictionary import (
     WordExample,
 )
 from app.models.leitner import UserFlashcard
-from app.models.user import User
+from app.models.user import User, UserRole, UserStatus
+from app.services.auth_security import add_audit_event, revoke_user_sessions
+from app.services.notifications import create_notification
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+MAX_DICTIONARY_IMPORT_BYTES = settings.MAX_DICTIONARY_IMPORT_SIZE_BYTES
+DICTIONARY_IMPORT_CONTENT_TYPES = {
+    "application/json",
+    "text/json",
+    "text/csv",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "application/octet-stream",
+}
 
 
 class AdminStat(BaseModel):
@@ -41,6 +53,7 @@ class AdminUserSummary(BaseModel):
     phone: str
     status: str
     is_verified: bool
+    role: str
     display_name: Optional[str] = None
     headline: Optional[str] = None
     created_at: datetime
@@ -73,6 +86,34 @@ class AdminOverview(BaseModel):
 class AdminAccessOut(BaseModel):
     is_admin: bool
     email: str
+    mfa_enabled: bool
+    mfa_verified: bool
+
+
+class AdminRoleUpdate(BaseModel):
+    role: UserRole
+
+
+class AdminStatusUpdate(BaseModel):
+    status: UserStatus
+
+
+def _enum_value(value: object) -> str:
+    return getattr(value, "value", str(value))
+
+
+def _admin_user_summary(user: User) -> dict[str, object]:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "phone": user.phone,
+        "status": _enum_value(user.status),
+        "is_verified": user.is_verified,
+        "role": _enum_value(user.role),
+        "display_name": user.profile.display_name if user.profile else None,
+        "headline": user.profile.headline if user.profile else None,
+        "created_at": user.created_at,
+    }
 
 
 class AdminWordDefinitionIn(BaseModel):
@@ -645,16 +686,7 @@ async def admin_overview(
             {"key": "subscriptions", "label": "اشتراک‌ها", "value": active_subscriptions},
         ],
         "recent_users": [
-            {
-                "id": user.id,
-                "email": user.email,
-                "phone": user.phone,
-                "status": str(user.status),
-                "is_verified": user.is_verified,
-                "display_name": user.profile.display_name if user.profile else None,
-                "headline": user.profile.headline if user.profile else None,
-                "created_at": user.created_at,
-            }
+            _admin_user_summary(user)
             for user in users_result.scalars().all()
         ],
         "recent_courses": courses_result.scalars().all(),
@@ -666,7 +698,12 @@ async def admin_overview(
 async def admin_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    return {"is_admin": deps.is_admin_user(current_user), "email": current_user.email}
+    return {
+        "is_admin": deps.is_admin_user(current_user),
+        "email": current_user.email,
+        "mfa_enabled": current_user.mfa_enabled,
+        "mfa_verified": bool(getattr(current_user, "_auth_mfa_verified", False)),
+    }
 
 
 @router.get("/users", response_model=List[AdminUserSummary])
@@ -686,19 +723,111 @@ async def admin_users(
         query.order_by(desc(User.created_at)).offset(pagination.skip).limit(pagination.limit)
     )
     users = result.scalars().all()
-    return [
-        {
-            "id": user.id,
-            "email": user.email,
-            "phone": user.phone,
-            "status": str(user.status),
-            "is_verified": user.is_verified,
-            "display_name": user.profile.display_name if user.profile else None,
-            "headline": user.profile.headline if user.profile else None,
-            "created_at": user.created_at,
-        }
-        for user in users
-    ]
+    return [_admin_user_summary(user) for user in users]
+
+
+@router.patch(
+    "/users/{user_id}/role",
+    response_model=AdminUserSummary,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_user_role(
+    user_id: int,
+    payload: AdminRoleUpdate,
+    request: Request,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    if user_id == current_user.id:
+        raise bad_request("You cannot change your own administrator role")
+
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.id == user_id)
+        .with_for_update()
+    )
+    target = result.scalar_one_or_none()
+    if not target:
+        raise not_found("User")
+
+    previous_role = _enum_value(target.role)
+    next_role = payload.role.value
+    if previous_role != next_role:
+        target.role = payload.role
+        await revoke_user_sessions(db, user_id=target.id)
+        await add_audit_event(
+            db,
+            event_type="rbac.role_changed",
+            request=request,
+            actor_user_id=current_user.id,
+            subject=str(target.id),
+            details={"previous_role": previous_role, "new_role": next_role},
+        )
+        await db.commit()
+        await db.refresh(target)
+
+    return _admin_user_summary(target)
+
+
+@router.patch(
+    "/users/{user_id}/status",
+    response_model=AdminUserSummary,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_user_status(
+    user_id: int,
+    payload: AdminStatusUpdate,
+    request: Request,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    if user_id == current_user.id:
+        raise bad_request("You cannot change your own administrator status")
+    if payload.status == UserStatus.DELETED:
+        raise bad_request("Deleted status is reserved for the account deletion flow")
+
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.id == user_id)
+        .with_for_update()
+    )
+    target = result.scalar_one_or_none()
+    if not target:
+        raise not_found("User")
+
+    previous_status = _enum_value(target.status)
+    next_status = payload.status.value
+    if previous_status != next_status:
+        target.status = payload.status
+        await revoke_user_sessions(db, user_id=target.id)
+        await create_notification(
+            db,
+            user_id=target.id,
+            type="moderation",
+            title=("حساب شما دوباره فعال شد" if payload.status == UserStatus.ACTIVE else "دسترسی حساب محدود شد"),
+            body=(
+                "بازبینی انجام شد و می‌توانی دوباره وارد چین‌ورس شوی."
+                if payload.status == UserStatus.ACTIVE
+                else "حساب شما پس از بررسی تعلیق شد. برای درخواست بازبینی از پشتیبانی کمک بگیر."
+            ),
+            target_url="/support",
+            metadata={"status": next_status},
+            commit=False,
+        )
+        await add_audit_event(
+            db,
+            event_type="rbac.user_status_changed",
+            request=request,
+            actor_user_id=current_user.id,
+            subject=str(target.id),
+            details={"previous_status": previous_status, "new_status": next_status},
+        )
+        await db.commit()
+        await db.refresh(target)
+
+    return _admin_user_summary(target)
 
 
 @router.get("/dictionary", response_model=List[AdminDictionaryWordOut])
@@ -862,11 +991,23 @@ async def admin_import_dictionary_words(
     current_user: User = Depends(deps.get_current_admin_user),
 ) -> Any:
     _ = current_user
-    raw_content = await file.read()
+    filename = file.filename or ""
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    content_type = (file.content_type or "").lower()
+    if extension not in {"csv", "json"} or content_type not in DICTIONARY_IMPORT_CONTENT_TYPES:
+        await file.close()
+        raise bad_request("Dictionary import must be a CSV or JSON file")
+
+    try:
+        raw_content = await file.read(MAX_DICTIONARY_IMPORT_BYTES + 1)
+    finally:
+        await file.close()
     if not raw_content:
         raise bad_request("Dictionary import file is empty")
+    if len(raw_content) > MAX_DICTIONARY_IMPORT_BYTES:
+        raise bad_request("Dictionary import file is too large")
 
-    rows = _parse_dictionary_import_file(file.filename or "", raw_content)
+    rows = _parse_dictionary_import_file(filename, raw_content)
     if not rows:
         raise bad_request("Dictionary import file did not include any rows")
 

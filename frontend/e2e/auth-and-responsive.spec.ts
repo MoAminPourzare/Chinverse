@@ -18,6 +18,33 @@ test("frontend health endpoint is observable and uncached", async ({ request }) 
   });
 });
 
+test("HTML responses use per-request CSP nonces without unsafe inline scripts", async ({ request }) => {
+  const first = await request.get("/login");
+  const second = await request.get("/login");
+  const firstCsp = first.headers()["content-security-policy"];
+  const secondCsp = second.headers()["content-security-policy"];
+
+  expect(first.ok()).toBe(true);
+  expect(firstCsp).toContain("strict-dynamic");
+  expect(firstCsp).toContain("frame-ancestors 'none'");
+  const firstScriptDirective = firstCsp.split(";").find((item) => item.trim().startsWith("script-src"));
+  expect(firstScriptDirective).toContain("'nonce-");
+  expect(firstScriptDirective).not.toContain("'unsafe-inline'");
+  expect(firstCsp.match(/'nonce-([^']+)'/)?.[1]).not.toBe(secondCsp.match(/'nonce-([^']+)'/)?.[1]);
+});
+
+test("same-origin backend proxy rejects mutations without trusted browser origin", async ({ request }) => {
+  const missingOrigin = await request.post("/api/backend/auth/logout", {
+    headers: { Origin: "", Referer: "" },
+  });
+  expect(missingOrigin.status()).toBe(403);
+
+  const crossOrigin = await request.post("/api/backend/auth/logout", {
+    headers: { Origin: "https://evil.example", "Sec-Fetch-Site": "cross-site" },
+  });
+  expect(crossOrigin.status()).toBe(403);
+});
+
 test("staging blocks search indexing and incomplete routes", async ({ request }) => {
   const robots = await request.get("/robots.txt");
   expect(robots.ok()).toBe(true);
@@ -46,6 +73,15 @@ test.describe("authentication forms", () => {
       await expect(password).toHaveAttribute("type", "password");
     });
   }
+
+  test("signup requires explicit legal acceptance", async ({ page }) => {
+    await page.goto("/signup");
+    const acceptance = page.getByRole("checkbox");
+    await expect(acceptance).not.toBeChecked();
+    await expect(page.getByRole("link", { name: "شرایط استفاده" })).toHaveAttribute("href", "/legal/terms");
+    await acceptance.check();
+    await expect(acceptance).toBeChecked();
+  });
 });
 
 test.describe("responsive shell", () => {

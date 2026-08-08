@@ -24,6 +24,15 @@ def test_production_rejects_placeholder_security_configuration():
         )
 
 
+def test_public_deployment_tier_cannot_bypass_production_validation():
+    with pytest.raises(ValidationError, match="Invalid production configuration"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="local",
+            DEPLOYMENT_TIER="production",
+        )
+
+
 def test_production_accepts_restricted_hosts_and_strong_secret():
     settings = Settings(
         _env_file=None,
@@ -41,12 +50,49 @@ def test_production_accepts_restricted_hosts_and_strong_secret():
         OBJECT_STORAGE_ACCESS_KEY_ID="test-access-key",
         OBJECT_STORAGE_SECRET_ACCESS_KEY="test-secret-key",
         OBJECT_STORAGE_PUBLIC_BASE_URL="https://assets.chinverse.example",
+        DEPLOYMENT_TIER="production",
+        REQUIRE_VERIFIED_LOGIN=True,
+        MFA_ENCRYPTION_KEY="mfa-encryption-key-for-automated-production-tests",
+        AUTH_DELIVERY_WEBHOOK_URL="https://notifications.example.test/challenges",
+        AUTH_DELIVERY_WEBHOOK_SECRET="delivery-webhook-secret-for-automated-tests",
+        AUTH_PUBLIC_APP_URL="https://chinverse.example",
+        REFRESH_COOKIE_NAME="__Host-chinverse_refresh",
+        REFRESH_COOKIE_SAMESITE="strict",
+        RATE_LIMIT_ENABLED=True,
+        RATE_LIMIT_BACKEND="database",
+        TRUST_PROXY_HEADERS=True,
+        TRUSTED_PROXY_NETWORKS="10.0.0.0/8",
+        TURNSTILE_ENABLED=True,
+        TURNSTILE_SECRET_KEY="1x0000000000000000000000000000000AA",
+        TURNSTILE_EXPECTED_HOSTNAMES="chinverse.example",
     )
 
     assert settings.CORS_ORIGINS == ["https://chinverse.example"]
     assert settings.TRUSTED_HOSTS == ["api.chinverse.example"]
     assert settings.ASYNC_DATABASE_URL.startswith("postgresql+asyncpg://")
     assert settings.USES_OBJECT_STORAGE is True
+
+
+def test_public_release_requires_verified_login_and_mfa_key():
+    with pytest.raises(ValidationError, match="MFA_ENCRYPTION_KEY"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="production",
+            DATABASE_URL="postgresql://chinverse_app:strong-password@db.example.com/chinverse",
+            SECRET_KEY="a-strong-production-secret-with-more-than-32-characters",
+            BACKEND_CORS_ORIGINS="https://chinverse.example",
+            BACKEND_CORS_ORIGIN_REGEX="",
+            ALLOWED_HOSTS="api.chinverse.example",
+            ENABLE_API_DOCS=False,
+            FILE_STORAGE_MODE="s3",
+            OBJECT_STORAGE_ENDPOINT_URL="https://s3.example.test",
+            OBJECT_STORAGE_BUCKET_NAME="chinverse-production",
+            OBJECT_STORAGE_ACCESS_KEY_ID="test-access-key",
+            OBJECT_STORAGE_SECRET_ACCESS_KEY="test-secret-key",
+            OBJECT_STORAGE_PUBLIC_BASE_URL="https://assets.chinverse.example",
+            REQUIRE_VERIFIED_LOGIN=True,
+        )
 
 
 def test_async_database_url_translates_neon_libpq_parameters():

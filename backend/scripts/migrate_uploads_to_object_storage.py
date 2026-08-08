@@ -48,6 +48,11 @@ URL_COLUMNS = (
     UrlColumn("lessons", "id", "video_url"),
     UrlColumn("lessons", "id", "thumbnail_url"),
 )
+
+
+def validate_url_column(source: UrlColumn) -> None:
+    if source not in URL_COLUMNS:
+        raise ValueError("Unsupported upload URL column")
 MIGRATABLE_PREFIXES = (
     "uploads/avatars/",
     "uploads/gallery/",
@@ -85,8 +90,11 @@ def source_path_for_url(url: str, source_base_url: str) -> str | None:
 async def collect_references(connection: asyncpg.Connection) -> list[Reference]:
     references = []
     for source in URL_COLUMNS:
+        validate_url_column(source)
+        # SQL parameters cannot represent identifiers; every identifier is selected
+        # from the immutable URL_COLUMNS allowlist above.
         rows = await connection.fetch(
-            f'SELECT "{source.primary_key}" AS row_id, "{source.column}" AS old_url '
+            f'SELECT "{source.primary_key}" AS row_id, "{source.column}" AS old_url '  # nosec B608
             f'FROM "{source.table}" WHERE "{source.column}" IS NOT NULL'
         )
         references.extend(
@@ -202,8 +210,10 @@ async def apply_database_updates(
             if not item:
                 continue
             source = reference.source
+            validate_url_column(source)
+            # Identifiers are constrained to URL_COLUMNS; values remain parameterized.
             await connection.execute(
-                f'UPDATE "{source.table}" SET "{source.column}" = $1 '
+                f'UPDATE "{source.table}" SET "{source.column}" = $1 '  # nosec B608
                 f'WHERE "{source.primary_key}" = $2 AND "{source.column}" = $3',
                 item["new_url"],
                 reference.row_id,

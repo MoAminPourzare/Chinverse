@@ -1,4 +1,5 @@
-import api, { API_BASE_URL } from '@/lib/api';
+import api, { resolveWebSocketBaseUrl } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth-session';
 
 // ===== TYPES =====
 
@@ -71,11 +72,10 @@ export const chatService = {
 
     getWebSocketUrl(): string | null {
         if (typeof window === 'undefined') return null;
+        return `${resolveWebSocketBaseUrl()}/chat/ws`;
+    },
 
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-
-        const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
-        return `${wsBaseUrl}/chat/ws?token=${encodeURIComponent(token)}`;
+    getWebSocketAuthToken(): string | null {
+        return getAccessToken();
     },
 };

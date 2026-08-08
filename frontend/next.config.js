@@ -9,13 +9,21 @@ process.env.TEMP = localTempDir;
 
 const deploymentTier = (process.env.NEXT_PUBLIC_DEPLOYMENT_TIER || 'staging').trim().toLowerCase();
 const isPublicRelease = deploymentTier === 'production';
+if (isPublicRelease) {
+    const publicApiUrl = (process.env.NEXT_PUBLIC_API_URL || '').trim();
+    if (!publicApiUrl.startsWith('https://')) {
+        throw new Error('NEXT_PUBLIC_API_URL must use HTTPS for a production release');
+    }
+    if (!(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '').trim()) {
+        throw new Error('NEXT_PUBLIC_TURNSTILE_SITE_KEY is required for a production release');
+    }
+}
 const enabled = (value) => value?.trim().toLowerCase() === 'true';
 const incompleteFeatures = {
     subscriptions: enabled(process.env.NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS),
     referrals: enabled(process.env.NEXT_PUBLIC_FEATURE_REFERRALS),
     points: enabled(process.env.NEXT_PUBLIC_FEATURE_POINTS),
 };
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
@@ -32,6 +40,8 @@ const nextConfig = {
                     { key: "X-Frame-Options", value: "DENY" },
                     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
                     { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+                    { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+                    { key: "Cross-Origin-Resource-Policy", value: "same-site" },
                     { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
                     { key: "X-Chinverse-Deployment-Tier", value: deploymentTier },
                     ...(!isPublicRelease

@@ -10,6 +10,7 @@ import { BackButton } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
+import ReportContentButton from "@/components/trust/ReportContentButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getProfileHref } from "@/utils/profileHref";
@@ -131,7 +132,10 @@ export default function ServiceDetailPage() {
                 <Surface className="p-5">
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <h2 className="text-base font-black text-slate-900">توضیحات خدمت</h2>
-                        <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                        <div className="flex items-center gap-2">
+                            <ReportContentButton targetType="service" targetId={service.id} />
+                            <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                        </div>
                     </div>
                     <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700" {...getDirectionalTextProps(service.description)}>
                         {service.description}

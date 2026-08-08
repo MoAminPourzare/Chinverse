@@ -1,20 +1,23 @@
 from datetime import datetime
 from typing import Any, List
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.api.errors import bad_request, conflict, not_found
+from app.api.errors import bad_request, conflict, not_found, unauthorized
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import upload_rate_limit, write_rate_limit
 from app.core.paths import AVATARS_DIR
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
-from app.models.user import User, UserProfile, UserGalleryItem
+from app.core import security
+from app.models.moderation import UserBlock
+from app.models.user import User, UserGalleryItem, UserProfile, UserStatus
 from app.schemas import user as schemas
 from app.schemas.showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic, EducationSummary
+from app.services.auth_security import add_audit_event, clear_refresh_cookie
 
 router = APIRouter()
 
@@ -40,6 +43,9 @@ async def read_user_me(
 
 @router.delete("/me", status_code=200)
 async def delete_user_account(
+    payload: schemas.AccountDeletionRequest,
+    request: Request,
+    response: Response,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     _rate_limit: None = Depends(write_rate_limit),
@@ -49,6 +55,12 @@ async def delete_user_account(
     This is a destructive action - all user data will be permanently removed.
     Manual cascade delete to handle foreign key constraints.
     """
+    if not security.verify_password(
+        payload.current_password,
+        current_user.password_hash,
+    ):
+        raise unauthorized("Current password is incorrect")
+
     from sqlalchemy import delete, or_, update
     from app.models.subscription import UserSubscription
     from app.models.dictionary import WordExample
@@ -162,10 +174,16 @@ async def delete_user_account(
     await db.execute(delete(UserSocialLink).where(UserSocialLink.user_id == user_id))
     await db.execute(delete(UserLanguageSetting).where(UserLanguageSetting.user_id == user_id))
     await db.execute(delete(UserPreference).where(UserPreference.user_id == user_id))
-    await db.execute(delete(UserProfile).where(UserProfile.user_id == user_id))
-
+    await add_audit_event(
+        db,
+        event_type="auth.account_deleted",
+        request=request,
+        actor_user_id=current_user.id,
+        subject=security.hash_secret(current_user.email.lower()),
+    )
     await db.delete(current_user)
     await db.commit()
+    clear_refresh_cookie(response)
 
     for file_url in file_urls:
         await delete_public_file(file_url)
@@ -184,6 +202,8 @@ async def update_user_profile(
     Update current user profile.
     """
     update_data = profile_in.model_dump(exclude_unset=True)
+    if "avatar_url" in update_data:
+        raise bad_request("Avatar changes must use the dedicated upload or delete endpoint")
     if "display_name" in update_data and isinstance(update_data["display_name"], str):
         update_data["display_name"] = update_data["display_name"].strip()
     if update_data.get("display_name") is None or update_data.get("display_name") == "":
@@ -291,6 +311,7 @@ async def get_showcase_users(
             selectinload(User.profile),
             selectinload(User.gallery_items)
         )
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .order_by(User.id.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -371,7 +392,11 @@ async def get_public_user_profile(
             selectinload(User.profile),
             selectinload(User.gallery_items)
         )
-        .where(User.id == user_id)
+        .where(
+            User.id == user_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
     )
     user = result.scalar_one_or_none()
     
@@ -428,7 +453,7 @@ async def get_user_services(
     from app.models.service import UserService
 
     target_user = await db.get(User, user_id)
-    if not target_user:
+    if not target_user or target_user.status != UserStatus.ACTIVE or not target_user.is_verified:
         raise not_found("User")
     
     result = await db.execute(
@@ -473,6 +498,8 @@ async def get_my_network(
         .where(
             UserFollow.follower_id == current_user.id,
             UserFollow.followee_id != current_user.id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
         )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
@@ -535,8 +562,25 @@ async def follow_user(
     
     # Check if user exists
     target_user = await db.get(User, user_id)
-    if not target_user:
+    if not target_user or target_user.status != UserStatus.ACTIVE or not target_user.is_verified:
         raise not_found("User")
+
+    blocked = await db.scalar(
+        select(UserBlock.id).where(
+            or_(
+                and_(
+                    UserBlock.blocker_id == current_user.id,
+                    UserBlock.blocked_id == user_id,
+                ),
+                and_(
+                    UserBlock.blocker_id == user_id,
+                    UserBlock.blocked_id == current_user.id,
+                ),
+            )
+        )
+    )
+    if blocked:
+        raise bad_request("Following is unavailable for blocked users")
     
     # Check if already following
     existing = await db.execute(

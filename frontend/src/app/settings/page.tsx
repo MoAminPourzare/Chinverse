@@ -84,8 +84,14 @@ const settingsItems: SettingsItem[] = [
         auth: "required",
     },
     {
+        title: "امنیت حساب",
+        href: "/account/security",
+        icon: "/assets/chinverse/icons/profile.svg",
+        auth: "required",
+    },
+    {
         title: "حذف حساب کاربری",
-        href: "/profile",
+        href: "/account/security#delete-account",
         icon: "/assets/chinverse/icons/Delete.svg",
         danger: true,
         auth: "required",
@@ -98,10 +104,17 @@ export default function SettingsPage() {
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
     useEffect(() => {
-        const syncAuth = () => setIsAuthenticated(Boolean(localStorage.getItem("token")));
-        syncAuth();
+        let isMounted = true;
+        const syncAuth = async () => {
+            const authenticated = await authService.restoreSession();
+            if (isMounted) setIsAuthenticated(authenticated);
+        };
+        void syncAuth();
         window.addEventListener("chinverse-auth-change", syncAuth);
-        return () => window.removeEventListener("chinverse-auth-change", syncAuth);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("chinverse-auth-change", syncAuth);
+        };
     }, []);
 
     const visibleItems = settingsItems.filter((item) => {
@@ -115,8 +128,8 @@ export default function SettingsPage() {
         setIsLogoutConfirmOpen(true);
     };
 
-    const handleLogout = () => {
-        authService.logout();
+    const handleLogout = async () => {
+        await authService.logout();
         setIsLogoutConfirmOpen(false);
         router.replace("/login");
         router.refresh();

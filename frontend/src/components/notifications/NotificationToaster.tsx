@@ -7,6 +7,7 @@ import { Bell, CheckCircle2, MessageCircle, Sparkles, UserPlus, X } from "lucide
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
+import { authService } from "@/services/auth.service";
 
 const STORAGE_KEY = "chinverse:lastSeenNotificationId";
 const HIDDEN_PREFIXES = ["/login", "/signup", "/notifications"];
@@ -26,15 +27,30 @@ export default function NotificationToaster() {
     const [notification, setNotification] = useState<AppNotification | null>(null);
     const [extraCount, setExtraCount] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const lastSeenRef = useRef<number | null>(null);
     const initializedRef = useRef(false);
     const hideTimerRef = useRef<number | null>(null);
 
     const shouldRun = useMemo(() => {
-        if (typeof window === "undefined") return false;
         if (HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return false;
-        return Boolean(localStorage.getItem("token"));
-    }, [pathname]);
+        return isAuthenticated;
+    }, [isAuthenticated, pathname]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const syncAuth = async () => {
+            const authenticated = await authService.restoreSession();
+            if (isMounted) setIsAuthenticated(authenticated);
+        };
+
+        void syncAuth();
+        window.addEventListener("chinverse-auth-change", syncAuth);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("chinverse-auth-change", syncAuth);
+        };
+    }, []);
 
     useEffect(() => {
         if (!shouldRun) return;

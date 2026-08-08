@@ -12,6 +12,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.paths import STATIC_DIR, UPLOADS_DIR, ensure_upload_dirs
+from app.core.request_size import RequestSizeLimitMiddleware
 from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,10 @@ async def add_security_headers(request, call_next):
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+        )
 
     response.headers.setdefault("X-Chinverse-Deployment-Tier", settings.DEPLOYMENT_TIER.lower())
     if not settings.IS_PUBLIC_RELEASE:
@@ -77,8 +82,16 @@ async def add_security_headers(request, call_next):
 
     if request.url.path.startswith("/uploads/") or request.url.path.startswith("/static/"):
         response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
-
+    elif request.url.path.startswith(settings.API_V1_STR):
+        # API responses can contain account data even on routes that also expose
+        # public content. Keep them out of browser and intermediary caches until
+        # a route is explicitly designed and tested as a public cache surface.
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
     return response
+
+
+app.add_middleware(RequestSizeLimitMiddleware)
 
 
 ensure_upload_dirs()

@@ -84,18 +84,9 @@ async def list_notifications(
     unread_only: bool = False,
     after_id: int | None = None,
 ) -> list[dict[str, Any]]:
-    filters = ["n.user_id = :user_id"]
-    params: dict[str, Any] = {"user_id": user_id, "skip": skip, "limit": limit}
-
-    if unread_only:
-        filters.append("n.is_read = false")
-    if after_id is not None:
-        filters.append("n.id > :after_id")
-        params["after_id"] = after_id
-
     result = await db.execute(
         text(
-            f"""
+            """
             SELECT
                 n.id,
                 n.type,
@@ -111,13 +102,24 @@ async def list_notifications(
             FROM user_notifications n
             LEFT JOIN users u ON u.id = n.actor_user_id
             LEFT JOIN user_profiles p ON p.user_id = u.id
-            WHERE {' AND '.join(filters)}
+            WHERE n.user_id = :user_id
+              AND (CAST(:unread_only AS BOOLEAN) = false OR n.is_read = false)
+              AND (
+                  CAST(:after_id AS BIGINT) IS NULL
+                  OR n.id > CAST(:after_id AS BIGINT)
+              )
             ORDER BY n.created_at DESC, n.id DESC
             OFFSET :skip
             LIMIT :limit
             """
         ),
-        params,
+        {
+            "user_id": user_id,
+            "skip": skip,
+            "limit": limit,
+            "unread_only": unread_only,
+            "after_id": after_id,
+        },
     )
     return [_notification_row(row) for row in result.mappings().all()]
 

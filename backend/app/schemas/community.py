@@ -93,7 +93,14 @@ class ArticleBase(BaseModel):
         return value.strip() or None
 
 class ArticleCreate(ArticleBase):
-    pass
+    @field_validator("cover_image")
+    @classmethod
+    def require_sanitized_cover_image(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if not value.startswith("/uploads/"):
+            raise ValueError("Article cover image must use a sanitized upload URL")
+        return value
 
 class ArticleRead(ArticleBase):
     id: int

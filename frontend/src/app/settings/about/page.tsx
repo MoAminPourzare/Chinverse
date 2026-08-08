@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Instagram } from "lucide-react";
 import { AppHeader } from "@/components/ui/IconButton";
 
@@ -50,6 +51,12 @@ export default function SettingsAboutPage() {
                     <Instagram size={18} />
                     اینستاگرام چین ورس
                 </a>
+
+                <nav className="mt-7 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs font-bold text-[#155aa6]" aria-label="اسناد حقوقی">
+                    <Link href="/legal/privacy" className="hover:text-[#0f4e92]">حریم خصوصی</Link>
+                    <Link href="/legal/terms" className="hover:text-[#0f4e92]">شرایط استفاده</Link>
+                    <Link href="/legal/community-guidelines" className="hover:text-[#0f4e92]">قوانین جامعه</Link>
+                </nav>
             </main>
         </div>
     );

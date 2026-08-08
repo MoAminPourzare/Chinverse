@@ -101,6 +101,15 @@ export const userService = {
         return response.data;
     },
 
+    async deleteAccount(currentPassword: string): Promise<void> {
+        await api.delete('/users/me', {
+            data: {
+                current_password: currentPassword,
+                confirm: true,
+            },
+        });
+    },
+
     // ===== PUBLIC ENDPOINTS =====
 
     // دریافت لیست کاربران برای ویترین

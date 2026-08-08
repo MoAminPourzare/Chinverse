@@ -12,6 +12,8 @@ import ThemeController from "@/components/layout/ThemeController";
 const navHiddenPrefixes = [
     "/login",
     "/signup",
+    "/verify-account",
+    "/forgot-password",
     "/account",
     "/about",
     "/support",
@@ -21,6 +23,7 @@ const navHiddenPrefixes = [
     "/lessons",
     "/leitner/review",
     "/admin",
+    "/legal",
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
