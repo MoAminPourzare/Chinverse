@@ -6,6 +6,7 @@ from fastapi import HTTPException, UploadFile
 from PIL import Image
 from starlette.datastructures import Headers
 
+from app.core import paths
 from app.core.paths import resolve_backend_file_url
 from app.core.config import settings
 from app.core import storage
@@ -84,6 +85,25 @@ async def test_mounted_storage_keeps_upload_on_the_persistent_path(
 
     assert persisted.public_url.startswith("/uploads/avatars/")
     assert (tmp_path / persisted.filename).read_bytes() == b"persistent-bytes"
+
+
+def test_ensure_upload_dirs_creates_static_root_and_upload_subdirectories(tmp_path, monkeypatch):
+    static_dir = tmp_path / "static"
+    upload_dirs = [
+        tmp_path / "uploads" / name
+        for name in ("avatars", "videos", "thumbnails", "gallery", "services")
+    ]
+    monkeypatch.setattr(paths, "STATIC_DIR", static_dir)
+    for name, directory in zip(
+        ("AVATARS_DIR", "VIDEOS_DIR", "THUMBNAILS_DIR", "GALLERY_UPLOAD_DIR", "SERVICE_UPLOAD_DIR"),
+        upload_dirs,
+    ):
+        monkeypatch.setattr(paths, name, directory)
+
+    paths.ensure_upload_dirs()
+
+    assert static_dir.is_dir()
+    assert all(directory.is_dir() for directory in upload_dirs)
 
 
 @pytest.mark.asyncio
