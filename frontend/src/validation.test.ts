@@ -39,8 +39,10 @@ describe("identity validation", () => {
     expect(validateEmail("person@example").ok).toBe(false);
     expect(validateIranMobile("09121234567").ok).toBe(true);
     expect(validateIranMobile("9121234567").ok).toBe(false);
-    expect(validatePassword("secure123").ok).toBe(true);
-    expect(validatePassword("بدون‌عدد").ok).toBe(false);
+    expect(validatePassword("یک رمز طولانی و امن").ok).toBe(true);
+    expect(validatePassword("secure123").ok).toBe(false);
+    expect(validatePassword("password123456").ok).toBe(false);
+    expect(validatePassword("a".repeat(129)).ok).toBe(false);
     expect(validateReferralCode("AB-12").ok).toBe(true);
     expect(validateReferralCode("A!").ok).toBe(false);
   });

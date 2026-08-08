@@ -1,5 +1,14 @@
 from app.db.base_class import Base
-from app.models.user import User, UserProfile, UserSocialLink
+from app.models.user import User, UserProfile, UserRole, UserSocialLink
+from app.models.security import (
+    AuthChallenge,
+    AuthSession,
+    LegalAcceptance,
+    MfaBackupCode,
+    RateLimitBucket,
+    SecurityAuditEvent,
+)
+from app.models.moderation import ContentReport, ModerationAction, UserBlock
 from app.models.settings import UserPreference, UserLanguageSetting
 from app.models.media import MediaAsset
 from app.models.dictionary import (

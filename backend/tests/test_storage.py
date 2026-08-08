@@ -14,7 +14,7 @@ from app.core.storage import (
     object_storage_key_from_url,
     store_upload_file,
 )
-from app.core.uploads import save_image_upload
+from app.core.uploads import save_image_upload, save_video_upload
 
 
 def make_upload(filename: str, content: bytes, content_type: str) -> UploadFile:
@@ -23,6 +23,10 @@ def make_upload(filename: str, content: bytes, content_type: str) -> UploadFile:
         file=BytesIO(content),
         headers=Headers({"content-type": content_type}),
     )
+
+
+def media_box(box_type: bytes, payload: bytes = b"") -> bytes:
+    return (8 + len(payload)).to_bytes(4, "big") + box_type + payload
 
 
 @pytest.mark.asyncio
@@ -81,6 +85,29 @@ async def test_bmp_upload_is_converted_to_browser_friendly_jpeg(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_jpeg_upload_is_reencoded_without_exif(tmp_path):
+    source = BytesIO()
+    exif = Image.Exif()
+    exif[0x010E] = "private metadata"
+    Image.new("RGB", (8, 8), (20, 40, 60)).save(
+        source,
+        format="JPEG",
+        exif=exif,
+    )
+
+    public_url = await save_image_upload(
+        make_upload("avatar.jpg", source.getvalue(), "image/jpeg"),
+        destination_dir=tmp_path,
+        public_url_prefix="/uploads/test",
+    )
+
+    output_path = tmp_path / public_url.rsplit("/", 1)[-1]
+    with Image.open(output_path) as sanitized:
+        assert sanitized.format == "JPEG"
+        assert not sanitized.getexif()
+
+
+@pytest.mark.asyncio
 async def test_image_upload_rejects_spoofed_content_and_removes_it(tmp_path):
     with pytest.raises(HTTPException, match="تصویر معتبر"):
         await save_image_upload(
@@ -90,6 +117,37 @@ async def test_image_upload_rejects_spoofed_content_and_removes_it(tmp_path):
         )
 
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.asyncio
+async def test_video_upload_validates_container_and_mime_pair(tmp_path):
+    minimal_mp4 = (
+        media_box(b"ftyp", b"isom")
+        + media_box(b"moov")
+        + media_box(b"mdat")
+    )
+    stored = await save_video_upload(
+        make_upload("lesson.mp4", minimal_mp4, "video/mp4"),
+        destination_dir=tmp_path,
+        public_url_prefix="/uploads/videos",
+    )
+    assert stored.extension == "mp4"
+    assert (tmp_path / stored.filename).exists()
+
+    with pytest.raises(HTTPException, match="ویدیوی معتبر"):
+        await save_video_upload(
+            make_upload("spoofed.mp4", b"not-a-video", "video/mp4"),
+            destination_dir=tmp_path,
+            public_url_prefix="/uploads/videos",
+        )
+    with pytest.raises(HTTPException, match="ویدیوی معتبر"):
+        await save_video_upload(
+            make_upload("mismatch.mov", minimal_mp4, "video/mp4"),
+            destination_dir=tmp_path,
+            public_url_prefix="/uploads/videos",
+        )
+    assert not list(tmp_path.glob("*spoofed*"))
+    assert not list(tmp_path.glob("*mismatch*"))
 
 
 def test_storage_path_resolution_rejects_traversal_and_external_urls():
@@ -140,8 +198,10 @@ async def test_object_upload_survives_local_staging_cleanup_and_can_be_deleted(
     storage_key = object_storage_key_from_url(public_url)
     assert storage_key is not None
     stored = fake_client.objects[("chinverse-test", storage_key)]
-    assert stored["body"] == source.getvalue()
-    assert stored["metadata"]["ContentType"] == "image/png"
+    with Image.open(BytesIO(stored["body"])) as sanitized:
+        assert sanitized.format == "WEBP"
+        assert not sanitized.getexif()
+    assert stored["metadata"]["ContentType"] == "image/webp"
     assert stored["metadata"]["CacheControl"].endswith("immutable")
     assert not list(tmp_path.iterdir())
 

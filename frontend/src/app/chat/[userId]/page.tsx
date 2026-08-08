@@ -9,6 +9,7 @@ import { getMediaUrl } from '@/lib/media';
 import { getDirectionalTextProps, getTextAlign } from '@/lib/textDirection';
 import { chatService, ChatMessage } from '@/services/chat.service';
 import { BackButton } from "@/components/ui/IconButton";
+import UserTrustActions from '@/components/trust/UserTrustActions';
 import { userService } from '@/services/user.service';
 import { validateTextLength, validationMessage } from '@/validation';
 
@@ -83,11 +84,11 @@ export default function ChatRoomPage() {
     }, [fetchData]);
 
     useEffect(() => {
-        const socketUrl = chatService.getWebSocketUrl();
         let reconnectTimer: number | undefined;
         let isActive = true;
 
         const connect = () => {
+            const socketUrl = chatService.getWebSocketUrl();
             if (!socketUrl || !isActive) {
                 setConnectionState('polling');
                 return;
@@ -98,13 +99,23 @@ export default function ChatRoomPage() {
             socketRef.current = socket;
 
             socket.onopen = () => {
-                setConnectionState('live');
-                socket.send(JSON.stringify({ type: 'ping' }));
+                const token = chatService.getWebSocketAuthToken();
+                if (!token) {
+                    socket.close();
+                    return;
+                }
+                socket.send(JSON.stringify({ type: 'auth', token }));
             };
 
             socket.onmessage = (event) => {
                 try {
                     const payload = JSON.parse(event.data);
+
+                    if (payload.type === 'connection:ready') {
+                        setConnectionState('live');
+                        socket.send(JSON.stringify({ type: 'ping' }));
+                        return;
+                    }
 
                     if (payload.type === 'messages:read' && payload.reader_id === userId) {
                         const readIds = new Set<number>(payload.message_ids || []);
@@ -247,7 +258,7 @@ export default function ChatRoomPage() {
                         </div>
                     </div>
 
-                    <span aria-hidden />
+                    <UserTrustActions userId={userId} onBlocked={() => router.replace('/community')} />
                 </div>
             </header>
 

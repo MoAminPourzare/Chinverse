@@ -31,9 +31,13 @@ env.bak/
 venv.bak/
 .pytest_cache/
 .ruff_cache/
+.pip-audit*/
+.pytest-temp-*/
+.test-cache-*/
 .coverage
 .coverage.*
 htmlcov/
+coverage.xml
 
 # Node.js
 node_modules/

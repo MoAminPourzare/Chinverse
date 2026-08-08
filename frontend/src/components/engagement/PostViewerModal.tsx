@@ -12,6 +12,7 @@ import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostComments from "@/components/engagement/PostComments";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
+import ReportContentButton from "@/components/trust/ReportContentButton";
 
 export interface PostViewerProvider {
     id?: number | null;
@@ -153,6 +154,7 @@ export default function PostViewerModal({
                                     <div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
                                         <div className="flex items-center gap-2">
                                             <LikeButton targetType="post" targetId={post.id} initialCount={post.likes_count || 0} compact />
+                                            <ReportContentButton targetType="gallery" targetId={post.id} />
                                             <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-slate-500">
                                                 <MessageCircle size={16} />
                                                 {liveCommentsCount.toLocaleString("fa-IR")}

@@ -1,7 +1,6 @@
-import { API_BASE_URL } from "@/lib/api";
-
 export const getApiRootUrl = () => {
-    return API_BASE_URL.replace(/\/api\/v\d+\/?$/, "").replace(/\/$/, "");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+    return apiUrl.replace(/\/api\/v\d+\/?$/, "").replace(/\/$/, "");
 };
 
 export const getMediaUrl = (path: string | null | undefined): string => {

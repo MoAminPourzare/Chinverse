@@ -10,6 +10,7 @@ import {
     Database,
     Download,
     FileText,
+    Flag,
     Layers3,
     Loader2,
     Plus,
@@ -156,6 +157,7 @@ export default function AdminPanelPage() {
     const [saving, setSaving] = useState("");
     const [message, setMessage] = useState("");
     const [accessError, setAccessError] = useState("");
+    const [needsMfaEnrollment, setNeedsMfaEnrollment] = useState(false);
     const [dictionarySearch, setDictionarySearch] = useState("");
     const [userSearch, setUserSearch] = useState("");
     const [importResult, setImportResult] = useState<AdminDictionaryImportResult | null>(null);
@@ -224,8 +226,23 @@ export default function AdminPanelPage() {
     const loadAdminData = async () => {
         setLoading(true);
         setAccessError("");
+        setNeedsMfaEnrollment(false);
         setMessage("");
         try {
+            const access = await adminService.getAdminAccess();
+            if (!access.is_admin) {
+                setAccessError("این حساب نقش مدیر ندارد.");
+                return;
+            }
+            if (!access.mfa_enabled || !access.mfa_verified) {
+                setNeedsMfaEnrollment(!access.mfa_enabled);
+                setAccessError(
+                    access.mfa_enabled
+                        ? "برای ورود به پنل، دوباره با کد احراز هویت دومرحله‌ای وارد شو."
+                        : "پیش از ورود به پنل، احراز هویت دومرحله‌ای مدیر را فعال کن.",
+                );
+                return;
+            }
             const overviewData = await adminService.getOverview();
             const [userResult, wordResult, taxonomyResult, courseResult] = await Promise.allSettled([
                 adminService.listUsers(userSearch),
@@ -246,7 +263,7 @@ export default function AdminPanelPage() {
             }
         } catch (error) {
             console.error("Failed to load admin panel:", error);
-            setAccessError(isHttpStatus(error, 401) || isHttpStatus(error, 403) ? "برای ورود به پنل ادمین باید با ایمیلی وارد شوی که در ADMIN_EMAILS تنظیم شده است." : "پنل ادمین باز نشد. اتصال یا سرور را بررسی کن.");
+            setAccessError(isHttpStatus(error, 401) || isHttpStatus(error, 403) ? "برای ورود به پنل مدیریت، وارد حساب مدیر تاییدشده شو." : "پنل ادمین باز نشد. اتصال یا سرور را بررسی کن.");
         } finally {
             setLoading(false);
         }
@@ -288,6 +305,37 @@ export default function AdminPanelPage() {
 
     const refreshUsers = async () => {
         setUsers(await adminService.listUsers(userSearch));
+    };
+
+    const updateUserRole = async (userId: number, role: AdminUserSummary["role"]) => {
+        setSaving(`user-role:${userId}`);
+        setMessage("");
+        try {
+            const updated = await adminService.updateUserRole(userId, role);
+            setUsers((current) => current.map((user) => user.id === userId ? updated : user));
+            setMessage("نقش کاربر تغییر کرد و نشست‌های قبلی او بسته شد.");
+        } catch (error) {
+            console.error("Failed to update user role", error);
+            setMessage("تغییر نقش انجام نشد؛ نقش خود مدیر از داخل پنل قابل تغییر نیست.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const updateUserStatus = async (userId: number, status: "active" | "suspended") => {
+        if (status === "suspended" && !window.confirm("این حساب تعلیق و همه نشست‌هایش بسته شود؟")) return;
+        setSaving(`user-status:${userId}`);
+        setMessage("");
+        try {
+            const updated = await adminService.updateUserStatus(userId, status);
+            setUsers((current) => current.map((user) => user.id === userId ? updated : user));
+            setMessage(status === "active" ? "حساب دوباره فعال شد." : "حساب تعلیق و نشست‌های آن بسته شد.");
+        } catch (error) {
+            console.error("Failed to update user status", error);
+            setMessage("تغییر وضعیت انجام نشد؛ وضعیت حساب خود مدیر از داخل پنل قابل تغییر نیست.");
+        } finally {
+            setSaving("");
+        }
     };
 
     useEffect(() => {
@@ -511,10 +559,10 @@ export default function AdminPanelPage() {
             <div className="min-h-full bg-[#f7f8fb] px-4 py-6" dir="rtl">
                 <div className="mx-auto max-w-[520px] rounded-[28px] bg-white p-6 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
                     <ShieldCheck className="mx-auto h-10 w-10 text-[#155aa6]" />
-                    <h1 className="mt-4 text-xl font-black text-slate-950">دسترسی ادمین لازم است</h1>
+                    <h1 className="mt-4 text-xl font-black text-slate-950">دسترسی امن مدیر لازم است</h1>
                     <p className="mt-3 text-sm leading-7 text-slate-500">{accessError}</p>
-                    <Link href="/login?next=/admin" className="mt-5 inline-flex rounded-2xl bg-[#155aa6] px-5 py-3 text-sm font-black text-white">
-                        ورود ادمین
+                    <Link href={needsMfaEnrollment ? "/account/security" : "/login?next=/admin"} className="mt-5 inline-flex rounded-2xl bg-[#155aa6] px-5 py-3 text-sm font-black text-white">
+                        {needsMfaEnrollment ? "تنظیم امنیت حساب" : "ورود مدیر"}
                     </Link>
                 </div>
             </div>
@@ -532,14 +580,19 @@ export default function AdminPanelPage() {
                             <p className="text-xs font-bold text-slate-400">محتوا، ویدیو، دیکشنری و کاربران</p>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={loadAdminData}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
-                    >
-                        <RefreshCw size={15} />
-                        تازه‌سازی
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link href="/moderation" title="گزارش‌ها" aria-label="مدیریت گزارش‌ها" className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
+                            <Flag size={17} />
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={loadAdminData}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
+                        >
+                            <RefreshCw size={15} />
+                            تازه‌سازی
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -618,7 +671,15 @@ export default function AdminPanelPage() {
                     )}
 
                     {activeTab === "users" && (
-                        <UsersTab users={users} search={userSearch} setSearch={setUserSearch} onRefresh={refreshUsers} />
+                        <UsersTab
+                            users={users}
+                            search={userSearch}
+                            setSearch={setUserSearch}
+                            onRefresh={refreshUsers}
+                            saving={saving}
+                            onRoleChange={updateUserRole}
+                            onStatusChange={updateUserStatus}
+                        />
                     )}
                 </div>
             </main>
@@ -1220,15 +1281,21 @@ function UsersTab({
     search,
     setSearch,
     onRefresh,
+    saving,
+    onRoleChange,
+    onStatusChange,
 }: {
     users: AdminUserSummary[];
     search: string;
     setSearch: (value: string) => void;
     onRefresh: () => void;
+    saving: string;
+    onRoleChange: (userId: number, role: AdminUserSummary["role"]) => Promise<void>;
+    onStatusChange: (userId: number, status: "active" | "suspended") => Promise<void>;
 }) {
     return (
         <Surface className={cn(panelClass, "motion-list p-4")}>
-            <PanelTitle icon={<Users size={18} />} title="کاربران" subtitle="فعلاً نقش جداگانه نداریم؛ فقط وضعیت کاربران دیده می‌شود." />
+            <PanelTitle icon={<Users size={18} />} title="کاربران" subtitle="نقش‌ها از دیتابیس اعمال می‌شوند و تغییر نقش، نشست‌های قبلی کاربر را می‌بندد." />
             <div className="mt-4 flex gap-2">
                 <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="ایمیل یا موبایل" />
                 <button type="button" onClick={onRefresh} className="rounded-2xl bg-[#155aa6] px-4 text-sm font-black text-white">جست‌وجو</button>
@@ -1241,6 +1308,27 @@ function UsersTab({
                             <p className="truncate text-xs font-bold text-slate-400">{user.email} · {user.phone}</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-black text-slate-500">
+                            <select
+                                value={user.role}
+                                onChange={(event) => void onRoleChange(user.id, event.target.value as AdminUserSummary["role"])}
+                                disabled={saving === `user-role:${user.id}`}
+                                aria-label={`نقش ${user.display_name || user.email}`}
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none focus:border-[#155aa6] disabled:opacity-50"
+                            >
+                                <option value="user">کاربر</option>
+                                <option value="moderator">ناظر</option>
+                                <option value="admin">مدیر</option>
+                            </select>
+                            <select
+                                value={user.status === "deleted" ? "suspended" : user.status}
+                                onChange={(event) => void onStatusChange(user.id, event.target.value as "active" | "suspended")}
+                                disabled={saving === `user-status:${user.id}` || user.status === "deleted"}
+                                aria-label={`وضعیت ${user.display_name || user.email}`}
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none focus:border-[#155aa6] disabled:opacity-50"
+                            >
+                                <option value="active">فعال</option>
+                                <option value="suspended">تعلیق</option>
+                            </select>
                             <span className={cn("rounded-full px-2.5 py-1", user.is_verified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")}>
                                 {user.is_verified ? "تأیید شده" : "تأیید نشده"}
                             </span>

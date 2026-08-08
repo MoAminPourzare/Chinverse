@@ -19,6 +19,9 @@ async def test_health_endpoint_and_security_headers():
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    assert response.headers["content-security-policy"] == (
+        "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+    )
     assert response.headers["x-chinverse-deployment-tier"] == "staging"
     assert "noindex" in response.headers["x-robots-tag"]
 
@@ -55,6 +58,16 @@ async def test_disallowed_browser_origin_is_rejected_before_endpoint_execution()
     assert response.status_code == 403
     assert response.json() == {"detail": "Origin not allowed"}
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+@pytest.mark.asyncio
+async def test_api_responses_are_never_stored_by_browser_or_shared_caches():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/users/me")
+
+    assert response.status_code == 401
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["pragma"] == "no-cache"
 
 
 @pytest.mark.asyncio

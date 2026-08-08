@@ -1,8 +1,10 @@
 import re
-from typing import Optional
+from typing import Literal, Optional
 from urllib.parse import urlparse
 from email_validator import EmailNotValidError, validate_email as validate_email_address
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.core.passwords import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validate_new_password
 
 
 PERSIAN_NAME_PATTERN = re.compile(r"^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءئؤۀة\s‌]+$")
@@ -51,13 +53,7 @@ def _normalize_iran_mobile(value: str) -> str:
 
 
 def _validate_password_strength(value: str) -> str:
-    if len(value) < 8:
-        raise ValueError("رمز عبور باید حداقل ۸ کاراکتر باشد")
-    if len(value.encode("utf-8")) > 72:
-        raise ValueError("رمز عبور نباید بیشتر از ۷۲ بایت باشد")
-    if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
-        raise ValueError("رمز عبور باید حداقل یک حرف انگلیسی و یک عدد داشته باشد")
-    return value
+    return validate_new_password(value)
 
 
 def _normalize_persian_name(value: str) -> str:
@@ -165,10 +161,13 @@ class UserBase(BaseModel):
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=72)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
     phone: str = Field(min_length=5, max_length=32)
     display_name: str = Field(min_length=1, max_length=120)
     referral_code: Optional[str] = Field(default=None, min_length=4, max_length=32)
+    accept_terms: Literal[True]
+    accept_privacy: Literal[True]
+    accept_community_guidelines: Literal[True]
 
     @field_validator("email", mode="before")
     @classmethod
@@ -205,7 +204,11 @@ class UserCreate(UserBase):
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
-    password: Optional[str] = Field(default=None, min_length=8, max_length=72)
+    password: Optional[str] = Field(
+        default=None,
+        min_length=PASSWORD_MIN_LENGTH,
+        max_length=PASSWORD_MAX_LENGTH,
+    )
 
     @field_validator("password", mode="before")
     @classmethod
@@ -223,6 +226,11 @@ class UserUpdate(UserBase):
         if not re.fullmatch(r"09\d{9}", phone):
             raise ValueError("شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567")
         return phone
+
+
+class AccountDeletionRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)
+    confirm: Literal[True]
 
 class UserInDBBase(UserBase):
     id: Optional[int] = None

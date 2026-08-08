@@ -121,26 +121,6 @@ export default function ProfilePage() {
         container.scrollBy({ left: delta, behavior: "smooth" });
     };
 
-    const handleDeleteAccount = async () => {
-        const confirmed = window.confirm(
-            'آیا مطمئن هستید؟ با حذف حساب کاربری، تمام اطلاعات شما (رزومه، گالری، چت‌ها) برای همیشه پاک خواهد شد.'
-        );
-
-        if (confirmed) {
-            try {
-                const api = (await import('@/lib/api')).default;
-                await api.delete('/users/me');
-                authService.logout();
-                setUser(null);
-                router.replace('/login');
-                router.refresh();
-            } catch (error) {
-                console.error('Failed to delete account:', error);
-                alert('خطا در حذف حساب کاربری. لطفا دوباره تلاش کنید.');
-            }
-        }
-    };
-
     const fetchUser = async () => {
         try {
             const data = await userService.getMe();
@@ -687,7 +667,10 @@ export default function ProfilePage() {
 
                                 {/* 6. حذف حساب کاربری */}
                                 <button
-                                    onClick={() => { setIsSettingsOpen(false); handleDeleteAccount(); }}
+                                    onClick={() => {
+                                        setIsSettingsOpen(false);
+                                        router.push('/account/security#delete-account');
+                                    }}
                                     className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-red-50"
                                 >
                                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">

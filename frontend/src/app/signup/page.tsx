@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User, Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
+import TurnstileWidget from "@/components/auth/TurnstileWidget";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { authService } from "@/services/auth.service";
 import { referralService } from "@/services/referral.service";
@@ -26,6 +27,7 @@ import {
 
 export default function SignupPage() {
     const router = useRouter();
+    const passwordInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -37,6 +39,17 @@ export default function SignupPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+    const [legalAccepted, setLegalAccepted] = useState(false);
+
+    const togglePasswordVisibility = () => {
+        const livePassword = passwordInputRef.current?.value;
+        if (livePassword !== undefined && livePassword !== formData.password) {
+            setFormData((current) => ({ ...current, password: livePassword }));
+        }
+        setShowPassword((visible) => !visible);
+    };
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -66,17 +79,21 @@ export default function SignupPage() {
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        const { name } = e.target;
-        const validators: Record<string, () => string> = {
-            display_name: () => validationMessage(validatePersianName(formData.display_name)),
-            email: () => validationMessage(validateEmail(formData.email)),
-            phone: () => validationMessage(validateIranMobile(formData.phone)),
-            password: () => validationMessage(validatePassword(formData.password)),
-            referral_code: () => validationMessage(validateReferralCode(formData.referral_code)),
+        const { name } = e.currentTarget;
+        const value = name === "referral_code"
+            ? e.currentTarget.value.toUpperCase().replace(/[-\s]/g, "")
+            : e.currentTarget.value;
+        const validators: Record<string, (currentValue: string) => string> = {
+            display_name: (currentValue) => validationMessage(validatePersianName(currentValue)),
+            email: (currentValue) => validationMessage(validateEmail(currentValue)),
+            phone: (currentValue) => validationMessage(validateIranMobile(currentValue)),
+            password: (currentValue) => validationMessage(validatePassword(currentValue)),
+            referral_code: (currentValue) => validationMessage(validateReferralCode(currentValue)),
         };
         const validate = validators[name];
         if (validate) {
-            setFieldErrors((current) => ({ ...current, [name]: validate() }));
+            setFormData((current) => ({ ...current, [name]: value }));
+            setFieldErrors((current) => ({ ...current, [name]: validate(value) }));
         }
     };
 
@@ -92,6 +109,7 @@ export default function SignupPage() {
             referral_code: releaseConfig.features.referrals
                 ? validationMessage(validateReferralCode(formData.referral_code))
                 : "",
+            legal: legalAccepted ? "" : "برای ساخت حساب، شرایط استفاده و سیاست حریم خصوصی را بپذیر.",
         };
         const hasErrors = Object.values(nextErrors).some(Boolean);
         setFieldErrors(nextErrors);
@@ -115,9 +133,14 @@ export default function SignupPage() {
                 phone: normalizeIranMobile(formData.phone),
                 display_name: normalizePersianName(formData.display_name),
                 referral_code: referralCode || undefined,
+                turnstile_token: turnstileToken || undefined,
+                accept_terms: true,
+                accept_privacy: true,
+                accept_community_guidelines: true,
             });
             router.push("/login");
         } catch (err: unknown) {
+            setTurnstileResetKey((value) => value + 1);
             const apiError = err as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };
             const detail = apiError.response?.data?.detail;
             if (Array.isArray(detail)) {
@@ -253,6 +276,7 @@ export default function SignupPage() {
                     <div className="relative">
                         <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            ref={passwordInputRef}
                             id="signup-password"
                             type={showPassword ? "text" : "password"}
                             name="password"
@@ -261,6 +285,7 @@ export default function SignupPage() {
                             onBlur={handleBlur}
                             dir="ltr"
                             autoComplete="new-password"
+                            maxLength={128}
                             aria-invalid={Boolean(fieldErrors.password)}
                             placeholder="••••••••"
                             className={cn(
@@ -271,7 +296,7 @@ export default function SignupPage() {
                         />
                         <button
                             type="button"
-                            onClick={() => setShowPassword((visible) => !visible)}
+                            onClick={togglePasswordVisibility}
                             className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none"
                             aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
                         >
@@ -279,6 +304,9 @@ export default function SignupPage() {
                         </button>
                     </div>
                     <FieldError message={fieldErrors.password} />
+                    {!fieldErrors.password && (
+                        <p className="text-xs leading-5 text-slate-500">حداقل ۱۵ کاراکتر؛ استفاده از عبارت طولانی و به‌یادماندنی بهتر است.</p>
+                    )}
                 </label>
 
                 {releaseConfig.features.referrals && (
@@ -307,6 +335,36 @@ export default function SignupPage() {
                         <FieldError message={fieldErrors.referral_code} />
                     </label>
                 )}
+
+                <div className={cn(
+                    "rounded-lg border bg-slate-50 px-4 py-3",
+                    fieldErrors.legal ? "border-rose-300" : "border-slate-200",
+                )}>
+                    <div className="flex items-start gap-3">
+                        <input
+                            id="legal-acceptance"
+                            type="checkbox"
+                            checked={legalAccepted}
+                            onChange={(event) => {
+                                setLegalAccepted(event.target.checked);
+                                setFieldErrors((current) => ({ ...current, legal: "" }));
+                            }}
+                            className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
+                        />
+                        <label htmlFor="legal-acceptance" className="text-xs leading-6 text-slate-600">
+                            با ساخت حساب، نسخه فعلی{" "}
+                            <Link href="/legal/terms" target="_blank" className="font-black text-[#155aa6]">شرایط استفاده</Link>
+                            ،{" "}
+                            <Link href="/legal/privacy" target="_blank" className="font-black text-[#155aa6]">حریم خصوصی</Link>
+                            {" "}و{" "}
+                            <Link href="/legal/community-guidelines" target="_blank" className="font-black text-[#155aa6]">قوانین جامعه</Link>
+                            {" "}را خوانده‌ام و می‌پذیرم.
+                        </label>
+                    </div>
+                    <FieldError message={fieldErrors.legal} />
+                </div>
+
+                <TurnstileWidget action="signup" onTokenChange={setTurnstileToken} resetKey={turnstileResetKey} />
 
                 <PrimaryButton type="submit" className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
                     {loading ? "در حال ثبت…" : "ثبت نام"}

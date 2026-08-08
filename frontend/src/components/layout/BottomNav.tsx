@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Brain, Home, Search, ShieldCheck, User, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { adminService } from "@/lib/admin";
+import { authService } from "@/services/auth.service";
 
 export default function BottomNav() {
     const pathname = usePathname();
@@ -15,10 +16,9 @@ export default function BottomNav() {
         let cancelled = false;
         let requestId = 0;
 
-        const syncAdminAccess = () => {
+        const syncAdminAccess = async () => {
             const currentRequest = ++requestId;
-            const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
-            if (!token) {
+            if (!await authService.restoreSession()) {
                 setIsAdmin(false);
                 return;
             }

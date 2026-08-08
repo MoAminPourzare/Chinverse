@@ -4,15 +4,19 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { notificationService } from "@/services/notification.service";
+import { authService } from "@/services/auth.service";
 
 export default function NotificationBellLink() {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
-        if (typeof window === "undefined" || !localStorage.getItem("token")) return;
         let isMounted = true;
 
         const loadCount = async () => {
+            if (!await authService.restoreSession()) {
+                if (isMounted) setCount(0);
+                return;
+            }
             try {
                 const unread = await notificationService.getUnreadCount();
                 if (isMounted) setCount(unread);

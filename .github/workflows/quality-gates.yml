@@ -2,7 +2,7 @@ name: Quality gates
 
 on:
   push:
-    branches: [main, "codex/release-*"]
+    branches: [main, "codex/**"]
   pull_request:
   workflow_dispatch:
 
@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Verify release privacy and scope
         shell: pwsh
@@ -132,6 +134,7 @@ jobs:
         run: |
           poetry run ruff check --no-cache app tests scripts
           poetry run python -m compileall -q app tests scripts
+          poetry run bandit -q -r app scripts -x tests -lll
 
       - name: Unit tests and coverage
         run: poetry run python -m pytest -m "not integration" --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=50
@@ -143,6 +146,7 @@ jobs:
         run: |
           poetry run alembic check
           poetry run python scripts/verify_phase2_schema.py
+          poetry run python scripts/verify_phase3_schema.py
 
       - name: Integration tests
         run: poetry run python -m pytest -m integration
@@ -153,6 +157,7 @@ jobs:
           poetry run alembic upgrade head
           poetry run alembic check
           poetry run python scripts/verify_phase2_schema.py
+          poetry run python scripts/verify_phase3_schema.py
 
       - name: Build production container
         run: docker build --tag chinverse-backend:ci .

@@ -103,14 +103,29 @@ export const validatePassword = (value: string): ValidationResult => {
     if (!value) {
         return { ok: false, message: "رمز عبور را وارد کن." };
     }
-    if (value.length < 8) {
-        return { ok: false, message: "رمز عبور باید حداقل ۸ کاراکتر باشد." };
+    if (value.length < 15) {
+        return { ok: false, message: "رمز عبور باید حداقل ۱۵ کاراکتر باشد." };
     }
-    if (new TextEncoder().encode(value).length > 72) {
-        return { ok: false, message: "رمز عبور خیلی طولانی است؛ حداکثر ۷۲ بایت مجاز است." };
+    if (value.length > 128) {
+        return { ok: false, message: "رمز عبور نباید بیشتر از ۱۲۸ کاراکتر باشد." };
     }
-    if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) {
-        return { ok: false, message: "رمز عبور باید حداقل یک حرف انگلیسی و یک عدد داشته باشد." };
+    if (/[\u0000-\u001f\u007f-\u009f]/u.test(value)) {
+        return { ok: false, message: "رمز عبور نباید نویسه کنترلی داشته باشد." };
+    }
+    const comparison = value.toLocaleLowerCase("en-US").replace(/[\s\W_]+/gu, "");
+    const commonPasswords = new Set([
+        "123456789012345",
+        "1234567890123456",
+        "passwordpassword",
+        "password123456",
+        "qwertyqwerty123",
+        "qwertyuiop12345",
+        "adminadmin12345",
+        "letmeinletmein1",
+        "chinverse123456",
+    ]);
+    if (commonPasswords.has(comparison)) {
+        return { ok: false, message: "این رمز عبور بسیار رایج و قابل حدس است." };
     }
     return { ok: true };
 };

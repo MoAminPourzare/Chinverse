@@ -1,7 +1,10 @@
+import asyncio
+from datetime import UTC, datetime
 from typing import Any, List
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 import jwt
 from jwt.exceptions import PyJWTError
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, desc, update
 from sqlalchemy.orm import selectinload
@@ -12,6 +15,8 @@ from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
 from app.core.config import settings
 from app.db.session import SessionLocal
+from app.models.moderation import UserBlock
+from app.models.security import AuthSession
 from app.models.social import Message
 from app.models.user import User, UserStatus
 from app.schemas import chat as schemas
@@ -26,7 +31,6 @@ class ChatConnectionManager:
         self.active_connections: dict[int, set[WebSocket]] = {}
 
     async def connect(self, user_id: int, websocket: WebSocket) -> None:
-        await websocket.accept()
         self.active_connections.setdefault(user_id, set()).add(websocket)
 
     def disconnect(self, user_id: int, websocket: WebSocket) -> None:
@@ -52,24 +56,53 @@ class ChatConnectionManager:
 chat_manager = ChatConnectionManager()
 
 
-async def _get_user_from_ws_token(token: str) -> User | None:
+async def _get_user_from_ws_token(
+    token: str,
+) -> tuple[User, str, datetime] | None:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_data = TokenPayload(**payload)
         user_id = int(token_data.sub)
-    except (PyJWTError, TypeError, ValueError):
+        if token_data.type != "access" or not token_data.sid:
+            return None
+        token_expires_at = datetime.fromtimestamp(float(payload["exp"]), UTC)
+    except (KeyError, OverflowError, PyJWTError, TypeError, ValueError, ValidationError):
         return None
 
     async with SessionLocal() as session:
         result = await session.execute(
             select(User)
+            .join(AuthSession, AuthSession.user_id == User.id)
             .options(selectinload(User.profile))
-            .where(User.id == user_id)
+            .where(
+                User.id == user_id,
+                AuthSession.id == token_data.sid,
+                AuthSession.revoked_at.is_(None),
+                AuthSession.expires_at > datetime.now(UTC),
+            )
         )
         user = result.scalar_one_or_none()
         if not user or user.status != UserStatus.ACTIVE:
             return None
-        return user
+        if settings.REQUIRE_VERIFIED_LOGIN and not user.is_verified:
+            return None
+        return user, token_data.sid, token_expires_at
+
+
+async def _ws_session_is_active(*, user_id: int, session_id: str) -> bool:
+    async with SessionLocal() as session:
+        result = await session.scalar(
+            select(AuthSession.id)
+            .join(User, User.id == AuthSession.user_id)
+            .where(
+                AuthSession.id == session_id,
+                AuthSession.user_id == user_id,
+                AuthSession.revoked_at.is_(None),
+                AuthSession.expires_at > datetime.now(UTC),
+                User.status == UserStatus.ACTIVE,
+            )
+        )
+        return bool(result)
 
 
 def _user_summary(user: User | None) -> schemas.ChatUserSummary | None:
@@ -118,20 +151,46 @@ async def _broadcast_read_receipt(*, sender_id: int, reader_id: int, message_ids
 
 
 @router.websocket("/ws")
-async def chat_websocket(websocket: WebSocket, token: str = Query("")):
-    user = await _get_user_from_ws_token(token)
-    if not user:
+async def chat_websocket(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        auth_message = await asyncio.wait_for(
+            websocket.receive_json(),
+            timeout=5.0,
+        )
+    except (TimeoutError, ValueError, WebSocketDisconnect):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
+
+    token = str(auth_message.get("token", "")) if auth_message.get("type") == "auth" else ""
+    principal = await _get_user_from_ws_token(token)
+    if not principal:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+    user, session_id, token_expires_at = principal
 
     await chat_manager.connect(user.id, websocket)
     try:
         await websocket.send_json({"type": "connection:ready", "user_id": user.id})
         while True:
-            data = await websocket.receive_json()
+            if datetime.now(UTC) >= token_expires_at or not await _ws_session_is_active(
+                user_id=user.id,
+                session_id=session_id,
+            ):
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive_json(),
+                    timeout=30.0,
+                )
+            except TimeoutError:
+                continue
             if data.get("type") == "ping":
                 await websocket.send_json({"type": "pong"})
-    except WebSocketDisconnect:
+    except (ValueError, WebSocketDisconnect):
+        pass
+    finally:
         chat_manager.disconnect(user.id, websocket)
 
 
@@ -156,8 +215,25 @@ async def send_message(
     receiver_query = select(User).where(User.id == message_in.receiver_id)
     result = await db.execute(receiver_query)
     receiver = result.scalar_one_or_none()
-    if not receiver:
+    if not receiver or receiver.status != UserStatus.ACTIVE or not receiver.is_verified:
         raise not_found("User")
+
+    blocked = await db.scalar(
+        select(UserBlock.id).where(
+            or_(
+                and_(
+                    UserBlock.blocker_id == current_user.id,
+                    UserBlock.blocked_id == message_in.receiver_id,
+                ),
+                and_(
+                    UserBlock.blocker_id == message_in.receiver_id,
+                    UserBlock.blocked_id == current_user.id,
+                ),
+            )
+        )
+    )
+    if blocked:
+        raise bad_request("Messaging is unavailable for this conversation")
     
     # Create message
     message = Message(

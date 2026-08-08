@@ -1,11 +1,12 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements
+from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust
 from app.core.config import settings
 
 api_router = APIRouter()
 
 # ===== AUTHENTICATION =====
 api_router.include_router(auth.router, tags=["auth"])
+api_router.include_router(trust.router)
 
 # ===== ADMIN =====
 api_router.include_router(admin.router, tags=["admin"])

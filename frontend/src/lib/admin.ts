@@ -10,8 +10,9 @@ export interface AdminUserSummary {
     id: number;
     email: string;
     phone: string;
-    status: string;
+    status: "active" | "suspended" | "deleted";
     is_verified: boolean;
+    role: "user" | "moderator" | "admin";
     display_name?: string | null;
     headline?: string | null;
     created_at: string;
@@ -44,6 +45,8 @@ export interface AdminOverview {
 export interface AdminAccess {
     is_admin: boolean;
     email: string;
+    mfa_enabled: boolean;
+    mfa_verified: boolean;
 }
 
 export interface AdminWordDefinition {
@@ -140,6 +143,16 @@ export const adminService = {
             params: { q: q || undefined, limit: 80 },
         });
         return Array.isArray(response.data) ? response.data : [];
+    },
+
+    async updateUserRole(userId: number, role: AdminUserSummary["role"]): Promise<AdminUserSummary> {
+        const response = await api.patch<AdminUserSummary>(`/admin/users/${userId}/role`, { role });
+        return response.data;
+    },
+
+    async updateUserStatus(userId: number, status: "active" | "suspended"): Promise<AdminUserSummary> {
+        const response = await api.patch<AdminUserSummary>(`/admin/users/${userId}/status`, { status });
+        return response.data;
     },
 
     async listDictionary(q = "", filters: {
