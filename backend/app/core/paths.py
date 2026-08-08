@@ -1,16 +1,22 @@
 from pathlib import Path
 from typing import Optional
 
+from app.core.config import settings
+
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
-UPLOADS_DIR = BACKEND_DIR / "uploads"
+UPLOADS_DIR = (
+    Path(settings.MOUNTED_STORAGE_ROOT).expanduser()
+    if settings.USES_MOUNTED_STORAGE
+    else BACKEND_DIR / "uploads"
+)
 STATIC_DIR = BACKEND_DIR / "static"
 
 AVATARS_DIR = UPLOADS_DIR / "avatars"
 VIDEOS_DIR = UPLOADS_DIR / "videos"
 THUMBNAILS_DIR = UPLOADS_DIR / "thumbnails"
-GALLERY_UPLOAD_DIR = STATIC_DIR / "uploads" / "gallery"
-SERVICE_UPLOAD_DIR = STATIC_DIR / "uploads" / "services"
+GALLERY_UPLOAD_DIR = UPLOADS_DIR / "gallery"
+SERVICE_UPLOAD_DIR = UPLOADS_DIR / "services"
 
 
 def ensure_upload_dirs() -> None:
@@ -34,14 +40,12 @@ def resolve_backend_file_url(public_url: Optional[str]) -> Optional[Path]:
 
     clean_url = public_url.lstrip("/")
 
-    if clean_url.startswith("uploads/gallery/") or clean_url.startswith("uploads/services/"):
-        return _within_base(STATIC_DIR / clean_url, STATIC_DIR)
-
     if clean_url.startswith("static/"):
         return _within_base(BACKEND_DIR / clean_url, STATIC_DIR)
 
-    if clean_url.startswith("uploads/avatars/") or clean_url.startswith("uploads/videos/") or clean_url.startswith("uploads/thumbnails/"):
-        return _within_base(BACKEND_DIR / clean_url, UPLOADS_DIR)
+    if clean_url.startswith("uploads/"):
+        relative_path = clean_url.removeprefix("uploads/")
+        return _within_base(UPLOADS_DIR / relative_path, UPLOADS_DIR)
 
     return None
 

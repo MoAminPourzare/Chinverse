@@ -1,6 +1,6 @@
 import json
 import ipaddress
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from pydantic import computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -123,6 +123,7 @@ class Settings(BaseSettings):
     ALLOWED_VIDEO_EXTENSIONS: str = "mp4,webm,mov,m4v"
     ALLOWED_VIDEO_CONTENT_TYPES: str = "video/mp4,video/webm,video/quicktime,video/x-m4v"
     FILE_STORAGE_MODE: str = "local"
+    MOUNTED_STORAGE_ROOT: str = ""
     OBJECT_STORAGE_ENDPOINT_URL: str = ""
     OBJECT_STORAGE_BUCKET_NAME: str = ""
     OBJECT_STORAGE_ACCESS_KEY_ID: str = ""
@@ -177,8 +178,10 @@ class Settings(BaseSettings):
             and not self.REFRESH_COOKIE_SECURE
         ):
             errors.append("SameSite=None refresh cookies must be Secure")
-        if storage_mode not in {"local", "s3"}:
-            errors.append("FILE_STORAGE_MODE must be either 'local' or 's3'")
+        if storage_mode not in {"local", "mounted", "s3"}:
+            errors.append(
+                "FILE_STORAGE_MODE must be one of: local, mounted, s3"
+            )
         positive_settings = {
             "ACCESS_TOKEN_EXPIRE_MINUTES": self.ACCESS_TOKEN_EXPIRE_MINUTES,
             "REFRESH_TOKEN_EXPIRE_DAYS": self.REFRESH_TOKEN_EXPIRE_DAYS,
@@ -234,6 +237,25 @@ class Settings(BaseSettings):
                 errors.append(
                     "OBJECT_STORAGE_ADDRESSING_STYLE must be either 'path' or 'virtual'"
                 )
+        elif storage_mode == "mounted":
+            mounted_root_value = self.MOUNTED_STORAGE_ROOT.strip()
+            mounted_root = Path(mounted_root_value).expanduser()
+            is_absolute = (
+                mounted_root.is_absolute()
+                or PurePosixPath(mounted_root_value).is_absolute()
+            )
+            if (
+                not mounted_root_value
+                or not is_absolute
+            ):
+                errors.append(
+                    "MOUNTED_STORAGE_ROOT must be an absolute path in mounted mode"
+                )
+            elif mounted_root_value in {"/", "\\"} or (
+                mounted_root.is_absolute()
+                and mounted_root == Path(mounted_root.anchor)
+            ):
+                errors.append("MOUNTED_STORAGE_ROOT cannot be the filesystem root")
 
         is_production_runtime = (
             environment in PRODUCTION_ENVIRONMENTS
@@ -315,9 +337,13 @@ class Settings(BaseSettings):
         if "user:password" in self.DATABASE_URL or "postgres:postgres" in self.DATABASE_URL:
             errors.append("DATABASE_URL still uses the placeholder username/password")
 
-        if storage_mode != "s3":
-            errors.append("FILE_STORAGE_MODE must be 's3' in production")
-        else:
+        allowed_release_storage_modes = (
+            {"s3"} if deployment_tier == "production" else {"mounted", "s3"}
+        )
+        if storage_mode not in allowed_release_storage_modes:
+            expected = "s3" if deployment_tier == "production" else "mounted or s3"
+            errors.append(f"FILE_STORAGE_MODE must be {expected} in this release tier")
+        elif storage_mode == "s3":
             if not self.OBJECT_STORAGE_ENDPOINT_URL.startswith("https://"):
                 errors.append("OBJECT_STORAGE_ENDPOINT_URL must use HTTPS in production")
             if not self.OBJECT_STORAGE_PUBLIC_BASE_URL.startswith("https://"):
@@ -394,6 +420,11 @@ class Settings(BaseSettings):
     @property
     def USES_OBJECT_STORAGE(self) -> bool:
         return self.FILE_STORAGE_MODE == "s3"
+
+    @computed_field
+    @property
+    def USES_MOUNTED_STORAGE(self) -> bool:
+        return self.FILE_STORAGE_MODE == "mounted"
 
     @computed_field
     @property

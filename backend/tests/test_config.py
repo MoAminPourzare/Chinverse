@@ -116,3 +116,51 @@ def test_s3_mode_requires_complete_object_storage_configuration():
             FILE_STORAGE_MODE="s3",
             OBJECT_STORAGE_BUCKET_NAME="chinverse-test",
         )
+
+
+def test_production_runtime_accepts_mounted_storage_only_for_staging_tier():
+    staging = Settings(
+        _env_file=None,
+        ENVIRONMENT="production",
+        DEPLOYMENT_TIER="staging",
+        DATABASE_URL="postgresql://chinverse_app:strong-password@db.example.com/chinverse",
+        SECRET_KEY="a-strong-production-secret-with-more-than-32-characters",
+        BACKEND_CORS_ORIGINS="https://chinverse.vercel.app",
+        BACKEND_CORS_ORIGIN_REGEX=" ",
+        ALLOWED_HOSTS="moamin9-chinverse-api.hf.space",
+        ENABLE_API_DOCS=False,
+        HSTS_ENABLED=True,
+        FILE_STORAGE_MODE="mounted",
+        MOUNTED_STORAGE_ROOT="/data",
+    )
+
+    assert staging.USES_MOUNTED_STORAGE is True
+    assert staging.USES_OBJECT_STORAGE is False
+
+    with pytest.raises(ValidationError, match="FILE_STORAGE_MODE must be s3"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="production",
+            DATABASE_URL="postgresql://chinverse_app:strong-password@db.example.com/chinverse",
+            SECRET_KEY="a-strong-production-secret-with-more-than-32-characters",
+            BACKEND_CORS_ORIGINS="https://chinverse.example",
+            BACKEND_CORS_ORIGIN_REGEX="",
+            ALLOWED_HOSTS="api.chinverse.example",
+            ENABLE_API_DOCS=False,
+            HSTS_ENABLED=True,
+            FILE_STORAGE_MODE="mounted",
+            MOUNTED_STORAGE_ROOT="/data",
+            REQUIRE_VERIFIED_LOGIN=True,
+            MFA_ENCRYPTION_KEY="mfa-encryption-key-for-automated-production-tests",
+            AUTH_DELIVERY_WEBHOOK_URL="https://notifications.example.test/challenges",
+            AUTH_DELIVERY_WEBHOOK_SECRET="delivery-webhook-secret-for-automated-tests",
+            AUTH_PUBLIC_APP_URL="https://chinverse.example",
+            REFRESH_COOKIE_NAME="__Host-chinverse_refresh",
+            RATE_LIMIT_BACKEND="database",
+            TRUST_PROXY_HEADERS=True,
+            TRUSTED_PROXY_NETWORKS="10.0.0.0/8",
+            TURNSTILE_ENABLED=True,
+            TURNSTILE_SECRET_KEY="1x0000000000000000000000000000000AA",
+            TURNSTILE_EXPECTED_HOSTNAMES="chinverse.example",
+        )

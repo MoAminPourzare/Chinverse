@@ -12,6 +12,7 @@ from app.core import storage
 from app.core.storage import (
     delete_public_file,
     object_storage_key_from_url,
+    persist_stored_file,
     store_upload_file,
 )
 from app.core.uploads import save_image_upload, save_video_upload
@@ -62,6 +63,27 @@ async def test_store_upload_enforces_type_size_and_empty_file(tmp_path):
             allowed_content_types=["image/png"],
             max_size_bytes=100,
         )
+
+
+@pytest.mark.asyncio
+async def test_mounted_storage_keeps_upload_on_the_persistent_path(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "FILE_STORAGE_MODE", "mounted")
+    stored = await store_upload_file(
+        make_upload("avatar.png", b"persistent-bytes", "image/png"),
+        destination_dir=tmp_path,
+        public_url_prefix="/uploads/avatars",
+        allowed_extensions=["png"],
+        allowed_content_types=["image/png"],
+        max_size_bytes=100,
+    )
+
+    persisted = await persist_stored_file(stored, destination_dir=tmp_path)
+
+    assert persisted.public_url.startswith("/uploads/avatars/")
+    assert (tmp_path / persisted.filename).read_bytes() == b"persistent-bytes"
 
 
 @pytest.mark.asyncio

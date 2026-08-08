@@ -255,6 +255,25 @@ dry-run روی Neon staging:
 - URL reference بررسی‌شده: ۲۰۶
 - object یکتای نیازمند migration: ۲
 
+### اصلاح provider هنگام انتشار فاز ۳
+
+در ۸ اوت ۲۰۲۶ مشخص شد محصول فعلی Hugging Face Storage Buckets در Space
+رایگان، bucket را مستقیماً به‌صورت volume پایدار mount می‌کند و credential
+سازگار با S3 در تنظیمات این Space ارائه نشده است. برای جلوگیری از ادعای نادرست
+و نگه‌داشتن staging روی زیرساخت رایگان، bucket خصوصی
+`MoAmin9/chinverse-api-storage` با دسترسی read/write در `/data` mount شد.
+
+لایه storage اکنون سه حالت صریح دارد:
+
+- `local` فقط برای توسعه
+- `mounted` برای volume پایدار staging؛ فایل‌ها از `/uploads/...` سرو می‌شوند
+- `s3` برای production عمومی و provider دارای endpoint و credential مستقل
+
+حالت `mounted` فقط در release tier استیجینگ پذیرفته می‌شود. tier تولید همچنان
+fail-closed است و فقط `s3` را قبول می‌کند. مسیرهای گالری و پوستر خدمات نیز از
+دایرکتوری قدیمی `static/uploads` به root مشترک و پایدار uploads منتقل شدند تا
+مسیر فایل و URL عمومی دقیقاً منطبق باشند.
+
 ## تست‌ها
 
 نتایج ثبت‌شده تا پیش از اتصال نهایی bucket:
