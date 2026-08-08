@@ -59,6 +59,7 @@
 - بررسی markerهای WebM و boxهای MP4/MOV
 - جلوگیری از ثبت مستقیم avatar خارجی و tracking image در cover مقاله جدید
 - UUID برای نام فایل و حذف امن فایل در rollback دیتابیس
+- bucket خصوصی و mounted برای فایل‌های staging، با جداسازی اجباری از S3 تولید
 
 ### اعتماد و moderation
 

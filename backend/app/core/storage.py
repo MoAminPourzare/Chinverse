@@ -140,7 +140,7 @@ async def persist_stored_file(
     *,
     destination_dir: Path,
 ) -> StoredFile:
-    if settings.FILE_STORAGE_MODE == "local":
+    if settings.FILE_STORAGE_MODE in {"local", "mounted"}:
         return stored
 
     file_path = destination_dir / stored.filename
