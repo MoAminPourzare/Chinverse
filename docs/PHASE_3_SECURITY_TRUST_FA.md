@@ -121,8 +121,8 @@ release: secret/privacy baseline guard و بررسی فایل‌های track‌�
 | frontend coverage | statements: ۹۳٫۴۸٪، branches: ۸۰٫۷۰٪، functions: ۹۸٫۵۰٪، lines: ۹۴٫۲۸٪ |
 | Next.js production build | پاس، ۶۲ صفحه تولید شد |
 | Playwright | ۳۶ سناریو پاس روی Chromium دسکتاپ، Chromium موبایل و WebKit/iPhone |
-| backend unit | ۵۴ تست پاس، ۸ integration از این اجرا جدا شد |
-| backend integration | ۸ تست پاس روی PostgreSQL 18 ایزوله |
+| backend unit | ۵۵ تست پاس، ۹ integration از این اجرا جدا شد |
+| backend integration | ۹ تست پاس روی PostgreSQL 18 ایزوله |
 | backend coverage | ۵۶٫۳۷٪، بالاتر از gate فعلی ۵۰٪ |
 | migration | `head -> check -> base -> head -> check` پاس |
 | schema verifier | فاز ۲ و ۳ پاس؛ ۹ جدول، ۱۰ ستون امنیتی و ۴ index حیاتی فاز ۳ تأیید شد |
