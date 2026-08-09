@@ -9,17 +9,19 @@
 
 وضعیت فعلی:
 
-- فازهای صفر تا سه انجام شده‌اند؛ دامنه محلی فاز چهار نیز بدون P0/P1 باز تکمیل شده است.
+- فازهای صفر تا سه انجام شده‌اند؛ دامنه automated/local فاز چهار نیز بدون P0/P1 باز تکمیل شده است.
 - شاخه فعلی `codex/phase-4-user-journeys` است.
+- release code فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است؛ commitهای بعدی شاخه فقط workflow دیپلوی را اضافه و سخت‌سازی کرده‌اند.
 - commit مبنای شاخه پیش از تغییرات فاز چهار: `3f63addf1e6b9f3c79f83044545f2d7a375f08db`
 - وضعیت دقیق commit/worktree را با Git بررسی کن؛ چند Codex روی پروژه کار می‌کنند و این سند را نباید جایگزین Git دانست.
-- آخرین GitHub Actions مربوط به فاز سه سبز است؛ گیت‌های فاز چهار فعلاً محلی سبزند و هنوز push/CI نشده‌اند.
-- backend روی Hugging Face staging اجرا می‌شود و به Neon staging وصل است.
-- frontend برای commit فاز سه روی Vercel Preview deploy شده است.
+- GitHub Actions فاز چهار سبز و release code روی Vercel و Hugging Face deploy شده است.
+- backend با tier=`staging` روی Hugging Face اجرا می‌شود، اما در audit دیپلوی مشخص شد secret دیتابیس آن هنوز به Neon production اشاره دارد؛ این اتصال باید پیش از live smoke اصلاح شود.
+- frontend release candidate روی Vercel Preview deploy شده است.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
-گزارش کامل اجرای فعلی در `docs/PHASE_4_USER_JOURNEYS_FA.md` است. پس از push/CI و
-smoke دسترسی‌دار staging، فاز بعدی منطقی فاز پنج آموزش و رسانه است.
+گزارش کامل اجرای فعلی در `docs/PHASE_4_USER_JOURNEYS_FA.md` است. پس از اصلاح اتصال
+DB، migration شاخه واقعی staging و smoke دسترسی‌دار، فاز بعدی منطقی فاز پنج آموزش
+و رسانه است.
 
 ## ۲. قانون کار برای Codex بعدی
 
@@ -87,11 +89,11 @@ smoke دسترسی‌دار staging، فاز بعدی منطقی فاز پنج �
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-3-security-trust` |
-| frontend staging/preview | [Vercel Preview](https://chinverse-8u1ix9rcq-death-stroke.vercel.app) |
+| branch کاری | `codex/phase-4-user-journeys` |
+| frontend staging/preview | [Vercel Preview](https://chinverse-nwhvuwf7k-death-stroke.vercel.app) |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
-| database staging | Neon branch دائمی `staging`، جدا از production |
+| database target | Neon branch دائمی `staging` جداست، اما HF فعلاً اشتباهاً به branch `production` وصل است؛ اصلاح در حال انجام است |
 | فایل staging | bucket خصوصی `MoAmin9/chinverse-api-storage` با mount در `/data` |
 | ویدئو | Arvan VOD/HLS برای نمونه‌های فعلی |
 | Cloudflare | فقط Cloudflare Turnstile در کد؛ Cloudflare CDN/R2 در این release استفاده نمی‌شود |
@@ -155,6 +157,8 @@ smoke دسترسی‌دار staging، فاز بعدی منطقی فاز پنج �
 - چرخه `base -> head -> base -> head` و parity مدل/DB تست شده است.
 - migration امنیت فاز سه:
   `d3a7f9c2e5b1_add_security_trust_foundation`
+- migration workflow پشتیبانی فاز چهار:
+  `a2c4e6f8b1d3_add_support_ticket_workflow`
 - migration حذف legacy و runtime schema:
   `c8f1e2a4d6b9_remove_legacy_models_and_runtime_schema`
 
@@ -166,6 +170,7 @@ poetry run alembic upgrade head
 poetry run alembic check
 poetry run python scripts/verify_phase2_schema.py
 poetry run python scripts/verify_phase3_schema.py
+poetry run python scripts/verify_phase4_schema.py
 ```
 
 هیچ endpointی نباید `CREATE TABLE`, `ALTER TABLE` یا `CREATE INDEX` اجرا کند.
@@ -304,36 +309,58 @@ poetry run python import_dictionary.py --all-hsk --reset
 - workflow کامل support شامل تاریخچه کاربر، صف RBAC+MFA ادمین، پاسخ، اعلان، audit
   و migration `a2c4e6f8b1d3` اضافه شد.
 - صفحه `/admin/support` و تست نقش‌محور ادمین/کاربر در هر سه profile اضافه شد.
+- handshake watchdog، polling فوری و merge امن history دیررس، race گم‌شدن پیام اول
+  چت را بستند.
+- WebSocket اکنون Origin، auth-first و frameهای object را اعتبارسنجی می‌کند؛ هشت
+  تست route/manager و یک integration واقعی PostgreSQL/JWT/session revoke اضافه شد.
+- release code `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است.
 - referrals و subscriptions به‌دلیل feature flag خاموش، عمداً فقط در حالت
   disabled/redirect باقی مانده‌اند.
 
 ## ۱۰. تست و شواهد نهایی
 
-آخرین CI کامل فاز سه موفق شد. شواهد محلی جدید فاز چهار نیز زیر ثبت شده‌اند:
+CI کامل فاز چهار و شواهد release candidate زیر ثبت شده‌اند:
 
 - Release baseline: success
 - Frontend: success؛ lint، typecheck، unit/coverage، build و Playwright
 - Backend: success؛ audit، Ruff، compileall، Bandit، unit، migration، integration، rollback/rebuild و Docker
-- Backend unit محلی: `58 passed`, `13 deselected`
-- Backend coverage محلی: `56.51%` با gate حداقل `50%`
-- Backend integration: `13 passed`
+- Backend unit محلی: `66 passed`, `14 deselected`
+- Backend coverage با gate حداقل `50%`
+- Backend integration: `14 passed`
 - Frontend Vitest: `30 passed`
 - Phase 4 E2E: `51 passed`؛ suite کامل production: `87 passed`
 - production build: `63 route`
 - Alembic head: `a2c4e6f8b1d3`؛ `alembic check` و verifierهای فازهای ۲، ۳ و ۴ سبز
 - downgrade به `d3a7f9c2e5b1` و upgrade مجدد head فاز چهار: سبز
 - npm production audit و pip-audit: صفر vulnerability شناخته‌شده
+- CI release code: [run 31306622856](https://github.com/MoAminPourzare/Chinverse/actions/runs/31306622856)، موفق
+- OIDC deploy سخت‌شده: [run 31310086979](https://github.com/MoAminPourzare/Chinverse/actions/runs/31310086979)، موفق
+- Quality Gates workflow نهایی: [run 31310087005](https://github.com/MoAminPourzare/Chinverse/actions/runs/31310087005)، موفق
+- Hugging Face Space commit: `526add1ee73c618f29142b55e720449080ead48f`
+- tree همان Space دقیقاً برابر tree پوشه `backend` در release code است.
 
 Smoke test زنده Hugging Face:
 
 | مسیر | نتیجه |
 | --- | --- |
-| `/health` | ۲۰۰، `status=ok`, tier=`staging` |
+| `/health` | ۲۰۰، `status=ok`، tier=`staging`، release=`92ae2c40...` |
 | `/health/ready` | ۲۰۰، `database=ok` |
 | `/docs` | ۴۰۴ |
 | `/api/v1/users/me` بدون token | ۴۰۱ |
-| هر مسیر با Origin نامعتبر | ۴۰۳ |
+| GET واقعی با Origin نامعتبر | ۴۰۳؛ proxy HF ممکن است preflight را خودش ۲۰۰ پاسخ دهد، اما درخواست app رد می‌شود |
 | CSP/HSTS/noindex/tier headers | تأیید شد |
+
+هشدار زیرساختی فاز چهار: `DATABASE_URL` در Space به Neon production
+`br-cold-salad-at44rvqh` اشاره داشت؛ startup migration آن branch را به
+`a2c4e6f8b1d3` رساند، درحالی‌که staging دائمی `br-shiny-darkness-at6obb2e` هنوز
+روی `c8f1e2a4d6b9` است. نقاط بازیابی زیر ساخته و بررسی شدند:
+
+- staging snapshot: `phase4-predeploy-92ae2c4` / `br-misty-grass-atc88xt5`
+- production point-in-time: `phase4-prod-pre-migration-92ae2c4` /
+  `br-billowing-silence-atxtvddd` با revision `d3a7f9c2e5b1`
+
+روی production rollback یا داده‌ی تستی اجرا نشد. پیش از live smoke باید secret HF
+به staging منتقل و head همان branch دوباره تأیید شود.
 
 ## ۱۱. قابلیت‌های عمداً خاموش
 
@@ -376,7 +403,7 @@ FEATURE_POINTS_ENABLED=false
 
 ## ۱۳. نقشه راه بعدی
 
-### فاز چهار: تست بخش‌به‌بخش — دامنه محلی تکمیل شد
+### فاز چهار: تست بخش‌به‌بخش — دامنه محلی تکمیل، گیت زنده در حال بستن
 
 حالت‌های موفق، خطا، خالی، مالکیت، دسترسی role، قطع شبکه، refresh، race، duplicate
 submit، back browser و profileهای موبایل برای ماژول‌های فعال پوشش داده شدند:
@@ -393,8 +420,8 @@ submit، back browser و profileهای موبایل برای ماژول‌های
 - admin/moderation
 
 خروجی محلی: ماتریس پذیرش، bug list با P0-P3، contract/integration tests و build
-تولیدی سبز. deploy قابل مشاهده و smoke با backend زنده پس از push/CI باقی است؛
-Vercel Preview فعلی پشت ورود Vercel قرار دارد.
+تولیدی سبز. push، CI و deploy قابل مشاهده انجام شده‌اند. اصلاح اتصال DB و smoke
+authenticated/role/WebSocket روی Preview محافظت‌شده باقی است.
 
 ### فاز پنج: آموزش و رسانه
 
@@ -499,12 +526,12 @@ restore فقط روی مقصد ایزوله انجام شود.
 
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
-«این repository مربوط به ChinVerse است. فازهای صفر تا سه و دامنه محلی فاز چهار
-انجام شده‌اند و شاخه‌ی فعلی `codex/phase-4-user-journeys` از commit `3f63add`
-منشعب شده است. فاز سه روی GitHub CI سبز و روی Hugging Face staging/Neon staging
-deploy شده، اما فاز چهار هنوز باید push/CI و روی staging دسترسی‌دار smoke شود؛
-هیچ‌کدام هنوز روی main merge نشده‌اند. ابتدا همین handoff و گزارش‌های phase را
-بخوان، سپس وضعیت Git و کد را verify کن. کار بعدی منطقی hardcode ویدئو و محتوای
-کامل رسانه در فاز پنج، سپس موبایل واقعی، performance و
-گیت‌های production را انجام دهیم. هیچ secretی را از من نخواه مگر دقیقاً برای
-یک provider و فقط از مسیر secret manager.»
+«این repository مربوط به ChinVerse است. فازهای صفر تا سه و دامنه automated/local
+فاز چهار انجام شده‌اند. شاخه فعلی `codex/phase-4-user-journeys` و release code
+`92ae2c40...` است؛ GitHub CI، Vercel Preview و Hugging Face deploy سبزند، اما audit
+نشان داد secret دیتابیس HF به Neon production وصل است نه staging. production برای
+بازیابی branch نقطه‌زمانی دارد و rollback نشده است. پیش از اعلام پایان فاز چهار،
+اتصال را محرمانه به staging منتقل، migration همان branch و live smoke نقش‌ها/چت را
+کامل کن. هنوز چیزی روی main merge نشده است. بعد از این گیت، کار منطقی فاز پنج
+آموزش و رسانه، سپس موبایل واقعی، performance و گیت‌های production است. هیچ secretی
+را در چت یا Git ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»
