@@ -154,6 +154,8 @@ class SupportTicketRead(BaseModel):
     user_id: int
     message: str
     status: str
+    admin_reply: Optional[str] = None
+    responded_at: Optional[datetime] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

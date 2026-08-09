@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCheck, Send, User as UserIcon } from 'lucide-react';
+import { CheckCheck, RefreshCw, Send, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { getMediaUrl } from '@/lib/media';
 import { getDirectionalTextProps, getTextAlign } from '@/lib/textDirection';
@@ -21,6 +21,7 @@ export default function ChatRoomPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [sendError, setSendError] = useState('');
     const [connectionState, setConnectionState] = useState<'connecting' | 'live' | 'polling'>('connecting');
@@ -60,20 +61,22 @@ export default function ChatRoomPage() {
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
+        setLoadError('');
         try {
-            const me = await userService.getMe();
+            const [me, otherUserProfile, history] = await Promise.all([
+                userService.getMe(),
+                userService.getPublicProfile(userId),
+                chatService.getMessageHistory(userId),
+            ]);
             setCurrentUserId(Number(me.id));
-
-            const otherUserProfile = await userService.getPublicProfile(userId);
             setOtherUser({
                 display_name: otherUserProfile.profile?.display_name || null,
                 avatar_url: otherUserProfile.profile?.avatar_url || null,
             });
-
-            const history = await chatService.getMessageHistory(userId);
             setMessages(history);
         } catch (error) {
             console.error('Failed to fetch chat data:', error);
+            setLoadError('گفت‌وگو بارگذاری نشد. اتصال را بررسی کن و دوباره تلاش کن.');
         } finally {
             setIsLoading(false);
         }
@@ -95,7 +98,14 @@ export default function ChatRoomPage() {
             }
 
             setConnectionState('connecting');
-            const socket = new WebSocket(socketUrl);
+            let socket: WebSocket;
+            try {
+                socket = new WebSocket(socketUrl);
+            } catch (error) {
+                console.error('Failed to open chat websocket', error);
+                setConnectionState('polling');
+                return;
+            }
             socketRef.current = socket;
 
             socket.onopen = () => {
@@ -168,8 +178,7 @@ export default function ChatRoomPage() {
         const pollNewMessages = async () => {
             try {
                 const afterId = lastMessageIdRef.current;
-                if (!afterId) return;
-                const latest = await chatService.getNewMessages(userId, afterId);
+                const latest = await chatService.getNewMessages(userId, afterId || undefined);
                 if (isActive) {
                     appendMessages(latest);
                 }
@@ -266,6 +275,22 @@ export default function ChatRoomPage() {
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
+                    </div>
+                ) : loadError ? (
+                    <div className="flex h-full flex-col items-center justify-center px-5 text-center">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6]">
+                            <RefreshCw className="h-9 w-9" />
+                        </div>
+                        <h2 className="mt-6 text-lg font-black text-slate-900">گفت‌وگو باز نشد</h2>
+                        <p className="mt-2 max-w-[290px] text-sm leading-7 text-slate-500">{loadError}</p>
+                        <button
+                            type="button"
+                            onClick={() => void fetchData()}
+                            className="mt-6 inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#155aa6] px-5 text-sm font-black text-white"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            تلاش دوباره
+                        </button>
                     </div>
                 ) : groupedMessages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-5 text-center">

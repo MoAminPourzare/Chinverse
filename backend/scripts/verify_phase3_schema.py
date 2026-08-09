@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.core.config import settings  # noqa: E402
 
 
-EXPECTED_HEAD = "d3a7f9c2e5b1"
+EXPECTED_HEAD = "a2c4e6f8b1d3"
 REQUIRED_TABLES = {
     "auth_challenges",
     "auth_sessions",

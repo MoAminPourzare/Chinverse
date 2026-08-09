@@ -25,8 +25,9 @@ from app.models.dictionary import (
     WordExample,
 )
 from app.models.leitner import UserFlashcard
+from app.models.social import SupportStatus, SupportTicket
 from app.models.user import User, UserRole, UserStatus
-from app.services.auth_security import add_audit_event, revoke_user_sessions
+from app.services.auth_security import add_audit_event, revoke_user_sessions, utc_now
 from app.services.notifications import create_notification
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -98,6 +99,29 @@ class AdminStatusUpdate(BaseModel):
     status: UserStatus
 
 
+class AdminSupportUserSummary(BaseModel):
+    id: int
+    email: str
+    phone: str
+    display_name: Optional[str] = None
+
+
+class AdminSupportTicketOut(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    status: str
+    admin_reply: Optional[str] = None
+    responded_at: Optional[datetime] = None
+    created_at: datetime
+    user: AdminSupportUserSummary
+
+
+class AdminSupportTicketUpdate(BaseModel):
+    status: SupportStatus
+    reply: Optional[str] = Field(default=None, max_length=4000)
+
+
 def _enum_value(value: object) -> str:
     return getattr(value, "value", str(value))
 
@@ -113,6 +137,24 @@ def _admin_user_summary(user: User) -> dict[str, object]:
         "display_name": user.profile.display_name if user.profile else None,
         "headline": user.profile.headline if user.profile else None,
         "created_at": user.created_at,
+    }
+
+
+def _admin_support_ticket(ticket: SupportTicket) -> dict[str, object]:
+    return {
+        "id": ticket.id,
+        "user_id": ticket.user_id,
+        "message": ticket.message,
+        "status": _enum_value(ticket.status),
+        "admin_reply": ticket.admin_reply,
+        "responded_at": ticket.responded_at,
+        "created_at": ticket.created_at,
+        "user": {
+            "id": ticket.user.id,
+            "email": ticket.user.email,
+            "phone": ticket.user.phone,
+            "display_name": ticket.user.profile.display_name if ticket.user.profile else None,
+        },
     }
 
 
@@ -724,6 +766,93 @@ async def admin_users(
     )
     users = result.scalars().all()
     return [_admin_user_summary(user) for user in users]
+
+
+@router.get("/support-tickets", response_model=List[AdminSupportTicketOut])
+async def admin_support_tickets(
+    ticket_status: Optional[SupportStatus] = Query(default=None, alias="status"),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
+) -> Any:
+    _ = current_user
+    query = select(SupportTicket).options(
+        selectinload(SupportTicket.user).selectinload(User.profile)
+    )
+    if ticket_status is not None:
+        query = query.where(SupportTicket.status == ticket_status)
+
+    result = await db.execute(
+        query.order_by(desc(SupportTicket.created_at), desc(SupportTicket.id))
+        .offset(pagination.skip)
+        .limit(pagination.limit)
+    )
+    return [_admin_support_ticket(ticket) for ticket in result.scalars().all()]
+
+
+@router.patch(
+    "/support-tickets/{ticket_id}",
+    response_model=AdminSupportTicketOut,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_support_ticket(
+    ticket_id: int,
+    payload: AdminSupportTicketUpdate,
+    request: Request,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    result = await db.execute(
+        select(SupportTicket)
+        .options(selectinload(SupportTicket.user).selectinload(User.profile))
+        .where(SupportTicket.id == ticket_id)
+        .with_for_update()
+    )
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise not_found("Support ticket")
+
+    reply = payload.reply.strip() if payload.reply else None
+    if payload.status == SupportStatus.CLOSED and not (reply or ticket.admin_reply):
+        raise bad_request("A reply is required before closing a support ticket")
+
+    previous_status = _enum_value(ticket.status)
+    ticket.status = payload.status
+    if reply:
+        ticket.admin_reply = reply
+        ticket.responded_by = current_user.id
+        ticket.responded_at = utc_now()
+        await create_notification(
+            db,
+            user_id=ticket.user_id,
+            type="system",
+            title="پاسخ پشتیبانی",
+            body=reply,
+            target_url="/support",
+            metadata={"ticket_id": ticket.id, "status": payload.status.value},
+            commit=False,
+        )
+
+    await add_audit_event(
+        db,
+        event_type="support.ticket_updated",
+        request=request,
+        actor_user_id=current_user.id,
+        subject=str(ticket.id),
+        details={
+            "previous_status": previous_status,
+            "new_status": payload.status.value,
+            "replied": bool(reply),
+        },
+    )
+    await db.commit()
+
+    refreshed = await db.execute(
+        select(SupportTicket)
+        .options(selectinload(SupportTicket.user).selectinload(User.profile))
+        .where(SupportTicket.id == ticket.id)
+    )
+    return _admin_support_ticket(refreshed.scalar_one())
 
 
 @router.patch(

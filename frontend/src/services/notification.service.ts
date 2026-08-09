@@ -1,6 +1,6 @@
 import api from "@/lib/api";
 
-export type NotificationType = "message" | "follow" | "post" | "forum" | "service" | "system";
+export type NotificationType = "message" | "follow" | "post" | "forum" | "service" | "moderation" | "system";
 
 export interface NotificationActor {
     id: number;

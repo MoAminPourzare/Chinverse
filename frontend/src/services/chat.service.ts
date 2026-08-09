@@ -58,9 +58,9 @@ export const chatService = {
         return response.data;
     },
 
-    async getNewMessages(userId: number, afterId: number): Promise<ChatMessage[]> {
+    async getNewMessages(userId: number, afterId?: number): Promise<ChatMessage[]> {
         const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
-            params: { after_id: afterId, limit: 100 }
+            params: { ...(afterId ? { after_id: afterId } : {}), limit: 100 }
         });
         return response.data;
     },

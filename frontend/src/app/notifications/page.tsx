@@ -9,6 +9,7 @@ import {
     CheckCircle2,
     MessageCircle,
     RefreshCw,
+    ShieldAlert,
     Sparkles,
     UserPlus,
 } from "lucide-react";
@@ -31,6 +32,7 @@ const iconByType: Record<NotificationType, typeof BellRing> = {
     post: Sparkles,
     forum: MessageCircle,
     service: CheckCircle2,
+    moderation: ShieldAlert,
     system: BellRing,
 };
 
@@ -40,6 +42,7 @@ const colorByType: Record<NotificationType, string> = {
     post: "bg-amber-50 text-amber-700",
     forum: "bg-[#eef6ff] text-[#155aa6]",
     service: "bg-sky-50 text-sky-700",
+    moderation: "bg-rose-50 text-rose-700",
     system: "bg-slate-100 text-slate-700",
 };
 
@@ -299,6 +302,7 @@ function typeLabel(type: NotificationType) {
         post: "فعالیت",
         forum: "گفتگو",
         service: "خدمات",
+        moderation: "مدیریت محتوا",
         system: "سیستم",
     };
     return labels[type] || labels.system;

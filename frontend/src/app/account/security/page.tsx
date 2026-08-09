@@ -72,8 +72,15 @@ export default function AccountSecurityPage() {
 
     const logoutAll = async () => {
         setPending("all");
-        await authService.logoutAll();
-        router.replace("/login");
+        setError("");
+        try {
+            await authService.logoutAll();
+            router.replace("/login");
+        } catch {
+            setError("ارتباط با سرور برقرار نشد؛ بسته‌شدن نشست‌های دستگاه‌های دیگر تأیید نشد. دوباره تلاش کن.");
+        } finally {
+            setPending("");
+        }
     };
 
     const beginMfaSetup = async (event: React.FormEvent) => {

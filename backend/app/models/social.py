@@ -1,6 +1,7 @@
 from enum import Enum
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional, List
-from sqlalchemy import String, ForeignKey, Text, BigInteger, UniqueConstraint, Index
+from sqlalchemy import DateTime, String, ForeignKey, Text, BigInteger, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -198,14 +199,29 @@ class ArticleComment(Base, TimestampMixin):
 class SupportTicket(Base, TimestampMixin):
     """Support tickets submitted by users"""
     __tablename__ = "support_tickets"
+    __table_args__ = (
+        Index("ix_support_tickets_status_created_at", "status", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[SupportStatus] = mapped_column(String, default=SupportStatus.OPEN)
+    admin_reply: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    responded_by: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    responded_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])
+    responder: Mapped[Optional["User"]] = relationship(foreign_keys=[responded_by])
 
 class Message(Base, TimestampMixin):
     """1-on-1 chat messages between users"""

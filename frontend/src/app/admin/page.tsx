@@ -11,6 +11,7 @@ import {
     Download,
     FileText,
     Flag,
+    Headphones,
     Layers3,
     Loader2,
     Plus,
@@ -581,6 +582,9 @@ export default function AdminPanelPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Link href="/admin/support" title="تیکت‌های پشتیبانی" aria-label="مدیریت تیکت‌های پشتیبانی" className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-[#155aa6] hover:bg-blue-100">
+                            <Headphones size={17} />
+                        </Link>
                         <Link href="/moderation" title="گزارش‌ها" aria-label="مدیریت گزارش‌ها" className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
                             <Flag size={17} />
                         </Link>

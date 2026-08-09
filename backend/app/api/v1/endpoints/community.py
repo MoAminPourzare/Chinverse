@@ -471,6 +471,22 @@ async def create_article_comment(
 
 # ===== SUPPORT =====
 
+@router.get("/support", response_model=List[schemas.SupportTicketRead])
+async def get_support_tickets(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
+):
+    """Return only the authenticated user's support tickets, newest first."""
+    result = await db.execute(
+        select(SupportTicket)
+        .where(SupportTicket.user_id == current_user.id)
+        .order_by(SupportTicket.created_at.desc(), SupportTicket.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
+    )
+    return result.scalars().all()
+
 @router.post("/support", response_model=schemas.SupportTicketResponse)
 async def submit_support_ticket(
     ticket_in: schemas.SupportTicketCreate,

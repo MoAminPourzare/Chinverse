@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, MessageCircle, Sparkles, UserPlus, X } from "lucide-react";
+import { Bell, CheckCircle2, MessageCircle, ShieldAlert, Sparkles, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
@@ -18,6 +18,7 @@ const iconByType: Record<NotificationType, typeof Bell> = {
     post: Sparkles,
     forum: MessageCircle,
     service: CheckCircle2,
+    moderation: ShieldAlert,
     system: Bell,
 };
 

@@ -26,11 +26,23 @@ const navHiddenPrefixes = [
     "/legal",
 ];
 
+const supportHiddenPrefixes = [
+    "/login",
+    "/signup",
+    "/verify-account",
+    "/forgot-password",
+    "/support",
+    "/legal",
+    "/admin",
+];
+
 export default function AppShell({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const scrollRef = useRef<HTMLDivElement>(null);
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-    const showSupportButton = pathname === "/community";
+    const showSupportButton = showBottomNav && !supportHiddenPrefixes.some(
+        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
 
     useEffect(() => {
         scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });

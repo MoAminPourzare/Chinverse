@@ -49,6 +49,22 @@ export interface AdminAccess {
     mfa_verified: boolean;
 }
 
+export interface AdminSupportTicket {
+    id: number;
+    user_id: number;
+    message: string;
+    status: "open" | "in_progress" | "closed";
+    admin_reply: string | null;
+    responded_at: string | null;
+    created_at: string;
+    user: {
+        id: number;
+        email: string;
+        phone: string;
+        display_name?: string | null;
+    };
+}
+
 export interface AdminWordDefinition {
     id?: number;
     lang_code: string;
@@ -135,6 +151,21 @@ export const adminService = {
 
     async getOverview(): Promise<AdminOverview> {
         const response = await api.get<AdminOverview>("/admin/overview");
+        return response.data;
+    },
+
+    async listSupportTickets(status?: AdminSupportTicket["status"]): Promise<AdminSupportTicket[]> {
+        const response = await api.get<AdminSupportTicket[]>("/admin/support-tickets", {
+            params: { status, limit: 100 },
+        });
+        return Array.isArray(response.data) ? response.data : [];
+    },
+
+    async updateSupportTicket(
+        ticketId: number,
+        payload: { status: AdminSupportTicket["status"]; reply?: string },
+    ): Promise<AdminSupportTicket> {
+        const response = await api.patch<AdminSupportTicket>(`/admin/support-tickets/${ticketId}`, payload);
         return response.data;
     },
 

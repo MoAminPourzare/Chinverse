@@ -2,30 +2,60 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { CheckCircle2, X } from 'lucide-react';
-import { communityService } from '@/services/community.service';
+import { useCallback, useEffect, useState } from 'react';
+import { CheckCircle2, Clock3, Loader2, MessageSquareText, RefreshCw, X } from 'lucide-react';
+import { communityService, type SupportTicket } from '@/services/community.service';
+import { authService } from '@/services/auth.service';
 import { IconButton } from '@/components/ui/IconButton';
 import { validateTextLength, validationMessage } from '@/validation';
 
 type Screen = 'input' | 'success';
 
-const CHINVERSE_BLUE = '#155aa6';
+const statusLabel: Record<SupportTicket['status'], string> = {
+    open: 'در انتظار بررسی',
+    in_progress: 'در حال بررسی',
+    closed: 'پاسخ‌داده‌شده',
+};
 
 export default function SupportPage() {
     const router = useRouter();
     const [screen, setScreen] = useState<Screen>('input');
     const [message, setMessage] = useState('');
+    const [tickets, setTickets] = useState<SupportTicket[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadError, setLoadError] = useState('');
     const [error, setError] = useState('');
 
-    const handleClose = () => {
-        router.back();
-    };
+    const loadTickets = useCallback(async () => {
+        setLoadError('');
+        setIsLoading(true);
+        try {
+            setTickets(await communityService.getSupportTickets());
+        } catch {
+            setLoadError('دریافت درخواست‌های قبلی انجام نشد. دوباره تلاش کن.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            if (!await authService.restoreSession()) {
+                if (!cancelled) router.replace('/login?next=/support');
+                return;
+            }
+            if (!cancelled) await loadTickets();
+        })();
+        return () => { cancelled = true; };
+    }, [loadTickets, router]);
 
     const handleSubmit = async () => {
         const trimmed = message.trim();
-        const validationError = validationMessage(validateTextLength(trimmed, 'پیام پشتیبانی', { required: true, min: 10, max: 4000 }));
+        const validationError = validationMessage(
+            validateTextLength(trimmed, 'پیام پشتیبانی', { required: true, min: 10, max: 4000 })
+        );
         setError(validationError);
         if (validationError || isSubmitting) return;
 
@@ -34,9 +64,9 @@ export default function SupportPage() {
             await communityService.submitSupportTicket({ message: trimmed });
             setScreen('success');
             setMessage('');
-        } catch (error) {
-            console.error('Failed to submit support ticket:', error);
-            setError('ارسال پیام انجام نشد. لطفا کمی بعد دوباره تلاش کن.');
+            await loadTickets();
+        } catch {
+            setError('ارسال پیام انجام نشد. لطفاً کمی بعد دوباره تلاش کن.');
         } finally {
             setIsSubmitting(false);
         }
@@ -45,21 +75,12 @@ export default function SupportPage() {
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
             <header className="grid grid-cols-[44px_1fr_44px] items-center">
-                <IconButton onClick={handleClose} label="بستن" className="justify-self-end">
+                <IconButton onClick={() => router.back()} label="بستن" className="justify-self-end">
                     <X size={20} />
                 </IconButton>
-
                 <div className="flex justify-center">
-                    <Image
-                        src="/assets/chinverse/logos/chinverse-logo.png"
-                        alt="چین ورس"
-                        width={116}
-                        height={36}
-                        className="h-auto w-[116px] object-contain"
-                        priority
-                    />
+                    <Image src="/assets/chinverse/logos/chinverse-logo.png" alt="چین‌ورس" width={116} height={36} className="h-auto w-[116px] object-contain" priority />
                 </div>
-
                 <span aria-hidden />
             </header>
 
@@ -69,64 +90,61 @@ export default function SupportPage() {
                         <CheckCircle2 size={48} strokeWidth={1.8} />
                     </div>
                     <h1 className="mt-7 text-xl font-black text-slate-900">پیامت ثبت شد</h1>
-                    <p className="mt-3 max-w-[280px] text-sm leading-7 text-slate-500">
-                        تیم پشتیبانی چین ورس پیام تو را بررسی می‌کند و در اولین فرصت پاسخ می‌دهد.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => router.push('/community')}
-                        className="mt-8 h-[52px] w-full max-w-[295px] rounded-[22px] bg-[#155aa6] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.26)] transition hover:bg-[#0f4f96] focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20"
-                    >
-                        بازگشت به پیام‌ها
+                    <p className="mt-3 max-w-[290px] text-sm leading-7 text-slate-500">وضعیت درخواست و پاسخ تیم پشتیبانی را همین‌جا می‌بینی.</p>
+                    <button type="button" onClick={() => setScreen('input')} className="mt-8 h-[52px] w-full max-w-[295px] rounded-[22px] bg-[#155aa6] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.26)]">
+                        مشاهده درخواست‌ها
                     </button>
                 </main>
             ) : (
                 <main className="flex flex-1 flex-col">
-                    <section className="mt-12 text-right">
-                        <p className="text-sm font-bold leading-8 text-slate-800">سلام؛</p>
-                        <p className="mt-1 text-[13px] font-medium leading-8 text-slate-700">
-                            به پشتیبانی چین ورس خوش اومدی، لطفا سوال یا مشکلی که داری رو برامون بنویس تا در اسرع وقت بهش رسیدگی بشه.
-                        </p>
+                    <section className="mt-10 text-right">
+                        <h1 className="text-xl font-black text-slate-900">پشتیبانی چین‌ورس</h1>
+                        <p className="mt-2 text-[13px] font-medium leading-7 text-slate-600">سؤال یا مشکلت را بنویس؛ پاسخ تیم پشتیبانی در همین صفحه و اعلان‌ها نمایش داده می‌شود.</p>
                     </section>
 
-                    <div className="mt-8 flex justify-center">
-                        <Image
-                            src="/assets/chinverse/icons/Support & Help.svg"
-                            alt=""
-                            width={176}
-                            height={176}
-                            className="h-[176px] w-[176px] object-contain"
-                            priority
-                        />
-                    </div>
-
-                    <div className="mt-8">
-                        <textarea
-                            value={message}
-                            onChange={(event) => {
-                                setMessage(event.target.value);
-                                if (error) setError('');
-                            }}
-                            placeholder="پیامتو اینجا بنویس"
-                            rows={3}
-                            className="min-h-[72px] w-full resize-none rounded-[4px] border border-[#155aa6] bg-white px-4 py-3 text-sm leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#e88e6e] focus:ring-4 focus:ring-[#155aa6]/10"
-                        />
-                        {error && (
-                            <p className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
-                                {error}
-                            </p>
-                        )}
-
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={!message.trim() || isSubmitting}
-                            style={{ backgroundColor: CHINVERSE_BLUE }}
-                            className="mt-5 h-[52px] w-full rounded-[22px] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.28)] transition hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20 disabled:cursor-not-allowed disabled:opacity-55"
-                        >
+                    <div className="mt-6">
+                        <textarea value={message} onChange={(event) => { setMessage(event.target.value); if (error) setError(''); }} placeholder="پیامت را اینجا بنویس" rows={4} maxLength={4000} aria-label="پیام پشتیبانی" className="min-h-28 w-full resize-none rounded-2xl border border-[#155aa6] bg-white px-4 py-3 text-sm leading-7 text-slate-800 outline-none focus:ring-4 focus:ring-[#155aa6]/10" />
+                        {error && <p role="alert" className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">{error}</p>}
+                        <button type="button" onClick={handleSubmit} disabled={!message.trim() || isSubmitting} className="mt-4 flex h-[52px] w-full items-center justify-center gap-2 rounded-[22px] bg-[#155aa6] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.28)] disabled:cursor-not-allowed disabled:opacity-55">
+                            {isSubmitting && <Loader2 size={18} className="animate-spin" />}
                             {isSubmitting ? 'در حال ارسال…' : 'ارسال پیام'}
                         </button>
                     </div>
+
+                    <section className="mt-8" aria-labelledby="support-history-title">
+                        <div className="flex items-center justify-between">
+                            <h2 id="support-history-title" className="text-base font-black text-slate-900">درخواست‌های من</h2>
+                            {!isLoading && <IconButton onClick={loadTickets} label="به‌روزرسانی درخواست‌ها"><RefreshCw size={18} /></IconButton>}
+                        </div>
+                        {isLoading ? (
+                            <div className="flex items-center justify-center py-10 text-slate-400"><Loader2 className="animate-spin" /></div>
+                        ) : loadError ? (
+                            <button type="button" onClick={loadTickets} className="mt-4 w-full rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4 text-sm font-bold text-rose-700">{loadError}</button>
+                        ) : tickets.length === 0 ? (
+                            <div className="mt-4 flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center text-slate-400">
+                                <MessageSquareText size={30} />
+                                <p className="mt-3 text-sm font-bold">هنوز درخواستی ثبت نکرده‌ای.</p>
+                            </div>
+                        ) : (
+                            <div className="mt-4 space-y-3">
+                                {tickets.map((ticket) => (
+                                    <article key={ticket.id} className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-600"><Clock3 size={13} />{statusLabel[ticket.status]}</span>
+                                            <time className="text-[11px] text-slate-400">{new Date(ticket.created_at).toLocaleDateString('fa-IR')}</time>
+                                        </div>
+                                        <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.message}</p>
+                                        {ticket.admin_reply && (
+                                            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-3">
+                                                <p className="text-xs font-black text-[#155aa6]">پاسخ پشتیبانی</p>
+                                                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.admin_reply}</p>
+                                            </div>
+                                        )}
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+                    </section>
                 </main>
             )}
         </div>
