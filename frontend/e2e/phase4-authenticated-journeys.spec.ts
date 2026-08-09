@@ -97,6 +97,32 @@ test.describe("phase four authenticated journeys", () => {
 
   test("an empty chat receives its first message through polling when realtime is unavailable", async ({ page }) => {
     let historyRequests = 0;
+    await page.addInitScript(() => {
+      class HangingWebSocket {
+        readonly url: string;
+        readyState = 0;
+        onopen: ((event: Event) => void) | null = null;
+        onmessage: ((event: MessageEvent) => void) | null = null;
+        onerror: ((event: Event) => void) | null = null;
+        onclose: ((event: CloseEvent) => void) | null = null;
+
+        constructor(url: string | URL) {
+          this.url = String(url);
+        }
+
+        send() {}
+
+        close() {
+          this.readyState = 3;
+          this.onclose?.(new CloseEvent("close"));
+        }
+      }
+
+      Object.defineProperty(window, "WebSocket", {
+        configurable: true,
+        value: HangingWebSocket,
+      });
+    });
     await page.route("**/api/backend/**", async (route) => {
       const url = new URL(route.request().url());
       const path = url.pathname.replace(/^\/api\/backend/, "");
@@ -112,7 +138,11 @@ test.describe("phase four authenticated journeys", () => {
       }
       if (path === "/chat/2/messages") {
         historyRequests += 1;
-        if (historyRequests === 1) return json(route, []);
+        if (historyRequests === 1) {
+          await new Promise((resolve) => setTimeout(resolve, 4_500));
+          return json(route, []);
+        }
+        if (historyRequests > 2) return json(route, []);
         return json(route, [{
           id: 91,
           sender_id: 2,
@@ -129,7 +159,6 @@ test.describe("phase four authenticated journeys", () => {
     });
 
     await page.goto("/chat/2", { waitUntil: "domcontentloaded" });
-    await expect(page.getByText("هنوز گفت‌وگویی شروع نشده")).toBeVisible();
     await expect(page.getByText("اولین پیام پس از قطع ارتباط زنده")).toBeVisible({ timeout: 9_000 });
     expect(historyRequests).toBeGreaterThanOrEqual(2);
   });

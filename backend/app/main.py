@@ -1,5 +1,4 @@
 import logging
-import re
 
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
@@ -10,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.api import api_router
+from app.core.browser_origin import is_allowed_browser_origin
 from app.core.config import settings
 from app.core.paths import STATIC_DIR, UPLOADS_DIR, ensure_upload_dirs
 from app.core.request_size import RequestSizeLimitMiddleware
@@ -45,11 +45,11 @@ if settings.CORS_ORIGINS:
 
 
 def _is_allowed_browser_origin(origin: str) -> bool:
-    if origin in settings.CORS_ORIGINS:
-        return True
-
-    origin_regex = settings.BACKEND_CORS_ORIGIN_REGEX
-    return bool(origin_regex and re.fullmatch(origin_regex, origin))
+    return is_allowed_browser_origin(
+        origin,
+        allowed_origins=settings.CORS_ORIGINS,
+        allowed_origin_regex=settings.BACKEND_CORS_ORIGIN_REGEX,
+    )
 
 
 @app.middleware("http")

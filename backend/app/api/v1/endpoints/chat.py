@@ -13,6 +13,7 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
+from app.core.browser_origin import is_allowed_browser_origin
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.moderation import UserBlock
@@ -152,6 +153,15 @@ async def _broadcast_read_receipt(*, sender_id: int, reader_id: int, message_ids
 
 @router.websocket("/ws")
 async def chat_websocket(websocket: WebSocket):
+    origin = websocket.headers.get("origin")
+    if origin and not is_allowed_browser_origin(
+        origin,
+        allowed_origins=settings.CORS_ORIGINS,
+        allowed_origin_regex=settings.BACKEND_CORS_ORIGIN_REGEX,
+    ):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
     try:
         auth_message = await asyncio.wait_for(
@@ -159,6 +169,10 @@ async def chat_websocket(websocket: WebSocket):
             timeout=5.0,
         )
     except (TimeoutError, ValueError, WebSocketDisconnect):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    if not isinstance(auth_message, dict):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
@@ -186,6 +200,9 @@ async def chat_websocket(websocket: WebSocket):
                 )
             except TimeoutError:
                 continue
+            if not isinstance(data, dict):
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
             if data.get("type") == "ping":
                 await websocket.send_json({"type": "pong"})
     except (ValueError, WebSocketDisconnect):

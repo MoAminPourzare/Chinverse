@@ -73,14 +73,14 @@ export default function ChatRoomPage() {
                 display_name: otherUserProfile.profile?.display_name || null,
                 avatar_url: otherUserProfile.profile?.avatar_url || null,
             });
-            setMessages(history);
+            appendMessages(history);
         } catch (error) {
             console.error('Failed to fetch chat data:', error);
             setLoadError('گفت‌وگو بارگذاری نشد. اتصال را بررسی کن و دوباره تلاش کن.');
         } finally {
             setIsLoading(false);
         }
-    }, [userId]);
+    }, [appendMessages, userId]);
 
     useEffect(() => {
         fetchData();
@@ -88,7 +88,15 @@ export default function ChatRoomPage() {
 
     useEffect(() => {
         let reconnectTimer: number | undefined;
+        let handshakeTimer: number | undefined;
         let isActive = true;
+
+        const clearHandshakeTimer = () => {
+            if (handshakeTimer) {
+                window.clearTimeout(handshakeTimer);
+                handshakeTimer = undefined;
+            }
+        };
 
         const connect = () => {
             const socketUrl = chatService.getWebSocketUrl();
@@ -107,6 +115,12 @@ export default function ChatRoomPage() {
                 return;
             }
             socketRef.current = socket;
+            clearHandshakeTimer();
+            handshakeTimer = window.setTimeout(() => {
+                if (!isActive || socketRef.current !== socket) return;
+                setConnectionState('polling');
+                socket.close();
+            }, 10_000);
 
             socket.onopen = () => {
                 const token = chatService.getWebSocketAuthToken();
@@ -122,6 +136,7 @@ export default function ChatRoomPage() {
                     const payload = JSON.parse(event.data);
 
                     if (payload.type === 'connection:ready') {
+                        clearHandshakeTimer();
                         setConnectionState('live');
                         socket.send(JSON.stringify({ type: 'ping' }));
                         return;
@@ -152,10 +167,12 @@ export default function ChatRoomPage() {
             };
 
             socket.onerror = () => {
+                clearHandshakeTimer();
                 setConnectionState('polling');
             };
 
             socket.onclose = () => {
+                clearHandshakeTimer();
                 if (!isActive) return;
                 setConnectionState('polling');
                 reconnectTimer = window.setTimeout(connect, 3000);
@@ -166,6 +183,7 @@ export default function ChatRoomPage() {
 
         return () => {
             isActive = false;
+            clearHandshakeTimer();
             if (reconnectTimer) window.clearTimeout(reconnectTimer);
             socketRef.current?.close();
             socketRef.current = null;
@@ -187,6 +205,9 @@ export default function ChatRoomPage() {
             }
         };
 
+        if (connectionState === 'polling') {
+            void pollNewMessages();
+        }
         const interval = window.setInterval(pollNewMessages, connectionState === 'live' ? 15_000 : 4_000);
         return () => {
             isActive = false;
