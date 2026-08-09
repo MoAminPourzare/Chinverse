@@ -4,8 +4,9 @@
 
 این فاز قراردادهای اصلی API و رفتار قابل مشاهده‌ی رابط کاربری را در مسیرهای
 واقعی کاربر بررسی می‌کند. integrationهای خودکار روی PostgreSQL موقت و با داده‌های
-منحصربه‌فرد اجرا می‌شوند. release candidate کد deploy شده است، اما smoke داده‌ساز
-روی staging تا اصلاح اتصال دیتابیس به‌عنوان گیت مستقل باز می‌ماند.
+منحصربه‌فرد اجرا می‌شوند. release candidate کد deploy شده، اتصال backend به شاخه
+دائمی Neon staging اصلاح شده و smoke داده‌ساز زنده نیز با پاک‌سازی کامل به پایان
+رسیده است.
 
 ## نتیجه کوتاه
 
@@ -14,7 +15,9 @@
 - `backend/tests/integration/test_phase4_user_journeys.py`: چهار سناریوی بزرگ HTTP
   برای پروفایل، شبکه، گالری، خدمات، feed، تعاملات، تالار، مقاله، پشتیبانی، چت،
   اعلان، دوره، دیکشنری، لایتنر، فعالیت روزانه و race duplicate request.
-- تست‌های backend: **۶۶ از ۶۶ unit** و **۱۴ از ۱۴ integration سبز**.
+- تست‌های backend روی release code: **۶۶ از ۶۶ unit** و **۱۴ از ۱۴ integration سبز**؛
+  پس از افزودن ابزار fixture ایمن، اجرای نهایی محلی **۷۸ unit** و **۱۵ integration**
+  را سبز کرد.
 - suite کامل Playwright روی build تولیدی: **۸۷ از ۸۷ سبز** در desktop Chromium، Android-sized
   Chromium و iPhone WebKit.
 - production build فرانت: **۶۳ route موفق**.
@@ -22,6 +25,9 @@
   verifierهای schema فازهای ۲ تا ۴: سبز.
 - downgrade به head فاز سه و upgrade مجدد migration فاز چهار همراه verifier: سبز.
 - GitHub Actions فاز چهار: [run 31306622856](https://github.com/MoAminPourzare/Chinverse/actions/runs/31306622856)، هر سه job سبز.
+- harness زنده‌ی opt-in توسط Playwright بدون credential عمداً discovery شد و در
+  اجرای عادی **۱ تست skipped** بود؛ اجرای واقعی همان قرارداد جداگانه روی staging
+  با چهار حساب synthetic انجام شد.
 
 در جریان تست چند نقص واقعی اصلاح شد: چرخه پشتیبانی کاربر/ادمین کامل شد، fallback
 چت در Safari/WebKit دیگر با CSP crash نمی‌کند، watchdog اتصال و polling فوری اضافه
@@ -135,10 +141,10 @@ migration `a2c4e6f8b1d3` پاسخ ادمین، پاسخ‌دهنده و زمان
 
 ## فهرست باگ بر اساس اولویت
 
-- **P0 باز در دامنه automated/local: صفر.**
-- **P1 باز در دامنه automated/local: صفر.** P1های بسته‌شده: crash چت WebKit تحت
+- **P0 باز در دامنه قابلیت‌های فعال فاز چهار: صفر.**
+- **P1 باز در دامنه قابلیت‌های فعال فاز چهار: صفر.** P1های بسته‌شده: crash چت WebKit تحت
   CSP، race پیام اول، نبود coverage handler WebSocket و نبود workflow پاسخ پشتیبانی
-  ادمین. گیت خارجی اتصال دیتابیس و live smoke جداگانه در پایین ثبت شده است.
+  ادمین. گیت خارجی اتصال دیتابیس و live smoke نیز بسته و در پایین ثبت شده است.
 - **P2 باز: صفر در دامنه قابلیت‌های فعال فاز چهار.** P2های بسته‌شده: گم‌شدن اولین
   پیام polling، stale overwrite و spinner inbox، تمایز خطا/خالی، pending نشست‌ها و
   هم‌پوشانی shortcut پشتیبانی.
@@ -178,12 +184,89 @@ npm.cmd exec -- playwright test
 - runtime: `RUNNING`؛ `/health` همان release code، `/health/ready` دیتابیس `ok` و
   `/docs` پاسخ `404` می‌دهد.
 
-در همین deploy مشخص شد secret `DATABASE_URL` در Space به Neon production
-`br-cold-salad-at44rvqh` اشاره داشته، نه شاخه دائمی staging. startup migration فاز
-چهار production را از `d3a7f9c2e5b1` به `a2c4e6f8b1d3` برد؛ staging
-`br-shiny-darkness-at6obb2e` همچنان روی `c8f1e2a4d6b9` است. برای بازیابی، snapshot
-staging با نام `phase4-predeploy-92ae2c4` و branch نقطه‌زمانی production با نام
-`phase4-prod-pre-migration-92ae2c4` ساخته شد؛ revision دومی `d3a7f9c2e5b1` است.
+### زیرساخت زنده‌ی تأییدشده
+
+- Neon دائمی staging: branch `br-shiny-darkness-at6obb2e`، endpoint
+  `ep-wild-band-atse2yoq` و Alembic head برابر `a2c4e6f8b1d3`.
+- secret `DATABASE_URL` در HF از production به همین endpoint staging منتقل شد و
+  password دیتابیس staging پس از تنظیم rotate شد.
+- TLS دیتابیس با `sslmode=verify-full` و
+  `PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt` سخت‌سازی شد؛ fixture tool نیز
+  SSLContext صریح با CA سیستم می‌سازد. در نتیجه certificate و hostname الزاماً
+  بررسی می‌شوند. URL ارائه‌دهنده باید intentِ `channel_binding=require` را نیز
+  داشته باشد، اما `asyncpg` فعلی آن گزینه‌ی libpq را پشتیبانی نمی‌کند و کد پیش از
+  اتصال حذفش می‌کند؛ بنابراین این گزارش ادعای channel binding اجرایی ندارد.
+- نام refresh cookie در runtime روی `__Host-chinverse_refresh` تثبیت شد. بررسی
+  واقعی cookie، ویژگی‌های `HttpOnly`، `Secure`، `SameSite=Strict`، `Path=/` و
+  host-only را تأیید کرد.
+- HF در وضعیت `RUNNING` با یک replica قرار گرفت؛ `/health` و `/health/ready` هر دو
+  `200` شدند، readiness مقدار `database=ok` داد و query مستقل Neon head
+  `a2c4e6f8b1d3` را برگرداند.
+
+### smoke کامل روی Preview و HF staging
+
+smoke زنده از Vercel Preview محافظت‌شده، مسیر BFF و HF staging با چهار هویت
+synthetic قطعی اجرا شد. هیچ credential، cookie، token، TOTP secret یا نشانی موقت
+در این گزارش ذخیره نشده است.
+
+- هر چهار نقش login موفق داشتند؛ مرز user/moderator/admin، دسترسی moderation و
+  الزام MFA برای admin تأیید شد. moderator نمی‌تواند MFA/admin setup انجام دهد؛
+  admin پس از setup/confirm با TOTP تازه وارد شد و نشست setup قدیمی با `401` رد شد.
+- forum ownership برقرار بود: ساخت سؤال و ویرایش مالک موفق و patch/delete کاربر
+  دیگر `403` شد.
+- گزارش محتوا با `201` ساخته شد؛ duplicate برابر `409` و self-report برابر `400`
+  بود. صف moderation برای کاربر عادی `403` و برای moderator مجاز بود؛ claim و
+  resolve/remove موفق، محتوا سپس `404` و اعلان‌های مالک/گزارش‌دهنده ثبت شدند.
+  role hierarchy نیز جلوی اقدام moderator روی محتوای admin را گرفت و admin توانست
+  مسیر مجاز را انجام دهد.
+- support ticket از نظر مالکیت جدا ماند؛ صف برای user/moderator برابر `403` و برای
+  admin مجاز بود. بستن بدون پاسخ `400` و پاسخ‌دادن همراه با close موفق بود؛ پاسخ و
+  notification در حساب مالک دیده شد.
+- block ارسال پیام را در هر دو جهت رد کرد و unblock موفق بود. WebSocket واقعی
+  Origin نامعتبر را با `403` رد کرد و frame پیش از auth را با `1008` بست؛ سپس
+  `connection:ready`، `ping/pong`، broadcast دوطرفه‌ی `message:new`، read receipt،
+  reconnect و بسته‌شدن socket نشست revokeشده با کد `1008` را تأیید کرد.
+- مالکیت نشست‌ها برقرار بود: revoke میان‌کاربری `404`، revoke نشست متعلق به همان
+  کاربر `204`، access قدیمی `401` و access نشست تازه معتبر بود.
+- BFF refresh، access token و refresh cookie را rotate کرد؛ replay cookie قبلی
+  `401` شد و token چرخیده پس از revoke نشست نیز دیگر معتبر نبود.
+- mutation بدون `Origin` از BFF با `403` رد شد.
+
+چهار کاربر synthetic پس از smoke در یک transaction محافظت‌شده دقیقاً پاک شدند.
+ممیزی پس از cleanup تعداد fixture user، report، moderation action، message، support
+ticket، notification و session باقی‌مانده را همگی صفر نشان داد. bypass موقت
+Vercel نیز revoke شد و استفاده دوباره از مقدار قبلی دیگر cookie عبور نساخت؛ بنابراین
+در پایان نه fixture زنده ماند و نه bypass معتبر.
+
+### ابزار تکرارپذیر staging
+
+- `backend/scripts/phase4_staging_fixtures.py` فقط endpoint و Alembic head دقیق
+  staging را می‌پذیرد، به‌صورت پیش‌فرض dry-run است و mutation را فقط با `--apply`
+  و تأیید دقیق run id انجام می‌دهد. چهار هویت deterministic است و guardهای FK،
+  storage، graph خارج از scope، postcondition و advisory lock به‌صورت fail-closed
+  از create/cleanup محافظت می‌کنند.
+- `backend/tests/test_phase4_staging_fixtures.py` و
+  `backend/tests/integration/test_phase4_staging_fixtures_integration.py` قرارداد
+  endpoint/TLS/identity و cleanup واقعی PostgreSQL را با outer rollback پوشش می‌دهند.
+- `frontend/e2e/phase4-live-staging.spec.ts` و راهنمای
+  `frontend/e2e/PHASE4_LIVE_STAGING.md` harness زنده‌ی opt-in هستند: identity override
+  نمی‌پذیرند، retry را صفر و worker را یک می‌کنند و trace/screenshot/video و logging
+  داده محرمانه را خاموش نگه می‌دارند.
+- اجرای نهایی ابزارها: **۷۸ unit passed**، **۱۵ integration passed** و discovery
+  Playwright بدون opt-in برابر **۱ skipped**؛ Ruff، lint و TypeScript نیز سبز بودند.
+
+### رخداد migration تولید و مسیر بازیابی
+
+پیش از اصلاح secret، HF به Neon production با branch
+`br-cold-salad-at44rvqh` متصل بود و startup migration آن را از
+`d3a7f9c2e5b1` به migration افزایشی `a2c4e6f8b1d3` رساند. برای بازیابی، snapshot
+staging با نام `phase4-predeploy-92ae2c4` / `br-misty-grass-atc88xt5` و branch
+نقطه‌زمانی production با نام `phase4-prod-pre-migration-92ae2c4` /
+`br-billowing-silence-atxtvddd` در revision `d3a7f9c2e5b1` نگه داشته شده‌اند.
+
+روی production هیچ fixture یا داده‌ی smoke نوشته نشد و rollback نیز اجرا نشد؛
+migration افزایشی موجود باقی مانده و PIT branch مسیر recovery است. تمام smoke
+داده‌ساز فقط پس از انتقال secret روی branch دائمی staging اجرا شد.
 
 ## محدودیت‌ها و کار باقی‌مانده
 
@@ -191,17 +274,18 @@ staging با نام `phase4-predeploy-92ae2c4` و branch نقطه‌زمانی p
 فازهای بعدی یا نیازمند credential/داده‌ی واقعی باقی مانده‌اند:
 
 - handler واقعی WebSocket در unit/integration پوشش دارد؛ smoke provider برای جریان
-  A→B، read receipt، reconnect و revoke هنوز باید با session fixture زنده اجرا شود.
+  A→B، read receipt، reconnect و revoke نیز با session fixture زنده اجرا شد؛ آزمون
+  چند replica و بار بالا در فاز هفت باقی می‌ماند.
 - اجرای واقعی روی دستگاه Android، iPhone و Safari با شبکه موبایل جایگزین
   کامل شبیه‌سازی Playwright نیست.
 - referrals و subscriptions در staging با feature flag خاموش‌اند؛ checkout
   manual-placeholder نباید در release عمومی فعال شود.
-- سناریوهای authenticated و role-based مرورگر با mock قراردادی پایدار پوشش داده
-  شدند؛ smoke همان مسیرها روی staging زنده به حساب‌های seedشده و دسترسی Preview نیاز دارد.
+- سناریوهای authenticated و role-based علاوه بر mock قراردادی پایدار، روی staging
+  زنده و Preview محافظت‌شده نیز اجرا و fixtureهایشان پاک شدند.
 - تست load، soak، CDN/HLS، restore بکاپ و خطاهای provider در فاز کارایی/عملیات
   اجرا می‌شود.
 
-بنابراین فاز چهار برای **قابلیت‌های فعال و قابل تست در محیط محلی بسته است** و deploy
-کد نیز قابل ردیابی و سبز است. اعلام پایان سراسری فاز چهار تا انتقال محرمانه‌ی اتصال HF
-به Neon staging، اجرای migration روی همان branch و smoke authenticated/role/WebSocket
-زنده معلق می‌ماند. محدودیت‌های رسانه، دستگاه واقعی و عملیات طبق نقشه راه فازهای بعدی‌اند.
+بنابراین فاز چهار برای **همه قابلیت‌های فعال در دامنه تعریف‌شده، بدون P0/P1 باز،
+کامل است**؛ deploy کد، staging DB و smoke زنده نیز قابل ردیابی‌اند. محدودیت‌های
+رسانه، دستگاه واقعی، performance و عملیات متعلق به فازهای پنج به بعد و خارج از
+دامنه پذیرش فاز چهار هستند.

@@ -4,8 +4,16 @@ on:
   push:
     branches: ["codex/phase-4-user-journeys"]
     paths:
-      - .github/workflows/deploy-hf-space.yml
-      - backend/**
+      - backend/.dockerignore
+      - backend/Dockerfile
+      - backend/alembic.ini
+      - backend/poetry.lock
+      - backend/pyproject.toml
+      - backend/app/**
+      - backend/alembic/**
+      - backend/data/**
+      - backend/static/**
+      - backend/*.py
   workflow_dispatch:
     inputs:
       release_sha:

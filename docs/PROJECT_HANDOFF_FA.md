@@ -9,19 +9,21 @@
 
 وضعیت فعلی:
 
-- فازهای صفر تا سه انجام شده‌اند؛ دامنه automated/local فاز چهار نیز بدون P0/P1 باز تکمیل شده است.
+- فازهای صفر تا چهار برای قابلیت‌های فعال و دامنه تعریف‌شده انجام شده‌اند؛ فاز چهار
+  پس از automated/local و live staging هیچ P0/P1 باز ندارد.
 - شاخه فعلی `codex/phase-4-user-journeys` است.
-- release code فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است؛ commitهای بعدی شاخه فقط workflow دیپلوی را اضافه و سخت‌سازی کرده‌اند.
+- release code فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است؛ commitهای بعدی شاخه workflow دیپلوی و ابزار verification را اضافه و سخت‌سازی کرده‌اند و runtime release را تغییر نداده‌اند.
 - commit مبنای شاخه پیش از تغییرات فاز چهار: `3f63addf1e6b9f3c79f83044545f2d7a375f08db`
 - وضعیت دقیق commit/worktree را با Git بررسی کن؛ چند Codex روی پروژه کار می‌کنند و این سند را نباید جایگزین Git دانست.
 - GitHub Actions فاز چهار سبز و release code روی Vercel و Hugging Face deploy شده است.
-- backend با tier=`staging` روی Hugging Face اجرا می‌شود، اما در audit دیپلوی مشخص شد secret دیتابیس آن هنوز به Neon production اشاره دارد؛ این اتصال باید پیش از live smoke اصلاح شود.
+- backend با tier=`staging` روی Hugging Face اجرا می‌شود و به branch دائمی Neon
+  staging با head فاز چهار متصل است؛ live smoke کامل و cleanup شده است.
 - frontend release candidate روی Vercel Preview deploy شده است.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
-گزارش کامل اجرای فعلی در `docs/PHASE_4_USER_JOURNEYS_FA.md` است. پس از اصلاح اتصال
-DB، migration شاخه واقعی staging و smoke دسترسی‌دار، فاز بعدی منطقی فاز پنج آموزش
-و رسانه است.
+گزارش کامل اجرای فعلی در `docs/PHASE_4_USER_JOURNEYS_FA.md` است. فاز بعدی منطقی
+فاز پنج آموزش و رسانه است؛ موبایل واقعی، performance و عملیات در فازهای بعدی
+تعریف شده‌اند و جزو acceptance فاز چهار نیستند.
 
 ## ۲. قانون کار برای Codex بعدی
 
@@ -93,7 +95,7 @@ DB، migration شاخه واقعی staging و smoke دسترسی‌دار، فا
 | frontend staging/preview | [Vercel Preview](https://chinverse-nwhvuwf7k-death-stroke.vercel.app) |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
-| database target | Neon branch دائمی `staging` جداست، اما HF فعلاً اشتباهاً به branch `production` وصل است؛ اصلاح در حال انجام است |
+| database target | Neon staging `br-shiny-darkness-at6obb2e` / `ep-wild-band-atse2yoq`، head=`a2c4e6f8b1d3`؛ HF به همین endpoint متصل است |
 | فایل staging | bucket خصوصی `MoAmin9/chinverse-api-storage` با mount در `/data` |
 | ویدئو | Arvan VOD/HLS برای نمونه‌های فعلی |
 | Cloudflare | فقط Cloudflare Turnstile در کد؛ Cloudflare CDN/R2 در این release استفاده نمی‌شود |
@@ -316,6 +318,13 @@ poetry run python import_dictionary.py --all-hsk --reset
 - release code `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است.
 - referrals و subscriptions به‌دلیل feature flag خاموش، عمداً فقط در حالت
   disabled/redirect باقی مانده‌اند.
+- backend fixture tool ایمن و opt-in live Playwright harness اضافه شدند تا چهار
+  نقش synthetic را با identity قطعی بسازند، smoke کنند و با guardهای endpoint،
+  schema، FK، storage و scope دقیق پاک کنند.
+- اتصال HF به Neon staging اصلاح، password آن rotate، TLS دیتابیس و نام cookie
+  سخت‌سازی و smoke کامل BFF/MFA/forum/report/support/chat/session/WebSocket اجرا شد.
+- چهار fixture دقیقاً پاک و bypass موقت Vercel revoke شد؛ ممیزی نهایی هیچ fixture
+  یا bypass معتبر باقی‌مانده نشان نداد.
 
 ## ۱۰. تست و شواهد نهایی
 
@@ -324,9 +333,9 @@ CI کامل فاز چهار و شواهد release candidate زیر ثبت شده
 - Release baseline: success
 - Frontend: success؛ lint، typecheck، unit/coverage، build و Playwright
 - Backend: success؛ audit، Ruff، compileall، Bandit، unit، migration، integration، rollback/rebuild و Docker
-- Backend unit محلی: `66 passed`, `14 deselected`
+- Backend unit روی release code: `66 passed`, `14 deselected`
 - Backend coverage با gate حداقل `50%`
-- Backend integration: `14 passed`
+- Backend integration روی release code: `14 passed`
 - Frontend Vitest: `30 passed`
 - Phase 4 E2E: `51 passed`؛ suite کامل production: `87 passed`
 - production build: `63 route`
@@ -338,6 +347,10 @@ CI کامل فاز چهار و شواهد release candidate زیر ثبت شده
 - Quality Gates workflow نهایی: [run 31310087005](https://github.com/MoAminPourzare/Chinverse/actions/runs/31310087005)، موفق
 - Hugging Face Space commit: `526add1ee73c618f29142b55e720449080ead48f`
 - tree همان Space دقیقاً برابر tree پوشه `backend` در release code است.
+- verification نهایی ابزار fixture: `78 passed`, `15 deselected` برای unit و
+  `15 passed` برای integration روی PostgreSQL ایزوله.
+- live Playwright harness بدون opt-in به‌درستی discovery و `1 skipped` شد؛ اجرای
+  stateful واقعی آن جداگانه روی staging با retry صفر و یک worker انجام شد.
 
 Smoke test زنده Hugging Face:
 
@@ -350,17 +363,64 @@ Smoke test زنده Hugging Face:
 | GET واقعی با Origin نامعتبر | ۴۰۳؛ proxy HF ممکن است preflight را خودش ۲۰۰ پاسخ دهد، اما درخواست app رد می‌شود |
 | CSP/HSTS/noindex/tier headers | تأیید شد |
 
-هشدار زیرساختی فاز چهار: `DATABASE_URL` در Space به Neon production
-`br-cold-salad-at44rvqh` اشاره داشت؛ startup migration آن branch را به
-`a2c4e6f8b1d3` رساند، درحالی‌که staging دائمی `br-shiny-darkness-at6obb2e` هنوز
-روی `c8f1e2a4d6b9` است. نقاط بازیابی زیر ساخته و بررسی شدند:
+تنظیمات نهایی backend staging:
+
+- branch Neon برابر `br-shiny-darkness-at6obb2e`، endpoint برابر
+  `ep-wild-band-atse2yoq` و Alembic head برابر `a2c4e6f8b1d3` است.
+- secret `DATABASE_URL` در HF به همین staging منتقل و password دیتابیس rotate شد.
+- اتصال دیتابیس با `sslmode=verify-full` و مقدار عمومی
+  `PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt` certificate و hostname را
+  بررسی می‌کند؛ fixture tool نیز SSLContext صریح با CA سیستم می‌سازد. DSN ارائه‌دهنده
+  باید `channel_binding=require` داشته باشد، اما `asyncpg` فعلی این گزینه‌ی libpq را
+  پشتیبانی نمی‌کند و کد آن را حذف می‌کند؛ channel binding اجرایی ادعا نمی‌شود.
+- `REFRESH_COOKIE_NAME=__Host-chinverse_refresh` است؛ cookie واقعی `HttpOnly`،
+  `Secure`، `SameSite=Strict`، `Path=/` و host-only تأیید شد.
+- HF پس از restart در وضعیت `RUNNING` با یک replica بود و `/health` و
+  `/health/ready` هر دو `200` پاسخ دادند.
+
+smoke stateful کامل از Preview محافظت‌شده، BFF و HF staging این مسیرها را تأیید کرد:
+
+- login چهار نقش، مرز user/moderator/admin، admin MFA setup/confirm، revoke نشست
+  setup و دسترسی MFA-protected ادمین؛
+- forum ownership، duplicate/self report، صف و claim/resolve moderation، اعلان‌ها
+  و role hierarchy؛
+- support ownership، صف فقط-admin، منع close بدون reply، ثبت reply/close و اعلان؛
+- block دوطرفه‌ی chat و unblock؛
+- WebSocket واقعی شامل رد Origin نامعتبر با `403`، الزام auth-first، ready،
+  ping/pong، message broadcast، read receipt، reconnect و close code `1008` برای
+  frame پیش از auth و پس از session revoke؛
+- session ownership، revoke میان‌کاربری و همان‌کاربر، access token قدیمی/تازه؛
+- refresh rotation در BFF، رد replay با `401` و رد mutation بدون Origin با `403`.
+
+چهار حساب synthetic قطعی فقط روی staging ساخته شدند. cleanup transaction دقیقاً
+همان چهار حساب و graph تست را حذف کرد و ممیزی نهایی برای user/report/action/message/
+ticket/notification/session مقدار صفر داد. bypass موقت Vercel بلافاصله revoke و
+نامعتبرشدن مقدار قبلی مستقلاً تأیید شد. هیچ secret یا هویت موقت در Git/سند ثبت نشد.
+
+ابزارهای تکرار این گیت:
+
+- `backend/scripts/phase4_staging_fixtures.py`
+- `backend/tests/test_phase4_staging_fixtures.py`
+- `backend/tests/integration/test_phase4_staging_fixtures_integration.py`
+- `frontend/e2e/phase4-live-staging.spec.ts`
+- `frontend/e2e/PHASE4_LIVE_STAGING.md`
+
+fixture tool به‌صورت پیش‌فرض dry-run است و apply را فقط برای endpoint/head دقیق
+staging، run id قطعی و scope cleanup اثبات‌شده می‌پذیرد. harness identity override،
+retry و artifactهای حساس را غیرفعال می‌کند.
+
+رخداد migration تولید: پیش از اصلاح secret، HF به Neon production
+`br-cold-salad-at44rvqh` اشاره داشت و startup migration آن branch را از
+`d3a7f9c2e5b1` به migration افزایشی `a2c4e6f8b1d3` رساند. نقاط بازیابی زیر ساخته
+و بررسی شدند:
 
 - staging snapshot: `phase4-predeploy-92ae2c4` / `br-misty-grass-atc88xt5`
 - production point-in-time: `phase4-prod-pre-migration-92ae2c4` /
   `br-billowing-silence-atxtvddd` با revision `d3a7f9c2e5b1`
 
-روی production rollback یا داده‌ی تستی اجرا نشد. پیش از live smoke باید secret HF
-به staging منتقل و head همان branch دوباره تأیید شود.
+روی production rollback انجام نشد و هیچ داده یا fixture تستی وارد آن نشد؛ migration
+افزایشی موجود باقی مانده و PIT branch مسیر recovery محفوظ است. live smoke فقط پس
+از انتقال secret روی staging اجرا شد.
 
 ## ۱۱. قابلیت‌های عمداً خاموش
 
@@ -403,7 +463,7 @@ FEATURE_POINTS_ENABLED=false
 
 ## ۱۳. نقشه راه بعدی
 
-### فاز چهار: تست بخش‌به‌بخش — دامنه محلی تکمیل، گیت زنده در حال بستن
+### فاز چهار: تست بخش‌به‌بخش — تکمیل‌شده
 
 حالت‌های موفق، خطا، خالی، مالکیت، دسترسی role، قطع شبکه، refresh، race، duplicate
 submit، back browser و profileهای موبایل برای ماژول‌های فعال پوشش داده شدند:
@@ -419,9 +479,11 @@ submit، back browser و profileهای موبایل برای ماژول‌های
 - settings/appearance
 - admin/moderation
 
-خروجی محلی: ماتریس پذیرش، bug list با P0-P3، contract/integration tests و build
-تولیدی سبز. push، CI و deploy قابل مشاهده انجام شده‌اند. اصلاح اتصال DB و smoke
-authenticated/role/WebSocket روی Preview محافظت‌شده باقی است.
+خروجی: ماتریس پذیرش، bug list با P0-P3، contract/integration tests، build تولیدی،
+push/CI/deploy قابل مشاهده، اتصال صحیح Neon staging و smoke کامل
+authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها پاک و bypass revoke
+شده‌اند و برای قابلیت‌های فعال هیچ P0/P1 باز نیست. رسانه، موبایل واقعی، performance
+و operations در فازهای پنج به بعد و خارج از scope این فاز هستند.
 
 ### فاز پنج: آموزش و رسانه
 
@@ -526,12 +588,13 @@ restore فقط روی مقصد ایزوله انجام شود.
 
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
-«این repository مربوط به ChinVerse است. فازهای صفر تا سه و دامنه automated/local
-فاز چهار انجام شده‌اند. شاخه فعلی `codex/phase-4-user-journeys` و release code
-`92ae2c40...` است؛ GitHub CI، Vercel Preview و Hugging Face deploy سبزند، اما audit
-نشان داد secret دیتابیس HF به Neon production وصل است نه staging. production برای
-بازیابی branch نقطه‌زمانی دارد و rollback نشده است. پیش از اعلام پایان فاز چهار،
-اتصال را محرمانه به staging منتقل، migration همان branch و live smoke نقش‌ها/چت را
-کامل کن. هنوز چیزی روی main merge نشده است. بعد از این گیت، کار منطقی فاز پنج
-آموزش و رسانه، سپس موبایل واقعی، performance و گیت‌های production است. هیچ secretی
-را در چت یا Git ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»
+«این repository مربوط به ChinVerse است. فازهای صفر تا چهار برای قابلیت‌های فعال
+انجام شده‌اند. شاخه فعلی `codex/phase-4-user-journeys` و release code
+`92ae2c40...` است؛ GitHub CI، Vercel Preview و Hugging Face deploy سبزند. HF اکنون
+به branch دائمی Neon staging با head `a2c4e6f8b1d3` متصل است و smoke کامل نقش‌ها،
+MFA، moderation، support، chat، session، refresh و WebSocket انجام شده؛ چهار fixture
+پاک و bypass موقت revoke شده‌اند. production پیش از اصلاح secret فقط migration
+افزایشی را دریافت کرد، هیچ داده تستی نگرفت و PIT branch بازیابی آن حفظ شده است.
+هنوز چیزی روی main merge نشده است. کار منطقی بعدی فاز پنج آموزش و رسانه، سپس موبایل
+واقعی، performance و گیت‌های production است. هیچ secretی را در چت یا Git ثبت نکن و
+فقط از داشبورد provider/secret manager استفاده کن.»
