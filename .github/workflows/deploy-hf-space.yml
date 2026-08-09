@@ -1,0 +1,62 @@
+name: Deploy staging backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full Git commit SHA whose backend tree should be deployed
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-hf-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Hugging Face Space
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HF_OIDC_RESOURCE: spaces/MoAmin9/chinverse-api
+      RELEASE_SHA: ${{ inputs.release_sha }}
+    steps:
+      - name: Validate release SHA
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "release_sha must be a full lowercase Git commit SHA" >&2
+            exit 1
+          fi
+
+      - name: Checkout immutable release
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.release_sha }}
+
+      - name: Verify checked-out release
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          git merge-base --is-ancestor "$RELEASE_SHA" "origin/codex/phase-4-user-journeys"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Hugging Face CLI
+        run: python -m pip install --disable-pip-version-check "huggingface_hub==1.27.0"
+
+      - name: Mirror backend to staging Space
+        shell: bash
+        run: >-
+          hf upload MoAmin9/chinverse-api ./backend .
+          --repo-type=space
+          --delete="*"
+          --commit-message="Deploy Chinverse backend from ${RELEASE_SHA}"
