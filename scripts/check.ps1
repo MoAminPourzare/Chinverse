@@ -88,6 +88,10 @@ try {
             Assert-NativeSuccess "Model and migration parity"
             & $Python scripts\verify_phase2_schema.py
             Assert-NativeSuccess "Phase 2 schema invariants"
+            & $Python scripts\verify_phase3_schema.py
+            Assert-NativeSuccess "Phase 3 schema invariants"
+            & $Python scripts\verify_phase4_schema.py
+            Assert-NativeSuccess "Phase 4 schema invariants"
             & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m integration
             Assert-NativeSuccess "Backend integration tests"
             & $Python -m alembic downgrade base
@@ -98,6 +102,10 @@ try {
             Assert-NativeSuccess "Post-rebuild migration parity"
             & $Python scripts\verify_phase2_schema.py
             Assert-NativeSuccess "Post-rebuild phase 2 schema invariants"
+            & $Python scripts\verify_phase3_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 3 schema invariants"
+            & $Python scripts\verify_phase4_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 4 schema invariants"
 
             docker build --tag chinverse-backend:local-check .
             Assert-NativeSuccess "Production backend container build"

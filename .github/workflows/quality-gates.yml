@@ -147,6 +147,7 @@ jobs:
           poetry run alembic check
           poetry run python scripts/verify_phase2_schema.py
           poetry run python scripts/verify_phase3_schema.py
+          poetry run python scripts/verify_phase4_schema.py
 
       - name: Integration tests
         run: poetry run python -m pytest -m integration
@@ -158,6 +159,7 @@ jobs:
           poetry run alembic check
           poetry run python scripts/verify_phase2_schema.py
           poetry run python scripts/verify_phase3_schema.py
+          poetry run python scripts/verify_phase4_schema.py
 
       - name: Build production container
         run: docker build --tag chinverse-backend:ci .

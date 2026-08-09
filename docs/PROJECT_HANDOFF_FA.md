@@ -457,6 +457,9 @@ poetry run bandit -q -r app scripts -x tests -lll
 poetry run python -m pytest -m "not integration" --cov=app --cov-fail-under=50
 poetry run python -m pytest -m integration
 poetry run alembic check
+poetry run python scripts/verify_phase2_schema.py
+poetry run python scripts/verify_phase3_schema.py
+poetry run python scripts/verify_phase4_schema.py
 ```
 
 ### Gate کامل
