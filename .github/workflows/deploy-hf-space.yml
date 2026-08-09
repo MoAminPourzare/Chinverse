@@ -5,6 +5,7 @@ on:
     branches: ["codex/phase-4-user-journeys"]
     paths:
       - .github/workflows/deploy-hf-space.yml
+      - backend/**
   workflow_dispatch:
     inputs:
       release_sha:
@@ -41,6 +42,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
           ref: ${{ inputs.release_sha || github.sha }}
 
       - name: Verify checked-out release
@@ -54,13 +56,21 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Export immutable backend tree
+        shell: bash
+        run: |
+          export_dir="${RUNNER_TEMP}/chinverse-backend-release"
+          mkdir -p "$export_dir"
+          git archive "${RELEASE_SHA}:backend" | tar -x -C "$export_dir"
+
       - name: Install Hugging Face CLI
         run: python -m pip install --disable-pip-version-check "huggingface_hub==1.27.0"
 
       - name: Mirror backend to staging Space
         shell: bash
         run: >-
-          hf upload MoAmin9/chinverse-api ./backend .
+          hf upload MoAmin9/chinverse-api
+          "${RUNNER_TEMP}/chinverse-backend-release" .
           --repo-type=space
           --delete="*"
           --commit-message="Deploy Chinverse backend from ${RELEASE_SHA}"
