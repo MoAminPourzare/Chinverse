@@ -52,7 +52,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 px-3 pb-3">
+        <div className="bottom-nav-container pointer-events-none absolute inset-x-0 bottom-0 z-50 px-[max(0.75rem,env(safe-area-inset-left))] pb-3 pr-[max(0.75rem,env(safe-area-inset-right))]">
             <div className="bottom-nav-shell pointer-events-auto mx-auto max-w-xl rounded-[28px] border border-white/70 bg-white/92 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-[#303a48] dark:bg-[#171d26]/95 dark:shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
                 <div className="flex items-end justify-around gap-1">
                     {navItems.map((item) => {

@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, ImageIcon, MessageCircle, User as UserIcon } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
@@ -19,7 +19,6 @@ import { ServiceWithProvider, userService } from "@/services/user.service";
 
 export default function ServiceDetailPage() {
     const params = useParams();
-    const router = useRouter();
     const serviceId = Number(params.id);
     const [service, setService] = useState<ServiceWithProvider | null>(null);
     const [loading, setLoading] = useState(true);
@@ -74,7 +73,7 @@ export default function ServiceDetailPage() {
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
                 <header className="flex items-center justify-between">
-                    <BackButton onClick={() => router.back()} />
+                    <SafeBackButton fallback="/showcase" />
                     <Link href="/showcase" className="text-xs font-bold text-[#155aa6]">
                         ویترین خدمات
                     </Link>

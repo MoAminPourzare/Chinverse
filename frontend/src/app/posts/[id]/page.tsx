@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CalendarDays, ImageIcon, Loader2, User as UserIcon } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostComments from "@/components/engagement/PostComments";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
@@ -18,7 +18,6 @@ import { postService, PostDetail } from "@/services/post.service";
 
 export default function PostDetailPage() {
     const params = useParams();
-    const router = useRouter();
     const postId = Number(params.id);
     const [post, setPost] = useState<PostDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -84,7 +83,7 @@ export default function PostDetailPage() {
         <div className="min-h-full bg-[#f7f8fb] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-4">
                 <header className="flex items-center justify-between">
-                    <BackButton onClick={() => router.back()} />
+                    <SafeBackButton fallback="/community" />
                     <Link href="/" className="text-xs font-black text-[#155aa6]">
                         خانه
                     </Link>

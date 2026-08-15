@@ -7,6 +7,7 @@ import { CheckCircle2, Clock3, Loader2, MessageSquareText, RefreshCw, X } from '
 import { communityService, type SupportTicket } from '@/services/community.service';
 import { authService } from '@/services/auth.service';
 import { IconButton } from '@/components/ui/IconButton';
+import { useSafeBack } from '@/hooks/useSafeBack';
 import { validateTextLength, validationMessage } from '@/validation';
 
 type Screen = 'input' | 'success';
@@ -19,6 +20,7 @@ const statusLabel: Record<SupportTicket['status'], string> = {
 
 export default function SupportPage() {
     const router = useRouter();
+    const closeSupport = useSafeBack("/");
     const [screen, setScreen] = useState<Screen>('input');
     const [message, setMessage] = useState('');
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -75,7 +77,7 @@ export default function SupportPage() {
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
             <header className="grid grid-cols-[44px_1fr_44px] items-center">
-                <IconButton onClick={() => router.back()} label="بستن" className="justify-self-end">
+                <IconButton onClick={closeSupport} label="بستن" className="justify-self-end">
                     <X size={20} />
                 </IconButton>
                 <div className="flex justify-center">

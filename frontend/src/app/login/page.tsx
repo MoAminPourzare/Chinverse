@@ -163,7 +163,7 @@ export default function LoginPage() {
                         </button>
                     </div>
                     <FieldError message={fieldErrors.password} />
-                    <Link href="/forgot-password" className="inline-block text-xs font-bold text-[#155aa6] hover:text-[#0f4e92]">
+                    <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-xs font-bold text-[#155aa6] hover:text-[#0f4e92]">
                         رمز عبورت را فراموش کرده‌ای؟
                     </Link>
                 </label>

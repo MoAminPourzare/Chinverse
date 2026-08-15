@@ -7,7 +7,7 @@ import { Check, ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-reac
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
@@ -262,7 +262,7 @@ export default function AccountPage() {
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5">
                 <header className="relative flex h-11 items-center justify-center">
-                    <BackButton onClick={() => router.back()} className="absolute right-0 top-0" />
+                    <SafeBackButton fallback="/profile" className="absolute right-0 top-0" />
                     <h1 className="text-[17px] font-black text-[#2f3238]">حساب کاربری</h1>
                     <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center">
                         <Image src={accountIcon} alt="" width={30} height={30} className="h-8 w-8 object-contain" />

@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 import { getMediaUrl } from '@/lib/media';
 import { getDirectionalTextProps, getTextAlign } from '@/lib/textDirection';
 import { chatService, ChatMessage } from '@/services/chat.service';
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import UserTrustActions from '@/components/trust/UserTrustActions';
 import { userService } from '@/services/user.service';
 import { validateTextLength, validationMessage } from '@/validation';
@@ -270,7 +270,7 @@ export default function ChatRoomPage() {
         <div className="flex h-full min-h-full flex-col bg-[#f7f8fa]" dir="rtl">
             <header className="shrink-0 border-b border-[#dfe3ea] bg-[#f0f2f5] px-5 pb-3 pt-5">
                 <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3">
-                    <BackButton onClick={() => router.back()} className="justify-self-end" />
+                    <SafeBackButton fallback="/chat" className="justify-self-end" />
 
                     <div className="flex min-w-0 items-center justify-center gap-3">
                         <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />

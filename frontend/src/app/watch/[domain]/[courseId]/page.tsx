@@ -123,7 +123,8 @@ export default function SharedWatchPage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
+    const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
     const [selectedWord, setSelectedWord] = useState<VocabularyWord | null>(null);
     const [showVocabModal, setShowVocabModal] = useState(false);
     const [loadingVocabularyWord, setLoadingVocabularyWord] = useState<string | null>(null);
@@ -144,6 +145,8 @@ export default function SharedWatchPage() {
     const lessonIdRef = useRef<number | null>(null);
     const vocabularyRequestIdRef = useRef(0);
     const resumeVideoAfterVocabularyRef = useRef(false);
+    const pseudoFullscreenHistoryRef = useRef(false);
+    const isFullscreen = isNativeFullscreen || isPseudoFullscreen;
 
     const openAppearanceSettings = useCallback(() => {
         router.push(getReturnToHref("/settings/appearance"));
@@ -257,11 +260,73 @@ export default function SharedWatchPage() {
         return () => window.clearTimeout(timeout);
     }, [loadPlayback, playback]);
 
+    const unlockOrientation = useCallback(() => {
+        try {
+            window.screen.orientation?.unlock();
+        } catch {
+            // Orientation locking is optional and unsupported by iOS Safari.
+        }
+    }, []);
+
+    const lockLandscape = useCallback(async () => {
+        const orientation = window.screen.orientation as ScreenOrientation & {
+            lock?: (orientation: "landscape") => Promise<void>;
+        };
+        if (typeof orientation?.lock !== "function") return;
+        try {
+            await orientation.lock("landscape");
+        } catch {
+            // A browser may require installed-PWA/fullscreen mode before locking.
+        }
+    }, []);
+
     useEffect(() => {
-        const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+        const handleFullscreenChange = () => {
+            const active = Boolean(document.fullscreenElement);
+            setIsNativeFullscreen(active);
+            if (!active) unlockOrientation();
+        };
         document.addEventListener("fullscreenchange", handleFullscreenChange);
         return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    }, []);
+    }, [unlockOrientation]);
+
+    useEffect(() => {
+        if (!isPseudoFullscreen) return;
+
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousBodyOverflow = document.body.style.overflow;
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";
+        document.documentElement.dataset.mediaFullscreen = "true";
+        window.history.pushState({ ...window.history.state, chinverseMediaFullscreen: true }, "", window.location.href);
+        pseudoFullscreenHistoryRef.current = true;
+        void lockLandscape();
+
+        const closeFromHistory = () => {
+            pseudoFullscreenHistoryRef.current = false;
+            setIsPseudoFullscreen(false);
+        };
+        const closeFromEscape = (event: KeyboardEvent) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            setIsPseudoFullscreen(false);
+            if (pseudoFullscreenHistoryRef.current) {
+                pseudoFullscreenHistoryRef.current = false;
+                window.history.back();
+            }
+        };
+        window.addEventListener("popstate", closeFromHistory);
+        window.addEventListener("keydown", closeFromEscape);
+
+        return () => {
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.body.style.overflow = previousBodyOverflow;
+            delete document.documentElement.dataset.mediaFullscreen;
+            window.removeEventListener("popstate", closeFromHistory);
+            window.removeEventListener("keydown", closeFromEscape);
+            unlockOrientation();
+        };
+    }, [isPseudoFullscreen, lockLandscape, unlockOrientation]);
 
     useEffect(() => {
         if (videoRef.current) videoRef.current.playbackRate = preferences.playbackSpeed;
@@ -472,12 +537,28 @@ export default function SharedWatchPage() {
 
     const toggleFullscreen = async () => {
         if (!videoContainerRef.current) return;
-        try {
-            if (document.fullscreenElement) await document.exitFullscreen();
-            else await videoContainerRef.current.requestFullscreen();
-        } catch {
-            setPlaybackError({ kind: "media", message: "تمام‌صفحه در این مرورگر در دسترس نیست.", retryable: false });
+        if (isPseudoFullscreen) {
+            setIsPseudoFullscreen(false);
+            if (pseudoFullscreenHistoryRef.current) {
+                pseudoFullscreenHistoryRef.current = false;
+                window.history.back();
+            }
+            return;
         }
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+                return;
+            }
+            if (typeof videoContainerRef.current.requestFullscreen === "function") {
+                await videoContainerRef.current.requestFullscreen();
+                await lockLandscape();
+                return;
+            }
+        } catch {
+            // Fall through to the CSS fullscreen used by iOS Safari.
+        }
+        setIsPseudoFullscreen(true);
     };
 
     const pauseVideoForVocabulary = useCallback(() => {
@@ -543,6 +624,7 @@ export default function SharedWatchPage() {
                 <button
                     key={key++}
                     type="button"
+                    data-inline-action="true"
                     onClick={(event) => {
                         event.stopPropagation();
                         void handleWordClick(foundWord);
@@ -610,7 +692,11 @@ export default function SharedWatchPage() {
                 </header>
 
                 <section className="shrink-0 overflow-hidden rounded-[24px] border border-[#dfe6f0] bg-white p-2 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
-                    <div ref={videoContainerRef} className="lesson-video-shell relative aspect-video overflow-hidden rounded-[22px] bg-black">
+                    <div
+                        ref={videoContainerRef}
+                        className="lesson-video-shell relative aspect-video overflow-hidden rounded-[22px] bg-black"
+                        data-pseudo-fullscreen={isPseudoFullscreen ? "true" : undefined}
+                    >
                         <video
                             ref={videoRef}
                             className="lesson-video-element h-full w-full object-contain"
@@ -662,16 +748,16 @@ export default function SharedWatchPage() {
                         {!playbackError && playback && (
                             <>
                                 <div className="lesson-video-center-controls pointer-events-none absolute inset-0 flex items-center justify-center gap-5 bg-gradient-to-t from-black/35 via-transparent to-black/10">
-                                    <button type="button" onClick={() => seekTo(currentTime - 10)} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur" aria-label="۱۰ ثانیه عقب"><Rewind size={22} /></button>
+                                    <button type="button" onClick={() => seekTo(currentTime - 10)} className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur" aria-label="۱۰ ثانیه عقب"><Rewind size={22} /></button>
                                     <button type="button" onClick={handlePlayPause} className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur" aria-label={isPlaying ? "توقف" : "پخش"}>{isPlaying ? <Pause size={30} /> : <Play size={30} className="mr-1 fill-current" />}</button>
-                                    <button type="button" onClick={() => seekTo(currentTime + 10)} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur" aria-label="۱۰ ثانیه جلو"><FastForward size={22} /></button>
+                                    <button type="button" onClick={() => seekTo(currentTime + 10)} className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur" aria-label="۱۰ ثانیه جلو"><FastForward size={22} /></button>
                                 </div>
                                 <div className="lesson-video-controls absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/48 to-transparent px-3 pb-2 pt-7">
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-white/82" dir="ltr">
                                         <span className="w-9 text-left">{formatTime(currentTime)}</span>
                                         <input type="range" min={0} max={duration || 100} value={Math.min(currentTime, duration || 100)} onChange={(event) => seekTo(Number(event.target.value))} className="lesson-video-range h-5 flex-1" aria-label="جابه‌جایی ویدئو" />
                                         <span className="w-9 text-right">{formatTime(duration)}</span>
-                                        <button type="button" onClick={toggleFullscreen} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur" aria-label="تمام صفحه">{isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}</button>
+                                        <button type="button" onClick={toggleFullscreen} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur" aria-label={isFullscreen ? "خروج از تمام صفحه" : "تمام صفحه"}>{isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
                                     </div>
                                 </div>
                             </>

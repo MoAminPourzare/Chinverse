@@ -46,6 +46,11 @@ const settingsItems: SettingsItem[] = [
         icon: "/assets/chinverse/icons/Preferences 2.svg",
     },
     {
+        title: "نصب و دسترسی آفلاین",
+        href: "/settings/app",
+        icon: "/assets/chinverse/icons/notification.svg",
+    },
+    {
         title: "درباره چین ورس",
         href: "/settings/about",
         icon: "/assets/chinverse/icons/About chinverse.svg",

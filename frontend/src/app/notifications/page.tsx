@@ -14,7 +14,7 @@ import {
     UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
 
@@ -91,7 +91,7 @@ export default function NotificationsPage() {
     return (
         <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
             <header className="relative flex h-12 items-center justify-center">
-                <BackButton onClick={() => router.back()} className="absolute right-0" />
+                <SafeBackButton fallback="/" className="absolute right-0" />
                 <h1 className="text-[18px] font-black text-[#2f3238]">اعلان‌ها</h1>
             </header>
 

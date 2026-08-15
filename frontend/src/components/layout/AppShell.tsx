@@ -8,6 +8,8 @@ import BottomNav from "@/components/layout/BottomNav";
 import NotificationToaster from "@/components/notifications/NotificationToaster";
 import RouteTransition from "@/components/layout/RouteTransition";
 import ThemeController from "@/components/layout/ThemeController";
+import MobileUxController from "@/components/layout/MobileUxController";
+import { PwaProvider } from "@/components/pwa/PwaProvider";
 
 const navHiddenPrefixes = [
     "/login",
@@ -49,24 +51,27 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }, [pathname]);
 
     return (
-        <div className="app-viewport">
-            <div className="app-frame">
-                <ThemeController />
-                <NotificationToaster />
-                <div ref={scrollRef} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
-                    <RouteTransition>{children}</RouteTransition>
+        <PwaProvider>
+            <div className="app-viewport">
+                <div className="app-frame">
+                    <ThemeController />
+                    <MobileUxController />
+                    <NotificationToaster />
+                    <div ref={scrollRef} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
+                        <RouteTransition>{children}</RouteTransition>
+                    </div>
+                    {showSupportButton && (
+                        <Link
+                            href="/support"
+                            className="app-support-button absolute bottom-[calc(env(safe-area-inset-bottom)+92px)] right-[max(1.25rem,env(safe-area-inset-right))] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
+                            aria-label="پشتیبانی"
+                        >
+                            <Headphones className="h-6 w-6" />
+                        </Link>
+                    )}
+                    {showBottomNav && <BottomNav />}
                 </div>
-                {showSupportButton && (
-                    <Link
-                        href="/support"
-                        className="absolute bottom-[calc(env(safe-area-inset-bottom)+92px)] right-5 z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
-                        aria-label="پشتیبانی"
-                    >
-                        <Headphones className="h-6 w-6" />
-                    </Link>
-                )}
-                {showBottomNav && <BottomNav />}
             </div>
-        </div>
+        </PwaProvider>
     );
 }

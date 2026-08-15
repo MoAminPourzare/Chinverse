@@ -8,7 +8,16 @@ import { releaseConfig } from "@/config/release";
 export const metadata: Metadata = {
   title: "چین‌ورس",
   description: "اپلیکیشن آموزش زبان چینی برای فارسی‌زبان‌ها",
+  applicationName: "ChinVerse",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "چین‌ورس",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   robots: releaseConfig.isPublicRelease
     ? {
         index: true,
@@ -25,6 +34,7 @@ export const metadata: Metadata = {
       { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
     ],
+    apple: [{ url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" }],
   },
 };
 
@@ -32,6 +42,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  colorScheme: "light dark",
+  interactiveWidget: "resizes-content",
 };
 
 const themeBootstrapScript = `

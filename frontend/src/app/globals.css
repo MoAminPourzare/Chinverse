@@ -11,6 +11,9 @@
 }
 
 :root {
+  --app-visual-height: 100dvh;
+  --app-visual-offset-top: 0px;
+  --app-keyboard-inset: 0px;
   --background: #fafafb;
   --foreground: #0f172a;
   --app-canvas: #fafafb;
@@ -79,6 +82,13 @@ body {
   height: 100%;
 }
 
+html {
+  min-width: 320px;
+  background: var(--app-canvas);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   color: var(--foreground);
@@ -86,6 +96,7 @@ body {
     linear-gradient(180deg, var(--app-canvas) 0%, var(--app-canvas-soft) 100%);
   font-family: var(--font-vazirmatn);
   overflow: hidden;
+  overscroll-behavior: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -96,6 +107,18 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button:not([data-inline-action="true"]),
+[role="button"]:not([data-inline-action="true"]),
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 78%, white);
+  outline-offset: 3px;
 }
 
 :lang(en) {
@@ -143,12 +166,14 @@ body::selection {
   isolation: isolate;
   display: flex;
   height: 100vh;
-  height: 100dvh;
+  height: var(--app-visual-height, 100dvh);
   width: 100%;
   max-width: 430px;
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
   transform: translateZ(0);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--app-canvas) 98%, transparent) 0%, color-mix(in srgb, var(--app-canvas-soft) 98%, transparent) 100%);
@@ -177,7 +202,20 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-top: env(safe-area-inset-top);
+  scroll-padding-top: calc(env(safe-area-inset-top) + 12px);
+  scroll-padding-bottom: calc(var(--app-keyboard-inset, 0px) + env(safe-area-inset-bottom) + 24px);
   -webkit-overflow-scrolling: touch;
+}
+
+html[data-keyboard="open"] .bottom-nav-container,
+html[data-keyboard="open"] .app-support-button,
+html[data-keyboard="open"] .pwa-action-card {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[data-keyboard="open"] .app-scroll {
+  padding-bottom: 12px !important;
 }
 
 .route-stage {
@@ -251,7 +289,7 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
 
   .app-frame {
-    height: min(900px, calc(100dvh - 36px));
+    height: min(900px, calc(var(--app-visual-height, 100dvh) - 36px));
     border: 1px solid color-mix(in srgb, var(--app-border) 82%, transparent);
     border-radius: 38px;
     box-shadow:
@@ -265,8 +303,44 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
 
   #headlessui-portal-root > * {
-    height: min(900px, calc(100dvh - 36px));
+    height: min(900px, calc(var(--app-visual-height, 100dvh) - 36px));
     border-radius: 38px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .app-viewport {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .app-frame,
+  #headlessui-portal-root > * {
+    height: var(--app-visual-height, 100dvh);
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid CanvasText;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --app-border: #9aa7b8;
+    --app-border-strong: #69778a;
+    --app-text-muted: #455266;
+  }
+
+  html.dark {
+    --app-border: #718096;
+    --app-border-strong: #94a3b8;
+    --app-text-muted: #d2d9e2;
   }
 }
 
@@ -472,17 +546,26 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   isolation: isolate;
 }
 
-.lesson-video-shell:fullscreen {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) {
   display: flex;
-  height: 100vh;
+  height: var(--app-visual-height, 100dvh);
   width: 100vw;
   align-items: center;
   justify-content: center;
   background: #000;
 }
 
-.lesson-video-shell:fullscreen .lesson-video-element {
-  height: 100vh;
+.lesson-video-shell[data-pseudo-fullscreen="true"] {
+  position: fixed;
+  inset: var(--app-visual-offset-top, 0px) 0 0;
+  z-index: 100;
+  max-width: none;
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-video-element {
+  height: var(--app-visual-height, 100dvh);
   width: 100vw;
   object-fit: contain;
 }
@@ -496,18 +579,18 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
-.lesson-video-shell:fullscreen .lesson-fullscreen-captions {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-fullscreen-captions {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding-bottom: max(76px, env(safe-area-inset-bottom));
 }
 
-.lesson-video-shell:fullscreen .lesson-fullscreen-captions-bottom {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-fullscreen-captions-bottom {
   justify-content: flex-end;
 }
 
-.lesson-video-shell:fullscreen .lesson-video-center-controls {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-video-center-controls {
   opacity: 0;
   pointer-events: none;
 }
@@ -516,7 +599,7 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   transition: opacity 220ms ease;
 }
 
-.lesson-video-shell:fullscreen .lesson-video-controls {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-video-controls {
   padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right));
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
@@ -597,18 +680,18 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   line-height: 1.4;
 }
 
-.lesson-video-shell:fullscreen .lesson-caption-bottom button {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-caption-bottom button {
   pointer-events: none;
   color: inherit;
 }
 
 @media (orientation: landscape) {
-  .lesson-video-shell:fullscreen .lesson-fullscreen-captions {
+  .lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-fullscreen-captions {
     padding-block: 28px;
   }
 
-  .lesson-video-shell:fullscreen .lesson-caption-top,
-  .lesson-video-shell:fullscreen .lesson-caption-bottom {
+  .lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-caption-top,
+  .lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-caption-bottom {
     background: rgba(15, 23, 42, 0.48);
   }
 }
