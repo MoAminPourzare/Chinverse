@@ -7,6 +7,7 @@ from alembic.script import ScriptDirectory
 
 from app.db.base_class import Base
 import app.models  # noqa: F401
+from scripts import verify_phase2_schema, verify_phase3_schema, verify_phase4_schema, verify_phase5_schema
 
 
 LEGACY_TABLES = {
@@ -32,6 +33,22 @@ def test_alembic_has_one_linear_head():
     for revision in revisions:
         down_revisions = revision._normalized_down_revisions
         assert all(parent in revision_ids for parent in down_revisions)
+
+
+def test_every_phase_schema_verifier_targets_the_current_head():
+    backend_dir = Path(__file__).resolve().parents[1]
+    config = Config(str(backend_dir / "alembic.ini"))
+    config.set_main_option("script_location", str(backend_dir / "alembic"))
+    heads = ScriptDirectory.from_config(config).get_heads()
+
+    assert len(heads) == 1
+    expected_head = heads[0]
+    assert {
+        verify_phase2_schema.EXPECTED_HEAD,
+        verify_phase3_schema.EXPECTED_HEAD,
+        verify_phase4_schema.EXPECTED_HEAD,
+        verify_phase5_schema.EXPECTED_HEAD,
+    } == {expected_head}
 
 
 def test_schema_changes_are_not_executed_by_application_code():

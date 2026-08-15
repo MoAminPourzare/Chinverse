@@ -1,0 +1,4 @@
+path,sha256,dataset_type,owner,license,source_url,review_status,notes
+backend/data/dictionary/hsk1_words_dictionary.csv,65d0aab67e00d8fe2ed73aba1b0a35ad9d5228377b16333ebd70de05b6ad6ce9,hsk_dictionary_csv,,,,review_required,Curated project dataset; origin and redistribution terms require documented review.
+backend/data/dictionary/hsk2_words_dictionary.csv,b6901f43cdc1c188076e8f83cd603f6eeee6d4a91bfb7ea5bc58c520381e4d72,hsk_dictionary_csv,,,,review_required,Curated project dataset; origin and redistribution terms require documented review.
+backend/data/dictionary/hsk3_words_dictionary.csv,540422612d65e36a1e16e2a40174b5f188db51fe8e1ea83622a076d1ef415774,hsk_dictionary_csv,,,,review_required,Curated project dataset; origin and redistribution terms require documented review.

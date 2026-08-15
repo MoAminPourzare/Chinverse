@@ -136,6 +136,7 @@ async def save_video_upload(
     *,
     destination_dir: Path,
     public_url_prefix: str,
+    private_object: bool = False,
 ) -> StoredFile:
     stored = await store_upload_file(
         file,
@@ -146,7 +147,11 @@ async def save_video_upload(
         max_size_bytes=settings.MAX_VIDEO_UPLOAD_SIZE_BYTES,
     )
     validate_stored_video(stored, destination_dir=destination_dir)
-    return await persist_stored_file(stored, destination_dir=destination_dir)
+    return await persist_stored_file(
+        stored,
+        destination_dir=destination_dir,
+        private_object=private_object,
+    )
 
 
 def validate_stored_video(stored: StoredFile, *, destination_dir: Path) -> None:
@@ -214,6 +219,7 @@ async def save_thumbnail_upload(
     *,
     destination_dir: Path,
     public_url_prefix: str,
+    private_object: bool = False,
 ) -> StoredFile:
     stored = await store_upload_file(
         file,
@@ -229,4 +235,8 @@ async def save_thumbnail_upload(
         destination_dir=destination_dir,
         public_url_prefix=public_url_prefix,
     )
-    return await persist_stored_file(stored, destination_dir=destination_dir)
+    return await persist_stored_file(
+        stored,
+        destination_dir=destination_dir,
+        private_object=private_object,
+    )

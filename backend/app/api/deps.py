@@ -19,6 +19,10 @@ from app.db.session import SessionLocal
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
 )
+optional_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+    auto_error=False,
+)
 
 async def get_db() -> Generator:
     async with SessionLocal() as session:
@@ -62,6 +66,54 @@ async def get_current_session_user(
     user._auth_mfa_verified = bool(
         token_data.mfa and auth_session.mfa_verified_at
     )
+    return user
+
+
+async def get_optional_session_user(
+    session: AsyncSession = Depends(get_db),
+    token: str | None = Depends(optional_oauth2),
+) -> User | None:
+    """Return a valid session user when a bearer is supplied, otherwise None.
+
+    This is intentionally not a permissive decoder: malformed, revoked, or
+    expired tokens still receive 401 so an accidentally stale token cannot be
+    silently treated as an anonymous free-media request.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+        user_id = int(token_data.sub)
+        if token_data.type != "access" or not token_data.sid:
+            raise ValueError("Invalid token type")
+    except (PyJWTError, ValidationError, TypeError, ValueError):
+        raise unauthorized()
+
+    now = datetime.now(UTC)
+    result = await session.execute(
+        select(User, AuthSession)
+        .join(AuthSession, AuthSession.user_id == User.id)
+        .options(selectinload(User.profile))
+        .where(
+            User.id == user_id,
+            AuthSession.id == token_data.sid,
+            AuthSession.revoked_at.is_(None),
+            AuthSession.expires_at > now,
+        )
+    )
+    row = result.one_or_none()
+    if not row:
+        raise unauthorized("Session is invalid or expired")
+    user, auth_session = row
+    if user.status != UserStatus.ACTIVE:
+        raise forbidden("Inactive user")
+    user._auth_session_id = auth_session.id
+    user._auth_mfa_verified = bool(token_data.mfa and auth_session.mfa_verified_at)
+    if settings.REQUIRE_VERIFIED_LOGIN and not user.is_verified:
+        raise forbidden("Account verification is required")
     return user
 
 

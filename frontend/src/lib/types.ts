@@ -5,7 +5,7 @@ export interface Lesson {
     title: string;
     duration_minutes: number;
     is_free: boolean;
-    video_url?: string;
+    media_id?: number | null;
     metadata_json?: Record<string, unknown>;
 }
 
@@ -21,7 +21,9 @@ export interface Course {
     title: string;
     slug?: string;
     description: string;
-    cover_image_url: string;
+    /** App-signed cover URL; absent when the cover is not licensed. */
+    cover_image_url?: string | null;
+    cover_url?: string | null;
     level: string;
     metadata_json?: Record<string, unknown>;
     sections: Section[];

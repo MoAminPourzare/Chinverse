@@ -13,6 +13,11 @@ export const getMediaUrl = (path: string | null | undefined): string => {
     const rootUrl = getApiRootUrl();
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
+    if (cleanPath.startsWith("/api/v1/media/")) {
+        return `/api/backend${cleanPath.slice("/api/v1".length)}`;
+    }
+    if (cleanPath.startsWith("/api/backend/media/")) return cleanPath;
+
     if (cleanPath.startsWith("/uploads/gallery/") || cleanPath.startsWith("/uploads/services/")) {
         return `${rootUrl}/static${cleanPath}`;
     }

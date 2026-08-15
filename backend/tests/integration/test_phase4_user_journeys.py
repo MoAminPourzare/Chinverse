@@ -20,7 +20,7 @@ from PIL import Image
 from app.db.session import SessionLocal
 from app.core.config import settings
 from app.main import app
-from app.models.course import Category, Course, CourseSection, Lesson, Subcategory
+from app.models.course import Category, Course, CourseSection, Lesson, PublicationStatus, Subcategory
 from app.models.dictionary import DictionaryWord, WordDefinition
 from app.models.user import User, UserRole
 
@@ -103,6 +103,11 @@ async def create_learning_fixture() -> tuple[int, int, int]:
             cover_image_url="/uploads/courses/phase4-cover.png",
             level="beginner",
             metadata_json={},
+            # Phase 5 public catalog endpoints are intentionally fail-closed
+            # for drafts. This synthetic phase-4 journey needs a catalog item
+            # to exercise save/unsave, so seed it in the published state.
+            status=PublicationStatus.PUBLISHED,
+            published_at=datetime.now(UTC),
         )
         db.add(course)
         await db.flush()

@@ -1,7 +1,9 @@
 from dataclasses import dataclass, replace
 from functools import lru_cache
+import hashlib
 import logging
 from pathlib import Path, PurePosixPath
+from typing import Any, Iterator
 from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
@@ -25,6 +27,21 @@ class StoredFile:
     content_type: str
     size_bytes: int
     extension: str
+
+
+@dataclass(frozen=True)
+class ObjectStorageStream:
+    body: Any
+    content_type: str | None
+    content_length: int | None
+    content_range: str | None
+    etag: str | None
+
+
+@dataclass(frozen=True)
+class ObjectStorageDigest:
+    checksum_sha256: str
+    size_bytes: int
 
 
 def _storage_key(public_url_prefix: str, filename: str) -> str:
@@ -123,10 +140,14 @@ async def store_upload_file(
     )
 
 
-def _upload_file_to_object_storage(file_path: Path, stored: StoredFile) -> None:
+def _upload_file_to_object_storage(
+    file_path: Path,
+    stored: StoredFile,
+    bucket_name: str,
+) -> None:
     get_object_storage_client().upload_file(
         str(file_path),
-        settings.OBJECT_STORAGE_BUCKET_NAME,
+        bucket_name,
         stored.storage_key,
         ExtraArgs={
             "ContentType": stored.content_type or "application/octet-stream",
@@ -139,13 +160,24 @@ async def persist_stored_file(
     stored: StoredFile,
     *,
     destination_dir: Path,
+    private_object: bool = False,
 ) -> StoredFile:
     if settings.FILE_STORAGE_MODE in {"local", "mounted"}:
         return stored
 
     file_path = destination_dir / stored.filename
+    bucket_name = (
+        settings.MEDIA_OBJECT_STORAGE_BUCKET_NAME
+        if private_object
+        else settings.OBJECT_STORAGE_BUCKET_NAME
+    )
     try:
-        await to_thread.run_sync(_upload_file_to_object_storage, file_path, stored)
+        await to_thread.run_sync(
+            _upload_file_to_object_storage,
+            file_path,
+            stored,
+            bucket_name,
+        )
     except Exception as exc:
         file_path.unlink(missing_ok=True)
         logger.exception("Object storage upload failed for key %s", stored.storage_key)
@@ -155,6 +187,10 @@ async def persist_stored_file(
         ) from exc
 
     file_path.unlink(missing_ok=True)
+    if private_object:
+        # This is an internal locator, not a routable or provider URL. Protected
+        # media is readable only through the signed application gateway.
+        return replace(stored, public_url=f"/_private-media/{stored.storage_key}")
     return replace(stored, public_url=_object_public_url(stored.storage_key))
 
 
@@ -191,11 +227,154 @@ def object_storage_key_from_url(public_url: str | None) -> str | None:
     return normalized.as_posix()
 
 
-def _delete_object(storage_key: str) -> None:
+def _delete_object(storage_key: str, bucket_name: str) -> None:
     get_object_storage_client().delete_object(
-        Bucket=settings.OBJECT_STORAGE_BUCKET_NAME,
+        Bucket=bucket_name,
         Key=storage_key,
     )
+
+
+def _validated_object_key(storage_key: str) -> str:
+    raw = str(storage_key or "")
+    normalized = PurePosixPath(raw)
+    if not raw or normalized.is_absolute() or ".." in normalized.parts or "\\" in raw:
+        raise ValueError("Invalid object storage key")
+    return normalized.as_posix()
+
+
+def _open_object_storage_stream(
+    storage_key: str,
+    byte_range: str | None,
+    bucket_name: str,
+) -> ObjectStorageStream:
+    params: dict[str, Any] = {
+        "Bucket": bucket_name,
+        "Key": _validated_object_key(storage_key),
+    }
+    if byte_range:
+        params["Range"] = byte_range
+    response = get_object_storage_client().get_object(**params)
+    return ObjectStorageStream(
+        body=response["Body"],
+        content_type=response.get("ContentType"),
+        content_length=response.get("ContentLength"),
+        content_range=response.get("ContentRange"),
+        etag=response.get("ETag"),
+    )
+
+
+async def open_object_storage_stream(
+    storage_key: str,
+    *,
+    byte_range: str | None = None,
+    bucket_name: str | None = None,
+) -> ObjectStorageStream:
+    """Open an authorized private object without revealing a provider URL."""
+    try:
+        return await to_thread.run_sync(
+            _open_object_storage_stream,
+            storage_key,
+            byte_range,
+            bucket_name or settings.OBJECT_STORAGE_BUCKET_NAME,
+        )
+    except Exception as exc:
+        logger.exception("Object storage read failed for key %s", storage_key)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is temporarily unavailable",
+        ) from exc
+
+
+def iter_object_storage_body(body: Any) -> Iterator[bytes]:
+    """Yield a blocking SDK body safely; Starlette runs sync iterators off-loop."""
+    try:
+        while chunk := body.read(CHUNK_SIZE_BYTES):
+            yield chunk
+    finally:
+        body.close()
+
+
+def _read_object_storage_bytes(
+    storage_key: str,
+    max_bytes: int,
+    bucket_name: str,
+) -> bytes:
+    stream = _open_object_storage_stream(storage_key, None, bucket_name)
+    try:
+        chunks: list[bytes] = []
+        remaining = max_bytes + 1
+        while remaining > 0:
+            chunk = stream.body.read(min(CHUNK_SIZE_BYTES, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        value = b"".join(chunks)
+    finally:
+        stream.body.close()
+    if len(value) > max_bytes:
+        raise ValueError("Object exceeds maximum allowed size")
+    return value
+
+
+async def read_object_storage_bytes(
+    storage_key: str,
+    *,
+    max_bytes: int,
+    bucket_name: str | None = None,
+) -> bytes:
+    """Read a small private object such as an HLS manifest with a hard cap."""
+    try:
+        return await to_thread.run_sync(
+            _read_object_storage_bytes,
+            storage_key,
+            max_bytes,
+            bucket_name or settings.OBJECT_STORAGE_BUCKET_NAME,
+        )
+    except ValueError:
+        raise
+    except Exception as exc:
+        logger.exception("Object storage read failed for key %s", storage_key)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is temporarily unavailable",
+        ) from exc
+
+
+def _object_storage_digest(storage_key: str, bucket_name: str) -> ObjectStorageDigest:
+    stream = _open_object_storage_stream(storage_key, None, bucket_name)
+    digest = hashlib.sha256()
+    size_bytes = 0
+    try:
+        while chunk := stream.body.read(CHUNK_SIZE_BYTES):
+            digest.update(chunk)
+            size_bytes += len(chunk)
+    finally:
+        stream.body.close()
+    return ObjectStorageDigest(
+        checksum_sha256=digest.hexdigest(),
+        size_bytes=size_bytes,
+    )
+
+
+async def object_storage_digest(
+    storage_key: str,
+    *,
+    bucket_name: str | None = None,
+) -> ObjectStorageDigest:
+    """Hash the stored object bytes without buffering a media file in memory."""
+    try:
+        return await to_thread.run_sync(
+            _object_storage_digest,
+            storage_key,
+            bucket_name or settings.OBJECT_STORAGE_BUCKET_NAME,
+        )
+    except Exception as exc:
+        logger.exception("Object storage integrity check failed for key %s", storage_key)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is temporarily unavailable",
+        ) from exc
 
 
 async def delete_public_file(public_url: str | None) -> bool:
@@ -208,12 +387,25 @@ async def delete_public_file(public_url: str | None) -> bool:
             logger.warning("Could not delete local upload %s", path)
             return False
 
-    storage_key = object_storage_key_from_url(public_url)
+    private_prefix = "/_private-media/"
+    private_key = None
+    if public_url and public_url.startswith(private_prefix):
+        try:
+            private_key = _validated_object_key(public_url[len(private_prefix) :])
+        except ValueError:
+            return False
+
+    storage_key = private_key or object_storage_key_from_url(public_url)
     if not storage_key or settings.FILE_STORAGE_MODE != "s3":
         return False
 
     try:
-        await to_thread.run_sync(_delete_object, storage_key)
+        bucket_name = (
+            settings.MEDIA_OBJECT_STORAGE_BUCKET_NAME
+            if private_key
+            else settings.OBJECT_STORAGE_BUCKET_NAME
+        )
+        await to_thread.run_sync(_delete_object, storage_key, bucket_name)
         return True
     except Exception:
         logger.exception("Could not delete object storage key %s", storage_key)

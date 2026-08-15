@@ -11,9 +11,10 @@ import asyncpg
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings  # noqa: E402
+from scripts.schema_verification import repository_alembic_head  # noqa: E402
 
 
-EXPECTED_HEAD = "a2c4e6f8b1d3"
+EXPECTED_HEAD = repository_alembic_head()
 REQUIRED_TABLES = {
     "auth_challenges",
     "auth_sessions",

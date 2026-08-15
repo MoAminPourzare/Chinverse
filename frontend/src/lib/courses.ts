@@ -5,7 +5,8 @@ export interface LessonSummary {
     title?: string;
     duration_minutes?: number;
     is_free?: boolean;
-    video_url?: string;
+    /** Media is resolved through the signed lesson playback contract. */
+    media_id?: number | null;
     metadata_json?: Record<string, unknown>;
 }
 
@@ -22,7 +23,9 @@ export interface Course {
     title: string;
     slug?: string;
     description: string;
-    cover_image_url: string;
+    /** App-signed cover URL; absent when the cover is not licensed. */
+    cover_image_url?: string | null;
+    cover_url?: string | null;
     level: string;
     subcategory_slug?: string | null;
     metadata_json?: Record<string, unknown>;

@@ -8,11 +8,52 @@ from app.api import deps
 from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
-from app.models.course import Course, Category, Subcategory
+from app.models.course import Course, Category, PublicationStatus, Subcategory
+from app.models.media import MediaLicenseStatus, MediaPublicationStatus
 from app.models.social import ContentLike
 from app.schemas import course as schemas
+from app.services.media_workflow import validate_media_asset
 
 router = APIRouter()
+
+_PUBLIC_COURSE_METADATA = frozenset(
+    {
+        "content_kind",
+        "episodes_count",
+        "genre",
+        "hsk_level",
+        "lesson_count",
+        "rating",
+        "synopsis",
+        "tracks_count",
+        "year",
+    }
+)
+_PUBLIC_SECTION_METADATA = frozenset({"badge", "lesson_total", "notes", "summary"})
+_PUBLIC_LESSON_METADATA = frozenset(
+    {"duration_label", "key_points", "lesson_index", "lesson_total", "subtitle", "summary"}
+)
+
+
+def _public_image_url(media_id: int | None) -> str | None:
+    """Return an opaque, stable application URL; the gateway rechecks use."""
+    if not media_id:
+        return None
+    return f"/api/v1/media/public-images/{int(media_id)}"
+
+
+def _public_metadata(value: Any, allowed_keys: frozenset[str]) -> dict[str, Any]:
+    """Expose display metadata only; storage/provider details stay internal."""
+    if not isinstance(value, dict):
+        return {}
+    public: dict[str, Any] = {}
+    for key in allowed_keys:
+        item = value.get(key)
+        if isinstance(item, (str, int, float, bool)) and not isinstance(item, complex):
+            public[key] = item
+        elif isinstance(item, list) and all(isinstance(entry, str) for entry in item):
+            public[key] = item
+    return public
 
 
 async def _read_lessons_for_courses(
@@ -24,10 +65,16 @@ async def _read_lessons_for_courses(
 
     stmt = text(
         """
-        SELECT id, course_id, section_id, title, video_url, thumbnail_url,
-               duration_minutes, media_id, is_free, metadata_json
-        FROM lessons
-        WHERE course_id IN :course_ids
+        SELECT l.id, l.course_id, l.section_id, l.title,
+               l.duration_minutes, l.media_id, l.is_free, l.metadata_json,
+               l.status, l.revision, l.published_at
+        FROM lessons AS l
+        JOIN media_assets AS m ON m.id = l.media_id
+        WHERE l.course_id IN :course_ids
+          AND l.status = 'published'
+          AND m.status = 'published'
+          AND m.license_status = 'approved'
+          AND m.media_type = 'video'
         ORDER BY section_id, id
         """
     ).bindparams(bindparam("course_ids", expanding=True))
@@ -40,12 +87,13 @@ async def _read_lessons_for_courses(
             "course_id": row["course_id"],
             "section_id": row["section_id"],
             "title": row["title"],
-            "video_url": row["video_url"],
-            "thumbnail_url": row["thumbnail_url"],
             "duration_minutes": row["duration_minutes"] or 0,
             "media_id": row["media_id"],
             "is_free": bool(row["is_free"]),
-            "metadata_json": row["metadata_json"] or {},
+            "metadata_json": _public_metadata(row["metadata_json"], _PUBLIC_LESSON_METADATA),
+            "status": row["status"],
+            "revision": row["revision"] or 1,
+            "published_at": row["published_at"],
         }
         lessons_by_section.setdefault(row["section_id"], []).append(lesson)
 
@@ -73,6 +121,16 @@ def _course_to_response(
 ) -> dict[str, Any]:
     sections = sorted(course.sections or [], key=lambda item: (item.order_index, item.id))
 
+    cover_url = None
+    cover_media = getattr(course, "cover_media", None)
+    if (
+        cover_media
+        and str(getattr(cover_media.status, "value", cover_media.status)) == MediaPublicationStatus.PUBLISHED.value
+        and str(getattr(cover_media.license_status, "value", cover_media.license_status)) == MediaLicenseStatus.APPROVED.value
+        and validate_media_asset(cover_media).valid
+    ):
+        cover_url = _public_image_url(cover_media.id)
+
     return {
         "id": course.id,
         "subcategory_id": course.subcategory_id,
@@ -80,16 +138,21 @@ def _course_to_response(
         "title": course.title,
         "slug": course.slug,
         "description": course.description,
-        "cover_image_url": course.cover_image_url,
+        "cover_media_id": course.cover_media_id,
+        "cover_url": cover_url,
+        "cover_image_url": cover_url,
         "level": course.level,
-        "metadata_json": course.metadata_json or {},
+        "metadata_json": _public_metadata(course.metadata_json, _PUBLIC_COURSE_METADATA),
+        "status": str(getattr(course.status, "value", course.status)),
+        "revision": course.revision,
+        "published_at": course.published_at,
         "likes_count": (like_counts or {}).get(course.id, 0),
         "sections": [
             {
                 "id": section.id,
                 "title": section.title,
                 "order_index": section.order_index,
-                "metadata_json": section.metadata_json or {},
+                "metadata_json": _public_metadata(section.metadata_json, _PUBLIC_SECTION_METADATA),
                 "lessons": lessons_by_section.get(section.id, []),
             }
             for section in sections
@@ -109,16 +172,24 @@ def _raw_course_to_response(
         "title": row["title"],
         "slug": row["slug"],
         "description": row["description"],
-        "cover_image_url": row["cover_image_url"],
+        "cover_media_id": row["cover_media_id"],
+        # Saved-course queries intentionally return the same stable app URL.
+        # The image gateway remains authoritative and returns 404 immediately
+        # after publication, licence, or public-use revocation.
+        "cover_url": _public_image_url(row["cover_media_id"]),
+        "cover_image_url": _public_image_url(row["cover_media_id"]),
         "level": row["level"],
-        "metadata_json": row["metadata_json"] or {},
+        "metadata_json": _public_metadata(row["metadata_json"], _PUBLIC_COURSE_METADATA),
+        "status": row["status"],
+        "revision": row["revision"] or 1,
+        "published_at": row["published_at"],
         "likes_count": (like_counts or {}).get(row["id"], 0),
         "sections": [
             {
                 "id": section["id"],
                 "title": section["title"],
                 "order_index": section["order_index"],
-                "metadata_json": section["metadata_json"] or {},
+                "metadata_json": _public_metadata(section["metadata_json"], _PUBLIC_SECTION_METADATA),
                 "lessons": lessons_by_section.get(section["id"], []),
             }
             for section in row["sections"]
@@ -136,10 +207,11 @@ async def _read_raw_courses_by_ids(
     course_stmt = text(
         """
         SELECT c.id, c.subcategory_id, s.slug AS subcategory_slug, c.title, c.slug,
-               c.description, c.cover_image_url, c.level, c.metadata_json
+               c.description, c.cover_media_id, c.level, c.metadata_json,
+               c.status, c.revision, c.published_at
         FROM courses c
         LEFT JOIN subcategories s ON s.id = c.subcategory_id
-        WHERE c.id IN :course_ids
+        WHERE c.id IN :course_ids AND c.status = 'published'
         """
     ).bindparams(bindparam("course_ids", expanding=True))
     course_rows = (await db.execute(course_stmt, {"course_ids": course_ids})).mappings().all()
@@ -184,7 +256,7 @@ async def read_course_taxonomy(
     )
     return result.scalars().unique().all()
 
-@router.get("/", response_model=List[schemas.Course])
+@router.get("/", response_model=List[schemas.PublicCourse])
 async def read_courses(
     db: AsyncSession = Depends(deps.get_db),
     pagination: PaginationParams = Depends(pagination_params(default_limit=100, max_limit=1000)),
@@ -201,7 +273,9 @@ async def read_courses(
     query = select(Course).options(
         selectinload(Course.subcategory),
         selectinload(Course.sections),
+        selectinload(Course.cover_media),
     )
+    query = query.where(Course.status == PublicationStatus.PUBLISHED)
 
     if category_slug or subcategory_slug:
         query = query.join(Course.subcategory).join(Subcategory.category)
@@ -226,7 +300,7 @@ async def read_courses(
     like_counts = await _read_course_like_counts(db, course_ids)
     return [_course_to_response(course, lessons_by_section, like_counts) for course in courses]
 
-@router.get("/by-slug/{slug}", response_model=schemas.Course)
+@router.get("/by-slug/{slug}", response_model=schemas.PublicCourse)
 async def read_course_by_slug(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -240,8 +314,12 @@ async def read_course_by_slug(
         .options(
             selectinload(Course.subcategory),
             selectinload(Course.sections),
+            selectinload(Course.cover_media),
         )
-        .where(func.lower(Course.slug) == slug.lower())
+        .where(
+            func.lower(Course.slug) == slug.lower(),
+            Course.status == PublicationStatus.PUBLISHED,
+        )
     )
     course = result.scalar_one_or_none()
     if not course:
@@ -251,7 +329,7 @@ async def read_course_by_slug(
     return _course_to_response(course, lessons_by_section, like_counts)
 
 
-@router.get("/saved", response_model=List[schemas.Course])
+@router.get("/saved", response_model=List[schemas.PublicCourse])
 async def read_saved_courses(
     db: AsyncSession = Depends(deps.get_db),
     current_user=Depends(deps.get_current_user),
@@ -263,10 +341,11 @@ async def read_saved_courses(
     result = await db.execute(
         text(
             """
-            SELECT course_id
-            FROM user_saved_courses
-            WHERE user_id = :user_id
-            ORDER BY created_at DESC
+            SELECT saved.course_id
+            FROM user_saved_courses AS saved
+            JOIN courses AS c ON c.id = saved.course_id AND c.status = 'published'
+            WHERE saved.user_id = :user_id
+            ORDER BY saved.created_at DESC
             OFFSET :skip
             LIMIT :limit
             """
@@ -320,7 +399,9 @@ async def save_course_for_user(
     current_user=Depends(deps.get_current_user),
     id: int,
 ) -> Any:
-    course_exists = await db.scalar(select(Course.id).where(Course.id == id))
+    course_exists = await db.scalar(
+        select(Course.id).where(Course.id == id, Course.status == PublicationStatus.PUBLISHED)
+    )
     if not course_exists:
         raise not_found("Course")
 
@@ -372,7 +453,7 @@ async def unsave_course_for_user(
     return {"saved": False}
 
 
-@router.get("/{id}", response_model=schemas.Course)
+@router.get("/{id}", response_model=schemas.PublicCourse)
 async def read_course(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -386,8 +467,9 @@ async def read_course(
         .options(
             selectinload(Course.subcategory),
             selectinload(Course.sections),
+            selectinload(Course.cover_media),
         )
-        .where(Course.id == id)
+        .where(Course.id == id, Course.status == PublicationStatus.PUBLISHED)
     )
     course = result.scalar_one_or_none()
     if not course:
@@ -396,7 +478,7 @@ async def read_course(
     like_counts = await _read_course_like_counts(db, [course.id])
     return _course_to_response(course, lessons_by_section, like_counts)
 
-@router.get("/{id}/lessons", response_model=List[schemas.Lesson])
+@router.get("/{id}/lessons", response_model=List[schemas.PublicLesson])
 async def read_course_lessons(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -405,7 +487,9 @@ async def read_course_lessons(
     """
     Get lessons for a course.
     """
-    course_exists = await db.scalar(select(Course.id).where(Course.id == id))
+    course_exists = await db.scalar(
+        select(Course.id).where(Course.id == id, Course.status == PublicationStatus.PUBLISHED)
+    )
     if not course_exists:
         raise not_found("Course")
 
@@ -417,7 +501,7 @@ async def read_course_lessons(
     ]
     return sorted(lessons, key=lambda item: item["id"])
 
-@router.get("/lessons/{id}", response_model=schemas.Lesson)
+@router.get("/lessons/{id}", response_model=schemas.PublicLesson)
 async def read_lesson(
     *,
     db: AsyncSession = Depends(deps.get_db),
@@ -429,10 +513,17 @@ async def read_lesson(
     result = await db.execute(
         text(
             """
-            SELECT id, course_id, section_id, title, video_url, thumbnail_url,
-                   duration_minutes, media_id, is_free, metadata_json
-            FROM lessons
-            WHERE id = :id
+            SELECT l.id, l.course_id, l.section_id, l.title,
+                   l.duration_minutes, l.media_id, l.is_free, l.metadata_json,
+                   l.status, l.revision, l.published_at
+             FROM lessons AS l
+             JOIN courses AS c ON c.id = l.course_id AND c.status = 'published'
+             JOIN media_assets AS m ON m.id = l.media_id
+             WHERE l.id = :id
+               AND l.status = 'published'
+               AND m.status = 'published'
+               AND m.license_status = 'approved'
+               AND m.media_type = 'video'
             """
         ),
         {"id": id},
@@ -445,10 +536,11 @@ async def read_lesson(
         "course_id": row["course_id"],
         "section_id": row["section_id"],
         "title": row["title"],
-        "video_url": row["video_url"],
-        "thumbnail_url": row["thumbnail_url"],
         "duration_minutes": row["duration_minutes"] or 0,
         "media_id": row["media_id"],
         "is_free": bool(row["is_free"]),
-        "metadata_json": row["metadata_json"] or {},
+        "metadata_json": _public_metadata(row["metadata_json"], _PUBLIC_LESSON_METADATA),
+        "status": row["status"],
+        "revision": row["revision"] or 1,
+        "published_at": row["published_at"],
     }

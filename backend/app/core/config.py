@@ -126,11 +126,14 @@ class Settings(BaseSettings):
     MOUNTED_STORAGE_ROOT: str = ""
     OBJECT_STORAGE_ENDPOINT_URL: str = ""
     OBJECT_STORAGE_BUCKET_NAME: str = ""
+    MEDIA_OBJECT_STORAGE_BUCKET_NAME: str = ""
     OBJECT_STORAGE_ACCESS_KEY_ID: str = ""
     OBJECT_STORAGE_SECRET_ACCESS_KEY: str = ""
     OBJECT_STORAGE_PUBLIC_BASE_URL: str = ""
     OBJECT_STORAGE_REGION: str = "us-east-1"
     OBJECT_STORAGE_ADDRESSING_STYLE: str = "path"
+    MEDIA_SIGNING_KEY: str = ""
+    MEDIA_SIGNED_URL_TTL_SECONDS: int = 300
 
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://0.0.0.0:3000"
     BACKEND_CORS_ORIGIN_REGEX: str = (
@@ -204,6 +207,7 @@ class Settings(BaseSettings):
             "MAX_DICTIONARY_IMPORT_SIZE_BYTES": self.MAX_DICTIONARY_IMPORT_SIZE_BYTES,
             "MAX_API_REQUEST_SIZE_BYTES": self.MAX_API_REQUEST_SIZE_BYTES,
             "MULTIPART_OVERHEAD_ALLOWANCE_BYTES": self.MULTIPART_OVERHEAD_ALLOWANCE_BYTES,
+            "MEDIA_SIGNED_URL_TTL_SECONDS": self.MEDIA_SIGNED_URL_TTL_SECONDS,
         }
         for name, value in positive_settings.items():
             if value < 1:
@@ -220,6 +224,7 @@ class Settings(BaseSettings):
             object_storage_settings = {
                 "OBJECT_STORAGE_ENDPOINT_URL": self.OBJECT_STORAGE_ENDPOINT_URL,
                 "OBJECT_STORAGE_BUCKET_NAME": self.OBJECT_STORAGE_BUCKET_NAME,
+                "MEDIA_OBJECT_STORAGE_BUCKET_NAME": self.MEDIA_OBJECT_STORAGE_BUCKET_NAME,
                 "OBJECT_STORAGE_ACCESS_KEY_ID": self.OBJECT_STORAGE_ACCESS_KEY_ID,
                 "OBJECT_STORAGE_SECRET_ACCESS_KEY": self.OBJECT_STORAGE_SECRET_ACCESS_KEY,
                 "OBJECT_STORAGE_PUBLIC_BASE_URL": self.OBJECT_STORAGE_PUBLIC_BASE_URL,
@@ -236,6 +241,14 @@ class Settings(BaseSettings):
             if self.OBJECT_STORAGE_ADDRESSING_STYLE not in {"path", "virtual"}:
                 errors.append(
                     "OBJECT_STORAGE_ADDRESSING_STYLE must be either 'path' or 'virtual'"
+                )
+            if (
+                self.MEDIA_OBJECT_STORAGE_BUCKET_NAME.strip()
+                and self.MEDIA_OBJECT_STORAGE_BUCKET_NAME.strip()
+                == self.OBJECT_STORAGE_BUCKET_NAME.strip()
+            ):
+                errors.append(
+                    "MEDIA_OBJECT_STORAGE_BUCKET_NAME must be a separate private bucket"
                 )
         elif storage_mode == "mounted":
             mounted_root_value = self.MOUNTED_STORAGE_ROOT.strip()
@@ -256,6 +269,11 @@ class Settings(BaseSettings):
                 and mounted_root == Path(mounted_root.anchor)
             ):
                 errors.append("MOUNTED_STORAGE_ROOT cannot be the filesystem root")
+
+        if self.MEDIA_SIGNED_URL_TTL_SECONDS > 900:
+            errors.append("MEDIA_SIGNED_URL_TTL_SECONDS must not exceed 900")
+        if self.MEDIA_SIGNING_KEY and len(self.MEDIA_SIGNING_KEY) < 32:
+            errors.append("MEDIA_SIGNING_KEY must be at least 32 characters when set")
 
         is_production_runtime = (
             environment in PRODUCTION_ENVIRONMENTS

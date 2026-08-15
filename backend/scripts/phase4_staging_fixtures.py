@@ -1,7 +1,7 @@
 """Create or remove the four synthetic accounts used by the Phase 4 live smoke.
 
 This is deliberately not a general-purpose user-management command.  It only
-accepts the permanent Phase 4 Neon staging endpoint and the exact Phase 4
+accepts the permanent Phase 4 Neon staging endpoint and the current audited
 Alembic head.  The default mode is a read-only dry run; writes additionally
 require ``--apply`` and an exact ``--confirm-run-id`` value.
 
@@ -46,7 +46,7 @@ from app.core.passwords import (  # noqa: E402
 
 
 EXPECTED_ENDPOINT_ID = "ep-wild-band-atse2yoq"
-EXPECTED_ALEMBIC_HEAD = "a2c4e6f8b1d3"
+EXPECTED_ALEMBIC_HEAD = "b5e7c9d1f3a2"
 FIXTURE_EMAIL_DOMAIN = "example.com"
 RUN_ID_PATTERN = re.compile(r"[a-z0-9](?:[a-z0-9-]{4,38}[a-z0-9])?")
 ADVISORY_LOCK_NAME = "chinverse-phase4-staging-fixtures"
@@ -83,9 +83,14 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("content_likes", "user_id", "CASCADE"),
     ("content_reports", "assigned_to", "SET NULL"),
     ("content_reports", "reporter_id", "SET NULL"),
+    ("courses", "published_by_id", "SET NULL"),
     ("forum_answers", "author_user_id", "NO ACTION"),
     ("forum_questions", "author_user_id", "NO ACTION"),
     ("legal_acceptances", "user_id", "CASCADE"),
+    ("lessons", "published_by_id", "SET NULL"),
+    ("media_access_audit_events", "user_id", "SET NULL"),
+    ("media_assets", "license_reviewed_by_id", "SET NULL"),
+    ("media_assets", "published_by_id", "SET NULL"),
     ("media_assets", "user_id", "NO ACTION"),
     ("messages", "receiver_id", "NO ACTION"),
     ("messages", "sender_id", "NO ACTION"),
@@ -99,6 +104,7 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("subscription_orders", "user_id", "CASCADE"),
     ("support_tickets", "responded_by", "SET NULL"),
     ("support_tickets", "user_id", "NO ACTION"),
+    ("subtitle_tracks", "published_by_id", "SET NULL"),
     ("user_blocks", "blocked_id", "CASCADE"),
     ("user_blocks", "blocker_id", "CASCADE"),
     ("user_flashcards", "user_id", "NO ACTION"),

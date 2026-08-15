@@ -1,11 +1,12 @@
 import os
 import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
 
 
-_WORKSPACE_TMP = Path(__file__).resolve().parents[2] / ".tmp"
+_WORKSPACE_TMP = Path(tempfile.gettempdir()) / "chinverse-tests"
 _WORKSPACE_TMP.mkdir(parents=True, exist_ok=True)
 _TEST_STORAGE_ROOT = _WORKSPACE_TMP / f"chinverse-tests-{os.getpid()}"
 _TEST_STORAGE_ROOT.mkdir(parents=True, exist_ok=True)

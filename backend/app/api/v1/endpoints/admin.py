@@ -1209,26 +1209,10 @@ async def admin_replace_lesson_subtitles(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ) -> Any:
-    _ = current_user
-    lesson = await db.get(Lesson, lesson_id)
-    if not lesson:
-        raise not_found("Lesson")
-
-    await db.execute(delete(LessonSubtitle).where(LessonSubtitle.lesson_id == lesson_id))
-    for item in payload:
-        if item.timestamp_end < item.timestamp_start:
-            raise bad_request("Subtitle end time must be after start time")
-        db.add(
-            LessonSubtitle(
-                lesson_id=lesson_id,
-                lang_code=item.lang_code.strip() or "zh-fa",
-                text=item.text.strip(),
-                timestamp_start=item.timestamp_start,
-                timestamp_end=item.timestamp_end,
-            )
-        )
-    await db.commit()
-    return await admin_lesson_subtitles(lesson_id, db, current_user)
+    _ = (lesson_id, payload, db, current_user)
+    raise bad_request(
+        "Legacy subtitle replacement is disabled; use the versioned subtitle-track workflow"
+    )
 
 
 @router.put(

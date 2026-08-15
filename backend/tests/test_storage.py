@@ -252,6 +252,46 @@ async def test_object_upload_survives_local_staging_cleanup_and_can_be_deleted(
     assert not fake_client.objects
 
 
+@pytest.mark.asyncio
+async def test_private_media_uses_separate_bucket_and_never_returns_provider_url(
+    tmp_path,
+    monkeypatch,
+):
+    fake_client = FakeObjectStorageClient()
+    monkeypatch.setattr(settings, "FILE_STORAGE_MODE", "s3")
+    monkeypatch.setattr(settings, "OBJECT_STORAGE_BUCKET_NAME", "chinverse-public")
+    monkeypatch.setattr(settings, "MEDIA_OBJECT_STORAGE_BUCKET_NAME", "chinverse-private-media")
+    monkeypatch.setattr(
+        settings,
+        "OBJECT_STORAGE_PUBLIC_BASE_URL",
+        "https://assets.example.test",
+    )
+    monkeypatch.setattr(storage, "get_object_storage_client", lambda: fake_client)
+
+    source = tmp_path / "lesson.mp4"
+    source.write_bytes(b"private-media")
+    stored = storage.StoredFile(
+        public_url="/uploads/videos/lesson.mp4",
+        storage_key="uploads/videos/lesson.mp4",
+        filename=source.name,
+        content_type="video/mp4",
+        size_bytes=source.stat().st_size,
+        extension="mp4",
+    )
+
+    persisted = await persist_stored_file(
+        stored,
+        destination_dir=tmp_path,
+        private_object=True,
+    )
+
+    assert persisted.public_url == "/_private-media/uploads/videos/lesson.mp4"
+    assert ("chinverse-private-media", stored.storage_key) in fake_client.objects
+    assert ("chinverse-public", stored.storage_key) not in fake_client.objects
+    assert await delete_public_file(persisted.public_url) is True
+    assert fake_client.deleted == [("chinverse-private-media", stored.storage_key)]
+
+
 def test_object_url_parser_rejects_foreign_hosts_and_traversal(monkeypatch):
     monkeypatch.setattr(
         settings,

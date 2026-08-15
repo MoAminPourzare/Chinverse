@@ -71,6 +71,8 @@ try {
     Assert-NativeSuccess "Backend lint"
     & $Python -m compileall -q app tests scripts
     Assert-NativeSuccess "Backend bytecode compilation"
+    & $Python scripts\audit_phase5_content.py --repo-root $root
+    Assert-NativeSuccess "Phase 5 content and license audit"
     & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m "not integration" --cov=app --cov-report=term-missing --cov-fail-under=50
     Assert-NativeSuccess "Backend unit tests"
 
@@ -92,6 +94,8 @@ try {
             Assert-NativeSuccess "Phase 3 schema invariants"
             & $Python scripts\verify_phase4_schema.py
             Assert-NativeSuccess "Phase 4 schema invariants"
+            & $Python scripts\verify_phase5_schema.py
+            Assert-NativeSuccess "Phase 5 schema invariants"
             & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m integration
             Assert-NativeSuccess "Backend integration tests"
             & $Python -m alembic downgrade base
@@ -106,6 +110,8 @@ try {
             Assert-NativeSuccess "Post-rebuild phase 3 schema invariants"
             & $Python scripts\verify_phase4_schema.py
             Assert-NativeSuccess "Post-rebuild phase 4 schema invariants"
+            & $Python scripts\verify_phase5_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 5 schema invariants"
 
             docker build --tag chinverse-backend:local-check .
             Assert-NativeSuccess "Production backend container build"

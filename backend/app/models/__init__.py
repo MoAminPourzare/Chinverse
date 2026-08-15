@@ -10,14 +10,14 @@ from app.models.security import (
 )
 from app.models.moderation import ContentReport, ModerationAction, UserBlock
 from app.models.settings import UserPreference, UserLanguageSetting
-from app.models.media import MediaAsset
+from app.models.media import MediaAccessAuditEvent, MediaAsset
 from app.models.dictionary import (
     DictionaryWord,
     WordCollocation,
     WordDefinition,
     WordExample,
 )
-from app.models.course import Category, Subcategory, Course, CourseSection, Lesson, LessonSubtitle, LessonWordMap, UserSavedCourse
+from app.models.course import Category, Subcategory, Course, CourseSection, Lesson, LessonSubtitle, LessonWordMap, SubtitleCue, SubtitleTrack, UserSavedCourse
 from app.models.social import UserFollow, Post, PostMedia, PostLike, PostComment, ContentLike, ContentComment, ForumQuestion, ForumAnswer, Article, ArticleComment, SupportTicket, Message
 from app.models.activity import StudySession
 from app.models.subscription import SubscriptionPlan, UserSubscription

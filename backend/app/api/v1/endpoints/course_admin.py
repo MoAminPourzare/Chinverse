@@ -51,10 +51,17 @@ async def create_course(
     title = course_in.title.strip()
     slug = course_in.slug.strip().lower()
     description = course_in.description.strip()
-    cover_image_url = course_in.cover_image_url.strip()
+    if not course_in.cover_media_id:
+        raise bad_request("A registered cover media asset is required")
+    cover_media = await db.get(MediaAsset, course_in.cover_media_id)
+    if not cover_media:
+        raise not_found("Cover media asset")
+    if str(getattr(cover_media.media_type, "value", cover_media.media_type)) != MediaType.IMAGE.value:
+        raise bad_request("Course cover media must be an image asset")
+    cover_image_url = cover_media.file_url
     level = course_in.level.strip().lower()
     if not title or not slug or not description or not cover_image_url or not level:
-        raise bad_request("Course fields cannot be empty")
+        raise bad_request("Course fields and a registered cover media asset cannot be empty")
 
     existing = await db.execute(select(Course).where(Course.slug == slug))
     if existing.scalar_one_or_none():
@@ -66,6 +73,7 @@ async def create_course(
         slug=slug,
         description=description,
         cover_image_url=cover_image_url,
+        cover_media_id=course_in.cover_media_id,
         level=level,
         metadata_json=course_in.metadata_json,
     )
@@ -126,18 +134,38 @@ async def create_lesson(
         raise not_found("Section")
 
     lesson_title = lesson_in.title.strip()
-    video_url = lesson_in.video_url.strip() if lesson_in.video_url else ""
+    if not lesson_in.media_id:
+        raise bad_request("A registered lesson media asset is required")
+    media = await db.get(MediaAsset, lesson_in.media_id)
+    if not media:
+        raise not_found("Media asset")
+    if str(getattr(media.media_type, "value", media.media_type)) != MediaType.VIDEO.value:
+        raise bad_request("Lesson media must be a video asset")
+    # Keep the legacy column populated for old internal tooling, but all
+    # public playback goes through the signed media workflow.
+    video_url = media.file_url
     if not lesson_title or not video_url:
-        raise bad_request("Lesson title and video_url are required")
+        raise bad_request("Lesson title and a media reference are required")
+
+    thumbnail_url = lesson_in.thumbnail_url
+    if lesson_in.poster_media_id:
+        poster = await db.get(MediaAsset, lesson_in.poster_media_id)
+        if not poster:
+            raise not_found("Poster media asset")
+        if str(getattr(poster.media_type, "value", poster.media_type)) != MediaType.IMAGE.value:
+            raise bad_request("Lesson poster must be an image asset")
+        thumbnail_url = poster.file_url
 
     lesson = Lesson(
         course_id=section.course_id,
         section_id=section_id,
         title=lesson_title,
         video_url=video_url,
-        thumbnail_url=lesson_in.thumbnail_url,
+        thumbnail_url=thumbnail_url,
+        poster_media_id=lesson_in.poster_media_id,
         duration_minutes=lesson_in.duration_minutes,
         is_free=lesson_in.is_free,
+        media_id=lesson_in.media_id,
         metadata_json=lesson_in.metadata_json,
     )
     db.add(lesson)
@@ -184,17 +212,38 @@ async def create_lesson_with_upload(
         video_file,
         destination_dir=VIDEOS_DIR,
         public_url_prefix="/uploads/videos",
+        private_object=True,
     )
 
     thumbnail_url = None
+    stored_thumbnail = None
     try:
         if thumbnail_file and thumbnail_file.filename:
             stored_thumbnail = await save_thumbnail_upload(
                 thumbnail_file,
                 destination_dir=THUMBNAILS_DIR,
                 public_url_prefix="/uploads/thumbnails",
+                private_object=True,
             )
             thumbnail_url = stored_thumbnail.public_url
+
+        poster_media = None
+        if stored_thumbnail:
+            poster_media = MediaAsset(
+                user_id=current_user.id,
+                media_type=MediaType.IMAGE,
+                file_url=stored_thumbnail.public_url,
+                storage_provider=settings.FILE_STORAGE_MODE,
+                storage_key=stored_thumbnail.storage_key,
+                mime_type=stored_thumbnail.content_type,
+                file_size_bytes=stored_thumbnail.size_bytes,
+                metadata_json={
+                    "origin": "course_lesson_poster",
+                    "course_id": course_id,
+                    "section_id": section_id,
+                },
+            )
+            db.add(poster_media)
 
         media = MediaAsset(
             user_id=current_user.id,
@@ -222,6 +271,7 @@ async def create_lesson_with_upload(
             video_url=stored_video.public_url,
             thumbnail_url=thumbnail_url,
             media_id=media.id,
+            poster_media_id=poster_media.id if poster_media else None,
             duration_minutes=duration_minutes,
             is_free=is_free,
             metadata_json={

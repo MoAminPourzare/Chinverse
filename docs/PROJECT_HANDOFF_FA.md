@@ -1,6 +1,6 @@
 # ChinVerse | راهنمای کامل انتقال پروژه
 
-> این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۹ اوت ۲۰۲۶ / ۱۸ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
+> این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۱۳ اوت ۲۰۲۶ / ۲۲ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
 
 ## ۱. خلاصه فوری
 
@@ -9,21 +9,24 @@
 
 وضعیت فعلی:
 
-- فازهای صفر تا چهار برای قابلیت‌های فعال و دامنه تعریف‌شده انجام شده‌اند؛ فاز چهار
-  پس از automated/local و live staging هیچ P0/P1 باز ندارد.
-- شاخه فعلی `codex/phase-4-user-journeys` است.
-- release code فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است؛ commitهای بعدی شاخه workflow دیپلوی و ابزار verification را اضافه و سخت‌سازی کرده‌اند و runtime release را تغییر نداده‌اند.
+- فازهای صفر تا چهار برای قابلیت‌های فعال و دامنه تعریف‌شده انجام شده‌اند؛ فاز پنج
+  آموزش و رسانه از نظر پیاده‌سازی فنی به pre-release رسیده است.
+- شاخه فعلی `codex/phase-5-education-media` است.
+- release SHA فاز پنج هنوز `pending` است؛ full rerun، commit، GitHub CI و deploy
+  این candidate هنوز انجام نشده و نباید با release زنده فاز چهار یکی فرض شود.
+- release code زنده فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است؛ commitهای بعدی شاخه workflow دیپلوی و ابزار verification را اضافه و سخت‌سازی کرده‌اند و runtime release را تغییر نداده‌اند.
 - commit مبنای شاخه پیش از تغییرات فاز چهار: `3f63addf1e6b9f3c79f83044545f2d7a375f08db`
 - وضعیت دقیق commit/worktree را با Git بررسی کن؛ چند Codex روی پروژه کار می‌کنند و این سند را نباید جایگزین Git دانست.
-- GitHub Actions فاز چهار سبز و release code روی Vercel و Hugging Face deploy شده است.
+- GitHub Actions فاز چهار سبز و release code فاز چهار روی Vercel و Hugging Face deploy شده است؛ CI/deploy فاز پنج pending است.
 - backend با tier=`staging` روی Hugging Face اجرا می‌شود و به branch دائمی Neon
   staging با head فاز چهار متصل است؛ live smoke کامل و cleanup شده است.
-- frontend release candidate روی Vercel Preview deploy شده است.
+- frontend فاز چهار روی Vercel Preview است؛ Preview فاز پنج باید پس از gate نهایی
+  به‌صورت محافظت‌شده deploy شود و تا تکمیل provenance عمومی نشود.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
-گزارش کامل اجرای فعلی در `docs/PHASE_4_USER_JOURNEYS_FA.md` است. فاز بعدی منطقی
-فاز پنج آموزش و رسانه است؛ موبایل واقعی، performance و عملیات در فازهای بعدی
-تعریف شده‌اند و جزو acceptance فاز چهار نیستند.
+گزارش فاز پنج در `docs/PHASE_5_EDUCATION_MEDIA_FA.md` و گزارش فاز چهار در
+`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فعلی بستن full gate، commit، CI و deploy
+محافظت‌شده‌ی فاز پنج است؛ سپس فاز شش موبایل واقعی آغاز می‌شود.
 
 ## ۲. قانون کار برای Codex بعدی
 
@@ -91,11 +94,11 @@
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-4-user-journeys` |
+| branch کاری | `codex/phase-5-education-media` |
 | frontend staging/preview | [Vercel Preview](https://chinverse-nwhvuwf7k-death-stroke.vercel.app) |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
-| database target | Neon staging `br-shiny-darkness-at6obb2e` / `ep-wild-band-atse2yoq`، head=`a2c4e6f8b1d3`؛ HF به همین endpoint متصل است |
+| database target | HF زنده هنوز روی Neon staging با head=`a2c4e6f8b1d3` است؛ candidate فاز پنج تا `b5e7c9d1f3a2` محلی verify شده و deploy آن pending است |
 | فایل staging | bucket خصوصی `MoAmin9/chinverse-api-storage` با mount در `/data` |
 | ویدئو | Arvan VOD/HLS برای نمونه‌های فعلی |
 | Cloudflare | فقط Cloudflare Turnstile در کد؛ Cloudflare CDN/R2 در این release استفاده نمی‌شود |
@@ -161,6 +164,8 @@
   `d3a7f9c2e5b1_add_security_trust_foundation`
 - migration workflow پشتیبانی فاز چهار:
   `a2c4e6f8b1d3_add_support_ticket_workflow`
+- migration آموزش و رسانه فاز پنج:
+  `b5e7c9d1f3a2_add_phase5_education_media_workflow`
 - migration حذف legacy و runtime schema:
   `c8f1e2a4d6b9_remove_legacy_models_and_runtime_schema`
 
@@ -173,6 +178,7 @@ poetry run alembic check
 poetry run python scripts/verify_phase2_schema.py
 poetry run python scripts/verify_phase3_schema.py
 poetry run python scripts/verify_phase4_schema.py
+poetry run python scripts/verify_phase5_schema.py
 ```
 
 هیچ endpointی نباید `CREATE TABLE`, `ALTER TABLE` یا `CREATE INDEX` اجرا کند.
@@ -328,6 +334,35 @@ poetry run python import_dictionary.py --all-hsk --reset
 
 ## ۱۰. تست و شواهد نهایی
 
+### Candidate فاز پنج — pre-release و هنوز deployنشده
+
+- Backend unit: `116 passed`.
+- Backend integration: `22 passed` پیش از اضافه‌شدن دو سناریوی public-image؛ full
+  rerun تجمیعی شامل سناریوهای جدید هنوز `pending` است و عدد نهایی پس از آن ثبت می‌شود.
+- Frontend unit: `35 passed`؛ lint و typecheck سبز و production build برابر
+  `63 route` است.
+- چرخه migration واقعی `base -> head -> base -> head` تا
+  `b5e7c9d1f3a2` سبز است؛ verifier فاز پنج و parity مدل/schema اجرا شده‌اند.
+- پنل ادمین workflow ساخت course/section/lesson، ثبت و review/publish رسانه،
+  ingest/validate/publish زیرنویس و publish درس/دوره را ارائه می‌دهد.
+- public course/lesson DTO فقط metadata allowlistشده می‌دهد و هیچ `video_url`،
+  `file_url`، `storage_key` یا provider URL خامی منتشر نمی‌کند. mount خام videos و
+  thumbnails نیز حذف شده است.
+- course media در S3 از bucket خصوصی مستقل استفاده می‌کند؛ تنظیم یکی‌بودن bucket
+  عمومی/خصوصی fail-closed است. publish checksum و size واقعی و graph محدود HLS را
+  برای playlistها و resourceهای referenced تأیید می‌کند.
+- cover/poster عمومی URL پایدار و opaque در
+  `/api/v1/media/public-images/{media_id}` دارد؛ revoke مجوز/انتشار آن را 404 می‌کند.
+- audit دسترسی، issue و entitlement denial قابل‌اعتماد را نگه می‌دارد، اما token/
+  شناسه جعلی و هر segment موفق را به DB یا log per-request نمی‌نویسد تا write
+  amplification ایجاد نشود.
+- registry شامل ۳۴۷ asset و سه CSV، در مجموع ۳۵۰ مورد `review_required` است. این
+  blocker انتشار عمومی محتواست؛ فقط Preview محافظت‌شده پیش از تکمیل provenance مجاز است.
+- release SHA، GitHub CI run، Hugging Face commit/deploy، Vercel Preview و smoke
+  زنده فاز پنج همگی `pending` هستند و پس از اجرای واقعی باید اینجا ثبت شوند.
+
+### شواهد release فاز چهار — تاریخی و همچنان محیط زنده
+
 CI کامل فاز چهار و شواهد release candidate زیر ثبت شده‌اند:
 
 - Release baseline: success
@@ -455,7 +490,9 @@ FEATURE_POINTS_ENABLED=false
 5. backup/restore دوره‌ای production، retention، alert و runbook عملیاتی لازم است.
 6. تست واقعی Android، iPhone Safari، keyboard، safe-area، orientation، back gesture، zoom 200% و WCAG باقی است.
 7. load/soak test، timeout/retry/offline UX، logging ساختاریافته، error tracking، metrics و alerting باقی است.
-8. HLS همه درس‌ها، subtitleها، مجوز محتوا، URL امضاشده، paywall و entitlement واقعی باید تکمیل شود.
+8. workflow فنی HLS/subtitle/URL امضاشده/entitlement در فاز پنج پیاده شده است؛
+   ورود محتوای واقعی، تکمیل provenance ۳۵۰ مورد، پلن storage تولید و smoke همه درس‌ها
+   پیش از انتشار عمومی باقی است.
 9. support و moderation در حجم واقعی، چند اپراتور و SLA عملیاتی باید آزموده شوند؛ workflow پایه و مرز نقش‌ها در فاز چهار پوشش دارند.
 10. GitHub Ruleset باید checkهای `Frontend` و `Backend` را برای merge به `main` اجباری کند.
 11. تست نفوذ مستقل و نهایی‌سازی اسناد حقوقی پیش از جذب عمومی کاربر لازم است.
@@ -485,14 +522,15 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 شده‌اند و برای قابلیت‌های فعال هیچ P0/P1 باز نیست. رسانه، موبایل واقعی، performance
 و operations در فازهای پنج به بعد و خارج از scope این فاز هستند.
 
-### فاز پنج: آموزش و رسانه
+### فاز پنج: آموزش و رسانه — پیاده‌سازی فنی کامل، pre-release pending
 
-- حذف hardcodeهای video و transcript
-- مدل workflow پیش‌نویس/انتشار برای course/lesson/subtitle
-- ثبت media asset و subtitle در DB
-- HLS امضاشده و entitlement برای محتوای پولی
-- کنترل کیفیت sync، fallback، poster و مجوز محتوا
-- ممیزی کامل HSK1-3 و audio
+- hardcodeهای video/transcript و fallback شناسه‌ای از runtime player حذف شده‌اند.
+- workflow `draft/published/archived` برای course/lesson/subtitle/media و پنل ادمین پیاده شده است.
+- media asset و subtitle revisionدار در DB، HLS امضاشده، entitlement واقعی و Range پوشش دارند.
+- raw mount و provider/storage metadata عمومی حذف شده و bucket خصوصی S3 قرارداد fail-closed دارد.
+- checksum/size فایل، graph محدود HLS، sync زیرنویس و URL پایدار cover/poster کنترل می‌شوند.
+- HSK1-3 از نظر ساختاری ممیزی شده؛ ۳۵۰ مورد provenance مانع انتشار عمومی است، نه Preview محافظت‌شده.
+- full rerun محلی فاز پنج تکمیل شده است؛ release SHA، CI، deploy و smoke زنده هنوز pending است.
 
 ### فاز شش: موبایل و UX
 
@@ -549,6 +587,7 @@ poetry run alembic check
 poetry run python scripts/verify_phase2_schema.py
 poetry run python scripts/verify_phase3_schema.py
 poetry run python scripts/verify_phase4_schema.py
+poetry run python scripts/verify_phase5_schema.py
 ```
 
 ### Gate کامل
@@ -575,6 +614,8 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `docs/PHASE_3_SECURITY_TRUST_FA.md`: گزارش امنیت و تست نهایی
 - `docs/PHASE_3_THREAT_MODEL_FA.md`: مدل تهدید و فرض‌های امنیتی
 - `docs/PHASE_4_USER_JOURNEYS_FA.md`: ماتریس پذیرش، bug list و شواهد تست فاز چهار
+- `docs/PHASE_5_EDUCATION_MEDIA_FA.md`: workflow، entitlement، player، تست و وضعیت pre-release فاز پنج
+- `docs/PHASE_5_DATA_LICENSE_AUDIT_FA.md`: قرارداد ممیزی dictionary و provenance رسانه
 - `.github/workflows/quality-gates.yml`: pipeline اصلی
 - `scripts/check.ps1`: gate محلی
 - `scripts/check-release-baseline.ps1`: privacy/release guard
@@ -583,18 +624,19 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `backend/app/api/v1/api.py`: ثبت routerهای API
 - `backend/alembic/versions/`: تاریخچه schema
 - `backend/scripts/verify_phase4_schema.py`: invariantهای workflow پشتیبانی
+- `backend/scripts/verify_phase5_schema.py`: invariantهای workflow آموزش و رسانه
 - `backend/data/dictionary/`: CSVهای canonical HSK
-- `frontend/src/app/watch/[domain]/[courseId]/page.tsx`: player و وضعیت hardcode ویدئو
+- `frontend/src/app/watch/[domain]/[courseId]/page.tsx`: player امن API-driven و sync زیرنویس
 
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
-«این repository مربوط به ChinVerse است. فازهای صفر تا چهار برای قابلیت‌های فعال
-انجام شده‌اند. شاخه فعلی `codex/phase-4-user-journeys` و release code
-`92ae2c40...` است؛ GitHub CI، Vercel Preview و Hugging Face deploy سبزند. HF اکنون
-به branch دائمی Neon staging با head `a2c4e6f8b1d3` متصل است و smoke کامل نقش‌ها،
-MFA، moderation، support، chat، session، refresh و WebSocket انجام شده؛ چهار fixture
-پاک و bypass موقت revoke شده‌اند. production پیش از اصلاح secret فقط migration
-افزایشی را دریافت کرد، هیچ داده تستی نگرفت و PIT branch بازیابی آن حفظ شده است.
-هنوز چیزی روی main merge نشده است. کار منطقی بعدی فاز پنج آموزش و رسانه، سپس موبایل
-واقعی، performance و گیت‌های production است. هیچ secretی را در چت یا Git ثبت نکن و
-فقط از داشبورد provider/secret manager استفاده کن.»
+«این repository مربوط به ChinVerse است. فازهای صفر تا چهار deploy شده‌اند و فاز پنج
+آموزش و رسانه روی شاخه `codex/phase-5-education-media` از نظر فنی به pre-release
+رسیده است: ۱۲۵ unit backend با پوشش ۵۸٫۵۲٪، ۲۵ integration، ۳۶ unit frontend با
+پوشش ۹۳٫۴۸٪ statement، build ۶۳ route و migration تا `b5e7c9d1f3a2` شواهد full
+rerun محلی‌اند. raw media URL/mount حذف، HLS و entitlement امضاشده،
+bucket خصوصی S3، checksum/HLS graph، subtitle DB workflow، admin UI و URL پایدار
+cover/poster پیاده شده‌اند. release SHA، CI و deploy فاز پنج هنوز pending است و محیط
+زنده همچنان release فاز چهار با head `a2c4e6f8b1d3` است. ۳۵۰ مورد provenance مانع
+انتشار عمومی محتواست، اما Preview محافظت‌شده مجاز است. هیچ secretی را در چت یا Git
+ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»
