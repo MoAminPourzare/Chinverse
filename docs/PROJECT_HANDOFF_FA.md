@@ -1,6 +1,6 @@
 # ChinVerse | راهنمای کامل انتقال پروژه
 
-> این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۱۳ اوت ۲۰۲۶ / ۲۲ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
+> این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۱۵ اوت ۲۰۲۶ / ۲۴ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
 
 ## ۱. خلاصه فوری
 
@@ -9,24 +9,24 @@
 
 وضعیت فعلی:
 
-- فازهای صفر تا چهار برای قابلیت‌های فعال و دامنه تعریف‌شده انجام شده‌اند؛ فاز پنج
-  آموزش و رسانه از نظر پیاده‌سازی فنی به pre-release رسیده است.
+- فازهای صفر تا پنج برای دامنه تعریف‌شده انجام شده‌اند؛ فاز پنج آموزش و رسانه روی
+  staging محافظت‌شده deploy و smoke شده است.
 - شاخه فعلی `codex/phase-5-education-media` است.
-- release SHA فاز پنج هنوز `pending` است؛ full rerun، commit، GitHub CI و deploy
-  این candidate هنوز انجام نشده و نباید با release زنده فاز چهار یکی فرض شود.
-- release code زنده فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` است؛ commitهای بعدی شاخه workflow دیپلوی و ابزار verification را اضافه و سخت‌سازی کرده‌اند و runtime release را تغییر نداده‌اند.
+- release SHA زنده فاز پنج `3b3a918a66ea7df875965130ff86c7d1a1227576` است؛
+  Quality Gates و deploy همان SHA موفق‌اند.
+- release قبلی فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` بود.
 - commit مبنای شاخه پیش از تغییرات فاز چهار: `3f63addf1e6b9f3c79f83044545f2d7a375f08db`
 - وضعیت دقیق commit/worktree را با Git بررسی کن؛ چند Codex روی پروژه کار می‌کنند و این سند را نباید جایگزین Git دانست.
-- GitHub Actions فاز چهار سبز و release code فاز چهار روی Vercel و Hugging Face deploy شده است؛ CI/deploy فاز پنج pending است.
+- GitHub Quality Gates فاز پنج در [run 31883881871](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881871) و deploy Hugging Face در [run 31883881897](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881897) موفق است.
 - backend با tier=`staging` روی Hugging Face اجرا می‌شود و به branch دائمی Neon
-  staging با head فاز چهار متصل است؛ live smoke کامل و cleanup شده است.
-- frontend فاز چهار روی Vercel Preview است؛ Preview فاز پنج باید پس از gate نهایی
-  به‌صورت محافظت‌شده deploy شود و تا تکمیل provenance عمومی نشود.
+  staging با head فاز پنج `b5e7c9d1f3a2` متصل است؛ health/readiness زنده سبز است.
+- frontend فاز پنج روی Vercel Preview محافظت‌شده است و درخواست ناشناس به SSO
+  هدایت می‌شود؛ تا تکمیل provenance عمومی نشود.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
 گزارش فاز پنج در `docs/PHASE_5_EDUCATION_MEDIA_FA.md` و گزارش فاز چهار در
-`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فعلی بستن full gate، commit، CI و deploy
-محافظت‌شده‌ی فاز پنج است؛ سپس فاز شش موبایل واقعی آغاز می‌شود.
+`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فنی بعدی فاز شش موبایل واقعی است؛
+۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوای موجود همچنان باز است.
 
 ## ۲. قانون کار برای Codex بعدی
 
@@ -95,10 +95,10 @@
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
 | branch کاری | `codex/phase-5-education-media` |
-| frontend staging/preview | [Vercel Preview](https://chinverse-nwhvuwf7k-death-stroke.vercel.app) |
+| frontend staging/preview | [Vercel Preview فاز پنج](https://chinverse-git-codex-phase-5-education-media-death-stroke.vercel.app) — محافظت‌شده با SSO |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
-| database target | HF زنده هنوز روی Neon staging با head=`a2c4e6f8b1d3` است؛ candidate فاز پنج تا `b5e7c9d1f3a2` محلی verify شده و deploy آن pending است |
+| database target | Neon staging؛ migration فاز پنج تا head=`b5e7c9d1f3a2` هنگام startup موفق و readiness دیتابیس `ok` است |
 | فایل staging | bucket خصوصی `MoAmin9/chinverse-api-storage` با mount در `/data` |
 | ویدئو | Arvan VOD/HLS برای نمونه‌های فعلی |
 | Cloudflare | فقط Cloudflare Turnstile در کد؛ Cloudflare CDN/R2 در این release استفاده نمی‌شود |
@@ -334,12 +334,11 @@ poetry run python import_dictionary.py --all-hsk --reset
 
 ## ۱۰. تست و شواهد نهایی
 
-### Candidate فاز پنج — pre-release و هنوز deployنشده
+### Release فاز پنج — deploy و smoke‌شده
 
-- Backend unit: `116 passed`.
-- Backend integration: `22 passed` پیش از اضافه‌شدن دو سناریوی public-image؛ full
-  rerun تجمیعی شامل سناریوهای جدید هنوز `pending` است و عدد نهایی پس از آن ثبت می‌شود.
-- Frontend unit: `35 passed`؛ lint و typecheck سبز و production build برابر
+- Backend unit: `127 passed` با پوشش `58.59%`.
+- Backend integration: `25 passed` روی PostgreSQL ایزوله.
+- Frontend unit: `36 passed` با پوشش `93.48%` statement؛ lint و typecheck سبز و production build برابر
   `63 route` است.
 - چرخه migration واقعی `base -> head -> base -> head` تا
   `b5e7c9d1f3a2` سبز است؛ verifier فاز پنج و parity مدل/schema اجرا شده‌اند.
@@ -358,10 +357,11 @@ poetry run python import_dictionary.py --all-hsk --reset
   amplification ایجاد نشود.
 - registry شامل ۳۴۷ asset و سه CSV، در مجموع ۳۵۰ مورد `review_required` است. این
   blocker انتشار عمومی محتواست؛ فقط Preview محافظت‌شده پیش از تکمیل provenance مجاز است.
-- release SHA، GitHub CI run، Hugging Face commit/deploy، Vercel Preview و smoke
-  زنده فاز پنج همگی `pending` هستند و پس از اجرای واقعی باید اینجا ثبت شوند.
+- release SHA=`3b3a918a66ea7df875965130ff86c7d1a1227576`؛ [Quality Gates run 31883881871](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881871) و [deploy run 31883881897](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881897) موفق‌اند.
+- Hugging Face Space commit=`16ba7967240bc24ade18397697f9b56df233bac3` و runtime=`RUNNING` است؛ health همان release SHA و readiness دیتابیس `ok` را برمی‌گرداند. OpenAPI عمومی `404` است.
+- [Vercel Preview فاز پنج](https://chinverse-git-codex-phase-5-education-media-death-stroke.vercel.app) محافظت‌شده است و درخواست ناشناس را به SSO هدایت می‌کند.
 
-### شواهد release فاز چهار — تاریخی و همچنان محیط زنده
+### شواهد release فاز چهار — تاریخی و محیط قبلی
 
 CI کامل فاز چهار و شواهد release candidate زیر ثبت شده‌اند:
 
@@ -522,7 +522,7 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 شده‌اند و برای قابلیت‌های فعال هیچ P0/P1 باز نیست. رسانه، موبایل واقعی، performance
 و operations در فازهای پنج به بعد و خارج از scope این فاز هستند.
 
-### فاز پنج: آموزش و رسانه — پیاده‌سازی فنی کامل، pre-release pending
+### فاز پنج: آموزش و رسانه — تکمیل و deploy محافظت‌شده
 
 - hardcodeهای video/transcript و fallback شناسه‌ای از runtime player حذف شده‌اند.
 - workflow `draft/published/archived` برای course/lesson/subtitle/media و پنل ادمین پیاده شده است.
@@ -530,7 +530,7 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 - raw mount و provider/storage metadata عمومی حذف شده و bucket خصوصی S3 قرارداد fail-closed دارد.
 - checksum/size فایل، graph محدود HLS، sync زیرنویس و URL پایدار cover/poster کنترل می‌شوند.
 - HSK1-3 از نظر ساختاری ممیزی شده؛ ۳۵۰ مورد provenance مانع انتشار عمومی است، نه Preview محافظت‌شده.
-- full rerun محلی فاز پنج تکمیل شده است؛ release SHA، CI، deploy و smoke زنده هنوز pending است.
+- release `3b3a918a66ea7df875965130ff86c7d1a1227576` با CI، deploy و smoke زنده موفق است؛ Hugging Face Space commit برابر `16ba7967240bc24ade18397697f9b56df233bac3` و runtime در وضعیت `RUNNING` است.
 
 ### فاز شش: موبایل و UX
 
@@ -630,13 +630,14 @@ restore فقط روی مقصد ایزوله انجام شود.
 
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
-«این repository مربوط به ChinVerse است. فازهای صفر تا چهار deploy شده‌اند و فاز پنج
-آموزش و رسانه روی شاخه `codex/phase-5-education-media` از نظر فنی به pre-release
-رسیده است: ۱۲۵ unit backend با پوشش ۵۸٫۵۲٪، ۲۵ integration، ۳۶ unit frontend با
+«این repository مربوط به ChinVerse است. فازهای صفر تا پنج در دامنه تعریف‌شده انجام
+شده‌اند و فاز پنج آموزش و رسانه روی شاخه `codex/phase-5-education-media` با release
+`3b3a918a66ea7df875965130ff86c7d1a1227576` روی staging محافظت‌شده deploy شده است:
+۱۲۷ unit backend با پوشش ۵۸٫۵۹٪، ۲۵ integration، ۳۶ unit frontend با
 پوشش ۹۳٫۴۸٪ statement، build ۶۳ route و migration تا `b5e7c9d1f3a2` شواهد full
 rerun محلی‌اند. raw media URL/mount حذف، HLS و entitlement امضاشده،
 bucket خصوصی S3، checksum/HLS graph، subtitle DB workflow، admin UI و URL پایدار
-cover/poster پیاده شده‌اند. release SHA، CI و deploy فاز پنج هنوز pending است و محیط
-زنده همچنان release فاز چهار با head `a2c4e6f8b1d3` است. ۳۵۰ مورد provenance مانع
-انتشار عمومی محتواست، اما Preview محافظت‌شده مجاز است. هیچ secretی را در چت یا Git
+cover/poster پیاده شده‌اند. Quality Gates run `31883881871`، deploy run `31883881897`
+و health/readiness زنده سبز است. ۳۵۰ مورد provenance مانع انتشار عمومی محتواست، اما
+Preview محافظت‌شده مجاز است. هیچ secretی را در چت یا Git
 ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»

@@ -6,7 +6,7 @@
 
 - تاریخ شروع: ۱۱ اوت ۲۰۲۶
 - شاخه: `codex/phase-5-education-media`
-- وضعیت: پیاده‌سازی و full rerun محلی کامل؛ commit، CI و deploy محافظت‌شده هنوز انجام نشده‌اند
+- وضعیت: تکمیل‌شده و روی staging محافظت‌شده deploy شده — ۱۵ اوت ۲۰۲۶
 - دامنه: محتوای دوره و درس، ویدئو/HLS، زیرنویس، entitlement، کنترل کیفیت رسانه و ممیزی داده/مجوز
 - خط قرمز انتشار: محتوای `draft`، رسانه‌ی بدون مجوز، URL خام HLS یا محتوای پولی بدون entitlement نباید از API عمومی برگردد.
 
@@ -14,10 +14,10 @@
 
 | شاهد | وضعیت |
 | --- | --- |
-| release SHA | `pending` |
-| GitHub Quality Gates | `pending` |
-| Hugging Face staging deploy/smoke | `pending` |
-| Vercel Preview محافظت‌شده | `pending` |
+| release SHA | `3b3a918a66ea7df875965130ff86c7d1a1227576` |
+| GitHub Quality Gates | [run 31883881871](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881871) — موفق |
+| Hugging Face staging deploy/smoke | [run 31883881897](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881897) — موفق؛ Space commit=`16ba7967240bc24ade18397697f9b56df233bac3` |
+| Vercel Preview محافظت‌شده | [Preview فاز پنج](https://chinverse-git-codex-phase-5-education-media-death-stroke.vercel.app) — ناشناس به SSO هدایت می‌شود |
 
 ## مراحل اجرایی
 
@@ -52,7 +52,7 @@
 
 ### مرحله ۲ — دسترسی رسانه و entitlement
 
-وضعیت: تکمیل‌شده در کد و full integration محلی؛ smoke cross-tier زنده پس از deploy انجام می‌شود
+وضعیت: تکمیل‌شده در کد، full integration محلی و smoke زنده staging
 
 - صدور URL امضاشده‌ی کوتاه‌عمر برای HLS؛
 - کنترل مالکیت/اشتراک/رایگان‌بودن قبل از صدور URL؛
@@ -97,16 +97,17 @@
 
 ### مرحله ۵ — آزمون و انتشار staging
 
-وضعیت: full aggregate rerun محلی سبز؛ commit/CI/deploy و smoke زنده باقی است
+وضعیت: تکمیل‌شده؛ full aggregate rerun، CI، deploy و smoke زنده سبز است
 
 - migration چرخه‌ی `base -> head -> base -> head` تا head
   `b5e7c9d1f3a2` روی PostgreSQL تأیید شده است؛
-- ۱۲۵ تست واحد backend با پوشش ۵۸٫۵۲٪ و ۲۵ تست integration روی PostgreSQL ایزوله سبز است؛
+- ۱۲۷ تست واحد backend با پوشش ۵۸٫۵۹٪ و ۲۵ تست integration روی PostgreSQL ایزوله سبز است؛
 - ۳۶ تست واحد frontend با پوشش ۹۳٫۴۸٪ statement و ۹۴٫۲۸٪ line سبز است و
   lint/typecheck/build تولیدی ۶۳ route را ساخته است؛
 - پنل ادمین workflow ایجاد course/section/lesson، ثبت و review/publish رسانه، ingest/validate/publish زیرنویس و publish درس/دوره را پوشش می‌دهد؛
-- health/readiness و smoke staging برای release جدید pending است؛
-- SHA، runهای CI، commit provider و URL Preview پس از deploy در همین گزارش و handoff ثبت می‌شوند.
+- health روی staging همان release SHA را گزارش می‌کند و readiness دیتابیس `ok` است؛ OpenAPI در staging با `404` بسته است؛
+- catalog عمومی در smoke خالی بود و هیچ `storage_key`، `provider_url`، `video_url` یا `checksum_sha256` عمومی برنگرداند؛
+- Preview فاز پنج پشت Vercel Authentication/SSO باقی مانده و درخواست ناشناس به login هدایت می‌شود.
 
 ## تصمیم‌های دامنه
 
@@ -123,9 +124,10 @@
 - مرحله ۲: public API فقط DTO allowlistشده می‌دهد؛ mount خام course video/thumbnail حذف شده است. course media در S3 از bucket خصوصی مجزا خوانده می‌شود و publish، checksum/size واقعی فایل و graph محدود HLS را تا playlistها، key/init و segmentهای referenced بررسی می‌کند. traversal، URL خارجی و resource بدون امضای منطبق fail-closed هستند.
 - مرحله ۳: `npm run lint`، typecheck تولیدی Next و `npm run build` موفق شد؛ build تعداد ۶۳ صفحه/مسیر را تولید کرد. suite واحد frontend نیز ۳۶ تست را با پوشش ۹۳٫۴۸٪ statement و ۹۴٫۲۸٪ line سبز کرد.
 - مرحله ۴: اجرای audit در snapshot فعلی ۹۸۷ واژه/۲۰۱۴ sense و ۳۴۷ asset ثبت‌شده را گزارش می‌کند؛ blocker ساختاری صفر و ۳۷۹ finding مربوط به provenance/review باقی است. این findingها به‌صورت fail-closed اجازهٔ انتشار asset تأییدنشده را نمی‌دهند و جعل مجوز نشده است.
-- مرحله ۵ (pre-release): full rerun تجمیعی ۱۲۵ تست واحد backend و ۲۵ integration را سبز کرد؛ پوشش backend برابر ۵۸٫۵۲٪ است. سناریوهای integration شامل HLS manifest/segment، MP4 Range، entitlement پولی و revoke، DTO allowlist، mount خصوصی و gateway تصویر عمومی است. چرخه migration `base -> head -> base -> head` تا `b5e7c9d1f3a2`، `alembic check` و verifierهای فازهای ۲ تا ۵ سبز هستند.
+- مرحله ۵ (pre-release): full rerun تجمیعی ۱۲۷ تست واحد backend و ۲۵ integration را سبز کرد؛ پوشش backend برابر ۵۸٫۵۹٪ است. سناریوهای integration شامل HLS manifest/segment، MP4 Range، entitlement پولی و revoke، DTO allowlist، mount خصوصی و gateway تصویر عمومی است. چرخه migration `base -> head -> base -> head` تا `b5e7c9d1f3a2`، `alembic check` و verifierهای فازهای ۲ تا ۵ سبز هستند.
 - مرحله ۵ (امنیت dependency): `ruff`، `compileall` و `bandit` سبز هستند؛ `npm audit --omit=dev` و `pip-audit` هیچ آسیب‌پذیری شناخته‌شده‌ای گزارش نکردند.
-- مرحله ۵ (pending): release SHA، GitHub CI، deploy Hugging Face، Vercel Preview محافظت‌شده و smoke زنده پس از اتمام gate نهایی ثبت می‌شوند. تا آن زمان این سند ادعای deploy فاز پنج ندارد.
+- مرحله ۵ (release): release `3b3a918a66ea7df875965130ff86c7d1a1227576` در [Quality Gates run 31883881871](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881871) و [deploy run 31883881897](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881897) سبز شد. artifact با SHA immutable ساخته شد و health همان SHA را گزارش کرد؛ `/health/ready` دیتابیس را `ok` داد، OpenAPI عمومی `404` بود و Space با commit `16ba7967240bc24ade18397697f9b56df233bac3` در وضعیت `RUNNING` قرار گرفت.
+- مرحله ۵ (CI hardening): checksumهای CSV/SVG برای تفاوت CRLF/LF canonical شدند و regression test اضافه شد. همچنین release provenance از متغیر mutable provider مستقل و داخل artifact ثبت شد؛ workflow تا مشاهده همان SHA و readiness موفق deploy را کامل نمی‌کند.
 
 ## ردیابی هفت‌مرحله‌ای
 
@@ -135,4 +137,4 @@
 4. HLS امضاشده، entitlement زنده، Range و audit — تکمیل‌شده.
 5. player API-driven و زیرنویس DB بدون hardcode شناسه‌ای — تکمیل‌شده.
 6. پاک‌سازی دیکشنری و inventory/registry مجوز — تکمیل فنی؛ ۳۵۰ provenance انسانی باز است.
-7. full rerun محلی — تکمیل‌شده؛ release SHA، CI، deploy محافظت‌شده و smoke زنده pending است.
+7. full rerun، CI، deploy محافظت‌شده و smoke زنده — تکمیل‌شده؛ فقط ۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوا باز است.
