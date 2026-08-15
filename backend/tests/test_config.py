@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings, build_async_database_url, parse_setting_list
+from app.core.config import (
+    Settings,
+    build_async_database_url,
+    parse_setting_list,
+    resolve_release_sha,
+)
 
 
 def test_parse_setting_list_supports_csv_json_and_empty_values():
@@ -9,6 +14,15 @@ def test_parse_setting_list_supports_csv_json_and_empty_values():
     assert parse_setting_list('["one", " two "]') == ["one", "two"]
     assert parse_setting_list("") == []
     assert parse_setting_list(None) == []
+
+
+def test_release_sha_prefers_valid_immutable_artifact(tmp_path):
+    artifact = tmp_path / "RELEASE_SHA"
+    artifact.write_text("a" * 40 + "\n", encoding="ascii")
+    assert resolve_release_sha("environment-release", artifact) == "a" * 40
+
+    artifact.write_text("not-a-release", encoding="ascii")
+    assert resolve_release_sha("environment-release", artifact) == "environment-release"
 
 
 def test_production_rejects_placeholder_security_configuration():

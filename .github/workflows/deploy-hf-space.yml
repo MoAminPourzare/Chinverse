@@ -39,6 +39,7 @@ jobs:
     env:
       HF_OIDC_RESOURCE: spaces/MoAmin9/chinverse-api
       RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+      STAGING_BASE_URL: https://moamin9-chinverse-api.hf.space
     steps:
       - name: Validate release SHA
         shell: bash
@@ -97,6 +98,7 @@ jobs:
           export_dir="${RUNNER_TEMP}/chinverse-backend-release"
           mkdir -p "$export_dir"
           git archive "${RELEASE_SHA}:backend" | tar -x -C "$export_dir"
+          printf '%s\n' "$RELEASE_SHA" > "$export_dir/RELEASE_SHA"
 
       - name: Install Hugging Face CLI
         run: python -m pip install --disable-pip-version-check "huggingface_hub==1.27.0"
@@ -110,8 +112,19 @@ jobs:
           --delete="*"
           --commit-message="Deploy Chinverse backend from ${RELEASE_SHA}"
 
-      - name: Pin runtime release metadata
+      - name: Verify deployed release and readiness
         shell: bash
-        run: >-
-          hf spaces variables add MoAmin9/chinverse-api
-          -e "RELEASE_SHA=${RELEASE_SHA}"
+        run: |
+          for attempt in $(seq 1 80); do
+            payload="$(curl --fail --silent --show-error "${STAGING_BASE_URL}/health" || true)"
+            deployed_sha="$(jq -r '.release // "missing"' <<<"$payload" 2>/dev/null || echo missing)"
+            if [[ "$deployed_sha" == "$RELEASE_SHA" ]]; then
+              curl --fail --silent --show-error "${STAGING_BASE_URL}/health/ready" \
+                | jq -e '.status == "ok" and .checks.database == "ok"'
+              exit 0
+            fi
+            echo "Waiting for ${RELEASE_SHA}; staging currently reports ${deployed_sha} (attempt ${attempt}/80)"
+            sleep 15
+          done
+          echo "Staging did not report immutable release ${RELEASE_SHA} before timeout" >&2
+          exit 1

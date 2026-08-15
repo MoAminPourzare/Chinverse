@@ -1,5 +1,6 @@
 import json
 import ipaddress
+import re
 from pathlib import Path, PurePosixPath
 
 from pydantic import computed_field, model_validator
@@ -16,6 +17,23 @@ PLACEHOLDER_SECRET_KEYS = {
 }
 PRODUCTION_ENVIRONMENTS = {"prod", "production"}
 DEPLOYMENT_TIERS = {"local", "staging", "production"}
+RELEASE_SHA_FILE = BACKEND_DIR / "RELEASE_SHA"
+RELEASE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+def resolve_release_sha(
+    configured_release_sha: str,
+    artifact_path: Path = RELEASE_SHA_FILE,
+) -> str:
+    """Prefer the immutable SHA embedded in a deployed artifact."""
+    try:
+        artifact_release_sha = artifact_path.read_text(encoding="ascii").strip()
+    except (OSError, UnicodeError):
+        return configured_release_sha
+
+    if RELEASE_SHA_RE.fullmatch(artifact_release_sha):
+        return artifact_release_sha
+    return configured_release_sha
 
 
 def build_async_database_url(database_url: str) -> str:

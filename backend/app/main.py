@@ -10,7 +10,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.api import api_router
 from app.core.browser_origin import is_allowed_browser_origin
-from app.core.config import settings
+from app.core.config import resolve_release_sha, settings
 from app.core.paths import (
     AVATARS_DIR,
     GALLERY_UPLOAD_DIR,
@@ -22,6 +22,7 @@ from app.core.request_size import RequestSizeLimitMiddleware
 from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
+deployed_release_sha = resolve_release_sha(settings.RELEASE_SHA)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -124,7 +125,7 @@ async def health_check():
         "status": "ok",
         "service": "chinverse-api",
         "deployment_tier": settings.DEPLOYMENT_TIER.lower(),
-        "release": settings.RELEASE_SHA,
+        "release": deployed_release_sha,
     }
 
 
