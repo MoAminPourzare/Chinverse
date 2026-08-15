@@ -129,6 +129,22 @@ def test_registry_checksum_drift_is_a_structural_blocker(tmp_path: Path) -> None
     assert any(finding.code == "LICENSE_CHECKSUM_MISMATCH" for finding in result.structural_blockers())
 
 
+def test_text_registry_checksums_are_line_ending_independent(tmp_path: Path) -> None:
+    _write_dictionary_fixture(tmp_path)
+    media_path = tmp_path / "frontend/public/demo.svg"
+    media_path.parent.mkdir(parents=True, exist_ok=True)
+    media_path.write_bytes(b'<svg xmlns="http://www.w3.org/2000/svg">\r\n</svg>\r\n')
+    sync_registries(tmp_path)
+
+    media_path.write_bytes(b'<svg xmlns="http://www.w3.org/2000/svg">\n</svg>\n')
+    for dictionary_path in DICTIONARY_FILES:
+        path = tmp_path / dictionary_path
+        path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n"))
+
+    result = run_audit(tmp_path, scan_source=False)
+    assert not any(finding.code == "LICENSE_CHECKSUM_MISMATCH" for finding in result.findings)
+
+
 def test_unknown_license_is_baseline_not_default_build_failure(tmp_path: Path) -> None:
     _prepare_fixture(tmp_path)
     result = run_audit(tmp_path, scan_source=False)

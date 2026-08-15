@@ -27,6 +27,7 @@ MEDIA_ROOTS = (
 IMAGE_EXTENSIONS = {".avif", ".gif", ".jpeg", ".jpg", ".png", ".svg", ".webp"}
 VIDEO_EXTENSIONS = {".avi", ".m4v", ".mkv", ".mov", ".mp4", ".webm"}
 MEDIA_EXTENSIONS = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
+CANONICAL_TEXT_CHECKSUM_EXTENSIONS = {".csv", ".svg"}
 SOURCE_EXTENSIONS = {".js", ".jsx", ".py", ".ts", ".tsx"}
 REVIEW_STATUSES = {"approved", "rejected", "review_required"}
 REQUIRED_DICTIONARY_COLUMNS = (
@@ -136,6 +137,10 @@ def _relative(path: Path, root: Path) -> str:
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
+    if path.suffix.lower() in CANONICAL_TEXT_CHECKSUM_EXTENSIONS:
+        content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        digest.update(content)
+        return digest.hexdigest()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
