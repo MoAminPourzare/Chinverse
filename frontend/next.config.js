@@ -27,6 +27,10 @@ const incompleteFeatures = {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    // The same-origin BFF must retain collection-route slashes because FastAPI
+    // uses them as part of its route contract. Public page routes still resolve
+    // normally, while /api/backend/... reaches the catch-all handler unchanged.
+    skipTrailingSlashRedirect: true,
     experimental: {
         cpus: 1,
         webpackBuildWorker: false,
