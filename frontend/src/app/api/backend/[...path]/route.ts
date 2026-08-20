@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isStateChangingMethod, isTrustedMutationOrigin } from "@/lib/request-origin";
+import { buildBackendUpstreamUrl } from "@/lib/backendProxyUrl";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -65,8 +66,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
 
     const { path } = await context.params;
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
-    const upstreamUrl = new URL(`${apiBase}/${path.map(encodeURIComponent).join("/")}`);
-    upstreamUrl.search = request.nextUrl.search;
+    const upstreamUrl = buildBackendUpstreamUrl(apiBase, path, request.nextUrl);
 
     const headers = new Headers();
     for (const name of REQUEST_HEADERS) {
