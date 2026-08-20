@@ -24,7 +24,6 @@
     "theme_color": "#155aa6",
     "background_color": "#fafafb",
     "display": "standalone",
-    "display_override": ["window-controls-overlay", "standalone"],
     "orientation": "any",
     "categories": ["education", "productivity"],
     "shortcuts": [

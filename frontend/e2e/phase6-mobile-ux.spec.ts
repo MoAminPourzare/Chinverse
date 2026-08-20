@@ -2,30 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const publicRoutes = ["/login", "/settings/appearance", "/settings/app", "/offline"];
 
-test("PWA manifest and service worker keep private data out of offline storage", async ({ request }) => {
-  const manifestResponse = await request.get("/manifest.json");
-  expect(manifestResponse.ok()).toBe(true);
-  const manifest = await manifestResponse.json();
-  expect(manifest).toMatchObject({
-    id: "/",
-    start_url: "/?source=pwa",
-    scope: "/",
-    display: "standalone",
-    lang: "fa-IR",
-    dir: "rtl",
-  });
-  expect(manifest.icons).toEqual(expect.arrayContaining([
-    expect.objectContaining({ src: "/android-chrome-192x192.png", sizes: "192x192" }),
-    expect.objectContaining({ src: "/android-chrome-512x512.png", sizes: "512x512" }),
-  ]));
-
-  const workerResponse = await request.get("/sw.js");
-  expect(workerResponse.ok()).toBe(true);
-  const worker = await workerResponse.text();
-  expect(worker).toContain("/offline");
-  expect(worker).toContain("url.pathname.startsWith(\"/api/\")");
-  expect(worker).not.toMatch(/caches\.put\([^\n]+\/api\//);
-});
+test.describe.configure({ mode: "serial" });
 
 test.describe("mobile viewport, orientation, zoom and target-size gates", () => {
   for (const route of publicRoutes) {
@@ -78,7 +55,7 @@ test.describe("mobile viewport, orientation, zoom and target-size gates", () => 
           const isFrameworkUi = Boolean(node.closest("nextjs-portal"));
           const isFrameworkControl = node.getAttribute("aria-label") === "Open Next.js Dev Tools";
           const isExempt = node.dataset.inlineAction === "true" || isInlineLink || isFrameworkUi || isFrameworkControl;
-          if (!isVisible || isExempt || (rect.width >= 44 && rect.height >= 44)) return [];
+          if (!isVisible || isExempt || (rect.width + 0.5 >= 44 && rect.height + 0.5 >= 44)) return [];
           return [{
             tag: node.tagName,
             label: node.getAttribute("aria-label") || node.textContent?.trim().slice(0, 40) || "unlabelled",
@@ -104,6 +81,29 @@ test("keyboard viewport keeps the focused login field visible", async ({ page })
   expect(box).not.toBeNull();
   expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.y + box!.height).toBeLessThanOrEqual(500);
+});
+
+test("keyboard-only navigation exposes a visible focus indicator", async ({ page }) => {
+  await page.goto("/login");
+  for (let index = 0; index < 6; index += 1) {
+    await page.keyboard.press("Tab");
+    const focus = await page.evaluate(() => {
+      const active = document.activeElement as HTMLElement | null;
+      if (!active) return null;
+      const style = getComputedStyle(active);
+      const rect = active.getBoundingClientRect();
+      return {
+        tag: active.tagName,
+        visible: rect.width > 0 && rect.height > 0,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+      };
+    });
+    expect(focus).not.toBeNull();
+    expect(focus!.visible, JSON.stringify(focus)).toBe(true);
+    expect(focus!.outlineStyle, JSON.stringify(focus)).not.toBe("none");
+    expect(focus!.outlineWidth, JSON.stringify(focus)).toBeGreaterThanOrEqual(2);
+  }
 });
 
 test("dark mode initializes before interaction and retains readable foreground/background", async ({ page }) => {

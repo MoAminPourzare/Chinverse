@@ -699,6 +699,7 @@ export default function SharedWatchPage() {
                     >
                         <video
                             ref={videoRef}
+                            aria-label={`ویدیوی درس ${currentLesson.title}`}
                             className="lesson-video-element h-full w-full object-contain"
                             poster={posterUrl}
                             preload="metadata"
@@ -755,7 +756,7 @@ export default function SharedWatchPage() {
                                 <div className="lesson-video-controls absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/48 to-transparent px-3 pb-2 pt-7">
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-white/82" dir="ltr">
                                         <span className="w-9 text-left">{formatTime(currentTime)}</span>
-                                        <input type="range" min={0} max={duration || 100} value={Math.min(currentTime, duration || 100)} onChange={(event) => seekTo(Number(event.target.value))} className="lesson-video-range h-5 flex-1" aria-label="جابه‌جایی ویدئو" />
+                                        <input type="range" min={0} max={duration || 100} value={Math.min(currentTime, duration || 100)} onChange={(event) => seekTo(Number(event.target.value))} className="lesson-video-range h-[46px] flex-1" aria-label="جابه‌جایی ویدئو" aria-valuetext={`${formatTime(currentTime)} از ${formatTime(duration)}`} />
                                         <span className="w-9 text-right">{formatTime(duration)}</span>
                                         <button type="button" onClick={toggleFullscreen} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur" aria-label={isFullscreen ? "خروج از تمام صفحه" : "تمام صفحه"}>{isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
                                     </div>
@@ -769,7 +770,7 @@ export default function SharedWatchPage() {
                     {playback && playback.subtitles.length > 1 && (
                         <label className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600">
                             زبان زیرنویس
-                            <select value={selectedTrack?.language || ""} onChange={(event) => setSelectedLanguage(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold" aria-label="زبان زیرنویس">
+                            <select value={selectedTrack?.language || ""} onChange={(event) => setSelectedLanguage(event.target.value)} className="min-h-[46px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold" aria-label="زبان زیرنویس">
                                 {playback.subtitles.map((track) => <option key={track.id} value={track.language}>{LANGUAGE_LABELS[track.language] || track.language.toUpperCase()}</option>)}
                             </select>
                         </label>
@@ -793,7 +794,7 @@ export default function SharedWatchPage() {
                                     type="button"
                                     onClick={() => seekTo(item.start + 0.02)}
                                     className={cn("lesson-subtitle-row block w-full rounded-[16px] px-3 py-3 text-center transition-all duration-300", active ? "bg-white opacity-100 shadow-sm ring-1 ring-[#d5e1ef]" : "opacity-65 hover:bg-white/70 hover:opacity-100")}
-                                    aria-label={`رفتن به ${formatTime(item.start)}`}
+                                    aria-label={`${[item.translation, item.chinese, item.pinyin].filter(Boolean).join("، ")}؛ رفتن به ${formatTime(item.start)}`}
                                 >
                                     {showChineseText && item.chinese && <p className={cn("font-cjk text-[16px] font-black leading-8", active ? "text-[#155aa6]" : "text-slate-700")} dir="ltr" lang="zh-CN">{renderChineseWithHighlights(item.chinese, item.highlightedWords)}</p>}
                                     {showPinyinText && item.pinyin && <p className={cn("font-latin text-[12px] font-bold leading-5", active ? "text-[#4d7fb7]" : "text-slate-400")} dir="ltr" lang="zh-Latn">{item.pinyin}</p>}

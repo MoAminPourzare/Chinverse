@@ -327,6 +327,8 @@ export default function AccountPage() {
 
                 {formMessage && (
                     <div
+                        role={formMessage.type === "success" ? "status" : "alert"}
+                        aria-live={formMessage.type === "success" ? "polite" : undefined}
                         className={cn(
                             "rounded-2xl px-4 py-3 text-sm font-bold leading-6",
                             formMessage.type === "success"
@@ -356,6 +358,8 @@ export default function AccountPage() {
 
                     <FloatingField label="عنوان شغلی" error={fieldErrors.headline}>
                         <OptionPicker
+                            id="account-headline"
+                            label="عنوان شغلی"
                             value={formData.headline || ""}
                             placeholder="انتخاب شغل"
                             options={PROFILE_HEADLINE_OPTIONS}
@@ -367,6 +371,8 @@ export default function AccountPage() {
 
                     <FloatingField label="جنسیت" error={fieldErrors.gender}>
                         <OptionPicker
+                            id="account-gender"
+                            label="جنسیت"
                             value={formData.gender || ""}
                             placeholder="انتخاب جنسیت"
                             options={GENDER_OPTIONS}
@@ -379,6 +385,8 @@ export default function AccountPage() {
 
                     <FloatingField label="کشور/منطقه" error={fieldErrors.country}>
                         <OptionPicker
+                            id="account-country"
+                            label="کشور یا منطقه"
                             value={formData.country || ""}
                             placeholder="انتخاب کشور/منطقه"
                             options={COUNTRY_REGION_OPTIONS}
@@ -392,6 +400,8 @@ export default function AccountPage() {
                     {shouldShowProvince && (
                         <FloatingField label="استان" error={fieldErrors.city}>
                             <OptionPicker
+                                id="account-city"
+                                label="استان"
                                 value={formData.city || ""}
                                 placeholder="انتخاب استان"
                                 options={provinceOptions}
@@ -417,16 +427,19 @@ export default function AccountPage() {
                     <div>
                         <label className="flex items-start gap-3 rounded-[16px] border border-[#d6e1ee] bg-white/70 px-4 py-3 text-right">
                             <input
+                                id="account-profile-truth"
                                 type="checkbox"
                                 checked={Boolean(formData.profile_truth_confirmed)}
                                 onChange={handleTruthConfirmChange}
+                                aria-invalid={Boolean(fieldErrors.profile_truth_confirmed)}
+                                aria-describedby={fieldErrors.profile_truth_confirmed ? "account-profile-truth-error" : undefined}
                                 className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
                             />
                             <span className="text-[13px] font-bold leading-7 text-[#2f3238]">
                                 تایید میکنم اطلاعات پروفایل، عناوین شغلی، مهارت ها و خدماتم درست و واقعی است و مسئولیت آن ها با خودم است.
                             </span>
                         </label>
-                        <FieldError message={fieldErrors.profile_truth_confirmed} />
+                        <FieldError id="account-profile-truth-error" message={fieldErrors.profile_truth_confirmed} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-1">
@@ -472,14 +485,18 @@ function AccountField({
     error?: string;
 } & InputHTMLAttributes<HTMLInputElement>) {
     if (inputProps.name === "city") return null;
+    const fieldId = inputProps.id || `account-${inputProps.name || "field"}`;
+    const errorId = `${fieldId}-error`;
 
     return (
-        <FloatingField label={label} error={error}>
+        <FloatingField label={label} labelFor={fieldId} error={error} errorId={errorId}>
             <input
                 {...inputProps}
+                id={fieldId}
+                aria-describedby={error ? errorId : inputProps["aria-describedby"]}
                 dir={inputProps.dir || "auto"}
                 className={cn(
-                    "h-11 w-full rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none placeholder:text-slate-400",
+                    "h-[46px] w-full rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none placeholder:text-slate-400",
                     inputProps.readOnly && "text-slate-500",
                     error && "text-rose-700",
                 )}
@@ -489,6 +506,8 @@ function AccountField({
 }
 
 function OptionPicker({
+    id,
+    label,
     value,
     placeholder,
     options,
@@ -497,6 +516,8 @@ function OptionPicker({
     onToggle,
     onSelect,
 }: {
+    id: string;
+    label: string;
     value: string;
     placeholder: string;
     options: string[];
@@ -508,8 +529,12 @@ function OptionPicker({
     return (
         <div className="relative">
             <button
+                id={id}
                 type="button"
                 onClick={onToggle}
+                aria-label={`${label}: ${value || placeholder}`}
+                aria-expanded={isOpen}
+                aria-controls={isOpen ? `${id}-options` : undefined}
                 className={cn(
                     "flex min-h-11 w-full items-center justify-between gap-3 rounded-[8px] bg-[#f7f8fb] px-4 py-2 text-center text-[15px] font-bold text-[#2f3238] outline-none transition-all duration-300",
                     isOpen && "bg-white text-[#155aa6]",
@@ -521,7 +546,7 @@ function OptionPicker({
             </button>
 
             {isOpen && (
-                <div className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
+                <div id={`${id}-options`} className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
                     <div className="max-h-72 overflow-y-auto pr-1">
                         <div className="motion-list grid grid-cols-2 gap-2">
                             {clearLabel && (
@@ -566,23 +591,25 @@ function OptionPicker({
     );
 }
 
-function FloatingField({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+function FloatingField({ label, labelFor, error, errorId, children }: { label: string; labelFor?: string; error?: string; errorId?: string; children: ReactNode }) {
     return (
         <div className="block">
             <div className="relative rounded-[9px] bg-[linear-gradient(90deg,#f07d57,#155aa6)] p-[1.5px]">
-                <span className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">
-                    {label}
-                </span>
+                {labelFor ? (
+                    <label htmlFor={labelFor} className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">{label}</label>
+                ) : (
+                    <span className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">{label}</span>
+                )}
                 <div className="rounded-[8px] bg-[#f7f8fb]">
                     {children}
                 </div>
             </div>
-            <FieldError message={error} />
+            <FieldError id={errorId} message={error} />
         </div>
     );
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ id, message }: { id?: string; message?: string }) {
     if (!message) return null;
-    return <p className="mt-1 text-xs font-bold leading-5 text-rose-600">{message}</p>;
+    return <p id={id} role="alert" className="mt-1 text-xs font-bold leading-5 text-rose-600">{message}</p>;
 }

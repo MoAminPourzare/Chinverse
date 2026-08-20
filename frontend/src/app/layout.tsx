@@ -67,6 +67,10 @@ export default async function RootLayout({
 }>) {
   await connection();
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const releaseSha = process.env.VERCEL_GIT_COMMIT_SHA
+    ?? process.env.GITHUB_SHA
+    ?? process.env.NEXT_PUBLIC_RELEASE_SHA
+    ?? "local";
 
   return (
     <html lang="fa" suppressHydrationWarning>
@@ -79,7 +83,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased text-slate-900">
-        <AppShell>{children}</AppShell>
+        <AppShell releaseSha={releaseSha}>{children}</AppShell>
       </body>
     </html>
   );

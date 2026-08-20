@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Dialog } from "@headlessui/react";
 import { Ban, Flag, Loader2, MoreVertical, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { type ReportReason, trustService } from "@/services/trust.service";
@@ -26,6 +27,7 @@ export default function UserTrustActions({
     onBlocked?: () => void;
 }) {
     const rootRef = useRef<HTMLDivElement>(null);
+    const actionsId = useId();
     const [menuOpen, setMenuOpen] = useState(false);
     const [reportOpen, setReportOpen] = useState(false);
     const [blocked, setBlocked] = useState(false);
@@ -100,6 +102,8 @@ export default function UserTrustActions({
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
                 aria-label="گزینه‌های ایمنی"
+                aria-expanded={menuOpen}
+                aria-controls={menuOpen ? actionsId : undefined}
                 title="گزینه‌های ایمنی"
                 className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-full transition",
@@ -110,7 +114,7 @@ export default function UserTrustActions({
             </button>
 
             {menuOpen && (
-                <div className="absolute left-0 top-12 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-right shadow-xl" dir="rtl">
+                <div id={actionsId} className="absolute left-0 top-12 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-right shadow-xl" dir="rtl">
                     <button type="button" onClick={() => { setReportOpen(true); setMenuOpen(false); }} className="flex h-11 w-full items-center gap-3 px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">
                         <Flag size={17} className="text-amber-600" />
                         گزارش کاربر
@@ -122,15 +126,17 @@ export default function UserTrustActions({
                 </div>
             )}
 
-            {message && <div className="absolute left-0 top-12 w-56 rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold leading-5 text-white shadow-xl">{message}</div>}
+            {message && <div role="status" aria-live="polite" className="absolute left-0 top-12 w-56 rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold leading-5 text-white shadow-xl">{message}</div>}
 
-            {reportOpen && (
-                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/45 p-4 sm:items-center" dir="rtl">
-                    <form onSubmit={submitReport} className="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl">
+            <Dialog open={reportOpen} onClose={() => setReportOpen(false)} className="relative z-[100]" dir="rtl">
+                <div className="fixed inset-0 bg-slate-950/45" aria-hidden="true" />
+                <div className="fixed inset-0 overflow-y-auto p-4">
+                  <div className="flex min-h-full items-end justify-center sm:items-center">
+                    <Dialog.Panel as="form" onSubmit={submitReport} className="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl">
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                                 <ShieldCheck size={20} className="text-[#155aa6]" />
-                                <h2 className="text-base font-black text-slate-900">گزارش کاربر</h2>
+                                <Dialog.Title className="text-base font-black text-slate-900">گزارش کاربر</Dialog.Title>
                             </div>
                             <button type="button" onClick={() => setReportOpen(false)} aria-label="بستن" title="بستن" className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100">
                                 <X size={19} />
@@ -150,9 +156,10 @@ export default function UserTrustActions({
                             {pending === "report" && <Loader2 size={17} className="animate-spin" />}
                             ثبت گزارش
                         </button>
-                    </form>
+                    </Dialog.Panel>
+                  </div>
                 </div>
-            )}
+            </Dialog>
         </div>
     );
 }

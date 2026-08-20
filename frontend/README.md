@@ -23,6 +23,8 @@ npm run build
 ## Notes
 
 - API calls use the backend URL configured in `.env.local`.
-- The web manifest and install icons are present. Offline service-worker support
-  is intentionally disabled until it is reintroduced with a maintained Next.js
-  integration and dedicated cache-update tests.
+- The production app registers a release-scoped service worker. It precaches only
+  the standalone offline fallback and public shell assets; API, account, upload,
+  and private-media paths are never written to Cache Storage.
+- Run the PWA lifecycle tests against a production build with
+  `PLAYWRIGHT_SERVER_MODE=production npm run test:e2e -- phase6-pwa.spec.ts`.

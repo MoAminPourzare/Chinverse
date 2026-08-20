@@ -1,6 +1,6 @@
 # ChinVerse | راهنمای کامل انتقال پروژه
 
-> این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۱۵ اوت ۲۰۲۶ / ۲۴ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
+> این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۲۱ اوت ۲۰۲۶ / ۳۰ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
 
 ## ۱. خلاصه فوری
 
@@ -10,8 +10,10 @@
 وضعیت فعلی:
 
 - فازهای صفر تا پنج برای دامنه تعریف‌شده انجام شده‌اند؛ فاز پنج آموزش و رسانه روی
-  staging محافظت‌شده deploy و smoke شده است.
-- شاخه فعلی `codex/phase-5-education-media` است.
+  staging محافظت‌شده deploy و smoke شده است. پیاده‌سازی و gateهای محلی خودکار/
+  مرورگر فاز شش سبزند، اما commit/CI/Preview/smoke، assistive technology دستی و
+  دستگاه واقعی pending هستند.
+- شاخه فعلی `codex/phase-6-mobile-ux` است؛ worktree هنوز release نهایی فاز شش نیست.
 - release SHA زنده فاز پنج `3b3a918a66ea7df875965130ff86c7d1a1227576` است؛
   Quality Gates و deploy همان SHA موفق‌اند.
 - release قبلی فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` بود.
@@ -24,9 +26,11 @@
   هدایت می‌شود؛ تا تکمیل provenance عمومی نشود.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
-گزارش فاز پنج در `docs/PHASE_5_EDUCATION_MEDIA_FA.md` و گزارش فاز چهار در
-`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فنی بعدی فاز شش موبایل واقعی است؛
-۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوای موجود همچنان باز است.
+گزارش در حال تکمیل فاز شش در `docs/PHASE_6_MOBILE_UX_FA.md`، گزارش فاز پنج در
+`docs/PHASE_5_EDUCATION_MEDIA_FA.md` و گزارش فاز چهار در
+`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فعلی بستن gateهای فاز شش و سپس تست
+دستگاه واقعی است؛ ۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوای موجود
+همچنان باز است.
 
 ## ۲. قانون کار برای Codex بعدی
 
@@ -94,8 +98,8 @@
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-5-education-media` |
-| frontend staging/preview | [Vercel Preview فاز پنج](https://chinverse-git-codex-phase-5-education-media-death-stroke.vercel.app) — محافظت‌شده با SSO |
+| branch کاری | `codex/phase-6-mobile-ux`؛ release candidate نهایی هنوز commit نشده است |
+| frontend staging/preview | مرجع زنده فعلی [Vercel Preview فاز پنج](https://chinverse-git-codex-phase-5-education-media-death-stroke.vercel.app) است؛ Preview فاز شش هنوز pending |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
 | database target | Neon staging؛ migration فاز پنج تا head=`b5e7c9d1f3a2` هنگام startup موفق و readiness دیتابیس `ok` است |
@@ -334,6 +338,35 @@ poetry run python import_dictionary.py --all-hsk --reset
 
 ## ۱۰. تست و شواهد نهایی
 
+### فاز شش — pre-release و هنوز بسته‌نشده
+
+- زیرساخت `visualViewport`، safe-area چهارطرفه، keyboard inset، standalone و
+  orientation پیاده شده است. keyboard فقط با focus قابل‌ویرایش و scale نزدیک ۱
+  تشخیص داده می‌شود تا pinch zoom به‌اشتباه keyboard محسوب نشود.
+- navigation داخلی path/query/hash را با marker همان session دنبال می‌کند؛ stack
+  کهنه و ورود مستقیم fail-closed هستند و fallback خارجی پذیرفته نمی‌شود. تغییر
+  pathname نیز live announcement و focus محافظه‌کارانه heading/main دارد.
+- player دارای fullscreen استاندارد و fallback CSS برای iOS Safari، خروج با
+  Escape/back، safe-area و lock/unlock اختیاری orientation است.
+- dark mode پیش از hydration، حداقل tap target غیر-inline، focus visible،
+  forced-colors، prefers-contrast و reduced-motion پوشش دارند. suite جداگانه
+  `@axe-core/playwright` مسیرهای عمومی اصلی را با tagهای WCAG 2.2 A/AA و حالت‌های
+  منتخب dark بررسی می‌کند؛ نتیجه خودکار جای تست دستی screen reader نیست.
+- PWA اکنون فعال است: manifest installable، install prompt Chromium، راهنمای نصب
+  Safari/iOS، update UX، offline HTML/CSS مستقل و service worker release-scoped.
+  cache فقط shell و asset عمومی allowlistشده را می‌پذیرد و API/upload/media/private
+  media را cache نمی‌کند؛ cacheهای release و legacy قبلی پاک می‌شوند.
+- `npm run check` محلی سبز است: ۴۵ unit test، پوشش `93.48%` statement و
+  `94.28%` line، lint/typecheck سبز و build تولیدی برابر ۶۵ route.
+- اجرای نهایی محلی Phase 6 روی production build برابر `65 collected`، `63 passed`،
+  دو skip مورد انتظار cross-engine و صفر failure در ۱٫۹ دقیقه است. skipها قرارداد
+  install event اختصاصی Chromium و راهنمای اختصاصی Safari/WebKit هستند؛ سناریوی
+  worker/update/cache Chromium نیز پس از اتصال worker قبلی به release authoritative
+  `/api/health` جداگانه در ۸٫۱ ثانیه سبز شد.
+- commit/push نهایی، Quality Gates همان SHA، Vercel Preview فاز شش و smoke زنده
+  هنوز انجام نشده‌اند. profileهای Pixel 5 و iPhone 13 فقط emulation هستند و تست
+  واقعی Android Chrome/iOS Safari همچنان pending است.
+
 ### Release فاز پنج — deploy و smoke‌شده
 
 - Backend unit: `127 passed` با پوشش `58.59%`.
@@ -488,7 +521,9 @@ FEATURE_POINTS_ENABLED=false
 3. provider واقعی email/SMS برای signup verification و reset باید وصل و از شبکه موبایل smoke test شود.
 4. دامنه، CORS، ALLOWED_HOSTS، trusted proxy network/count و cookieهای `__Host-` باید برای مسیر واقعی edge تنظیم شوند.
 5. backup/restore دوره‌ای production، retention، alert و runbook عملیاتی لازم است.
-6. تست واقعی Android، iPhone Safari، keyboard، safe-area، orientation، back gesture، zoom 200% و WCAG باقی است.
+6. پیاده‌سازی و emulation خودکار موبایل/WCAG در فاز شش انجام شده، اما تست واقعی
+   Android Chrome و iPhone Safari برای keyboard، safe-area/notch، orientation،
+   fullscreen، back gesture، zoom 200%، install/update/offline و screen reader باقی است.
 7. load/soak test، timeout/retry/offline UX، logging ساختاریافته، error tracking، metrics و alerting باقی است.
 8. workflow فنی HLS/subtitle/URL امضاشده/entitlement در فاز پنج پیاده شده است؛
    ورود محتوای واقعی، تکمیل provenance ۳۵۰ مورد، پلن storage تولید و smoke همه درس‌ها
@@ -496,7 +531,9 @@ FEATURE_POINTS_ENABLED=false
 9. support و moderation در حجم واقعی، چند اپراتور و SLA عملیاتی باید آزموده شوند؛ workflow پایه و مرز نقش‌ها در فاز چهار پوشش دارند.
 10. GitHub Ruleset باید checkهای `Frontend` و `Backend` را برای merge به `main` اجباری کند.
 11. تست نفوذ مستقل و نهایی‌سازی اسناد حقوقی پیش از جذب عمومی کاربر لازم است.
-12. PWA/offline عمداً فعال نیست؛ فعال‌سازی مجدد بدون cache/update test ممنوع است.
+12. PWA در کد فاز شش با cache release-scoped و denylist داده خصوصی فعال و gate
+    محلی آن سبز شده است، اما تا CI، Preview و smoke واقعی نباید آماده انتشار عمومی
+    تلقی شود.
 
 ## ۱۳. نقشه راه بعدی
 
@@ -532,13 +569,18 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 - HSK1-3 از نظر ساختاری ممیزی شده؛ ۳۵۰ مورد provenance مانع انتشار عمومی است، نه Preview محافظت‌شده.
 - release `3b3a918a66ea7df875965130ff86c7d1a1227576` با CI، deploy و smoke زنده موفق است؛ Hugging Face Space commit برابر `16ba7967240bc24ade18397697f9b56df233bac3` و runtime در وضعیت `RUNNING` است.
 
-### فاز شش: موبایل و UX
+### فاز شش: موبایل و UX — pre-release
 
-- Android Chrome و iOS Safari واقعی
-- safe area، keyboard، fullscreen، orientation و gesture back
-- زوم ۲۰۰٪، WCAG 2.2 AA، tap target حداقل ۴۴px
-- رفع overflow و بررسی dark mode
-- تصمیم آگاهانه برای PWA/install/offline
+- viewport، safe-area، keyboard/pinch، fullscreen، orientation، safe back و SPA
+  focus/announcement در کد پیاده شده‌اند.
+- زوم متنی ۲۰۰٪، WCAG 2.2 A/AA خودکار، keyboard focus، tap target حداقل ۴۴px،
+  dark mode و overflow در suiteهای Phase 6 پوشش دارند.
+- PWA/install/update/offline با manifest، service worker release-scoped، offline
+  shell مستقل و cache policy بدون داده خصوصی پیاده شده است.
+- `npm run check` و suite کامل Phase 6 روی production build سبزند: ۶۵ collected،
+  ۶۳ passed، دو skip مورد انتظار cross-engine و صفر failure.
+- commit/CI/Vercel Preview/smoke و Android Chrome/iOS Safari سخت‌افزاری pending
+  هستند؛ emulation هرگز به‌عنوان دستگاه واقعی ثبت نمی‌شود.
 
 ### فاز هفت: performance و operations
 
@@ -616,6 +658,7 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `docs/PHASE_4_USER_JOURNEYS_FA.md`: ماتریس پذیرش، bug list و شواهد تست فاز چهار
 - `docs/PHASE_5_EDUCATION_MEDIA_FA.md`: workflow، entitlement، player، تست و وضعیت pre-release فاز پنج
 - `docs/PHASE_5_DATA_LICENSE_AUDIT_FA.md`: قرارداد ممیزی dictionary و provenance رسانه
+- `docs/PHASE_6_MOBILE_UX_FA.md`: معیار پذیرش، پیاده‌سازی، تست‌های خودکار و blockerهای فاز شش
 - `.github/workflows/quality-gates.yml`: pipeline اصلی
 - `scripts/check.ps1`: gate محلی
 - `scripts/check-release-baseline.ps1`: privacy/release guard
@@ -627,17 +670,22 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `backend/scripts/verify_phase5_schema.py`: invariantهای workflow آموزش و رسانه
 - `backend/data/dictionary/`: CSVهای canonical HSK
 - `frontend/src/app/watch/[domain]/[courseId]/page.tsx`: player امن API-driven و sync زیرنویس
+- `frontend/src/components/layout/MobileUxController.tsx`, `frontend/src/lib/mobileUx.ts`: viewport، keyboard، orientation، navigation و SPA accessibility
+- `frontend/src/components/pwa/PwaProvider.tsx`, `frontend/public/sw.js`: install/update/offline و cache policy PWA
+- `frontend/e2e/phase6-mobile-ux.spec.ts`, `frontend/e2e/phase6-accessibility.spec.ts`, `frontend/e2e/phase6-pwa.spec.ts`: gateهای مرورگر فاز شش
 
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
 «این repository مربوط به ChinVerse است. فازهای صفر تا پنج در دامنه تعریف‌شده انجام
-شده‌اند و فاز پنج آموزش و رسانه روی شاخه `codex/phase-5-education-media` با release
-`3b3a918a66ea7df875965130ff86c7d1a1227576` روی staging محافظت‌شده deploy شده است:
-۱۲۷ unit backend با پوشش ۵۸٫۵۹٪، ۲۵ integration، ۳۶ unit frontend با
-پوشش ۹۳٫۴۸٪ statement، build ۶۳ route و migration تا `b5e7c9d1f3a2` شواهد full
-rerun محلی‌اند. raw media URL/mount حذف، HLS و entitlement امضاشده،
-bucket خصوصی S3، checksum/HLS graph، subtitle DB workflow، admin UI و URL پایدار
-cover/poster پیاده شده‌اند. Quality Gates run `31883881871`، deploy run `31883881897`
-و health/readiness زنده سبز است. ۳۵۰ مورد provenance مانع انتشار عمومی محتواست، اما
-Preview محافظت‌شده مجاز است. هیچ secretی را در چت یا Git
+شده‌اند و release زنده محافظت‌شده فاز پنج همچنان
+`3b3a918a66ea7df875965130ff86c7d1a1227576` است. شاخه کاری
+`codex/phase-6-mobile-ux` است. پیاده‌سازی خودکار فاز شش شامل viewport/safe-area،
+keyboard بدون اشتباه pinch zoom، fullscreen/orientation/safe-back، dark mode،
+tap target، WCAG خودکار و PWA install/update/offline انجام شده و `npm run check`
+با ۴۵ unit test، پوشش ۹۳٫۴۸٪ statement/۹۴٫۲۸٪ line و build ۶۵ route سبز است.
+فاز شش هنوز بسته نشده: Playwright production محلی با ۶۵ collected، ۶۳ passed، دو
+skip مورد انتظار cross-engine و صفر failure سبز است؛ commit/CI/Vercel Preview/smoke،
+تست دستی assistive technology و تست واقعی Android Chrome/iOS Safari pending هستند
+و emulation جای دستگاه واقعی نیست. ۳۵۰
+مورد provenance نیز همچنان مانع انتشار عمومی محتواست. هیچ secretی را در چت یا Git
 ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»

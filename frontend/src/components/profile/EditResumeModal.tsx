@@ -16,7 +16,7 @@ interface EditResumeModalProps {
     initialSection?: string | null;
 }
 
-const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-sm text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
+const inputClass = "min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-sm text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
 const yearSelectClass = `${inputClass} cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#155aa6_50%),linear-gradient(135deg,#155aa6_50%,transparent_50%)] bg-[length:6px_6px,6px_6px] bg-[position:left_14px_center,left_8px_center] bg-no-repeat pl-8`;
 const yearOptions = buildYearOptions();
 const resumeLevelOptions = ["مقدماتی", "متوسط", "پیشرفته"];
@@ -141,7 +141,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                 <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
                                     <div className="min-h-0 flex-1 space-y-7 overflow-y-auto px-6 pb-4 pt-1">
                                         {resumeDateError && (
-                                            <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
+                                            <div role="alert" className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
                                                 {resumeDateError}
                                             </div>
                                         )}
@@ -154,8 +154,8 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         >
                                             {work.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => work.remove(index)}>
-                                                    <input {...register(`work_experiences.${index}.company`)} placeholder="نام شرکت" dir="auto" className={inputClass} />
-                                                    <input {...register(`work_experiences.${index}.job_title`)} placeholder="عنوان شغلی" dir="auto" className={inputClass} />
+                                                    <input {...register(`work_experiences.${index}.company`)} aria-label={`نام شرکت، سابقه ${index + 1}`} placeholder="نام شرکت" dir="auto" className={inputClass} />
+                                                    <input {...register(`work_experiences.${index}.job_title`)} aria-label={`عنوان شغلی، سابقه ${index + 1}`} placeholder="عنوان شغلی" dir="auto" className={inputClass} />
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <YearSelect registration={register(`work_experiences.${index}.start_date`)} placeholder="سال شروع" />
                                                         <YearSelect registration={register(`work_experiences.${index}.end_date`)} placeholder="سال پایان" />
@@ -176,7 +176,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                                 <ResumeCard key={field.id} onRemove={() => education.remove(index)}>
                                                     <OptionSelect registration={register(`educations.${index}.university`)} placeholder="دانشگاه محل تحصیل" options={UNIVERSITY_OPTIONS} />
                                                     <OptionSelect registration={register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" options={EDUCATION_DEGREE_OPTIONS} />
-                                                    <input {...register(`educations.${index}.field`)} placeholder="رشته تحصیلی" dir="auto" className={inputClass} />
+                                                    <input {...register(`educations.${index}.field`)} aria-label={`رشته تحصیلی، مورد ${index + 1}`} placeholder="رشته تحصیلی" dir="auto" className={inputClass} />
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <YearSelect registration={register(`educations.${index}.start_date`)} placeholder="سال شروع" />
                                                         <YearSelect registration={register(`educations.${index}.end_date`)} placeholder="سال پایان" />
@@ -195,8 +195,8 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         >
                                             {certificate.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => certificate.remove(index)}>
-                                                    <input {...register(`certificates.${index}.title`)} placeholder="عنوان گواهی" dir="auto" className={inputClass} />
-                                                    <input {...register(`certificates.${index}.issuer`)} placeholder="صادر کننده" dir="auto" className={inputClass} />
+                                                    <input {...register(`certificates.${index}.title`)} aria-label={`عنوان گواهی، مورد ${index + 1}`} placeholder="عنوان گواهی" dir="auto" className={inputClass} />
+                                                    <input {...register(`certificates.${index}.issuer`)} aria-label={`صادرکننده گواهی، مورد ${index + 1}`} placeholder="صادر کننده" dir="auto" className={inputClass} />
                                                     <YearSelect registration={register(`certificates.${index}.date`)} placeholder="سال صدور" />
                                                 </ResumeCard>
                                             ))}
@@ -212,8 +212,8 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         >
                                             {award.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => award.remove(index)}>
-                                                    <input {...register(`awards.${index}.title`)} placeholder="عنوان جایزه" dir="auto" className={inputClass} />
-                                                    <input {...register(`awards.${index}.issuer`)} placeholder="اهدا کننده" dir="auto" className={inputClass} />
+                                                    <input {...register(`awards.${index}.title`)} aria-label={`عنوان جایزه، مورد ${index + 1}`} placeholder="عنوان جایزه" dir="auto" className={inputClass} />
+                                                    <input {...register(`awards.${index}.issuer`)} aria-label={`اهداکننده جایزه، مورد ${index + 1}`} placeholder="اهدا کننده" dir="auto" className={inputClass} />
                                                     <YearSelect registration={register(`awards.${index}.date`)} placeholder="سال دریافت" />
                                                 </ResumeCard>
                                             ))}
@@ -229,7 +229,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         >
                                             {skill.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => skill.remove(index)}>
-                                                    <input {...register(`skills.${index}.name`)} placeholder="نام مهارت" dir="auto" className={inputClass} />
+                                                    <input {...register(`skills.${index}.name`)} aria-label={`نام مهارت، مورد ${index + 1}`} placeholder="نام مهارت" dir="auto" className={inputClass} />
                                                     <OptionSelect registration={register(`skills.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
                                             ))}
@@ -245,7 +245,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         >
                                             {language.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} onRemove={() => language.remove(index)}>
-                                                    <input {...register(`languages.${index}.name`)} placeholder="نام زبان" dir="auto" className={inputClass} />
+                                                    <input {...register(`languages.${index}.name`)} aria-label={`نام زبان، مورد ${index + 1}`} placeholder="نام زبان" dir="auto" className={inputClass} />
                                                     <OptionSelect registration={register(`languages.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
                                             ))}
@@ -280,7 +280,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
 
 function YearSelect({ registration, placeholder }: { registration: UseFormRegisterReturn; placeholder: string }) {
     return (
-        <select {...registration} dir="rtl" className={yearSelectClass}>
+        <select {...registration} aria-label={placeholder} dir="rtl" className={yearSelectClass}>
             <option value="">{placeholder}</option>
             {yearOptions.map((year) => (
                 <option key={year} value={year}>
@@ -293,7 +293,7 @@ function YearSelect({ registration, placeholder }: { registration: UseFormRegist
 
 function OptionSelect({ registration, placeholder, options }: { registration: UseFormRegisterReturn; placeholder: string; options: string[] }) {
     return (
-        <select {...registration} dir="rtl" className={yearSelectClass}>
+        <select {...registration} aria-label={placeholder} dir="rtl" className={yearSelectClass}>
             <option value="">{placeholder}</option>
             {options.map((option) => (
                 <option key={option} value={option}>

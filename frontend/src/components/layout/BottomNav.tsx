@@ -52,7 +52,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <div className="bottom-nav-container pointer-events-none absolute inset-x-0 bottom-0 z-50 px-[max(0.75rem,env(safe-area-inset-left))] pb-3 pr-[max(0.75rem,env(safe-area-inset-right))]">
+        <nav aria-label="ناوبری اصلی" className="bottom-nav-container pointer-events-none absolute inset-x-0 bottom-0 z-50 px-[max(0.75rem,env(safe-area-inset-left))] pb-3 pr-[max(0.75rem,env(safe-area-inset-right))]">
             <div className="bottom-nav-shell pointer-events-auto mx-auto max-w-xl rounded-[28px] border border-white/70 bg-white/92 px-2 py-2 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-[#303a48] dark:bg-[#171d26]/95 dark:shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
                 <div className="flex items-end justify-around gap-1">
                     {navItems.map((item) => {
@@ -64,6 +64,7 @@ export default function BottomNav() {
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                aria-current={isActive ? "page" : undefined}
                                 data-active={isActive ? "true" : "false"}
                                 className={cn(
                                     "bottom-nav-link relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center",
@@ -81,6 +82,6 @@ export default function BottomNav() {
                 </div>
             </div>
             <div className="h-safe-bottom" />
-        </div>
+        </nav>
     );
 }

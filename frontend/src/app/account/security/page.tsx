@@ -161,14 +161,16 @@ export default function AccountSecurityPage() {
         <main className="min-h-full bg-[#f7f8fb] px-5 pb-10 pt-4" dir="rtl">
             <AppHeader title="امنیت حساب" backHref="/settings" icon={<KeyRound size={22} />} />
             <div className="mx-auto mt-7 w-full max-w-[430px] space-y-9">
-                {message && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p>}
-                {error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+                {message && <p role="status" aria-live="polite" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p>}
+                {error && <p id="account-security-error" role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
 
                 <section>
                     <h2 className="text-base font-black text-slate-900">تغییر رمز عبور</h2>
                     <form onSubmit={changePassword} className="mt-4 space-y-3">
-                        <input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="رمز عبور فعلی" dir="ltr" autoComplete="current-password" maxLength={128} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#155aa6]" />
-                        <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="رمز عبور جدید" dir="ltr" autoComplete="new-password" maxLength={128} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#155aa6]" />
+                        <label htmlFor="security-current-password" className="sr-only">رمز عبور فعلی</label>
+                        <input id="security-current-password" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="رمز عبور فعلی" dir="ltr" autoComplete="current-password" maxLength={128} aria-describedby={error ? "account-security-error" : undefined} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#155aa6]" />
+                        <label htmlFor="security-new-password" className="sr-only">رمز عبور جدید</label>
+                        <input id="security-new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="رمز عبور جدید" dir="ltr" autoComplete="new-password" maxLength={128} aria-describedby={error ? "account-security-error" : undefined} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#155aa6]" />
                         <button type="submit" disabled={pending === "password"} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#155aa6] text-sm font-black text-white disabled:opacity-50">
                             {pending === "password" && <Loader2 size={17} className="animate-spin" />}
                             تغییر رمز عبور
@@ -185,7 +187,9 @@ export default function AccountSecurityPage() {
 
                         {!adminAccess.mfa_enabled && !mfaSetup && (
                             <form onSubmit={beginMfaSetup} className="mt-4 space-y-3">
+                                <label htmlFor="security-mfa-password" className="sr-only">رمز عبور فعلی برای فعال‌سازی ورود دومرحله‌ای</label>
                                 <input
+                                    id="security-mfa-password"
                                     type="password"
                                     value={mfaPassword}
                                     onChange={(event) => setMfaPassword(event.target.value)}
@@ -193,6 +197,7 @@ export default function AccountSecurityPage() {
                                     dir="ltr"
                                     autoComplete="current-password"
                                     required
+                                    aria-describedby={error ? "account-security-error" : undefined}
                                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#155aa6]"
                                 />
                                 <button type="submit" disabled={pending === "mfa-setup"} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#155aa6] text-sm font-black text-white disabled:opacity-50">
@@ -214,7 +219,9 @@ export default function AccountSecurityPage() {
                                     </div>
                                     <a href={mfaSetup.provisioning_uri} className="mt-3 inline-block text-sm font-black text-[#155aa6]">افزودن به برنامه احراز هویت</a>
                                 </div>
+                                <label htmlFor="security-mfa-code" className="sr-only">کد شش‌رقمی ورود دومرحله‌ای</label>
                                 <input
+                                    id="security-mfa-code"
                                     value={mfaCode}
                                     onChange={(event) => setMfaCode(event.target.value.replace(/\s/g, ""))}
                                     inputMode="numeric"
@@ -222,6 +229,7 @@ export default function AccountSecurityPage() {
                                     placeholder="کد شش‌رقمی"
                                     dir="ltr"
                                     required
+                                    aria-describedby={error ? "account-security-error" : undefined}
                                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-[#155aa6]"
                                 />
                                 <button type="submit" disabled={pending === "mfa-confirm"} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#155aa6] text-sm font-black text-white disabled:opacity-50">
@@ -294,7 +302,9 @@ export default function AccountSecurityPage() {
                         رزومه، گالری، پیام‌ها و داده‌های وابسته پاک می‌شوند و این کار قابل بازگشت نیست.
                     </p>
                     <form onSubmit={deleteAccount} className="mt-4 space-y-4">
+                        <label htmlFor="security-deletion-password" className="sr-only">رمز عبور فعلی برای حذف حساب</label>
                         <input
+                            id="security-deletion-password"
                             type="password"
                             value={deletionPassword}
                             onChange={(event) => setDeletionPassword(event.target.value)}
@@ -303,6 +313,7 @@ export default function AccountSecurityPage() {
                             autoComplete="current-password"
                             maxLength={128}
                             required
+                            aria-describedby={error ? "account-security-error" : undefined}
                             className="w-full rounded-2xl border border-rose-200 bg-white px-4 py-3.5 text-sm outline-none focus:border-rose-500"
                         />
                         <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">

@@ -38,7 +38,7 @@ const supportHiddenPrefixes = [
     "/admin",
 ];
 
-export default function AppShell({ children }: { children: ReactNode }) {
+export default function AppShell({ children, releaseSha }: { children: ReactNode; releaseSha: string }) {
     const pathname = usePathname();
     const scrollRef = useRef<HTMLDivElement>(null);
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -51,7 +51,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }, [pathname]);
 
     return (
-        <PwaProvider>
+        <PwaProvider releaseSha={releaseSha}>
             <div className="app-viewport">
                 <div className="app-frame">
                     <ThemeController />

@@ -25,7 +25,7 @@
   --app-border-strong: #cdd8e6;
   --app-text: #172033;
   --app-text-muted: #687386;
-  --app-text-faint: #94a0b1;
+  --app-text-faint: #64748b;
   --app-primary: #155aa6;
   --app-primary-hover: #0f4e92;
   --app-primary-soft: #eef6ff;
@@ -52,7 +52,7 @@ html.dark {
   --app-border-strong: #3a4656;
   --app-text: #f4f7fb;
   --app-text-muted: #aab4c2;
-  --app-text-faint: #778394;
+  --app-text-faint: #9aa7b8;
   --app-primary: #62a8f4;
   --app-primary-hover: #82bbf7;
   --app-primary-soft: #172a40;
@@ -96,7 +96,8 @@ body {
     linear-gradient(180deg, var(--app-canvas) 0%, var(--app-canvas-soft) 100%);
   font-family: var(--font-vazirmatn);
   overflow: hidden;
-  overscroll-behavior: none;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -111,9 +112,21 @@ textarea {
 
 button:not([data-inline-action="true"]),
 [role="button"]:not([data-inline-action="true"]),
+a[href]:not([data-inline-action="true"]),
 .touch-target {
-  min-width: 44px;
-  min-height: 44px;
+  /* WebKit can quantize a 44px box just below 44 CSS px at mobile scale. */
+  min-width: 46px;
+  min-height: 46px;
+}
+
+input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  min-height: 46px;
+}
+
+input[type="range"] {
+  min-height: 46px;
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -171,7 +184,8 @@ body::selection {
   max-width: 430px;
   flex-direction: column;
   overflow: hidden;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: contain;
   padding-right: env(safe-area-inset-right);
   padding-left: env(safe-area-inset-left);
   transform: translateZ(0);
@@ -200,7 +214,8 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   min-height: 0;
   position: relative;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: contain;
   padding-top: env(safe-area-inset-top);
   scroll-padding-top: calc(env(safe-area-inset-top) + 12px);
   scroll-padding-bottom: calc(var(--app-keyboard-inset, 0px) + env(safe-area-inset-bottom) + 24px);
@@ -268,13 +283,14 @@ html[data-keyboard="open"] .app-scroll {
   z-index: 1000;
   display: flex;
   justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   pointer-events: none;
 }
 
 #headlessui-portal-root > * {
   position: relative;
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   width: 100%;
   max-width: 430px;
   overflow: hidden;
@@ -299,7 +315,7 @@ html[data-keyboard="open"] .app-scroll {
 
   #headlessui-portal-root {
     align-items: center;
-    padding: 18px;
+    padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   }
 
   #headlessui-portal-root > * {
@@ -322,6 +338,27 @@ html[data-keyboard="open"] .app-scroll {
     border-radius: 0;
     box-shadow: none;
   }
+}
+
+/* iOS Safari uses the CSS fallback when native element fullscreen is absent.
+   Remove clipped/transformed ancestors so the fixed player reaches the visual
+   viewport rather than the 430px application frame. */
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .app-viewport,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .app-frame,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .app-scroll,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .route-stage,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .route-panel {
+  max-width: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+html:not(.dark) [class~="text-slate-400"],
+html:not(.dark) [class~="text-gray-400"] {
+  color: var(--app-text-muted) !important;
 }
 
 @media (forced-colors: active) {
