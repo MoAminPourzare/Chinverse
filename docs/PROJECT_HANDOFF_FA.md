@@ -10,26 +10,29 @@
 وضعیت فعلی:
 
 - فازهای صفر تا پنج برای دامنه تعریف‌شده انجام شده‌اند؛ فاز پنج آموزش و رسانه روی
-  staging محافظت‌شده deploy و smoke شده است. پیاده‌سازی و gateهای محلی خودکار/
-  مرورگر فاز شش سبزند، اما commit/CI/Preview/smoke، assistive technology دستی و
-  دستگاه واقعی pending هستند.
-- شاخه فعلی `codex/phase-6-mobile-ux` است؛ worktree هنوز release نهایی فاز شش نیست.
-- release SHA زنده فاز پنج `3b3a918a66ea7df875965130ff86c7d1a1227576` است؛
-  Quality Gates و deploy همان SHA موفق‌اند.
+  staging محافظت‌شده deploy و smoke شده است. فاز شش از نظر پیاده‌سازی، تست خودکار،
+  browser emulation، CI، Vercel Preview و smoke زنده کامل است؛ journey سخت‌افزار
+  واقعی و assistive technology دستی هنوز evidence gap هستند.
+- شاخه فعلی `codex/phase-6-mobile-ux` و release code آن
+  `1219342ce50139c1ac6a109ad7f1cb23ba2b7bab` است.
+- frontend زنده فاز شش همان SHA را گزارش می‌کند. backend زنده طبق انتظار روی
+  release فاز پنج `3b3a918a66ea7df875965130ff86c7d1a1227576` باقی مانده است.
 - release قبلی فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` بود.
 - commit مبنای شاخه پیش از تغییرات فاز چهار: `3f63addf1e6b9f3c79f83044545f2d7a375f08db`
 - وضعیت دقیق commit/worktree را با Git بررسی کن؛ چند Codex روی پروژه کار می‌کنند و این سند را نباید جایگزین Git دانست.
-- GitHub Quality Gates فاز پنج در [run 31883881871](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881871) و deploy Hugging Face در [run 31883881897](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881897) موفق است.
+- GitHub Quality Gates فاز شش در [run 32419922159](https://github.com/MoAminPourzare/Chinverse/actions/runs/32419922159)
+  برای `Release baseline`، `Frontend` و `Backend` سبز است. deploy تاریخی Hugging
+  Face فاز پنج در [run 31883881897](https://github.com/MoAminPourzare/Chinverse/actions/runs/31883881897) موفق است.
 - backend با tier=`staging` روی Hugging Face اجرا می‌شود و به branch دائمی Neon
   staging با head فاز پنج `b5e7c9d1f3a2` متصل است؛ health/readiness زنده سبز است.
-- frontend فاز پنج روی Vercel Preview محافظت‌شده است و درخواست ناشناس به SSO
-  هدایت می‌شود؛ تا تکمیل provenance عمومی نشود.
+- frontend فاز شش روی Vercel Preview محافظت‌شده است. Share موقت smoke revoke شده
+  و درخواست ناشناس HTTPS دوباره با `302` به SSO هدایت می‌شود.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
 گزارش در حال تکمیل فاز شش در `docs/PHASE_6_MOBILE_UX_FA.md`، گزارش فاز پنج در
 `docs/PHASE_5_EDUCATION_MEDIA_FA.md` و گزارش فاز چهار در
-`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فعلی بستن gateهای فاز شش و سپس تست
-دستگاه واقعی است؛ ۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوای موجود
+`docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فعلی تکمیل journeyهای دستگاه واقعی و
+assistive technology دستی است؛ ۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوای موجود
 همچنان باز است.
 
 ## ۲. قانون کار برای Codex بعدی
@@ -98,8 +101,8 @@
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-6-mobile-ux`؛ release candidate نهایی هنوز commit نشده است |
-| frontend staging/preview | مرجع زنده فعلی [Vercel Preview فاز پنج](https://chinverse-git-codex-phase-5-education-media-death-stroke.vercel.app) است؛ Preview فاز شش هنوز pending |
+| branch کاری | `codex/phase-6-mobile-ux`؛ release code=`1219342ce50139c1ac6a109ad7f1cb23ba2b7bab` |
+| frontend staging/preview | [stable branch URL فاز شش](https://chinverse-git-codex-phase-6-mobile-ux-death-stroke.vercel.app)؛ deployment=`FpnJXHMegQdxiceuU1WutAAnNdCJ` و [generated URL](https://chinverse-nndh54sbt-death-stroke.vercel.app)، محافظت‌شده با SSO |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
 | database target | Neon staging؛ migration فاز پنج تا head=`b5e7c9d1f3a2` هنگام startup موفق و readiness دیتابیس `ok` است |
@@ -338,7 +341,7 @@ poetry run python import_dictionary.py --all-hsk --reset
 
 ## ۱۰. تست و شواهد نهایی
 
-### فاز شش — pre-release و هنوز بسته‌نشده
+### فاز شش — release خودکار کامل؛ شواهد سخت‌افزاری ناقص
 
 - زیرساخت `visualViewport`، safe-area چهارطرفه، keyboard inset، standalone و
   orientation پیاده شده است. keyboard فقط با focus قابل‌ویرایش و scale نزدیک ۱
@@ -356,16 +359,32 @@ poetry run python import_dictionary.py --all-hsk --reset
   Safari/iOS، update UX، offline HTML/CSS مستقل و service worker release-scoped.
   cache فقط shell و asset عمومی allowlistشده را می‌پذیرد و API/upload/media/private
   media را cache نمی‌کند؛ cacheهای release و legacy قبلی پاک می‌شوند.
-- `npm run check` محلی سبز است: ۴۵ unit test، پوشش `93.48%` statement و
+- `npm run check` محلی سبز است: ۴۸ unit test، پوشش `93.48%` statement و
   `94.28%` line، lint/typecheck سبز و build تولیدی برابر ۶۵ route.
 - اجرای نهایی محلی Phase 6 روی production build برابر `65 collected`، `63 passed`،
   دو skip مورد انتظار cross-engine و صفر failure در ۱٫۹ دقیقه است. skipها قرارداد
   install event اختصاصی Chromium و راهنمای اختصاصی Safari/WebKit هستند؛ سناریوی
   worker/update/cache Chromium نیز پس از اتصال worker قبلی به release authoritative
   `/api/health` جداگانه در ۸٫۱ ثانیه سبز شد.
-- commit/push نهایی، Quality Gates همان SHA، Vercel Preview فاز شش و smoke زنده
-  هنوز انجام نشده‌اند. profileهای Pixel 5 و iPhone 13 فقط emulation هستند و تست
-  واقعی Android Chrome/iOS Safari همچنان pending است.
+- `npm audit` frontend صفر vulnerability شناخته‌شده گزارش کرد.
+- release code=`1219342ce50139c1ac6a109ad7f1cb23ba2b7bab` و GitHub
+  [Quality Gates run 32419922159](https://github.com/MoAminPourzare/Chinverse/actions/runs/32419922159)
+  برای jobهای Backend، Release baseline و Frontend سبز است.
+- Vercel deployment=`FpnJXHMegQdxiceuU1WutAAnNdCJ` با
+  [stable branch URL](https://chinverse-git-codex-phase-6-mobile-ux-death-stroke.vercel.app)
+  deploy شد. `/api/health` همان SHA دقیق، `/explore/hsk` empty-state سالم و BFF با
+  trailing slash نهایی `200` را تأیید کردند.
+- HF health/ready سبز است و backend طبق انتظار release فاز پنج را گزارش می‌کند.
+  Share موقت Vercel پس از smoke revoke شد و anonymous HTTPS اکنون `302` به SSO است.
+- BrowserStack دستگاه‌های واقعی iPhone 15/iOS 17.4، iPhone 15 Plus/iOS 17.1،
+  iPhone 13 Pro/iOS 15.6، iPhone 16e/iOS 18.3، Galaxy S24/Android 14/Chrome و
+  Galaxy S25/Android 15/Chrome را
+  launch کرد. keyboard/focus واقعی Safari روی iPhone 16e شاهد تصویری دارد، اما
+  Trial یک‌دقیقه‌ای و onboarding/boot اجازه نداد ChinVerse پیش از قطع session روی
+  دستگاه دیده و journey آن کامل شود.
+- بنابراین edge-back، rotation، fullscreen، PWA install/update/offline، journeyهای
+  app روی دستگاه واقعی و VoiceOver/TalkBack هنوز evidence gap هستند. profileهای
+  Pixel 5 و iPhone 13 در Playwright فقط emulation بوده‌اند.
 
 ### Release فاز پنج — deploy و smoke‌شده
 
@@ -531,9 +550,9 @@ FEATURE_POINTS_ENABLED=false
 9. support و moderation در حجم واقعی، چند اپراتور و SLA عملیاتی باید آزموده شوند؛ workflow پایه و مرز نقش‌ها در فاز چهار پوشش دارند.
 10. GitHub Ruleset باید checkهای `Frontend` و `Backend` را برای merge به `main` اجباری کند.
 11. تست نفوذ مستقل و نهایی‌سازی اسناد حقوقی پیش از جذب عمومی کاربر لازم است.
-12. PWA در کد فاز شش با cache release-scoped و denylist داده خصوصی فعال و gate
-    محلی آن سبز شده است، اما تا CI، Preview و smoke واقعی نباید آماده انتشار عمومی
-    تلقی شود.
+12. PWA با cache release-scoped و denylist داده خصوصی فعال است و gate محلی، CI،
+    Preview و smoke آن سبزند؛ install/update/offline روی دستگاه واقعی و شواهد
+    عمومی محتوا همچنان مانع ادعای آمادگی انتشار عمومی‌اند.
 
 ## ۱۳. نقشه راه بعدی
 
@@ -569,7 +588,7 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 - HSK1-3 از نظر ساختاری ممیزی شده؛ ۳۵۰ مورد provenance مانع انتشار عمومی است، نه Preview محافظت‌شده.
 - release `3b3a918a66ea7df875965130ff86c7d1a1227576` با CI، deploy و smoke زنده موفق است؛ Hugging Face Space commit برابر `16ba7967240bc24ade18397697f9b56df233bac3` و runtime در وضعیت `RUNNING` است.
 
-### فاز شش: موبایل و UX — pre-release
+### فاز شش: موبایل و UX — خودکار کامل، سخت‌افزار ناقص
 
 - viewport، safe-area، keyboard/pinch، fullscreen، orientation، safe back و SPA
   focus/announcement در کد پیاده شده‌اند.
@@ -577,10 +596,14 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
   dark mode و overflow در suiteهای Phase 6 پوشش دارند.
 - PWA/install/update/offline با manifest، service worker release-scoped، offline
   shell مستقل و cache policy بدون داده خصوصی پیاده شده است.
-- `npm run check` و suite کامل Phase 6 روی production build سبزند: ۶۵ collected،
-  ۶۳ passed، دو skip مورد انتظار cross-engine و صفر failure.
-- commit/CI/Vercel Preview/smoke و Android Chrome/iOS Safari سخت‌افزاری pending
-  هستند؛ emulation هرگز به‌عنوان دستگاه واقعی ثبت نمی‌شود.
+- `npm run check` با ۴۸ unit و suite کامل Phase 6 روی production build سبزند: ۶۵
+  collected، ۶۳ passed، دو skip مورد انتظار cross-engine و صفر failure؛ npm audit صفر است.
+- release `1219342ce50139c1ac6a109ad7f1cb23ba2b7bab`، CI، Vercel Preview محافظت‌شده
+  و smoke زنده همان SHA کامل‌اند.
+- شش دستگاه واقعی BrowserStack launch شدند و keyboard/focus سیستم Safari روی
+  iPhone 16e شاهد دارد، اما خود ChinVerse به‌علت Trial یک‌دقیقه‌ای پیش از قطع session
+  دیده/تست نشد. journeyهای سخت‌افزاری و assistive technology دستی pending هستند؛
+  emulation هرگز به‌عنوان تست دستگاه واقعی ثبت نمی‌شود.
 
 ### فاز هفت: performance و operations
 
@@ -677,15 +700,17 @@ restore فقط روی مقصد ایزوله انجام شود.
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
 «این repository مربوط به ChinVerse است. فازهای صفر تا پنج در دامنه تعریف‌شده انجام
-شده‌اند و release زنده محافظت‌شده فاز پنج همچنان
-`3b3a918a66ea7df875965130ff86c7d1a1227576` است. شاخه کاری
-`codex/phase-6-mobile-ux` است. پیاده‌سازی خودکار فاز شش شامل viewport/safe-area،
+شده‌اند؛ backend زنده طبق انتظار روی release فاز پنج
+`3b3a918a66ea7df875965130ff86c7d1a1227576` و frontend محافظت‌شده روی release
+فاز شش است. شاخه کاری `codex/phase-6-mobile-ux` است. پیاده‌سازی خودکار فاز شش شامل viewport/safe-area،
 keyboard بدون اشتباه pinch zoom، fullscreen/orientation/safe-back، dark mode،
 tap target، WCAG خودکار و PWA install/update/offline انجام شده و `npm run check`
-با ۴۵ unit test، پوشش ۹۳٫۴۸٪ statement/۹۴٫۲۸٪ line و build ۶۵ route سبز است.
-فاز شش هنوز بسته نشده: Playwright production محلی با ۶۵ collected، ۶۳ passed، دو
-skip مورد انتظار cross-engine و صفر failure سبز است؛ commit/CI/Vercel Preview/smoke،
-تست دستی assistive technology و تست واقعی Android Chrome/iOS Safari pending هستند
+با ۴۸ unit test، پوشش ۹۳٫۴۸٪ statement/۹۴٫۲۸٪ line و build ۶۵ route سبز است.
+Playwright production محلی با ۶۵ collected، ۶۳ passed، دو skip مورد انتظار و صفر
+failure سبز است؛ release code=`1219342ce50139c1ac6a109ad7f1cb23ba2b7bab`،
+Quality Gates run `32419922159` و Vercel Preview/smoke همان SHA موفق‌اند. شش دستگاه
+واقعی BrowserStack launch شدند، اما به‌علت Trial کوتاه journey خود ChinVerse روی
+آن‌ها تکمیل نشد؛ تست دستی assistive technology و journey سخت‌افزاری pending هستند
 و emulation جای دستگاه واقعی نیست. ۳۵۰
 مورد provenance نیز همچنان مانع انتشار عمومی محتواست. هیچ secretی را در چت یا Git
 ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»

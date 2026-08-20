@@ -6,9 +6,11 @@
 
 - تاریخ شروع: ۱۵ اوت ۲۰۲۶ / ۲۴ مرداد ۱۴۰۵
 - شاخه: `codex/phase-6-mobile-ux`
-- وضعیت: پیاده‌سازی و gateهای محلی خودکار/مرورگر انجام شده‌اند؛ commit/CI/Preview،
-  تست دستی assistive technology و دستگاه واقعی هنوز pending هستند
+- وضعیت: پیاده‌سازی، gateهای محلی/مرورگر emulation، commit، CI، Vercel Preview و
+  smoke زنده انجام شده‌اند؛ journey کامل روی دستگاه واقعی و تست دستی assistive
+  technology هنوز evidence gap هستند و در نتیجه فاز از نظر سخت‌افزاری کامل نیست
 - release مبنا: فاز پنج با SHA=`3b3a918a66ea7df875965130ff86c7d1a1227576`
+- release code فاز شش: SHA=`1219342ce50139c1ac6a109ad7f1cb23ba2b7bab`
 - دامنه: Android Chrome، iOS Safari، keyboard، safe area، fullscreen، orientation، back gesture، زوم ۲۰۰٪، dark mode، WCAG 2.2 AA، tap target حداقل ۴۴px و PWA install/update/offline
 
 ## معیار اتمام
@@ -31,9 +33,11 @@
 4. WCAG 2.2 AA، زوم ۲۰۰٪ و tap target ۴۴px — اصلاحات و gateهای خودکار انجام
    شده‌اند؛ این ممیزی خودکار جای audit دستی یا assistive technology واقعی نیست.
 5. PWA install، update، offline و service worker — پیاده‌سازی و gate خودکار کامل.
-6. تست Chromium/WebKit و regression خودکار — production suite کامل سبز؛ تست
-   Android/iOS واقعی و assistive technology دستی انجام نشده‌اند.
-7. full gates، commit/push، CI، deploy و smoke — pending.
+6. تست Chromium/WebKit و regression خودکار — production suite کامل سبز؛ چند
+   دستگاه BrowserStack واقعاً launch شدند، اما journey خود اپ روی سخت‌افزار کامل
+   نشد و assistive technology دستی انجام نشده است.
+7. full gates، commit/push، CI، deploy و smoke خودکار — تکمیل؛ شواهد سخت‌افزاری
+   و assistive technology جداگانه pending هستند.
 
 ## مرحله ۱ — baseline
 
@@ -75,21 +79,58 @@
   می‌کند و فقط offline shell و assetهای عمومی allowlistشده را cache می‌کند. مسیرهای
   API، upload، media و private media هم در fetch و هم در پاک‌سازی cache fail-closed
   هستند؛ داده حساب و رسانه خصوصی offline ذخیره نمی‌شود.
-- `npm run check` — سبز: lint، typecheck، ۴۵ unit test، پوشش frontend برابر
+- `npm run check` — سبز: lint، typecheck، ۴۸ unit test، پوشش frontend برابر
   `93.48%` statement و `94.28%` line و production build برابر ۶۵ route.
 - اجرای نهایی محلی Phase 6 روی production build: `65 collected`، `63 passed`،
   `2 skipped` مورد انتظار cross-engine، `0 failed` در ۱٫۹ دقیقه. skipها مربوط به
   قرارداد اختصاصی install event در Chromium و راهنمای اختصاصی Safari/WebKit هستند.
   سناریوی worker/update/cache Chromium نیز پس از اصلاح worker مصنوعی قدیمی به
   release authoritative مسیر `/api/health` جداگانه در ۸٫۱ ثانیه سبز شد.
+- `npm audit` برای dependencyهای frontend صفر vulnerability شناخته‌شده گزارش کرد.
 - profileهای Pixel 5/Chromium و iPhone 13/WebKit در Playwright **emulation** هستند؛
   هیچ‌کدام به‌عنوان تست سخت‌افزار Android Chrome یا iOS Safari گزارش نمی‌شوند.
 
-## موارد مانده پیش از بستن فاز
+## release، CI و smoke زنده
 
-- ثبت commit و release SHA نهایی، push و Quality Gates سبز همان SHA؛
-- ساخت Vercel Preview محافظت‌شده و smoke مسیرهای mobile/PWA روی همان deployment؛
-- اجرای واقعی Android Chrome و iOS Safari، شامل keyboard، notch/safe-area، rotation،
-  fullscreen، gesture-back، install/update/offline و زوم؛
-- ثبت محدودیت‌های ممیزی خودکار WCAG و نتیجه تست دستی keyboard/screen reader؛
-- به‌روزرسانی این گزارش با URLهای CI/Preview و شواهد نهایی بدون ثبت secret یا bypass.
+- release code deploy و smoke‌شده
+  `1219342ce50139c1ac6a109ad7f1cb23ba2b7bab` است؛ commit شواهد مستندات می‌تواند
+  پس از آن روی همان شاخه قرار بگیرد، بدون اینکه کد runtime را تغییر دهد.
+- GitHub Quality Gates [run 32419922159](https://github.com/MoAminPourzare/Chinverse/actions/runs/32419922159)
+  برای همان SHA سبز است؛ jobهای `Release baseline`، `Frontend` و `Backend` موفق‌اند.
+- Vercel deployment فاز شش `FpnJXHMegQdxiceuU1WutAAnNdCJ` با
+  [generated URL](https://chinverse-nndh54sbt-death-stroke.vercel.app) و
+  [stable branch URL](https://chinverse-git-codex-phase-6-mobile-ux-death-stroke.vercel.app)
+  در Preview محافظت‌شده منتشر شده است.
+- `/api/health` زنده همان SHA دقیق فاز شش را برگرداند؛ `/explore/hsk` empty-state
+  سالم دارد و BFF پس از اصلاح حفظ trailing slash پاسخ `200` می‌دهد.
+- health و readiness Hugging Face هر دو سبزند و backend طبق انتظار همچنان release
+  فاز پنج را گزارش می‌کند؛ فاز شش frontend-only بوده و backend بی‌دلیل redeploy نشد.
+- Vercel Share موقت با تأیید مالک برای smoke فعال و پس از آن revoke شد. درخواست
+  ناشناس HTTPS پس از revoke با `302` به Vercel SSO هدایت می‌شود.
+
+## شواهد BrowserStack و مرز ادعا
+
+این دستگاه‌های واقعی در BrowserStack واقعاً launch شدند:
+
+- iPhone 15 با iOS 17.4؛
+- iPhone 15 Plus با iOS 17.1؛
+- iPhone 13 Pro با iOS 15.6؛
+- iPhone 16e با iOS 18.3؛
+- Samsung Galaxy S24 با Android 14 و Chrome واقعی؛
+- Samsung Galaxy S25 با Android 15 و Chrome واقعی.
+
+روی iPhone 16e بازشدن keyboard و focus واقعی Safari با شاهد تصویری تأیید شد. با
+این حال محدودیت یک‌دقیقه‌ای Trial و زمان onboarding/boot باعث شد ChinVerse پیش از
+قطع session روی دستگاه واقعی قابل مشاهده و journeyهای app قابل تکمیل نباشند. بنابراین
+launchشدن دستگاه یا شاهد keyboard سیستم معادل تست ChinVerse روی آن دستگاه نیست.
+
+## موارد مانده برای ادعای تکمیل سخت‌افزاری فاز
+
+- مشاهده و اجرای journeyهای اصلی خود ChinVerse روی Android Chrome و iOS Safari؛
+- edge-back/gesture، rotation، fullscreen و notch/safe-area داخل خود اپ؛
+- نصب PWA، update و offline روی دستگاه واقعی؛
+- keyboard/focus فرم‌های خود اپ، browser zoom و اندازه target روی سخت‌افزار؛
+- تست دستی VoiceOver/TalkBack یا screen reader معادل و keyboard خارجی.
+
+فاز شش از نظر پیاده‌سازی، تست خودکار، browser emulation، CI و Preview کامل است؛
+تا ثبت شواهد بالا، عبارت «فاز شش کاملاً روی سخت‌افزار واقعی تأیید شد» نادرست است.
