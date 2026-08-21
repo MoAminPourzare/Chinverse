@@ -64,6 +64,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Performance budgets
+        run: npm run perf:budget
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
@@ -136,6 +139,8 @@ jobs:
           poetry run python -m compileall -q app tests scripts
           poetry run bandit -q -r app scripts -x tests -lll
           poetry run python scripts/audit_phase5_content.py --repo-root ..
+          poetry run python scripts/phase7_load_test.py --target backend --base-url http://127.0.0.1:8000 --profile smoke --dry-run
+          poetry run python scripts/verify_phase7_operations.py --repo-root ..
 
       - name: Unit tests and coverage
         run: poetry run python -m pytest -m "not integration" --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=50
@@ -150,6 +155,7 @@ jobs:
           poetry run python scripts/verify_phase3_schema.py
           poetry run python scripts/verify_phase4_schema.py
           poetry run python scripts/verify_phase5_schema.py
+          poetry run python scripts/verify_phase7_schema.py
 
       - name: Integration tests
         run: poetry run python -m pytest -m integration
@@ -163,6 +169,7 @@ jobs:
           poetry run python scripts/verify_phase3_schema.py
           poetry run python scripts/verify_phase4_schema.py
           poetry run python scripts/verify_phase5_schema.py
+          poetry run python scripts/verify_phase7_schema.py
 
       - name: Build production container
         run: docker build --tag chinverse-backend:ci .

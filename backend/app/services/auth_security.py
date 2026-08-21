@@ -330,7 +330,11 @@ async def dispatch_challenge(
         "token": token,
         "link": challenge_public_url(purpose=purpose, token=token),
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    timeout = httpx.Timeout(
+        settings.PROVIDER_READ_TIMEOUT_SECONDS,
+        connect=settings.PROVIDER_CONNECT_TIMEOUT_SECONDS,
+    )
+    async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.post(
             settings.AUTH_DELIVERY_WEBHOOK_URL,
             headers=headers,

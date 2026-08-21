@@ -2,7 +2,7 @@ name: Deploy staging backend
 
 on:
   push:
-    branches: ["codex/phase-5-education-media"]
+    branches: ["codex/phase-7-performance-operations"]
     paths:
       - backend/.dockerignore
       - backend/Dockerfile
@@ -60,7 +60,7 @@ jobs:
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-          git merge-base --is-ancestor "$RELEASE_SHA" "origin/codex/phase-5-education-media"
+          git merge-base --is-ancestor "$RELEASE_SHA" "origin/codex/phase-7-performance-operations"
 
       - name: Require successful quality gates for this exact release
         shell: bash
@@ -116,15 +116,18 @@ jobs:
         shell: bash
         run: |
           for attempt in $(seq 1 80); do
-            payload="$(curl --fail --silent --show-error "${STAGING_BASE_URL}/health" || true)"
+            payload="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${STAGING_BASE_URL}/health" || true)"
             deployed_sha="$(jq -r '.release // "missing"' <<<"$payload" 2>/dev/null || echo missing)"
             if [[ "$deployed_sha" == "$RELEASE_SHA" ]]; then
-              curl --fail --silent --show-error "${STAGING_BASE_URL}/health/ready" \
-                | jq -e '.status == "ok" and .checks.database == "ok"'
-              exit 0
+              ready_payload="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${STAGING_BASE_URL}/health/ready" || true)"
+              if jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready_payload" >/dev/null; then
+                exit 0
+              fi
+              echo "Release ${RELEASE_SHA} is live but database/storage readiness is not healthy yet (attempt ${attempt}/80)"
+            else
+              echo "Waiting for ${RELEASE_SHA}; staging currently reports ${deployed_sha} (attempt ${attempt}/80)"
             fi
-            echo "Waiting for ${RELEASE_SHA}; staging currently reports ${deployed_sha} (attempt ${attempt}/80)"
             sleep 15
           done
-          echo "Staging did not report immutable release ${RELEASE_SHA} before timeout" >&2
+          echo "Staging did not report immutable release ${RELEASE_SHA} with healthy database/storage readiness before timeout" >&2
           exit 1

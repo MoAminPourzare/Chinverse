@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, Search, User as UserIcon, X } from "lucide-react";
@@ -9,6 +9,7 @@ import { BackButton } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { chatService, ConversationPreview } from "@/services/chat.service";
+import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
 
 export default function ChatPage() {
     const [conversations, setConversations] = useState<ConversationPreview[]>([]);
@@ -16,33 +17,49 @@ export default function ChatPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const requestSequence = useRef(0);
+    const hasLoadedRef = useRef(false);
+    const fingerprintRef = useRef("");
 
-    const fetchConversations = useCallback(async (showLoading = false) => {
+    const fetchConversations = useCallback(async (showLoading = false, signal?: AbortSignal) => {
         const requestId = ++requestSequence.current;
         if (showLoading) setIsLoading(true);
         try {
-            const items = await chatService.getConversations();
+            const items = await chatService.getConversations(signal);
             if (requestId !== requestSequence.current) return;
+            const fingerprint = items.map((item) => [
+                item.user.id,
+                item.last_message_time,
+                item.unread_count,
+                item.is_online ? 1 : 0,
+            ].join(":")).join("|");
+            const changed = fingerprint !== fingerprintRef.current;
+            fingerprintRef.current = fingerprint;
             setConversations(items);
             setError(null);
+            return changed;
         } catch (requestError) {
             console.error("Failed to fetch conversations", requestError);
-            if (requestId === requestSequence.current && showLoading) {
+            if (requestId === requestSequence.current && (showLoading || !hasLoadedRef.current)) {
                 setError("ارتباط با پیام‌ها برقرار نشد. اتصال را بررسی کن و دوباره تلاش کن.");
             }
+            throw requestError;
         } finally {
-            if (requestId === requestSequence.current && showLoading) setIsLoading(false);
+            if (requestId === requestSequence.current) {
+                hasLoadedRef.current = true;
+                setIsLoading(false);
+            }
         }
     }, []);
 
-    useEffect(() => {
-        void fetchConversations(true);
-        const interval = window.setInterval(() => void fetchConversations(), 12_000);
-        return () => {
-            requestSequence.current += 1;
-            window.clearInterval(interval);
-        };
-    }, [fetchConversations]);
+    useAdaptivePolling({
+        task: (signal) => fetchConversations(false, signal),
+        baseIntervalMs: 12_000,
+        maxIntervalMs: 60_000,
+    });
+
+    useEffect(() => () => {
+        requestSequence.current += 1;
+    }, []);
 
     const filteredConversations = useMemo(() => {
         const normalized = query.trim().toLowerCase();

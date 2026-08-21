@@ -317,3 +317,91 @@ def test_object_url_parser_rejects_foreign_hosts_and_traversal(monkeypatch):
         )
         is None
     )
+
+
+class FakeHealthStorageClient:
+    def __init__(self, *, read_back: bytes = b"ok"):
+        self.read_back = read_back
+        self.put_calls: list[tuple[str, str]] = []
+        self.get_calls: list[tuple[str, str]] = []
+        self.delete_calls: list[tuple[str, str]] = []
+
+    def put_object(self, *, Bucket, Key, **_kwargs):
+        self.put_calls.append((Bucket, Key))
+
+    def get_object(self, *, Bucket, Key):
+        self.get_calls.append((Bucket, Key))
+        return {"Body": BytesIO(self.read_back)}
+
+    def delete_object(self, *, Bucket, Key):
+        self.delete_calls.append((Bucket, Key))
+
+
+def test_object_storage_health_probe_writes_reads_deletes_and_deduplicates_buckets(
+    monkeypatch,
+):
+    fake_client = FakeHealthStorageClient()
+    monkeypatch.setattr(storage, "get_object_storage_health_client", lambda: fake_client)
+    monkeypatch.setattr(settings, "OBJECT_STORAGE_BUCKET_NAME", "chinverse-public")
+    monkeypatch.setattr(settings, "MEDIA_OBJECT_STORAGE_BUCKET_NAME", "chinverse-private")
+
+    storage._probe_object_storage()
+
+    assert {bucket for bucket, _key in fake_client.put_calls} == {
+        "chinverse-public",
+        "chinverse-private",
+    }
+    assert fake_client.get_calls == fake_client.put_calls
+    assert fake_client.delete_calls == fake_client.put_calls
+    assert all(key.startswith("_health/chinverse-") for _bucket, key in fake_client.put_calls)
+
+    same_bucket_client = FakeHealthStorageClient()
+    monkeypatch.setattr(
+        storage,
+        "get_object_storage_health_client",
+        lambda: same_bucket_client,
+    )
+    monkeypatch.setattr(settings, "MEDIA_OBJECT_STORAGE_BUCKET_NAME", "chinverse-public")
+    storage._probe_object_storage()
+    assert len(same_bucket_client.put_calls) == 1
+    assert len(same_bucket_client.delete_calls) == 1
+
+
+def test_object_storage_health_probe_deletes_object_after_integrity_failure(monkeypatch):
+    fake_client = FakeHealthStorageClient(read_back=b"wrong")
+    monkeypatch.setattr(storage, "get_object_storage_health_client", lambda: fake_client)
+    monkeypatch.setattr(settings, "OBJECT_STORAGE_BUCKET_NAME", "chinverse-public")
+    monkeypatch.setattr(settings, "MEDIA_OBJECT_STORAGE_BUCKET_NAME", "")
+
+    with pytest.raises(OSError, match="could not be read back"):
+        storage._probe_object_storage()
+
+    assert fake_client.delete_calls == fake_client.put_calls
+
+
+def test_object_storage_health_client_has_one_attempt_and_deadline_bounded_timeouts(
+    monkeypatch,
+):
+    import boto3
+
+    captured = {}
+    sentinel = object()
+
+    def fake_boto_client(**kwargs):
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(boto3, "client", fake_boto_client)
+    monkeypatch.setattr(settings, "HEALTHCHECK_TIMEOUT_SECONDS", 4.0)
+    monkeypatch.setattr(settings, "STORAGE_CONNECT_TIMEOUT_SECONDS", 3.0)
+    monkeypatch.setattr(settings, "STORAGE_READ_TIMEOUT_SECONDS", 8.0)
+    storage.get_object_storage_health_client.cache_clear()
+    try:
+        assert storage.get_object_storage_health_client() is sentinel
+    finally:
+        storage.get_object_storage_health_client.cache_clear()
+
+    config = captured["config"]
+    assert config.connect_timeout <= 0.5
+    assert config.read_timeout <= 0.5
+    assert config.retries["total_max_attempts"] == 1

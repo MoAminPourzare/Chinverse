@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isStateChangingMethod, isTrustedMutationOrigin } from "@/lib/request-origin";
 import { buildBackendUpstreamUrl } from "@/lib/backendProxyUrl";
+import {
+    fetchUpstreamWithPolicy,
+    resolveBackendProxyUploadTimeoutMs,
+    UpstreamTimeoutError,
+} from "@/lib/backendProxyPolicy";
+import { resolveRequestId } from "@/lib/requestId";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -20,6 +26,7 @@ const REQUEST_HEADERS = [
     "if-unmodified-since",
     "range",
     "x-mfa-code",
+    "x-request-id",
     "x-turnstile-token",
 ];
 const RESPONSE_HEADERS = [
@@ -33,6 +40,7 @@ const RESPONSE_HEADERS = [
     "last-modified",
     "accept-ranges",
     "retry-after",
+    "x-request-id",
 ];
 const MEDIA_PROVIDER_REQUEST_HEADERS = [
     "accept",
@@ -43,11 +51,13 @@ const MEDIA_PROVIDER_REQUEST_HEADERS = [
     "if-unmodified-since",
     "range",
     "user-agent",
+    "x-request-id",
 ];
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 async function proxy(request: NextRequest, context: RouteContext) {
+    const requestId = resolveRequestId(request.headers.get("x-request-id"));
     const fetchSite = request.headers.get("sec-fetch-site");
     if (
         !isTrustedMutationOrigin({
@@ -60,7 +70,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
     ) {
         return NextResponse.json(
             { detail: "Cross-origin request rejected" },
-            { status: 403, headers: { "Cache-Control": "no-store" } },
+            { status: 403, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
         );
     }
 
@@ -74,6 +84,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
         if (value) headers.set(name, value);
     }
     headers.set("origin", request.headers.get("origin") || request.nextUrl.origin);
+    headers.set("x-request-id", requestId);
 
     let upstream: Response;
     try {
@@ -87,7 +98,15 @@ async function proxy(request: NextRequest, context: RouteContext) {
             signal: request.signal,
         };
         if (hasBody) upstreamRequest.duplex = "half";
-        upstream = await fetch(upstreamUrl, upstreamRequest);
+        const isMultipartUpload = request.headers.get("content-type")
+            ?.toLowerCase()
+            .startsWith("multipart/form-data") ?? false;
+        upstream = await fetchUpstreamWithPolicy(upstreamUrl, upstreamRequest, {
+            // The browser client is the sole retry owner. Keeping the BFF to a
+            // single upstream attempt prevents layered retry amplification.
+            maxRetries: 0,
+            timeoutMs: isMultipartUpload ? resolveBackendProxyUploadTimeoutMs() : undefined,
+        });
 
         // The backend may resolve an entitlement-checked media token to a
         // short-lived object-storage URL. Follow it server-side so the
@@ -110,18 +129,26 @@ async function proxy(request: NextRequest, context: RouteContext) {
                 const value = request.headers.get(name);
                 if (value) providerHeaders.set(name, value);
             }
-            upstream = await fetch(providerUrl, {
+            providerHeaders.set("x-request-id", requestId);
+            upstream = await fetchUpstreamWithPolicy(providerUrl, {
                 method: request.method,
                 headers: providerHeaders,
                 cache: "no-store",
                 redirect: "follow",
                 signal: request.signal,
+            }, {
+                maxRetries: 0,
             });
         }
-    } catch {
+    } catch (error) {
         return NextResponse.json(
-            { detail: "Backend is temporarily unavailable" },
-            { status: 503, headers: { "Cache-Control": "no-store" } },
+            { detail: error instanceof UpstreamTimeoutError
+                ? "Backend response timed out"
+                : "Backend is temporarily unavailable" },
+            {
+                status: error instanceof UpstreamTimeoutError ? 504 : 503,
+                headers: { "Cache-Control": "no-store", "X-Request-ID": requestId },
+            },
         );
     }
 
@@ -134,6 +161,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
     if (setCookie) responseHeaders.set("set-cookie", setCookie);
     responseHeaders.set("cache-control", "no-store");
     responseHeaders.set("pragma", "no-cache");
+    responseHeaders.set("x-request-id", requestId);
 
     return new NextResponse(upstream.status === 204 || request.method === "HEAD" ? null : upstream.body, {
         status: upstream.status,

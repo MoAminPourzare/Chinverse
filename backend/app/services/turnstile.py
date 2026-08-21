@@ -19,7 +19,11 @@ async def verify_turnstile(
         raise forbidden("Human verification failed")
 
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        timeout = httpx.Timeout(
+            settings.PROVIDER_READ_TIMEOUT_SECONDS,
+            connect=settings.PROVIDER_CONNECT_TIMEOUT_SECONDS,
+        )
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 settings.TURNSTILE_VERIFY_URL,
                 data={

@@ -134,6 +134,77 @@ def test_s3_mode_requires_complete_object_storage_configuration():
         )
 
 
+def test_phase7_operational_settings_are_bounded_and_fail_closed():
+    local = Settings(
+        _env_file=None,
+        ENVIRONMENT="test",
+        CHAT_REALTIME_POLL_INTERVAL_SECONDS=0.25,
+    )
+    assert local.CHAT_REALTIME_POLL_INTERVAL_SECONDS == 0.25
+
+    with pytest.raises(ValidationError, match="METRICS_BEARER_TOKEN"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="test",
+            METRICS_ENABLED=True,
+            METRICS_BEARER_TOKEN="short",
+        )
+
+    with pytest.raises(ValidationError, match="SENTRY_TRACES_SAMPLE_RATE"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="test",
+            SENTRY_TRACES_SAMPLE_RATE=1.1,
+        )
+
+    with pytest.raises(ValidationError, match="CHAT_MAX_CONNECTIONS_PER_USER"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="test",
+            CHAT_MAX_CONNECTIONS_PER_USER=21,
+        )
+
+    with pytest.raises(ValidationError, match="HEALTHCHECK_CACHE_TTL_SECONDS"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="test",
+            HEALTHCHECK_CACHE_TTL_SECONDS=301,
+        )
+
+    with pytest.raises(ValidationError, match="CHAT_REALTIME_BACKEND"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="staging",
+            CHAT_REALTIME_BACKEND="memory",
+            DATABASE_URL="postgresql://chinverse_app:strong-password@db.example.com/chinverse",
+            SECRET_KEY="a-strong-production-secret-with-more-than-32-characters",
+            BACKEND_CORS_ORIGINS="https://chinverse.vercel.app",
+            BACKEND_CORS_ORIGIN_REGEX=" ",
+            ALLOWED_HOSTS="moamin9-chinverse-api.hf.space",
+            ENABLE_API_DOCS=False,
+            HSTS_ENABLED=True,
+            FILE_STORAGE_MODE="mounted",
+            MOUNTED_STORAGE_ROOT="/data",
+        )
+
+    with pytest.raises(ValidationError, match="LOG_LEVEL must not be DEBUG"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="staging",
+            LOG_LEVEL="DEBUG",
+        )
+
+    with pytest.raises(ValidationError, match="LOG_JSON must be true"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="staging",
+            LOG_JSON=False,
+        )
+
+
 def test_production_runtime_accepts_mounted_storage_only_for_staging_tier():
     staging = Settings(
         _env_file=None,

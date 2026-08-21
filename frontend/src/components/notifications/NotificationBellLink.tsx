@@ -1,37 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { notificationService } from "@/services/notification.service";
 import { authService } from "@/services/auth.service";
+import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
 
 export default function NotificationBellLink() {
     const [count, setCount] = useState(0);
+    const countRef = useRef(0);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const loadCount = async () => {
+    useAdaptivePolling({
+        task: async (signal) => {
             if (!await authService.restoreSession()) {
-                if (isMounted) setCount(0);
-                return;
+                const changed = countRef.current !== 0;
+                countRef.current = 0;
+                setCount(0);
+                return changed;
             }
-            try {
-                const unread = await notificationService.getUnreadCount();
-                if (isMounted) setCount(unread);
-            } catch {
-                if (isMounted) setCount(0);
-            }
-        };
 
-        loadCount();
-        const interval = window.setInterval(loadCount, 20_000);
-        return () => {
-            isMounted = false;
-            window.clearInterval(interval);
-        };
-    }, []);
+            const unread = await notificationService.getUnreadCount(signal);
+            const changed = unread !== countRef.current;
+            countRef.current = unread;
+            setCount(unread);
+            return changed;
+        },
+        baseIntervalMs: 20_000,
+        maxIntervalMs: 90_000,
+    });
 
     return (
         <Link

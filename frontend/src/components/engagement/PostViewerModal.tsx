@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { CalendarDays, ImageIcon, MessageCircle, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/cn";

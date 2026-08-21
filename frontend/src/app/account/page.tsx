@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { Check, ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";

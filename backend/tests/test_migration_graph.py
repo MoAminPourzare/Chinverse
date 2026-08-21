@@ -7,7 +7,13 @@ from alembic.script import ScriptDirectory
 
 from app.db.base_class import Base
 import app.models  # noqa: F401
-from scripts import verify_phase2_schema, verify_phase3_schema, verify_phase4_schema, verify_phase5_schema
+from scripts import (
+    verify_phase2_schema,
+    verify_phase3_schema,
+    verify_phase4_schema,
+    verify_phase5_schema,
+    verify_phase7_schema,
+)
 
 
 LEGACY_TABLES = {
@@ -48,6 +54,7 @@ def test_every_phase_schema_verifier_targets_the_current_head():
         verify_phase3_schema.EXPECTED_HEAD,
         verify_phase4_schema.EXPECTED_HEAD,
         verify_phase5_schema.EXPECTED_HEAD,
+        verify_phase7_schema.EXPECTED_HEAD,
     } == {expected_head}
 
 

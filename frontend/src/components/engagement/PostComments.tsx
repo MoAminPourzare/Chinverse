@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MessageCircle, Send, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/cn";

@@ -11,8 +11,14 @@ import {
     useSyncExternalStore,
     type ReactNode,
 } from "react";
-import { Download, RefreshCw, WifiOff, X } from "lucide-react";
+import { Download, RefreshCw, TriangleAlert, Wifi, WifiOff, X } from "lucide-react";
 import { isIosDevice, isStandaloneMode } from "@/lib/mobileUx";
+import {
+    CONNECTIVITY_EVENT,
+    emitConnectivityState,
+    readConnectivityEvent,
+    type ConnectivityState,
+} from "@/lib/connectivity";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -25,6 +31,7 @@ type PwaContextValue = {
     installAvailable: boolean;
     iosInstallHint: boolean;
     online: boolean;
+    connectionState: ConnectivityState;
     updateReady: boolean;
     install: () => Promise<boolean>;
     applyUpdate: () => void;
@@ -51,7 +58,8 @@ const readBrowserSupport = () => PWA_ENABLED && "serviceWorker" in navigator;
 const readServerBrowserSupport = () => false;
 
 export function PwaProvider({ children, releaseSha }: { children: ReactNode; releaseSha: string }) {
-    const [online, setOnline] = useState(true);
+    const [connectionState, setConnectionState] = useState<ConnectivityState>("online");
+    const [showRestored, setShowRestored] = useState(false);
     const [installed, setInstalled] = useState(false);
     const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [updateReady, setUpdateReady] = useState(false);
@@ -67,6 +75,22 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
     const observedRegistrationsRef = useRef(new WeakSet<ServiceWorkerRegistration>());
     const observedWorkersRef = useRef(new WeakSet<ServiceWorker>());
     const reloadRequestedRef = useRef(false);
+    const connectionStateRef = useRef<ConnectivityState>("online");
+    const restoredTimerRef = useRef<number | null>(null);
+
+    const applyConnectionState = useCallback((nextState: ConnectivityState) => {
+        const previousState = connectionStateRef.current;
+        connectionStateRef.current = nextState;
+        setConnectionState(nextState);
+
+        if (nextState === "online" && previousState !== "online") {
+            setShowRestored(true);
+            if (restoredTimerRef.current) window.clearTimeout(restoredTimerRef.current);
+            restoredTimerRef.current = window.setTimeout(() => setShowRestored(false), 3_000);
+        } else if (nextState !== "online") {
+            setShowRestored(false);
+        }
+    }, []);
 
     const observeRegistration = useCallback((registration: ServiceWorkerRegistration) => {
         registrationRef.current = registration;
@@ -117,16 +141,27 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
         try {
             let latestRelease = normalizePwaRelease(releaseSha);
             try {
-                const response = await fetch("/api/health", {
-                    cache: "no-store",
-                    credentials: "same-origin",
-                    headers: { "Cache-Control": "no-cache" },
-                });
-                if (response.ok) {
-                    const payload = await response.json() as { release?: unknown };
-                    if (typeof payload.release === "string") latestRelease = normalizePwaRelease(payload.release);
+                const controller = new AbortController();
+                const timeout = window.setTimeout(() => controller.abort(), 5_000);
+                try {
+                    const response = await fetch("/api/health", {
+                        cache: "no-store",
+                        credentials: "same-origin",
+                        headers: { "Cache-Control": "no-cache" },
+                        signal: controller.signal,
+                    });
+                    if (response.ok) {
+                        const payload = await response.json() as { release?: unknown };
+                        if (typeof payload.release === "string") latestRelease = normalizePwaRelease(payload.release);
+                        emitConnectivityState("online");
+                    } else if (response.status >= 500) {
+                        emitConnectivityState("degraded");
+                    }
+                } finally {
+                    window.clearTimeout(timeout);
                 }
             } catch {
+                emitConnectivityState(navigator.onLine === false ? "offline" : "degraded");
                 // The registered release can still be checked while offline.
             }
 
@@ -144,7 +179,15 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
     useEffect(() => {
         const serviceWorkerSupported = PWA_ENABLED && "serviceWorker" in navigator;
         const standaloneQuery = window.matchMedia("(display-mode: standalone)");
-        const syncConnection = () => setOnline(navigator.onLine);
+        const syncConnection = () => {
+            const nextState: ConnectivityState = navigator.onLine === false ? "offline" : "online";
+            emitConnectivityState(nextState);
+            applyConnectionState(nextState);
+        };
+        const syncReportedConnection = (event: Event) => {
+            const nextState = readConnectivityEvent(event);
+            if (nextState) applyConnectionState(nextState);
+        };
         const syncInstalled = () => {
             const nextInstalled = isStandaloneMode(
                 standaloneQuery.matches,
@@ -180,6 +223,7 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
         syncInstalled();
         window.addEventListener("online", syncConnection);
         window.addEventListener("offline", syncConnection);
+        window.addEventListener(CONNECTIVITY_EVENT, syncReportedConnection);
         window.addEventListener("beforeinstallprompt", captureInstallPrompt);
         window.addEventListener("appinstalled", markInstalled);
         standaloneQuery.addEventListener("change", syncInstalled);
@@ -192,12 +236,14 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
         return () => {
             window.removeEventListener("online", syncConnection);
             window.removeEventListener("offline", syncConnection);
+            window.removeEventListener(CONNECTIVITY_EVENT, syncReportedConnection);
             window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
             window.removeEventListener("appinstalled", markInstalled);
             standaloneQuery.removeEventListener("change", syncInstalled);
             if (serviceWorkerSupported) navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterUpdate);
+            if (restoredTimerRef.current) window.clearTimeout(restoredTimerRef.current);
         };
-    }, [registerRelease, releaseSha]);
+    }, [applyConnectionState, registerRelease, releaseSha]);
 
     useEffect(() => {
         if (!PWA_ENABLED || !("serviceWorker" in navigator)) return;
@@ -241,20 +287,33 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
         installed,
         installAvailable: Boolean(installPrompt),
         iosInstallHint,
-        online,
+        online: connectionState !== "offline",
+        connectionState,
         updateReady,
         install,
         applyUpdate,
         checkForUpdate,
-    }), [applyUpdate, checkForUpdate, install, installPrompt, installed, iosInstallHint, online, supported, updateReady]);
+    }), [applyUpdate, checkForUpdate, connectionState, install, installPrompt, installed, iosInstallHint, supported, updateReady]);
 
     return (
         <PwaContext.Provider value={value}>
             {children}
-            {!online && (
-                <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-[1200] mx-auto flex max-w-[400px] items-center gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl" role="status" aria-live="polite">
+            {connectionState === "offline" && (
+                <div className="pointer-events-none fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-[1200] mx-auto flex max-w-[400px] items-center gap-3 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl" role="status" aria-live="polite">
                     <WifiOff className="h-5 w-5 shrink-0" />
                     <span>آفلاین هستی؛ اطلاعات حساب و رسانه‌های خصوصی ذخیره نمی‌شوند.</span>
+                </div>
+            )}
+            {connectionState === "degraded" && (
+                <div className="pointer-events-none fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-[1200] mx-auto flex max-w-[400px] items-center gap-3 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-black text-slate-950 shadow-xl" role="status" aria-live="polite">
+                    <TriangleAlert className="h-5 w-5 shrink-0" />
+                    <span>ارتباط با سرور ناپایدار است؛ تلاش مجدد خودکار انجام می‌شود.</span>
+                </div>
+            )}
+            {showRestored && (
+                <div className="pointer-events-none fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-[1200] mx-auto flex max-w-[400px] items-center gap-3 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-xl" role="status" aria-live="polite">
+                    <Wifi className="h-5 w-5 shrink-0" />
+                    <span>ارتباط دوباره برقرار شد.</span>
                 </div>
             )}
             {updateReady && !updateNoticeDismissed && (

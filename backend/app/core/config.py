@@ -88,6 +88,30 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30
     DB_POOL_RECYCLE_SECONDS: int = 1800
+    DB_CONNECT_TIMEOUT_SECONDS: float = 5.0
+    DB_COMMAND_TIMEOUT_SECONDS: float = 12.0
+
+    HEALTHCHECK_TIMEOUT_SECONDS: float = 4.0
+    HEALTHCHECK_CACHE_TTL_SECONDS: float = 60.0
+    STORAGE_CONNECT_TIMEOUT_SECONDS: float = 3.0
+    STORAGE_READ_TIMEOUT_SECONDS: float = 8.0
+    PROVIDER_CONNECT_TIMEOUT_SECONDS: float = 3.0
+    PROVIDER_READ_TIMEOUT_SECONDS: float = 10.0
+
+    LOG_LEVEL: str = "INFO"
+    LOG_JSON: bool = True
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+    METRICS_ENABLED: bool = False
+    METRICS_BEARER_TOKEN: str = ""
+
+    CHAT_REALTIME_BACKEND: str = "database"
+    CHAT_REALTIME_POLL_INTERVAL_SECONDS: float = 1.0
+    CHAT_REALTIME_EVENT_RETENTION_SECONDS: int = 3600
+    CHAT_REALTIME_BATCH_SIZE: int = 500
+    CHAT_PRESENCE_TTL_SECONDS: int = 45
+    CHAT_SOCKET_SEND_TIMEOUT_SECONDS: float = 3.0
+    CHAT_MAX_CONNECTIONS_PER_USER: int = 5
 
     SECRET_KEY: str = DEFAULT_DEV_SECRET_KEY
     ALGORITHM: str = "HS256"
@@ -179,6 +203,8 @@ class Settings(BaseSettings):
         self.FILE_STORAGE_MODE = storage_mode
         self.RATE_LIMIT_BACKEND = self.RATE_LIMIT_BACKEND.strip().lower()
         self.REFRESH_COOKIE_SAMESITE = self.REFRESH_COOKIE_SAMESITE.strip().lower()
+        self.LOG_LEVEL = self.LOG_LEVEL.strip().upper()
+        self.CHAT_REALTIME_BACKEND = self.CHAT_REALTIME_BACKEND.strip().lower()
 
         if deployment_tier not in DEPLOYMENT_TIERS:
             raise ValueError(
@@ -188,6 +214,10 @@ class Settings(BaseSettings):
         errors: list[str] = []
         if self.RATE_LIMIT_BACKEND not in {"memory", "database"}:
             errors.append("RATE_LIMIT_BACKEND must be either 'memory' or 'database'")
+        if self.CHAT_REALTIME_BACKEND not in {"memory", "database"}:
+            errors.append("CHAT_REALTIME_BACKEND must be either 'memory' or 'database'")
+        if self.LOG_LEVEL not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+            errors.append("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
         if self.ALGORITHM not in {"HS256", "HS384", "HS512"}:
             errors.append("ALGORITHM must use an approved HMAC SHA-2 algorithm")
         if self.REFRESH_COOKIE_SAMESITE not in {"lax", "strict", "none"}:
@@ -226,9 +256,23 @@ class Settings(BaseSettings):
             "MAX_API_REQUEST_SIZE_BYTES": self.MAX_API_REQUEST_SIZE_BYTES,
             "MULTIPART_OVERHEAD_ALLOWANCE_BYTES": self.MULTIPART_OVERHEAD_ALLOWANCE_BYTES,
             "MEDIA_SIGNED_URL_TTL_SECONDS": self.MEDIA_SIGNED_URL_TTL_SECONDS,
+            "DB_CONNECT_TIMEOUT_SECONDS": self.DB_CONNECT_TIMEOUT_SECONDS,
+            "DB_COMMAND_TIMEOUT_SECONDS": self.DB_COMMAND_TIMEOUT_SECONDS,
+            "HEALTHCHECK_TIMEOUT_SECONDS": self.HEALTHCHECK_TIMEOUT_SECONDS,
+            "HEALTHCHECK_CACHE_TTL_SECONDS": self.HEALTHCHECK_CACHE_TTL_SECONDS,
+            "STORAGE_CONNECT_TIMEOUT_SECONDS": self.STORAGE_CONNECT_TIMEOUT_SECONDS,
+            "STORAGE_READ_TIMEOUT_SECONDS": self.STORAGE_READ_TIMEOUT_SECONDS,
+            "PROVIDER_CONNECT_TIMEOUT_SECONDS": self.PROVIDER_CONNECT_TIMEOUT_SECONDS,
+            "PROVIDER_READ_TIMEOUT_SECONDS": self.PROVIDER_READ_TIMEOUT_SECONDS,
+            "CHAT_REALTIME_POLL_INTERVAL_SECONDS": self.CHAT_REALTIME_POLL_INTERVAL_SECONDS,
+            "CHAT_REALTIME_EVENT_RETENTION_SECONDS": self.CHAT_REALTIME_EVENT_RETENTION_SECONDS,
+            "CHAT_REALTIME_BATCH_SIZE": self.CHAT_REALTIME_BATCH_SIZE,
+            "CHAT_PRESENCE_TTL_SECONDS": self.CHAT_PRESENCE_TTL_SECONDS,
+            "CHAT_SOCKET_SEND_TIMEOUT_SECONDS": self.CHAT_SOCKET_SEND_TIMEOUT_SECONDS,
+            "CHAT_MAX_CONNECTIONS_PER_USER": self.CHAT_MAX_CONNECTIONS_PER_USER,
         }
         for name, value in positive_settings.items():
-            if value < 1:
+            if value <= 0:
                 errors.append(f"{name} must be greater than zero")
 
         trusted_proxy_networks = parse_setting_list(self.TRUSTED_PROXY_NETWORKS)
@@ -290,8 +334,20 @@ class Settings(BaseSettings):
 
         if self.MEDIA_SIGNED_URL_TTL_SECONDS > 900:
             errors.append("MEDIA_SIGNED_URL_TTL_SECONDS must not exceed 900")
+        if self.HEALTHCHECK_CACHE_TTL_SECONDS > 300:
+            errors.append("HEALTHCHECK_CACHE_TTL_SECONDS must not exceed 300")
+        if self.CHAT_MAX_CONNECTIONS_PER_USER > 20:
+            errors.append("CHAT_MAX_CONNECTIONS_PER_USER must not exceed 20")
         if self.MEDIA_SIGNING_KEY and len(self.MEDIA_SIGNING_KEY) < 32:
             errors.append("MEDIA_SIGNING_KEY must be at least 32 characters when set")
+        if not 0.0 <= self.SENTRY_TRACES_SAMPLE_RATE <= 1.0:
+            errors.append("SENTRY_TRACES_SAMPLE_RATE must be between zero and one")
+        if self.SENTRY_DSN and not self.SENTRY_DSN.startswith("https://"):
+            errors.append("SENTRY_DSN must use HTTPS when configured")
+        if self.METRICS_ENABLED and len(self.METRICS_BEARER_TOKEN) < 32:
+            errors.append(
+                "METRICS_BEARER_TOKEN must be at least 32 characters when metrics are enabled"
+            )
 
         is_production_runtime = (
             environment in PRODUCTION_ENVIRONMENTS
@@ -301,6 +357,14 @@ class Settings(BaseSettings):
             if errors:
                 raise ValueError("Invalid configuration: " + "; ".join(errors))
             return self
+
+        if self.LOG_LEVEL == "DEBUG":
+            errors.append("LOG_LEVEL must not be DEBUG in a release runtime")
+        if not self.LOG_JSON:
+            errors.append("LOG_JSON must be true in a release runtime")
+
+        if self.CHAT_REALTIME_BACKEND != "database":
+            errors.append("CHAT_REALTIME_BACKEND must be 'database' in a release runtime")
 
         cors_origins = parse_setting_list(self.BACKEND_CORS_ORIGINS)
         allowed_hosts = parse_setting_list(self.ALLOWED_HOSTS)

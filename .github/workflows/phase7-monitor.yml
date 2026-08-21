@@ -1,0 +1,162 @@
+name: Phase 7 staging monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_frontend_release:
+        description: Optional full frontend release SHA
+        required: false
+        type: string
+      expected_backend_release:
+        description: Optional full backend release SHA
+        required: false
+        type: string
+  schedule:
+    # Scheduled workflows execute only from the repository default branch.
+    # The Phase 7 runbook requires a merge to main before relying on this cadence.
+    - cron: "17,47 * * * *"
+
+concurrency:
+  group: phase7-staging-monitor
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health:
+    name: Staging health and readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BACKEND_BASE_URL: https://moamin9-chinverse-api.hf.space
+      # This URL is deliberately immutable in the workflow. Never send the
+      # Vercel bypass secret to a workflow-dispatch input or repository variable.
+      FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-7-performance-operations-death-stroke.vercel.app/api/health
+      EXPECTED_FRONTEND_RELEASE: ${{ inputs.expected_frontend_release || vars.PHASE7_EXPECTED_FRONTEND_RELEASE }}
+      EXPECTED_BACKEND_RELEASE: ${{ inputs.expected_backend_release || vars.PHASE7_EXPECTED_BACKEND_RELEASE }}
+    steps:
+      - name: Probe frontend, backend, database, and storage
+        id: probe
+        continue-on-error: true
+        shell: bash
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+
+          work_dir="${RUNNER_TEMP}/phase7-monitor"
+          mkdir -p "$work_dir"
+
+          if [[ "$FRONTEND_HEALTH_URL" != "https://chinverse-git-codex-phase-7-performance-operations-death-stroke.vercel.app/api/health" ]]; then
+            echo "Refusing to send the Vercel bypass secret to an untrusted URL" >&2
+            exit 1
+          fi
+
+          curl_json() {
+            local name="$1"
+            local url="$2"
+            shift 2
+            local output="${work_dir}/${name}.json"
+            local timing="${work_dir}/${name}.time"
+            curl --fail-with-body --silent --show-error \
+              --connect-timeout 5 --max-time 15 \
+              --retry 2 --retry-all-errors --retry-delay 2 \
+              --output "$output" --write-out '%{time_total}' \
+              "$@" "$url" >"$timing"
+            jq -e 'type == "object"' "$output" >/dev/null
+          }
+
+          curl_json backend-health "${BACKEND_BASE_URL}/health"
+          jq -e '.status == "ok" and .deployment_tier == "staging"' \
+            "${work_dir}/backend-health.json" >/dev/null
+          if [[ -n "${EXPECTED_BACKEND_RELEASE:-}" ]]; then
+            jq -e --arg release "$EXPECTED_BACKEND_RELEASE" '.release == $release' \
+              "${work_dir}/backend-health.json" >/dev/null
+          fi
+
+          curl_json backend-ready "${BACKEND_BASE_URL}/health/ready"
+          jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' \
+            "${work_dir}/backend-ready.json" >/dev/null
+
+          frontend_headers=()
+          if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+            frontend_headers=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+          curl_json frontend-health "$FRONTEND_HEALTH_URL" "${frontend_headers[@]}"
+          jq -e '.status == "ok" and .deployment_tier == "staging"' \
+            "${work_dir}/frontend-health.json" >/dev/null
+          if [[ -n "${EXPECTED_FRONTEND_RELEASE:-}" ]]; then
+            jq -e --arg release "$EXPECTED_FRONTEND_RELEASE" '.release == $release' \
+              "${work_dir}/frontend-health.json" >/dev/null
+          fi
+
+          {
+            echo "### Phase 7 staging monitor"
+            echo
+            echo "| Probe | Result | Seconds |"
+            echo "|---|---:|---:|"
+            echo "| Frontend | ok | $(cat "${work_dir}/frontend-health.time") |"
+            echo "| Backend liveness | ok | $(cat "${work_dir}/backend-health.time") |"
+            echo "| Backend DB/storage readiness | ok | $(cat "${work_dir}/backend-ready.time") |"
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update operational alert
+        if: steps.probe.outcome == 'failure'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "[ops] ChinVerse staging health monitor failed";
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => !issue.pull_request && issue.title === title);
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const body = [
+              "The Phase 7 staging health monitor failed.",
+              "",
+              `Run: ${runUrl}`,
+              `Observed at: ${new Date().toISOString()}`,
+              "",
+              "Follow `docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md` and `docs/PHASE_7_ROLLBACK_RUNBOOK_FA.md`.",
+              "No secret or response body is copied into this issue.",
+            ].join("\n");
+            if (existing) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body });
+            }
+
+      - name: Close recovered operational alert
+        if: steps.probe.outcome == 'success'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "[ops] ChinVerse staging health monitor failed";
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId}`;
+            for (const issue of issues.filter((item) => !item.pull_request && item.title === title)) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `Recovered at ${new Date().toISOString()}. Verification run: ${runUrl}`,
+              });
+              await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: "closed" });
+            }
+
+      - name: Fail the workflow when a probe failed
+        if: steps.probe.outcome == 'failure'
+        shell: bash
+        run: exit 1

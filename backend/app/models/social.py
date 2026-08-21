@@ -1,7 +1,18 @@
 from enum import Enum
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional, List
-from sqlalchemy import DateTime, String, ForeignKey, Text, BigInteger, UniqueConstraint, Index
+from sqlalchemy import (
+    DateTime,
+    String,
+    ForeignKey,
+    Text,
+    BigInteger,
+    UniqueConstraint,
+    Index,
+    desc,
+    text,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -226,6 +237,27 @@ class SupportTicket(Base, TimestampMixin):
 class Message(Base, TimestampMixin):
     """1-on-1 chat messages between users"""
     __tablename__ = "messages"
+    __table_args__ = (
+        Index(
+            "ix_messages_sender_receiver_id_desc",
+            "sender_id",
+            "receiver_id",
+            desc("id"),
+        ),
+        Index(
+            "ix_messages_receiver_sender_id_desc",
+            "receiver_id",
+            "sender_id",
+            desc("id"),
+        ),
+        Index(
+            "ix_messages_unread_receiver_sender_id",
+            "receiver_id",
+            "sender_id",
+            "id",
+            postgresql_where=text("is_read = false"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
@@ -236,3 +268,46 @@ class Message(Base, TimestampMixin):
     # Relationships
     sender: Mapped["User"] = relationship(foreign_keys=[sender_id])
     receiver: Mapped["User"] = relationship(foreign_keys=[receiver_id])
+
+
+class ChatRealtimeEvent(Base, TimestampMixin):
+    """Durable per-recipient event used to fan chat updates across replicas."""
+
+    __tablename__ = "chat_realtime_events"
+    __table_args__ = (
+        Index(
+            "ix_chat_realtime_events_recipient_id",
+            "recipient_user_id",
+            "id",
+        ),
+        Index("ix_chat_realtime_events_expires", "expires_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    source_instance_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    recipient_user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    event_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    payload_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ChatPresenceLease(Base):
+    """Short lease that makes online state accurate across processes."""
+
+    __tablename__ = "chat_presence_leases"
+    __table_args__ = (
+        Index("ix_chat_presence_user_expires", "user_id", "expires_at"),
+        Index("ix_chat_presence_expires", "expires_at"),
+    )
+
+    instance_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

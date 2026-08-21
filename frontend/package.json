@@ -16,11 +16,13 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+    "perf:budget": "node scripts/check-performance-budgets.mjs",
+    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run perf:budget"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
+    "@sentry/nextjs": "10.70.0",
     "axios": "^1.18.1",
     "hls.js": "^1.6.16",
     "lucide-react": "^0.555.0",

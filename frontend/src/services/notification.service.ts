@@ -21,22 +21,29 @@ export interface AppNotification {
 }
 
 export const notificationService = {
-    async getNotifications(unreadOnly = false, skip = 0, limit = 40): Promise<AppNotification[]> {
+    async getNotifications(unreadOnly = false, skip = 0, limit = 40, signal?: AbortSignal): Promise<AppNotification[]> {
         const response = await api.get<AppNotification[]>("/notifications", {
             params: { unread_only: unreadOnly, skip, limit },
+            signal,
+            chinverseCacheTtlMs: 0,
         });
         return response.data;
     },
 
-    async getLatest(afterId?: number | null): Promise<AppNotification[]> {
+    async getLatest(afterId?: number | null, signal?: AbortSignal): Promise<AppNotification[]> {
         const response = await api.get<AppNotification[]>("/notifications/latest", {
             params: afterId ? { after_id: afterId } : {},
+            signal,
+            chinverseCacheTtlMs: 0,
         });
         return response.data;
     },
 
-    async getUnreadCount(): Promise<number> {
-        const response = await api.get<{ count: number }>("/notifications/unread-count");
+    async getUnreadCount(signal?: AbortSignal): Promise<number> {
+        const response = await api.get<{ count: number }>("/notifications/unread-count", {
+            signal,
+            chinverseCacheTtlMs: 0,
+        });
         return response.data.count;
     },
 

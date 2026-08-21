@@ -1,16 +1,25 @@
-import logging
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
+from prometheus_client import CONTENT_TYPE_LATEST
+import sentry_sdk
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.api import api_router
 from app.core.browser_origin import is_allowed_browser_origin
 from app.core.config import resolve_release_sha, settings
+from app.core.health import readiness_checks
+from app.core.observability import (
+    RequestObservabilityMiddleware,
+    configure_logging,
+    configure_sentry,
+    metrics_authorized,
+    metrics_payload,
+)
 from app.core.paths import (
     AVATARS_DIR,
     GALLERY_UPLOAD_DIR,
@@ -19,10 +28,23 @@ from app.core.paths import (
     ensure_upload_dirs,
 )
 from app.core.request_size import RequestSizeLimitMiddleware
-from app.db.session import SessionLocal
+from app.db.session import engine
+from app.api.v1.endpoints.chat import start_chat_realtime, stop_chat_realtime
 
-logger = logging.getLogger(__name__)
+configure_logging()
+configure_sentry()
 deployed_release_sha = resolve_release_sha(settings.RELEASE_SHA)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await start_chat_realtime()
+    try:
+        yield
+    finally:
+        await stop_chat_realtime()
+        await engine.dispose()
+        sentry_sdk.flush(timeout=2.0)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -30,9 +52,12 @@ app = FastAPI(
     docs_url="/docs" if settings.ENABLE_API_DOCS else None,
     redoc_url="/redoc" if settings.ENABLE_API_DOCS else None,
     openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.ENABLE_API_DOCS else None,
+    lifespan=lifespan,
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(RequestObservabilityMiddleware)
 
 if settings.TRUSTED_HOSTS and "*" not in settings.TRUSTED_HOSTS:
     app.add_middleware(
@@ -89,16 +114,17 @@ async def add_security_headers(request, call_next):
 
     if request.url.path.startswith("/uploads/") or request.url.path.startswith("/static/"):
         response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
-    elif request.url.path.startswith(settings.API_V1_STR):
+    elif (
+        request.url.path.startswith(settings.API_V1_STR)
+        or request.url.path.startswith("/health")
+        or request.url.path == "/metrics"
+    ):
         # API responses can contain account data even on routes that also expose
         # public content. Keep them out of browser and intermediary caches until
         # a route is explicitly designed and tested as a public cache surface.
         response.headers["Cache-Control"] = "no-store"
         response.headers["Pragma"] = "no-cache"
     return response
-
-
-app.add_middleware(RequestSizeLimitMiddleware)
 
 
 ensure_upload_dirs()
@@ -119,6 +145,23 @@ async def root():
     return {"message": "Welcome to ChinVerse API"}
 
 
+@app.get("/metrics", include_in_schema=False)
+async def metrics(request: Request):
+    if not settings.METRICS_ENABLED:
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    if not metrics_authorized(request.headers.get("authorization")):
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Authentication required"},
+            headers={"WWW-Authenticate": "Bearer", "Cache-Control": "no-store"},
+        )
+    return Response(
+        content=metrics_payload(),
+        media_type=CONTENT_TYPE_LATEST,
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @app.get("/health")
 async def health_check():
     return {
@@ -131,14 +174,10 @@ async def health_check():
 
 @app.get("/health/ready")
 async def readiness_check():
-    try:
-        async with SessionLocal() as session:
-            await session.execute(text("SELECT 1"))
-    except Exception:
-        logger.exception("Database readiness check failed")
+    checks = await readiness_checks()
+    if any(result != "ok" for result in checks.values()):
         return JSONResponse(
             status_code=503,
-            content={"status": "unavailable", "checks": {"database": "failed"}},
+            content={"status": "unavailable", "checks": checks},
         )
-
-    return {"status": "ok", "checks": {"database": "ok"}}
+    return {"status": "ok", "checks": checks}

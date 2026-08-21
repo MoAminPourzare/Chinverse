@@ -9,12 +9,12 @@
 
 وضعیت فعلی:
 
-- فازهای صفر تا پنج برای دامنه تعریف‌شده انجام شده‌اند؛ فاز پنج آموزش و رسانه روی
-  staging محافظت‌شده deploy و smoke شده است. فاز شش از نظر پیاده‌سازی، تست خودکار،
-  browser emulation، CI، Vercel Preview و smoke زنده کامل است؛ journey سخت‌افزار
-  واقعی و assistive technology دستی هنوز evidence gap هستند.
-- شاخه فعلی `codex/phase-6-mobile-ux` و release code آن
-  `1219342ce50139c1ac6a109ad7f1cb23ba2b7bab` است.
+- فازهای صفر تا شش برای دامنه خودکار تعریف‌شده انجام شده‌اند. فاز هفت از نظر کد،
+  تست، migration، container، load/restore tooling و پذیرش محلی کامل است؛ promotion
+  همان SHA به staging و شواهد provider در حال ثبت است. journey سخت‌افزار واقعی و
+  assistive technology دستی فاز شش همچنان evidence gap هستند.
+- شاخه فعلی `codex/phase-7-performance-operations` است؛ SHA نهایی release پس از
+  promotion immutable در گزارش فاز هفت ثبت می‌شود.
 - frontend زنده فاز شش همان SHA را گزارش می‌کند. backend زنده طبق انتظار روی
   release فاز پنج `3b3a918a66ea7df875965130ff86c7d1a1227576` باقی مانده است.
 - release قبلی فاز چهار `92ae2c40a29afb9a15b8fcb8d4500213ef27b253` بود.
@@ -29,7 +29,8 @@
   و درخواست ناشناس HTTPS دوباره با `302` به SSO هدایت می‌شود.
 - **روی `main` merge نشده‌ایم.** قبل از merge به main باید تصمیم انتشار و گیت‌های باقی‌مانده با مالک پروژه تأیید شوند.
 
-گزارش در حال تکمیل فاز شش در `docs/PHASE_6_MOBILE_UX_FA.md`، گزارش فاز پنج در
+گزارش فاز هفت در `docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md`، گزارش فاز شش در
+`docs/PHASE_6_MOBILE_UX_FA.md` و گزارش فاز پنج در
 `docs/PHASE_5_EDUCATION_MEDIA_FA.md` و گزارش فاز چهار در
 `docs/PHASE_4_USER_JOURNEYS_FA.md` است. گام فعلی تکمیل journeyهای دستگاه واقعی و
 assistive technology دستی است؛ ۳۵۰ بازبینی provenance انسانی پیش از انتشار عمومی محتوای موجود
@@ -101,7 +102,7 @@ assistive technology دستی است؛ ۳۵۰ بازبینی provenance انسا
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-6-mobile-ux`؛ release code=`1219342ce50139c1ac6a109ad7f1cb23ba2b7bab` |
+| branch کاری | `codex/phase-7-performance-operations`؛ release candidate محلی |
 | frontend staging/preview | [stable branch URL فاز شش](https://chinverse-git-codex-phase-6-mobile-ux-death-stroke.vercel.app)؛ deployment=`FpnJXHMegQdxiceuU1WutAAnNdCJ` و [generated URL](https://chinverse-nndh54sbt-death-stroke.vercel.app)، محافظت‌شده با SSO |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
@@ -173,6 +174,8 @@ assistive technology دستی است؛ ۳۵۰ بازبینی provenance انسا
   `a2c4e6f8b1d3_add_support_ticket_workflow`
 - migration آموزش و رسانه فاز پنج:
   `b5e7c9d1f3a2_add_phase5_education_media_workflow`
+- migration performance/realtime فاز هفت:
+  `e7c4a9b2d6f1_add_phase7_chat_operations`
 - migration حذف legacy و runtime schema:
   `c8f1e2a4d6b9_remove_legacy_models_and_runtime_schema`
 
@@ -607,12 +610,19 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 
 ### فاز هفت: performance و operations
 
-- timeout/retry/offline states
-- query/polling و WebSocket در چند replica
-- Redis یا backend مشترک برای rate limit و realtime در صورت scale
-- CDN/image optimization و کاهش egress Neon
-- load/soak test
-- Sentry یا error tracking، request ID، structured logs، metrics، health واقعی storage و alert
+- timeout/retry/offline UX با یک retry owner و رعایت `Retry-After` کامل است.
+- polling تطبیقی، WebSocket ping/pong deadline و PostgreSQL realtime relay/presence
+  برای چند replica پیاده و با concurrency واقعی integration تست شده‌اند.
+- query/indexهای چت، image optimizer allowlist، cache/egress policy و performance
+  budget داخل CI هستند.
+- runner ایمن smoke/load/soak، monitor alert/recovery، structured logs، request ID،
+  metrics، readiness واقعی DB/storage و rollback runbook کامل‌اند.
+- Sentry SDK و scrubber بدون PII آماده ولی fail-closed و خاموش است؛ org/project/DSN
+  و source-map upload فقط پس از تأیید صریح مالک در secret manager فعال می‌شود.
+- gate محلی: frontend `81` unit، backend `161` unit + `28` integration، E2E برابر
+  `150 passed/5 skipped` و چرخه کامل migration/container سبز است. restore محلی
+  PostgreSQL 18.4 تا head `e7c4a9b2d6f1` موفق است؛ deploy/load/soak زنده در گزارش
+  فاز هفت ثبت می‌شود.
 
 ### فاز هشت: beta و انتشار عمومی
 
@@ -653,19 +663,20 @@ poetry run python scripts/verify_phase2_schema.py
 poetry run python scripts/verify_phase3_schema.py
 poetry run python scripts/verify_phase4_schema.py
 poetry run python scripts/verify_phase5_schema.py
+poetry run python scripts/verify_phase7_schema.py
 ```
 
 ### Gate کامل
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1 -WithIntegration -WithE2E
+pwsh -NoProfile -File .\scripts\check.ps1 -WithIntegration -WithE2E
 ```
 
 ### Backup/restore
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\backup-database.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\restore-database.ps1 -ConfirmIsolatedTarget
+pwsh -NoProfile -File .\scripts\backup-database.ps1
+pwsh -NoProfile -File .\scripts\restore-database.ps1 -ConfirmIsolatedTarget
 ```
 
 restore فقط روی مقصد ایزوله انجام شود.
@@ -682,6 +693,8 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `docs/PHASE_5_EDUCATION_MEDIA_FA.md`: workflow، entitlement، player، تست و وضعیت pre-release فاز پنج
 - `docs/PHASE_5_DATA_LICENSE_AUDIT_FA.md`: قرارداد ممیزی dictionary و provenance رسانه
 - `docs/PHASE_6_MOBILE_UX_FA.md`: معیار پذیرش، پیاده‌سازی، تست‌های خودکار و blockerهای فاز شش
+- `docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md`: قرارداد performance/operations و شواهد فاز هفت
+- `docs/PHASE_7_ROLLBACK_RUNBOOK_FA.md`: alert، rollback و recovery staging
 - `.github/workflows/quality-gates.yml`: pipeline اصلی
 - `scripts/check.ps1`: gate محلی
 - `scripts/check-release-baseline.ps1`: privacy/release guard
@@ -691,6 +704,8 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `backend/alembic/versions/`: تاریخچه schema
 - `backend/scripts/verify_phase4_schema.py`: invariantهای workflow پشتیبانی
 - `backend/scripts/verify_phase5_schema.py`: invariantهای workflow آموزش و رسانه
+- `backend/scripts/verify_phase7_schema.py`: invariant و plan/indexهای realtime/chat
+- `backend/scripts/phase7_load_test.py`: runner محدود smoke/load/soak staging
 - `backend/data/dictionary/`: CSVهای canonical HSK
 - `frontend/src/app/watch/[domain]/[courseId]/page.tsx`: player امن API-driven و sync زیرنویس
 - `frontend/src/components/layout/MobileUxController.tsx`, `frontend/src/lib/mobileUx.ts`: viewport، keyboard، orientation، navigation و SPA accessibility
@@ -699,18 +714,15 @@ restore فقط روی مقصد ایزوله انجام شود.
 
 ## ۱۶. نتیجه‌ای که باید به Codex جدید گفته شود
 
-«این repository مربوط به ChinVerse است. فازهای صفر تا پنج در دامنه تعریف‌شده انجام
-شده‌اند؛ backend زنده طبق انتظار روی release فاز پنج
-`3b3a918a66ea7df875965130ff86c7d1a1227576` و frontend محافظت‌شده روی release
-فاز شش است. شاخه کاری `codex/phase-6-mobile-ux` است. پیاده‌سازی خودکار فاز شش شامل viewport/safe-area،
-keyboard بدون اشتباه pinch zoom، fullscreen/orientation/safe-back، dark mode،
-tap target، WCAG خودکار و PWA install/update/offline انجام شده و `npm run check`
-با ۴۸ unit test، پوشش ۹۳٫۴۸٪ statement/۹۴٫۲۸٪ line و build ۶۵ route سبز است.
-Playwright production محلی با ۶۵ collected، ۶۳ passed، دو skip مورد انتظار و صفر
-failure سبز است؛ release code=`1219342ce50139c1ac6a109ad7f1cb23ba2b7bab`،
-Quality Gates run `32419922159` و Vercel Preview/smoke همان SHA موفق‌اند. شش دستگاه
-واقعی BrowserStack launch شدند، اما به‌علت Trial کوتاه journey خود ChinVerse روی
-آن‌ها تکمیل نشد؛ تست دستی assistive technology و journey سخت‌افزاری pending هستند
-و emulation جای دستگاه واقعی نیست. ۳۵۰
-مورد provenance نیز همچنان مانع انتشار عمومی محتواست. هیچ secretی را در چت یا Git
-ثبت نکن و فقط از داشبورد provider/secret manager استفاده کن.»
+«این repository مربوط به ChinVerse است. فازهای صفر تا شش در دامنه تعریف‌شده انجام
+شده‌اند و شاخه کاری `codex/phase-7-performance-operations` است. فاز هفت از نظر
+timeout/retry/offline، polling و realtime چند replica، image/performance budget،
+structured logging/request ID/metrics، DB+storage readiness، load/soak tooling،
+alert و rollback/restore پیاده و محلی پذیرفته شده است. frontend برابر ۸۱ unit با
+پوشش ۹۳٫۴۸٪ statement، backend برابر ۱۶۱ unit و ۲۸ integration، E2E production
+برابر ۱۵۰ passed/۵ skip مورد انتظار و migration/container کامل سبز است. Sentry
+SDK و scrubber آماده اما بدون تأیید مالک/DSN خاموش است. promotion و شواهد زنده
+release را از `docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md` بخوان. evidence gapهای
+دستگاه واقعی/assistive technology فاز شش و ۳۷۹ finding ثبت‌شده provenance/content
+review مانع ادعای آمادگی انتشار عمومی‌اند. هیچ secretی را در چت یا Git ثبت نکن و
+فقط از dashboard/secret manager استفاده کن.»

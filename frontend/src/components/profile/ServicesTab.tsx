@@ -2,7 +2,7 @@
 
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, PenLine, Plus, Trash2, Upload, X } from "lucide-react";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
@@ -442,7 +442,7 @@ function ServiceModal({
                                                 className="relative h-52 w-full overflow-hidden rounded-[24px] border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#155aa6] hover:bg-[#eef6ff]"
                                             >
                                                 {bannerPreview ? (
-                                                    <Image src={bannerPreview} alt="پیش‌نمایش پوستر تبلیغاتی" fill className="object-contain" />
+                                                    <Image src={bannerPreview} alt="پیش‌نمایش پوستر تبلیغاتی" fill sizes="430px" className="object-contain" />
                                                 ) : selectedBannerFile ? (
                                                     <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-5 text-center">
                                                         <Upload className="h-8 w-8" />

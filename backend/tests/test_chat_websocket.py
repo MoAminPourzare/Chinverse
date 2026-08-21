@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -28,6 +29,24 @@ def ws_principal(user_id: int = 41):
         f"session-{user_id}",
         datetime.now(UTC) + timedelta(minutes=5),
     )
+
+
+def test_empty_chat_cursor_zero_is_a_valid_incremental_history_query():
+    route = next(route for route in chat.router.routes if route.name == "get_message_history")
+    field = next(field for field in route.dependant.query_params if field.name == "after_id")
+    value, errors = field.validate(0, {}, loc=("query", "after_id"))
+
+    assert value == 0
+    assert errors == []
+
+
+def test_negative_chat_cursor_is_rejected_by_query_validation():
+    route = next(route for route in chat.router.routes if route.name == "get_message_history")
+    field = next(field for field in route.dependant.query_params if field.name == "after_id")
+    value, errors = field.validate(-1, {}, loc=("query", "after_id"))
+
+    assert value is None
+    assert errors
 
 
 def test_websocket_rejects_disallowed_browser_origin_before_authentication(monkeypatch):
@@ -170,6 +189,47 @@ class RecordingWebSocket:
 
     async def send_json(self, payload: dict) -> None:
         self.payloads.append(payload)
+
+
+class SlowWebSocket:
+    def __init__(self):
+        self.closed = False
+
+    async def send_json(self, _payload: dict) -> None:
+        await asyncio.Event().wait()
+
+    async def close(self, *, code: int) -> None:
+        self.closed = code == 1011
+
+
+@pytest.mark.asyncio
+async def test_chat_fanout_is_concurrent_bounded_and_evicts_slow_sockets(monkeypatch):
+    fast = RecordingWebSocket()
+    slow = SlowWebSocket()
+    monkeypatch.setattr(chat.settings, "CHAT_SOCKET_SEND_TIMEOUT_SECONDS", 0.02)
+    await chat.chat_manager.connect(501, fast)
+    await chat.chat_manager.connect(501, slow)
+
+    started = asyncio.get_running_loop().time()
+    delivered = await chat.chat_manager.send_to_user(501, {"type": "test"})
+    elapsed = asyncio.get_running_loop().time() - started
+
+    assert delivered == 1
+    assert elapsed < 0.1
+    assert fast.payloads == [{"type": "test"}]
+    assert slow.closed is True
+    assert slow not in chat.chat_manager.active_connections[501]
+
+
+@pytest.mark.asyncio
+async def test_chat_connection_count_is_bounded_per_user(monkeypatch):
+    monkeypatch.setattr(chat.settings, "CHAT_MAX_CONNECTIONS_PER_USER", 1)
+    first = RecordingWebSocket()
+    second = RecordingWebSocket()
+
+    assert await chat.chat_manager.connect(777, first) is True
+    assert await chat.chat_manager.connect(777, second) is None
+    assert chat.chat_manager.active_connections[777] == {first}
 
 
 @pytest.mark.asyncio

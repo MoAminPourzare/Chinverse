@@ -46,21 +46,28 @@ export const chatService = {
         return response.data;
     },
 
-    async getConversations(): Promise<ConversationPreview[]> {
-        const response = await api.get<ConversationPreview[]>('/chat/conversations');
-        return response.data;
-    },
-
-    async getMessageHistory(userId: number, skip = 0, limit = 50): Promise<ChatMessage[]> {
-        const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
-            params: { skip, limit }
+    async getConversations(signal?: AbortSignal): Promise<ConversationPreview[]> {
+        const response = await api.get<ConversationPreview[]>('/chat/conversations', {
+            signal,
+            chinverseCacheTtlMs: 0,
         });
         return response.data;
     },
 
-    async getNewMessages(userId: number, afterId?: number): Promise<ChatMessage[]> {
+    async getMessageHistory(userId: number, skip = 0, limit = 50, signal?: AbortSignal): Promise<ChatMessage[]> {
         const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
-            params: { ...(afterId ? { after_id: afterId } : {}), limit: 100 }
+            params: { skip, limit },
+            signal,
+            chinverseCacheTtlMs: 0,
+        });
+        return response.data;
+    },
+
+    async getNewMessages(userId: number, afterId?: number, signal?: AbortSignal): Promise<ChatMessage[]> {
+        const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
+            params: { ...(afterId !== undefined ? { after_id: afterId } : {}), limit: 100 },
+            signal,
+            chinverseCacheTtlMs: 0,
         });
         return response.data;
     },

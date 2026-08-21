@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -771,7 +771,7 @@ function ArticleCard({
                 <div className="flex gap-3">
                     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px] bg-[#eef6ff] text-[#155aa6]">
                         {article.cover_image ? (
-                            <Image src={getMediaUrl(article.cover_image)} alt={article.title} fill className="object-cover" unoptimized />
+                            <Image src={getMediaUrl(article.cover_image)} alt={article.title} fill sizes="96px" className="object-cover" unoptimized />
                         ) : (
                             <div className="flex h-full w-full items-center justify-center">
                                 <BookOpen className="h-8 w-8" />

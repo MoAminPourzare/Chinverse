@@ -3,12 +3,17 @@ param(
     [string]$DumpPath,
     [string]$TargetDatabaseUrl = $env:RESTORE_DATABASE_URL,
     [string]$MetadataPath = "$DumpPath.json",
+    [string]$ExpectedAlembicRevision = "",
     [switch]$ConfirmIsolatedTarget,
     [switch]$AllowSameHost,
     [string]$PostgresClientImage = "postgres:18.4-alpine3.24"
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    throw "PowerShell 7 or newer is required. Run this script with pwsh."
+}
 
 if (-not $ConfirmIsolatedTarget) {
     throw "Restore requires -ConfirmIsolatedTarget."
@@ -30,6 +35,26 @@ if ($actualHash -ne $metadata.sha256) {
     throw "Backup checksum mismatch."
 }
 
+$metadataRevision = if ($metadata.PSObject.Properties.Name -contains "alembic_revision") {
+    [string]$metadata.alembic_revision
+} else {
+    ""
+}
+$expectedRevision = if (-not [string]::IsNullOrWhiteSpace($ExpectedAlembicRevision)) {
+    $ExpectedAlembicRevision.Trim()
+} else {
+    $metadataRevision.Trim()
+}
+if ([string]::IsNullOrWhiteSpace($expectedRevision)) {
+    throw "Backup metadata has no Alembic revision. Supply -ExpectedAlembicRevision for a reviewed legacy backup."
+}
+if ($expectedRevision -notmatch '^[A-Za-z0-9_]+$') {
+    throw "Expected Alembic revision has an invalid format."
+}
+if (-not [string]::IsNullOrWhiteSpace($metadataRevision) -and $metadataRevision.Trim() -ne $expectedRevision) {
+    throw "Explicit Alembic revision does not match backup metadata."
+}
+
 $targetUri = [Uri]$TargetDatabaseUrl
 $targetDatabase = $targetUri.AbsolutePath.TrimStart("/")
 $sameHost = $targetUri.Host -eq $metadata.source_host
@@ -43,13 +68,8 @@ if ($sameHost -and -not $AllowSameHost) {
 
 $dumpDirectory = $dump.Directory.FullName
 $image = $PostgresClientImage
-$verifyName = "chinverse-restore-verify-$([guid]::NewGuid().ToString('N')).sql"
-$verifyPath = Join-Path $dumpDirectory $verifyName
-"ANALYZE;`nSELECT version_num FROM alembic_version;`n" |
-    Set-Content -LiteralPath $verifyPath -Encoding ascii
 $env:CHINVERSE_RESTORE_DATABASE_URL = $TargetDatabaseUrl
 $env:CHINVERSE_RESTORE_FILE = $dump.Name
-$env:CHINVERSE_RESTORE_VERIFY_FILE = $verifyName
 try {
     & docker run --rm `
         -e CHINVERSE_RESTORE_DATABASE_URL `
@@ -61,24 +81,33 @@ try {
         throw "pg_restore failed with exit code $LASTEXITCODE."
     }
 
+    & docker run --rm `
+        -e CHINVERSE_RESTORE_DATABASE_URL `
+        $image `
+        sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ANALYZE" >/dev/null'
+    if ($LASTEXITCODE -ne 0) {
+        throw "Post-restore ANALYZE failed with exit code $LASTEXITCODE."
+    }
+
     $verifyOutput = & docker run --rm `
         -e CHINVERSE_RESTORE_DATABASE_URL `
-        -e CHINVERSE_RESTORE_VERIFY_FILE `
-        -v "${dumpDirectory}:/backup:ro" `
         $image `
-        sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -tA -f "/backup/$CHINVERSE_RESTORE_VERIFY_FILE"'
+        sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -tA -c "SELECT version_num FROM alembic_version ORDER BY version_num"'
     if ($LASTEXITCODE -ne 0) {
-        throw "Post-restore verification failed with exit code $LASTEXITCODE."
+        throw "Post-restore revision verification failed with exit code $LASTEXITCODE."
     }
-    if (($verifyOutput -join "`n") -notmatch "c8f1e2a4d6b9") {
-        throw "Restored database is not at the expected Alembic revision."
+    $restoredRevisions = @(
+        $verifyOutput |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+    if ($restoredRevisions.Count -ne 1 -or $restoredRevisions[0] -ne $expectedRevision) {
+        throw "Restored database Alembic revision does not match the reviewed backup metadata."
     }
 }
 finally {
     Remove-Item Env:CHINVERSE_RESTORE_DATABASE_URL -ErrorAction SilentlyContinue
     Remove-Item Env:CHINVERSE_RESTORE_FILE -ErrorAction SilentlyContinue
-    Remove-Item Env:CHINVERSE_RESTORE_VERIFY_FILE -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $verifyPath -Force -ErrorAction SilentlyContinue
 }
 
 Write-Output "Restore verified on isolated target $($targetUri.Host)/$targetDatabase"

@@ -1,12 +1,13 @@
 import asyncio
 from datetime import UTC, datetime
+import logging
 from typing import Any, List
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 import jwt
 from jwt.exceptions import PyJWTError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, and_, desc, update
+from sqlalchemy import select, or_, and_, update, text
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
@@ -15,6 +16,7 @@ from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
 from app.core.browser_origin import is_allowed_browser_origin
 from app.core.config import settings
+from app.core.observability import record_chat_connection
 from app.db.session import SessionLocal
 from app.models.moderation import UserBlock
 from app.models.security import AuthSession
@@ -23,38 +25,84 @@ from app.models.user import User, UserStatus
 from app.schemas import chat as schemas
 from app.schemas.token import TokenPayload
 from app.services.notifications import create_notification
+from app.services.chat_realtime import ChatRealtimeRelay
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class ChatConnectionManager:
     def __init__(self) -> None:
         self.active_connections: dict[int, set[WebSocket]] = {}
 
-    async def connect(self, user_id: int, websocket: WebSocket) -> None:
-        self.active_connections.setdefault(user_id, set()).add(websocket)
+    async def connect(self, user_id: int, websocket: WebSocket) -> bool | None:
+        connections = self.active_connections.setdefault(user_id, set())
+        if len(connections) >= settings.CHAT_MAX_CONNECTIONS_PER_USER:
+            return None
+        first_connection = not connections
+        connections.add(websocket)
+        record_chat_connection(1)
+        return first_connection
 
-    def disconnect(self, user_id: int, websocket: WebSocket) -> None:
+    def disconnect(self, user_id: int, websocket: WebSocket) -> bool:
         connections = self.active_connections.get(user_id)
         if not connections:
-            return
-        connections.discard(websocket)
+            return False
+        if websocket in connections:
+            connections.discard(websocket)
+            record_chat_connection(-1)
         if not connections:
             self.active_connections.pop(user_id, None)
+            return True
+        return False
 
-    async def send_to_user(self, user_id: int, payload: dict[str, Any]) -> None:
+    async def send_to_user(self, user_id: int, payload: dict[str, Any]) -> int:
         connections = list(self.active_connections.get(user_id, set()))
-        for websocket in connections:
+
+        async def send_one(websocket: WebSocket) -> bool:
             try:
-                await websocket.send_json(payload)
-            except RuntimeError:
+                await asyncio.wait_for(
+                    websocket.send_json(payload),
+                    timeout=settings.CHAT_SOCKET_SEND_TIMEOUT_SECONDS,
+                )
+                return True
+            except (Exception, TimeoutError):
                 self.disconnect(user_id, websocket)
+                try:
+                    await asyncio.wait_for(
+                        websocket.close(code=status.WS_1011_INTERNAL_ERROR),
+                        timeout=min(1.0, settings.CHAT_SOCKET_SEND_TIMEOUT_SECONDS),
+                    )
+                except (Exception, TimeoutError):
+                    pass
+                return False
+
+        if not connections:
+            return 0
+        results = await asyncio.gather(*(send_one(websocket) for websocket in connections))
+        return sum(results)
 
     def is_online(self, user_id: int) -> bool:
         return bool(self.active_connections.get(user_id))
 
+    def connected_user_ids(self) -> set[int]:
+        return set(self.active_connections)
+
 
 chat_manager = ChatConnectionManager()
+chat_realtime = ChatRealtimeRelay(
+    dispatch=chat_manager.send_to_user,
+    connected_users=chat_manager.connected_user_ids,
+)
+
+
+async def start_chat_realtime() -> None:
+    await chat_realtime.start()
+
+
+async def stop_chat_realtime() -> None:
+    if chat_realtime.running:
+        await chat_realtime.stop()
 
 
 async def _get_user_from_ws_token(
@@ -130,24 +178,57 @@ def _message_read(message: Message) -> schemas.MessageRead:
 
 
 async def _broadcast_message(message: Message) -> None:
-    payload = {
+    payload = _message_event_payload(message)
+    await asyncio.gather(
+        chat_manager.send_to_user(message.receiver_id, payload),
+        chat_manager.send_to_user(message.sender_id, payload),
+    )
+
+
+def _message_event_payload(message: Message) -> dict[str, Any]:
+    return {
         "type": "message:new",
         "message": _message_read(message).model_dump(mode="json"),
     }
-    await chat_manager.send_to_user(message.receiver_id, payload)
-    await chat_manager.send_to_user(message.sender_id, payload)
+
+
+def _enqueue_message_event(db: AsyncSession, message: Message) -> None:
+    chat_realtime.enqueue(
+        db,
+        recipients=(message.receiver_id, message.sender_id),
+        event_type="message:new",
+        payload=_message_event_payload(message),
+    )
 
 
 async def _broadcast_read_receipt(*, sender_id: int, reader_id: int, message_ids: list[int]) -> None:
     if not message_ids:
         return
-    await chat_manager.send_to_user(
-        sender_id,
-        {
-            "type": "messages:read",
-            "reader_id": reader_id,
-            "message_ids": message_ids,
-        },
+    await chat_manager.send_to_user(sender_id, _read_receipt_payload(reader_id, message_ids))
+
+
+def _read_receipt_payload(reader_id: int, message_ids: list[int]) -> dict[str, Any]:
+    return {
+        "type": "messages:read",
+        "reader_id": reader_id,
+        "message_ids": message_ids,
+    }
+
+
+def _enqueue_read_receipt(
+    db: AsyncSession,
+    *,
+    sender_id: int,
+    reader_id: int,
+    message_ids: list[int],
+) -> None:
+    if not message_ids:
+        return
+    chat_realtime.enqueue(
+        db,
+        recipients=(sender_id,),
+        event_type="messages:read",
+        payload=_read_receipt_payload(reader_id, message_ids),
     )
 
 
@@ -183,7 +264,16 @@ async def chat_websocket(websocket: WebSocket):
         return
     user, session_id, token_expires_at = principal
 
-    await chat_manager.connect(user.id, websocket)
+    first_connection = await chat_manager.connect(user.id, websocket)
+    if first_connection is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+    if first_connection:
+        presence_registered = await chat_realtime.register_presence(user.id)
+        if not presence_registered and settings.ENVIRONMENT.lower() != "test":
+            chat_manager.disconnect(user.id, websocket)
+            await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+            return
     try:
         await websocket.send_json({"type": "connection:ready", "user_id": user.id})
         while True:
@@ -209,6 +299,8 @@ async def chat_websocket(websocket: WebSocket):
         pass
     finally:
         chat_manager.disconnect(user.id, websocket)
+        if not chat_manager.is_online(user.id):
+            await chat_realtime.unregister_presence(user.id)
 
 
 @router.post("", response_model=schemas.MessageRead)
@@ -259,7 +351,7 @@ async def send_message(
         content=content,
     )
     db.add(message)
-    await db.commit()
+    await db.flush()
     result = await db.execute(
         select(Message)
         .options(
@@ -269,6 +361,9 @@ async def send_message(
         .where(Message.id == message.id)
     )
     message = result.scalar_one()
+    _enqueue_message_event(db, message)
+    await db.commit()
+    chat_realtime.notify_committed()
     try:
         sender_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
         await create_notification(
@@ -283,6 +378,10 @@ async def send_message(
         )
     except Exception:
         await db.rollback()
+        logger.exception(
+            "Could not create the new-message notification",
+            extra={"event": "chat.notification", "outcome": "failed"},
+        )
     await _broadcast_message(message)
 
     return _message_read(message)
@@ -309,7 +408,14 @@ async def mark_conversation_read(
         .returning(Message.id)
     )
     message_ids = [int(message_id) for message_id in result.scalars().all()]
+    _enqueue_read_receipt(
+        db,
+        sender_id=user_id,
+        reader_id=current_user.id,
+        message_ids=message_ids,
+    )
     await db.commit()
+    chat_realtime.notify_committed()
     await _broadcast_read_receipt(
         sender_id=user_id,
         reader_id=current_user.id,
@@ -328,71 +434,102 @@ async def get_conversations(
     Get list of active conversations (users I have chatted with).
     Returns the other user's info and last message preview.
     """
-    scan_limit = max(100, min(1000, (pagination.skip + pagination.limit) * 20))
+    result = await db.execute(
+        text(
+            """
+            WITH directional AS (
+                SELECT
+                    m.id,
+                    m.receiver_id AS partner_id,
+                    m.content,
+                    m.created_at
+                FROM messages m
+                WHERE m.sender_id = :current_user_id
 
-    query = (
-        select(Message)
-        .options(
-            selectinload(Message.sender).selectinload(User.profile),
-            selectinload(Message.receiver).selectinload(User.profile)
-        )
-        .where(
-            or_(
-                Message.sender_id == current_user.id,
-                Message.receiver_id == current_user.id
-            )
-        )
-        .order_by(desc(Message.created_at))
-        .limit(scan_limit)
-    )
-    
-    result = await db.execute(query)
-    messages = result.scalars().all()
-    
-    # Group by conversation partner and get the last message
-    unread_counts: dict[int, int] = {}
-    for msg in messages:
-        if msg.sender_id != current_user.id and msg.receiver_id == current_user.id and not msg.is_read:
-            unread_counts[msg.sender_id] = unread_counts.get(msg.sender_id, 0) + 1
+                UNION ALL
 
-    conversations_dict: dict = {}
-    for msg in messages:
-        # Determine the other user
-        if msg.sender_id == current_user.id:
-            other_user = msg.receiver
-        else:
-            other_user = msg.sender
-        
-        if other_user is None:
-            continue
-            
-        other_user_id = other_user.id
-        
-        if other_user_id not in conversations_dict:
-            conversations_dict[other_user_id] = schemas.ConversationPreview(
-                user=schemas.ChatUserSummary(
-                    id=other_user.id,
-                    display_name=other_user.profile.display_name if other_user.profile else None,
-                    avatar_url=other_user.profile.avatar_url if other_user.profile else None
-                ),
-                last_message=msg.content[:100] if msg.content else "",
-                last_message_time=msg.created_at,
-                unread_count=unread_counts.get(other_user_id, 0),
-                is_online=chat_manager.is_online(other_user_id),
+                SELECT
+                    m.id,
+                    m.sender_id AS partner_id,
+                    m.content,
+                    m.created_at
+                FROM messages m
+                WHERE m.receiver_id = :current_user_id
+            ),
+            latest AS (
+                SELECT DISTINCT ON (partner_id)
+                    id,
+                    partner_id,
+                    content,
+                    created_at
+                FROM directional
+                ORDER BY partner_id, id DESC
+            ),
+            page AS (
+                SELECT *
+                FROM latest
+                ORDER BY id DESC
+                OFFSET :skip
+                LIMIT :limit
+            ),
+            unread AS (
+                SELECT sender_id AS partner_id, count(*)::integer AS unread_count
+                FROM messages
+                WHERE receiver_id = :current_user_id
+                  AND is_read = false
+                GROUP BY sender_id
             )
-    
-    conversations = sorted(
-        conversations_dict.values(),
-        key=lambda item: item.last_message_time,
-        reverse=True,
+            SELECT
+                page.partner_id,
+                page.content,
+                page.created_at,
+                profile.display_name,
+                profile.avatar_url,
+                COALESCE(unread.unread_count, 0) AS unread_count,
+                EXISTS (
+                    SELECT 1
+                    FROM chat_presence_leases presence
+                    WHERE presence.user_id = page.partner_id
+                      AND presence.expires_at > now()
+                ) AS is_online
+            FROM page
+            JOIN users partner ON partner.id = page.partner_id
+            LEFT JOIN user_profiles profile ON profile.user_id = partner.id
+            LEFT JOIN unread ON unread.partner_id = page.partner_id
+            ORDER BY page.id DESC
+            """
+        ),
+        {
+            "current_user_id": current_user.id,
+            "skip": pagination.skip,
+            "limit": pagination.limit,
+        },
     )
-    return conversations[pagination.skip:pagination.skip + pagination.limit]
+    rows = result.mappings().all()
+    return [
+        schemas.ConversationPreview(
+            user=schemas.ChatUserSummary(
+                id=int(row["partner_id"]),
+                display_name=row["display_name"],
+                avatar_url=row["avatar_url"],
+            ),
+            last_message=str(row["content"] or "")[:100],
+            last_message_time=row["created_at"],
+            unread_count=int(row["unread_count"] or 0),
+            is_online=(
+                chat_manager.is_online(int(row["partner_id"]))
+                if settings.CHAT_REALTIME_BACKEND == "memory"
+                else bool(row["is_online"])
+            ),
+        )
+        for row in rows
+    ]
 
 
 @router.get("/{user_id}/messages", response_model=List[schemas.MessageRead])
 async def get_message_history(
     user_id: int,
-    after_id: int | None = Query(default=None, ge=1),
+    after_id: int | None = Query(default=None, ge=0),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
@@ -406,14 +543,26 @@ async def get_message_history(
         raise not_found("User")
 
     # Get messages between the two users
-    filters = [
-        or_(
-            and_(Message.sender_id == current_user.id, Message.receiver_id == user_id),
-            and_(Message.sender_id == user_id, Message.receiver_id == current_user.id),
-        )
-    ]
+    conversation_filter = or_(
+        and_(Message.sender_id == current_user.id, Message.receiver_id == user_id),
+        and_(Message.sender_id == user_id, Message.receiver_id == current_user.id),
+    )
+    filters = [conversation_filter]
     if after_id is not None:
         filters.append(Message.id > after_id)
+
+    if after_id is None:
+        latest_ids = (
+            select(Message.id)
+            .where(conversation_filter)
+            .order_by(Message.id.desc())
+            .offset(pagination.skip)
+            .limit(pagination.limit)
+        )
+        filters = [Message.id.in_(latest_ids)]
+        offset = 0
+    else:
+        offset = pagination.skip
 
     query = (
         select(Message)
@@ -422,8 +571,8 @@ async def get_message_history(
             selectinload(Message.receiver).selectinload(User.profile)
         )
         .where(*filters)
-        .order_by(Message.created_at.asc())
-        .offset(pagination.skip)
+        .order_by(Message.id.asc())
+        .offset(offset)
         .limit(pagination.limit)
     )
 
@@ -436,7 +585,14 @@ async def get_message_history(
         if msg.receiver_id == current_user.id and not msg.is_read:
             msg.is_read = True
             read_message_ids.append(msg.id)
+    _enqueue_read_receipt(
+        db,
+        sender_id=user_id,
+        reader_id=current_user.id,
+        message_ids=read_message_ids,
+    )
     await db.commit()
+    chat_realtime.notify_committed()
     await _broadcast_read_receipt(
         sender_id=user_id,
         reader_id=current_user.id,

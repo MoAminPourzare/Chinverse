@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     BellRing,
@@ -17,6 +17,7 @@ import { cn } from "@/lib/cn";
 import SafeBackButton from "@/components/ui/SafeBackButton";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
+import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
 
 type NotificationGroup = {
     key: string;
@@ -51,26 +52,36 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const fingerprintRef = useRef("");
+    const hasLoadedRef = useRef(false);
 
-    const loadNotifications = useCallback(async () => {
+    const loadNotifications = useCallback(async (signal?: AbortSignal) => {
         try {
             setError(null);
-            const data = await notificationService.getNotifications(false);
+            const data = await notificationService.getNotifications(false, 0, 40, signal);
+            const fingerprint = data.map((item) => `${item.id}:${item.is_read ? 1 : 0}`).join("|");
+            const changed = fingerprint !== fingerprintRef.current;
+            fingerprintRef.current = fingerprint;
             setNotifications(data);
+            hasLoadedRef.current = true;
+            return changed;
         } catch (requestError) {
+            if (signal?.aborted) return false;
             console.error("Failed to fetch notifications", requestError);
-            setError("ارتباط با اعلان‌ها برقرار نشد. چند لحظه بعد دوباره امتحان کن.");
+            if (!hasLoadedRef.current) {
+                setError("ارتباط با اعلان‌ها برقرار نشد. چند لحظه بعد دوباره امتحان کن.");
+            }
+            throw requestError;
         } finally {
-            setIsLoading(false);
+            if (!signal?.aborted) setIsLoading(false);
         }
     }, []);
 
-    useEffect(() => {
-        setIsLoading(true);
-        loadNotifications();
-        const interval = window.setInterval(loadNotifications, 15_000);
-        return () => window.clearInterval(interval);
-    }, [loadNotifications]);
+    useAdaptivePolling({
+        task: loadNotifications,
+        baseIntervalMs: 15_000,
+        maxIntervalMs: 60_000,
+    });
 
     const groupedNotifications = useMemo(() => groupNotifications(notifications), [notifications]);
 
@@ -108,7 +119,7 @@ export default function NotificationsPage() {
                         action={
                             <button
                                 type="button"
-                                onClick={loadNotifications}
+                                onClick={() => void loadNotifications()}
                                 className="mt-6 rounded-full bg-[#155aa6] px-5 py-3 text-sm font-black text-white"
                             >
                                 تلاش دوباره

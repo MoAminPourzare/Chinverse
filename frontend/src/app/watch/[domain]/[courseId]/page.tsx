@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Hls, { ErrorTypes } from "hls.js";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { FastForward, Maximize, Minimize, MoreVertical, Pause, Play, Rewind } from "lucide-react";
@@ -362,34 +361,45 @@ export default function SharedWatchPage() {
             };
         }
 
-        if (!Hls.isSupported()) {
-            failPlayback("unsupported", "این مرورگر از پخش HLS پشتیبانی نمی‌کند.");
-            return;
-        }
+        // Native-HLS browsers (notably iOS Safari) return above and never
+        // download the hls.js chunk. Other browsers load it only when needed.
+        let disposed = false;
+        let destroyHls: (() => void) | null = null;
+        void import("hls.js").then(({ default: Hls, ErrorTypes }) => {
+            if (disposed) return;
+            if (!Hls.isSupported()) {
+                failPlayback("unsupported", "این مرورگر از پخش HLS پشتیبانی نمی‌کند.");
+                return;
+            }
 
-        const hls = new Hls({ enableWorker: true, startLevel: -1 });
-        let networkRetries = 0;
-        let recoveredMediaError = false;
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (!data.fatal) return;
-            if (data.type === ErrorTypes.NETWORK_ERROR && networkRetries < 2) {
-                networkRetries += 1;
-                hls.startLoad();
-                return;
-            }
-            if (data.type === ErrorTypes.MEDIA_ERROR && !recoveredMediaError) {
-                recoveredMediaError = true;
-                hls.recoverMediaError();
-                return;
-            }
-            hls.destroy();
-            failPlayback("media", "پخش ویدئو متوقف شد. برای دریافت لینک تازه دوباره تلاش کن.");
+            const hls = new Hls({ enableWorker: true, startLevel: -1 });
+            destroyHls = () => hls.destroy();
+            let networkRetries = 0;
+            let recoveredMediaError = false;
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+                if (!data.fatal) return;
+                if (data.type === ErrorTypes.NETWORK_ERROR && networkRetries < 2) {
+                    networkRetries += 1;
+                    hls.startLoad();
+                    return;
+                }
+                if (data.type === ErrorTypes.MEDIA_ERROR && !recoveredMediaError) {
+                    recoveredMediaError = true;
+                    hls.recoverMediaError();
+                    return;
+                }
+                hls.destroy();
+                failPlayback("media", "پخش ویدئو متوقف شد. برای دریافت لینک تازه دوباره تلاش کن.");
+            });
+            hls.loadSource(sourceUrl);
+            hls.attachMedia(video);
+        }).catch(() => {
+            if (!disposed) failPlayback("unsupported", "راه‌اندازی پخش HLS انجام نشد.");
         });
-        hls.loadSource(sourceUrl);
-        hls.attachMedia(video);
 
         return () => {
-            hls.destroy();
+            disposed = true;
+            destroyHls?.();
             video.removeAttribute("src");
             video.load();
         };

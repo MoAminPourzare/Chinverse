@@ -75,8 +75,8 @@ export interface User {
 
 export const userService = {
     // دریافت اطلاعات کامل کاربر (شامل ایمیل + پروفایل)
-    async getMe(): Promise<User> {
-        const response = await api.get<User>('/users/me');
+    async getMe(signal?: AbortSignal): Promise<User> {
+        const response = await api.get<User>('/users/me', { signal });
         return response.data;
     },
 
@@ -121,8 +121,8 @@ export const userService = {
     },
 
     // دریافت پروفایل عمومی کاربر
-    async getPublicProfile(userId: number): Promise<PublicUser> {
-        const response = await api.get<PublicUser>(`/users/${userId}/public`);
+    async getPublicProfile(userId: number, signal?: AbortSignal): Promise<PublicUser> {
+        const response = await api.get<PublicUser>(`/users/${userId}/public`, { signal });
         return response.data;
     },
 

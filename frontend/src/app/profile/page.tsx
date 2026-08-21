@@ -1,6 +1,6 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";

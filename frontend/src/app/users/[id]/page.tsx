@@ -1,6 +1,6 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -420,6 +420,7 @@ export default function PublicProfilePage() {
                                     src={getMediaUrl(item.image_url)}
                                     alt={item.caption || "Gallery image"}
                                     fill
+                                    sizes="(max-width: 430px) 50vw, 215px"
                                     className="object-cover"
                                     unoptimized
                                 />

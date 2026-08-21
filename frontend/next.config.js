@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
+const { withSentryConfig } = require('@sentry/nextjs');
 
 const localTempDir = path.join(__dirname, '.tmp');
 fs.mkdirSync(localTempDir, { recursive: true });
@@ -24,6 +25,53 @@ const incompleteFeatures = {
     referrals: enabled(process.env.NEXT_PUBLIC_FEATURE_REFERRALS),
     points: enabled(process.env.NEXT_PUBLIC_FEATURE_POINTS),
 };
+
+const imageRemotePatterns = [];
+const apiImagePathnames = [
+    '/assets/**',
+    '/uploads/**',
+    '/static/uploads/**',
+    '/api/v1/media/public-images/**',
+];
+let apiImageOrigin = null;
+
+const addImageOrigin = (rawOrigin, pathnames) => {
+    if (!rawOrigin?.trim()) return null;
+    try {
+        const remote = new URL(rawOrigin.trim());
+        if (!['http:', 'https:'].includes(remote.protocol)) return null;
+        if (isPublicRelease && remote.protocol !== 'https:') return null;
+        for (const pathname of pathnames) {
+            imageRemotePatterns.push({
+                protocol: remote.protocol.slice(0, -1),
+                hostname: remote.hostname,
+                port: remote.port,
+                pathname,
+            });
+        }
+        return remote.origin;
+    } catch {
+        // Invalid optional origins stay disabled instead of widening the allowlist.
+        return null;
+    }
+};
+
+apiImageOrigin = addImageOrigin(process.env.NEXT_PUBLIC_API_URL, apiImagePathnames);
+const publicCdnOrigins = new Set([
+    process.env.NEXT_PUBLIC_IMAGE_CDN_URL,
+    ...(process.env.NEXT_PUBLIC_IMAGE_REMOTE_ORIGINS || '').split(','),
+]);
+for (const rawOrigin of publicCdnOrigins) {
+    if (!rawOrigin?.trim()) continue;
+    try {
+        // A backend origin must never be widened to /** even if it is
+        // accidentally repeated in the optional CDN setting.
+        if (apiImageOrigin && new URL(rawOrigin.trim()).origin === apiImageOrigin) continue;
+    } catch {
+        continue;
+    }
+    addImageOrigin(rawOrigin, ['/**']);
+}
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
@@ -34,6 +82,21 @@ const nextConfig = {
     experimental: {
         cpus: 1,
         webpackBuildWorker: false,
+    },
+    images: {
+        formats: ['image/avif', 'image/webp'],
+        minimumCacheTTL: 86_400,
+        deviceSizes: [320, 375, 390, 430, 640, 750, 828],
+        imageSizes: [32, 36, 44, 48, 52, 56, 64, 96, 128, 180, 256],
+        // Keep the optimizer away from entitlement-protected BFF media. Even a
+        // manually crafted /_next/image URL may only target these public paths.
+        localPatterns: [
+            { pathname: '/assets/**' },
+            { pathname: '/api/backend/media/public-images/**' },
+        ],
+        remotePatterns: imageRemotePatterns,
+        dangerouslyAllowSVG: false,
+        contentDispositionType: 'attachment',
     },
     async headers() {
         return [
@@ -74,6 +137,29 @@ if (!process.env.VERCEL) {
     nextConfig.outputFileTracingRoot = path.join(__dirname, '..');
 }
 
-module.exports = nextConfig;
+const sentrySourceMapsEnabled = enabled(process.env.SENTRY_SOURCE_MAPS_ENABLED)
+    && Boolean(process.env.SENTRY_AUTH_TOKEN)
+    && Boolean(process.env.SENTRY_ORG)
+    && Boolean(process.env.SENTRY_PROJECT);
+
+module.exports = withSentryConfig(nextConfig, {
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    authToken: sentrySourceMapsEnabled ? process.env.SENTRY_AUTH_TOKEN : undefined,
+    telemetry: false,
+    silent: true,
+    sourcemaps: {
+        disable: !sentrySourceMapsEnabled,
+        deleteSourcemapsAfterUpload: true,
+    },
+    webpack: {
+        treeshake: {
+            removeDebugLogging: true,
+            excludeReplayIframe: true,
+            excludeReplayShadowDOM: true,
+            excludeReplayCompressionWorker: true,
+        },
+    },
+});
 
 

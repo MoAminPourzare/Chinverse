@@ -18,7 +18,23 @@ from app.models.dictionary import (
     WordExample,
 )
 from app.models.course import Category, Subcategory, Course, CourseSection, Lesson, LessonSubtitle, LessonWordMap, SubtitleCue, SubtitleTrack, UserSavedCourse
-from app.models.social import UserFollow, Post, PostMedia, PostLike, PostComment, ContentLike, ContentComment, ForumQuestion, ForumAnswer, Article, ArticleComment, SupportTicket, Message
+from app.models.social import (
+    Article,
+    ArticleComment,
+    ChatPresenceLease,
+    ChatRealtimeEvent,
+    ContentComment,
+    ContentLike,
+    ForumAnswer,
+    ForumQuestion,
+    Message,
+    Post,
+    PostComment,
+    PostLike,
+    PostMedia,
+    SupportTicket,
+    UserFollow,
+)
 from app.models.activity import StudySession
 from app.models.subscription import SubscriptionPlan, UserSubscription
 from app.models.leitner import UserFlashcard

@@ -12,6 +12,7 @@ from fastapi import HTTPException, UploadFile, status
 
 from app.api.errors import bad_request
 from app.core.config import settings
+from app.core.paths import UPLOADS_DIR
 
 
 CHUNK_SIZE_BYTES = 1024 * 1024
@@ -69,7 +70,42 @@ def get_object_storage_client():
         region_name=settings.OBJECT_STORAGE_REGION,
         config=Config(
             signature_version="s3v4",
+            connect_timeout=settings.STORAGE_CONNECT_TIMEOUT_SECONDS,
+            read_timeout=settings.STORAGE_READ_TIMEOUT_SECONDS,
             retries={"max_attempts": 4, "mode": "standard"},
+            s3={"addressing_style": settings.OBJECT_STORAGE_ADDRESSING_STYLE},
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
+    )
+
+
+@lru_cache(maxsize=1)
+def get_object_storage_health_client():
+    import boto3
+    from botocore.config import Config
+
+    # put/get/delete are three separate calls. A single health invocation must
+    # finish its underlying worker shortly after the outer readiness deadline,
+    # not merely abandon a thread that keeps retrying for minutes.
+    per_operation_timeout = max(0.1, settings.HEALTHCHECK_TIMEOUT_SECONDS / 8)
+    return boto3.client(
+        service_name="s3",
+        endpoint_url=settings.OBJECT_STORAGE_ENDPOINT_URL,
+        aws_access_key_id=settings.OBJECT_STORAGE_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.OBJECT_STORAGE_SECRET_ACCESS_KEY,
+        region_name=settings.OBJECT_STORAGE_REGION,
+        config=Config(
+            signature_version="s3v4",
+            connect_timeout=min(
+                settings.STORAGE_CONNECT_TIMEOUT_SECONDS,
+                per_operation_timeout,
+            ),
+            read_timeout=min(
+                settings.STORAGE_READ_TIMEOUT_SECONDS,
+                per_operation_timeout,
+            ),
+            retries={"total_max_attempts": 1, "mode": "standard"},
             s3={"addressing_style": settings.OBJECT_STORAGE_ADDRESSING_STYLE},
             request_checksum_calculation="when_required",
             response_checksum_validation="when_required",
@@ -79,6 +115,67 @@ def get_object_storage_client():
 
 def reset_storage_client_cache() -> None:
     get_object_storage_client.cache_clear()
+    get_object_storage_health_client.cache_clear()
+
+
+def _probe_object_storage() -> None:
+    client = get_object_storage_health_client()
+    buckets = {
+        settings.OBJECT_STORAGE_BUCKET_NAME.strip(),
+        settings.MEDIA_OBJECT_STORAGE_BUCKET_NAME.strip(),
+    }
+    for bucket_name in sorted(bucket for bucket in buckets if bucket):
+        storage_key = f"_health/chinverse-{uuid4().hex}.txt"
+        object_created = False
+        probe_succeeded = False
+        body = None
+        try:
+            client.put_object(
+                Bucket=bucket_name,
+                Key=storage_key,
+                Body=b"ok",
+                ContentType="text/plain",
+                CacheControl="no-store",
+            )
+            object_created = True
+            response = client.get_object(Bucket=bucket_name, Key=storage_key)
+            body = response["Body"]
+            if body.read(3) != b"ok":
+                raise OSError("Object storage health probe could not be read back")
+            probe_succeeded = True
+        finally:
+            if body is not None:
+                body.close()
+            if object_created:
+                try:
+                    client.delete_object(Bucket=bucket_name, Key=storage_key)
+                except Exception:
+                    if probe_succeeded:
+                        raise
+                    logger.exception(
+                        "Could not clean up a failed object storage health probe"
+                    )
+
+
+def _probe_filesystem_storage() -> None:
+    if not UPLOADS_DIR.is_dir():
+        raise OSError("Upload storage root does not exist")
+
+    probe_path = UPLOADS_DIR / f".chinverse-health-{uuid4().hex}"
+    try:
+        with probe_path.open("xb") as probe:
+            probe.write(b"ok")
+            probe.flush()
+        if probe_path.read_bytes() != b"ok":
+            raise OSError("Upload storage health probe could not be read back")
+    finally:
+        probe_path.unlink(missing_ok=True)
+
+
+async def probe_storage() -> None:
+    """Verify that the configured durable storage is reachable and writable."""
+    probe = _probe_object_storage if settings.USES_OBJECT_STORAGE else _probe_filesystem_storage
+    await to_thread.run_sync(probe)
 
 
 async def store_upload_file(

@@ -46,7 +46,7 @@ from app.core.passwords import (  # noqa: E402
 
 
 EXPECTED_ENDPOINT_ID = "ep-wild-band-atse2yoq"
-EXPECTED_ALEMBIC_HEAD = "b5e7c9d1f3a2"
+EXPECTED_ALEMBIC_HEAD = "e7c4a9b2d6f1"
 FIXTURE_EMAIL_DOMAIN = "example.com"
 RUN_ID_PATTERN = re.compile(r"[a-z0-9](?:[a-z0-9-]{4,38}[a-z0-9])?")
 ADVISORY_LOCK_NAME = "chinverse-phase4-staging-fixtures"
@@ -79,6 +79,8 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("articles", "author_user_id", "NO ACTION"),
     ("auth_challenges", "user_id", "CASCADE"),
     ("auth_sessions", "user_id", "CASCADE"),
+    ("chat_presence_leases", "user_id", "CASCADE"),
+    ("chat_realtime_events", "recipient_user_id", "CASCADE"),
     ("content_comments", "user_id", "CASCADE"),
     ("content_likes", "user_id", "CASCADE"),
     ("content_reports", "assigned_to", "SET NULL"),
