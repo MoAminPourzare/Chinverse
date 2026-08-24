@@ -42,7 +42,13 @@ def main() -> int:
     rollback_path = root / "docs" / "PHASE_7_ROLLBACK_RUNBOOK_FA.md"
 
     deploy = read(deploy_path)
-    require("codex/phase-7-performance-operations" in deploy, "Backend deploy is not bound to Phase 7")
+    # Phase 7 established the operational contracts, but the release pipeline
+    # is now promoted by the Phase 8/release refs.  Keep this verifier aligned
+    # with the active deployment workflow instead of reintroducing the retired
+    # Phase 7-only branch guard.
+    for release_ref in ("main", "codex/release-*", "codex/phase-8-beta-release"):
+        require(release_ref in deploy, f"Backend deploy is missing release ref: {release_ref}")
+    require("codex/phase-7-performance-operations" not in deploy, "Backend deploy still contains the retired Phase 7 branch guard")
     require("codex/phase-5-education-media" not in deploy, "Backend deploy still contains the Phase 5 branch guard")
     require('.checks.storage == "ok"' in deploy, "Backend deploy does not require storage readiness")
 
