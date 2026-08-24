@@ -119,8 +119,9 @@
   شد؛ محتوای personal-data migration در refهای قابل‌دسترسی پیدا نمی‌شود.
 - [x] شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
   `--force-with-lease` و leaseهای دقیق روی GitHub push شدند. `codex/phase-8-beta-release`
-  روی `7406c9c403026bde6dc7e65c47bb8ac1e01cb5f3` و `main` روی
-  `bd7b016edede215885f495370b1976a230d3a996` قرار دارد؛ tag قابل‌انتشار وجود ندارد.
+  اکنون روی HEAD مستندات `966b4340545374db03c718657f9fe4bd5c143aba` است؛ آخرین
+  SHA کد/CI-tested برابر `7238566467d821bd9acce70a6bf7441a06a2cd16` و `main` روی
+  `bd7b016edede215885f495370b1976a230d3a996` است؛ tag قابل‌انتشار وجود ندارد.
 - [x] قبل از rewrite یک bundle بازیابی محلی در
   `.backups/phase0-history-rewrite-20260824/before.bundle` نگه داشته شد؛ این فایل
   عمداً به remote push نشده است.
@@ -142,6 +143,9 @@
   `spaces/MoAmin9/chinverse-api` با claimهای دقیق repository=`MoAminPourzare/Chinverse`،
   branch=`codex/phase-8-beta-release` و workflow=`deploy-hf-space.yml` ثبت شود؛
   این تنظیم در حساب provider از این محیط قابل انجام/تأیید نیست.
+- [i] الگوی provider با runهای قبلی هم‌خوان است: phase 7 نیز در همان گام mirror
+  شکست خورده، در حالی‌که runهای phase 4 و phase 5 موفق بوده‌اند؛ این قرینهٔ
+  تشخیصی است و جایگزین log خصوصی provider نمی‌شود.
 
 **نتیجهٔ فعلی مرحلهٔ ۰:** بخش history hygiene، branch refs و CI روی SHA نهایی
 انجام شده است؛ خود مرحله هنوز به‌طور کامل بسته نیست. خروجی‌های باقی‌مانده:

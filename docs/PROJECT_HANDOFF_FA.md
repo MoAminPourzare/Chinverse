@@ -4,12 +4,13 @@
 
 > **به‌روزرسانی اجرایی ۲۴ اوت ۲۰۲۶:** snapshot قدیمی بالا دیگر وضعیت جاری نیست.
 > history شاخه‌های publishable با مجوز صاحب پروژه بازنویسی و با
-> `--force-with-lease` روی remote ثبت شده است. شاخهٔ محلی و remote فعلی
-> `codex/phase-8-beta-release` روی `7406c9c403026bde6dc7e65c47bb8ac1e01cb5f3`
-> و `main` روی `bd7b016edede215885f495370b1976a230d3a996` هستند.
+> `--force-with-lease` روی remote ثبت شده است. HEAD مستندات شاخهٔ محلی و remote
+> `codex/phase-8-beta-release` روی `966b4340545374db03c718657f9fe4bd5c143aba` است؛
+> آخرین SHA کد/CI-tested `7238566467d821bd9acce70a6bf7441a06a2cd16` و `main` روی
+> `bd7b016edede215885f495370b1976a230d3a996` است.
 > frontend زنده `bd7b016...` و backend زنده `3b3a918...` را گزارش می‌کنند؛ پس
-> promotion همان SHA فاز ۸ هنوز اثبات نشده است. CI پس از اصلاح دو شکست cross-platform
-> باید دوباره سبز شود و ruleset/required checks نیازمند ثبت توسط صاحب repository است.
+> promotion همان SHA فاز ۸ هنوز اثبات نشده است. Quality Gates روی SHA کد سبز است؛
+> ruleset/required checks نیازمند ثبت توسط صاحب repository است.
 > برای ادامه، [برنامهٔ مرحله‌ای انتشار](E:/Chinverse/docs/LAUNCH_READINESS_ACTION_PLAN_FA.md)
 > مرجع عملیاتی است.
 

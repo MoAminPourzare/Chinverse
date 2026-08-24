@@ -81,7 +81,7 @@
 3. GitHub، Vercel و Hugging Face به commitهای ثبت‌شده در گزارش نهایی اشاره کنند.
 4. production عمومی ایجاد یا indexable نشود.
 
-## ممیزی اجرایی تکمیلی — ۲۴ اوت ۲۰۲۶
+## ممیزی اجرایی تکمیلی — ۲۴ اوت ۲۰۲۶ (پیش از مجوز rewrite)
 
 این سند baseline تاریخی فاز صفر است؛ وضعیت اجرای فعلی در
 `docs/LAUNCH_READINESS_ACTION_PLAN_FA.md` ثبت می‌شود. در ممیزی تکمیلی:
@@ -106,8 +106,9 @@
   no-op تبدیل شده است؛ `git grep --all` برای داده‌های شخصی و
   `DISPLAY_NAME_UPDATES` در refهای قابل‌دسترسی پاک است.
 - شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
-  `--force-with-lease` روی remote ثبت شدند. SHA شاخهٔ phase 8 برابر
-  `7406c9c403026bde6dc7e65c47bb8ac1e01cb5f3` و SHA `main` برابر
+  `--force-with-lease` روی remote ثبت شدند. HEAD مستندات شاخهٔ phase 8 برابر
+  `966b4340545374db03c718657f9fe4bd5c143aba`، آخرین SHA کد/CI-tested برابر
+  `7238566467d821bd9acce70a6bf7441a06a2cd16` و SHA `main` برابر
   `bd7b016edede215885f495370b1976a230d3a996` است؛ remote tag وجود ندارد.
 - bundle پیش از rewrite برای بازیابی محلی در
   `.backups/phase0-history-rewrite-20260824/before.bundle` نگه‌داری شده و
@@ -129,3 +130,7 @@
   `spaces/MoAmin9/chinverse-api` و claimهای repository/branch/workflow متناظر با
   `MoAminPourzare/Chinverse`، `codex/phase-8-beta-release` و
   `deploy-hf-space.yml` ثبت شود؛ این اقدام خارج از دسترسی محلی این نشست است.
+- در سابقهٔ عمومی workflow، deploy phase 7 نیز در همان گام mirror شکست خورده،
+  درحالی‌که deployهای phase 4 و phase 5 سبز بوده‌اند؛ این الگو با محدودیت claim
+  branch/workflow در Trusted Publisher سازگار است، اما log خصوصی provider باید
+  علت را قطعی کند.
