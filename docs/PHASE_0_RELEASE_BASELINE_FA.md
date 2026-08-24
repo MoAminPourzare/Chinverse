@@ -80,3 +80,22 @@
 2. هر دو health endpoint محیط `staging`، نسخه release و noindex را گزارش کنند.
 3. GitHub، Vercel و Hugging Face به commitهای ثبت‌شده در گزارش نهایی اشاره کنند.
 4. production عمومی ایجاد یا indexable نشود.
+
+## ممیزی اجرایی تکمیلی — ۲۴ اوت ۲۰۲۶
+
+این سند baseline تاریخی فاز صفر است؛ وضعیت اجرای فعلی در
+`docs/LAUNCH_READINESS_ACTION_PLAN_FA.md` ثبت می‌شود. در ممیزی تکمیلی:
+
+- guard tree-level privacy و release سبز است؛ فایل‌های runtime، env خصوصی و
+  artifact دیتابیس در tree فعلی tracked نیستند. strict history guard عمداً fail
+  می‌شود، چون دو commit قابل‌دسترسی هنوز migration قدیمی display-name را دارند.
+- frontend و backend قرارداد staging/noindex و featureهای ناقص را enforce می‌کنند؛
+  backend `/health` نیز اکنون `indexable` را صریحاً گزارش می‌کند.
+- deploy workflow دیگر به branch بازنشستهٔ فاز ۷ قفل نیست و SHA را نسبت به
+  `release_ref` بررسی می‌کند.
+- commit فاز ۸ هنوز روی remote/main نیست و live deployment با همان SHA ثبت نشده است.
+- history قابل‌دسترسی هنوز یک migration قدیمی با دادهٔ display-name دارد؛
+  history rewrite و force-push فقط پس از تأیید مالک پروژه انجام می‌شود.
+
+بنابراین اصلاحات کدی فاز صفر انجام شده، اما خروج فاز صفر تا تکمیل history hygiene،
+ruleset/branch protection و promotion قابل‌ردیابی هنوز باز است.

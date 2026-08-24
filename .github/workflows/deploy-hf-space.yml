@@ -2,8 +2,12 @@ name: Deploy staging backend
 
 on:
   push:
-    branches: ["codex/phase-7-performance-operations"]
+    branches:
+      - main
+      - "codex/release-*"
+      - "codex/phase-8-beta-release"
     paths:
+      - .github/workflows/deploy-hf-space.yml
       - backend/.dockerignore
       - backend/Dockerfile
       - backend/alembic.ini
@@ -19,6 +23,10 @@ on:
     inputs:
       release_sha:
         description: Full Git commit SHA whose backend tree should be deployed
+        required: true
+        type: string
+      release_ref:
+        description: Release branch containing the immutable SHA
         required: true
         type: string
 
@@ -39,6 +47,7 @@ jobs:
     env:
       HF_OIDC_RESOURCE: spaces/MoAmin9/chinverse-api
       RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+      RELEASE_REF: ${{ inputs.release_ref || github.ref_name }}
       STAGING_BASE_URL: https://moamin9-chinverse-api.hf.space
     steps:
       - name: Validate release SHA
@@ -60,7 +69,15 @@ jobs:
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-          git merge-base --is-ancestor "$RELEASE_SHA" "origin/codex/phase-7-performance-operations"
+          case "$RELEASE_REF" in
+            main|codex/release-*|codex/phase-8-beta-release) ;;
+            *)
+              echo "Unsupported release ref: ${RELEASE_REF}" >&2
+              exit 1
+              ;;
+          esac
+          git fetch --no-tags origin "$RELEASE_REF"
+          git merge-base --is-ancestor "$RELEASE_SHA" "origin/$RELEASE_REF"
 
       - name: Require successful quality gates for this exact release
         shell: bash
@@ -118,7 +135,9 @@ jobs:
           for attempt in $(seq 1 80); do
             payload="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${STAGING_BASE_URL}/health" || true)"
             deployed_sha="$(jq -r '.release // "missing"' <<<"$payload" 2>/dev/null || echo missing)"
-            if [[ "$deployed_sha" == "$RELEASE_SHA" ]]; then
+            if [[ "$deployed_sha" == "$RELEASE_SHA" ]] && jq -e \
+              '.status == "ok" and .deployment_tier == "staging" and .indexable == false' \
+              <<<"$payload" >/dev/null; then
               ready_payload="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${STAGING_BASE_URL}/health/ready" || true)"
               if jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready_payload" >/dev/null; then
                 exit 0

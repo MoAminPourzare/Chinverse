@@ -168,6 +168,7 @@ async def health_check():
         "status": "ok",
         "service": "chinverse-api",
         "deployment_tier": settings.DEPLOYMENT_TIER.lower(),
+        "indexable": settings.IS_PUBLIC_RELEASE,
         "release": deployed_release_sha,
     }
 

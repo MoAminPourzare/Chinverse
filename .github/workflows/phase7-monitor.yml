@@ -69,7 +69,7 @@ jobs:
           }
 
           curl_json backend-health "${BACKEND_BASE_URL}/health"
-          jq -e '.status == "ok" and .deployment_tier == "staging"' \
+          jq -e '.status == "ok" and .deployment_tier == "staging" and .indexable == false' \
             "${work_dir}/backend-health.json" >/dev/null
           if [[ -n "${EXPECTED_BACKEND_RELEASE:-}" ]]; then
             jq -e --arg release "$EXPECTED_BACKEND_RELEASE" '.release == $release' \
@@ -85,7 +85,7 @@ jobs:
             frontend_headers=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
           fi
           curl_json frontend-health "$FRONTEND_HEALTH_URL" "${frontend_headers[@]}"
-          jq -e '.status == "ok" and .deployment_tier == "staging"' \
+          jq -e '.status == "ok" and .deployment_tier == "staging" and .indexable == false' \
             "${work_dir}/frontend-health.json" >/dev/null
           if [[ -n "${EXPECTED_FRONTEND_RELEASE:-}" ]]; then
             jq -e --arg release "$EXPECTED_FRONTEND_RELEASE" '.release == $release' \

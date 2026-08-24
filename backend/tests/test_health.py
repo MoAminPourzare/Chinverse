@@ -32,6 +32,7 @@ async def test_health_endpoint_and_security_headers():
         "status": "ok",
         "service": "chinverse-api",
         "deployment_tier": "staging",
+        "indexable": False,
         "release": "local",
     }
     assert response.headers["x-content-type-options"] == "nosniff"
