@@ -21,11 +21,22 @@ if ($record.schema_version -ne 1) {
 
 foreach ($field in @("open_p0", "open_p1", "known_critical", "known_high")) {
     $value = $record.release_condition.$field
-    if ($null -eq $value -or $value -isnot [int] -or $value -lt 0) {
+    # ConvertFrom-Json materializes JSON integers as Int64 on PowerShell 7
+    # (including pwsh on Ubuntu), while Windows PowerShell commonly yields
+    # Int32.  Validate the JSON number semantically instead of relying on one
+    # CLR width so this gate behaves identically on every runner.
+    $parsedValue = 0L
+    $isInteger = $null -ne $value -and [long]::TryParse(
+        [string]$value,
+        [Globalization.NumberStyles]::Integer,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [ref]$parsedValue
+    )
+    if (-not $isInteger -or $parsedValue -lt 0) {
         throw "Release condition '$field' must be a non-negative integer."
     }
-    if ($value -ne 0) {
-        throw "Phase 8 release is blocked by $field=$value."
+    if ($parsedValue -ne 0) {
+        throw "Phase 8 release is blocked by $field=$parsedValue."
     }
 }
 
