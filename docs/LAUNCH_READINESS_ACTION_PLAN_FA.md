@@ -6,7 +6,7 @@
 **آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۸-۲۴
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
-**نتیجهٔ فعلی:** release candidate محلی؛ برای production عمومی آماده نیست.
+**نتیجهٔ فعلی:** release candidate روی remote؛ برای production عمومی آماده نیست.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -24,7 +24,7 @@
 | حوزه | وضعیت | توضیح کوتاه |
 |---|---|---|
 | تست محلی | ✅ | backend: `174 passed`، frontend: `84 passed`، typecheck/lint/build موفق |
-| شاخه و CI | ⛔ | commit فاز ۸ هنوز روی remote/default branch نیست؛ deploy workflow به فاز ۷ قفل است |
+| شاخه و CI | 🔶 | history و refها روی remote ثبت‌اند و Quality Gates سبز است؛ mirror به HF به تنظیم provider نیاز دارد |
 | دیتابیس | 🔶 | DB محلی روی `b5e7c9d1f3a2` است؛ head فاز ۸ باید `f8a1b2c3d4e5` شود |
 | staging با همین SHA | ⛔ | health، smoke و readiness برای نسخهٔ فعلی ثبت نشده است |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
@@ -60,7 +60,7 @@
 
 | مرحله | عنوان | وضعیت فعلی | پیش‌نیاز | خروجی اجباری |
 |---|---|---|---|---|
-| ۰ | نسخه و CI/deploy | 🔶 اصلاح محلی؛ external pending | دسترسی Git/CI | SHA remote و pipeline سبز |
+| ۰ | نسخه و CI/deploy | 🔶 history/refs انجام شد؛ CI و promotion باز | دسترسی GitHub/provider | SHA remote، pipeline سبز و deploy همان SHA |
 | ۱ | دیتابیس و restore | ⛔ باز | مرحلهٔ ۰ | schema head و restore قابل‌بازسازی |
 | ۲ | staging | ⛔ باز | مرحلهٔ ۱ | health/readiness و smoke با SHA یکسان |
 | ۳ | عملیات | 🔶 evidence ناقص | مرحلهٔ ۲ | Sentry، load/soak، alert و rollback evidence |
@@ -86,7 +86,7 @@
 
 **فرمان درخواست این مرحله:** `مرحلهٔ ۰ را انجام بده`
 
-#### گزارش اجرای مرحلهٔ ۰ — ۲۰۲۶-۰۸-۲۴
+#### گزارش اولیهٔ اجرای مرحلهٔ ۰ — ۲۰۲۶-۰۸-۲۴ (پیش از rewrite)
 
 - [x] guard privacy/release روی tree فعلی اجرا شد و tracked upload، env خصوصی،
   artifact دیتابیس و secret pattern شناخته‌شده پیدا نشد.
@@ -110,10 +110,44 @@
 - [ ] deploy و health/readiness با SHA فعلی فاز ۸ انجام نشده؛ URLهای زنده فعلی
   releaseهای قدیمی‌تر را گزارش می‌کنند.
 
-**نتیجهٔ مرحلهٔ ۰:** اصلاحات محلی و guardهای جدید انجام شد، اما مرحله هنوز
-**کامل نیست**. چهار blocker بیرونی/حساس باقی است: history rewrite، ruleset/merge
-روی remote، promotion با SHA دقیق و deploy واقعی. تا رفع آن‌ها مرحلهٔ ۱ را روی
-production یا DB زنده شروع نکن.
+این گزارش اولیه عمداً وضعیت قبل از دریافت مجوز rewrite را نگه می‌دارد. نتیجهٔ
+اجرایی جدید در الحاقیهٔ زیر ثبت شده است.
+
+#### الحاقیهٔ پس از مجوز history rewrite — ۲۰۲۶-۰۸-۲۴
+
+- [x] تاریخچهٔ تمام شاخه‌های publishable با حفظ migration به‌صورت no-op بازنویسی
+  شد؛ محتوای personal-data migration در refهای قابل‌دسترسی پیدا نمی‌شود.
+- [x] شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
+  `--force-with-lease` و leaseهای دقیق روی GitHub push شدند. `codex/phase-8-beta-release`
+  روی `7406c9c403026bde6dc7e65c47bb8ac1e01cb5f3` و `main` روی
+  `bd7b016edede215885f495370b1976a230d3a996` قرار دارد؛ tag قابل‌انتشار وجود ندارد.
+- [x] قبل از rewrite یک bundle بازیابی محلی در
+  `.backups/phase0-history-rewrite-20260824/before.bundle` نگه داشته شد؛ این فایل
+  عمداً به remote push نشده است.
+- [ ] ruleset و required checks شاخهٔ `main` هنوز از GitHub قابل‌اثبات نیست؛
+  endpoint عمومی ruleset آرایهٔ خالی برگرداند و classic protection نیازمند بررسی
+  صاحب repository است.
+- [ ] staging هنوز با همان SHA نهایی phase 8 promote نشده است: frontend فعلی
+  `bd7b016...` و backend فعلی `3b3a918...` را گزارش می‌کنند.
+- [x] دو نقص CI اصلاح شد: parser عددی `verify-phase8-release.ps1` با
+  PowerShell 7/Linux سازگار شد، pip در lockfile به `26.2.1` رفت و guard قدیمی
+  فاز ۷ در `verify_phase7_operations.py` با refهای release هماهنگ شد.
+- [x] Quality Gates روی SHA نهایی `7238566467d821bd9acce70a6bf7441a06a2cd16`
+  در [run 32766872810](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872810)
+  سبز شد (Release baseline، Backend، Frontend و browser tests).
+- [ ] Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
+  در گام `Mirror backend to staging Space` شکست خورد؛ گام health اجرا نشد و
+  هیچ ادعایی دربارهٔ deploy این SHA ثبت نمی‌کنیم.
+- [ ] روی Hugging Face باید Trusted Publisher برای resource
+  `spaces/MoAmin9/chinverse-api` با claimهای دقیق repository=`MoAminPourzare/Chinverse`،
+  branch=`codex/phase-8-beta-release` و workflow=`deploy-hf-space.yml` ثبت شود؛
+  این تنظیم در حساب provider از این محیط قابل انجام/تأیید نیست.
+
+**نتیجهٔ فعلی مرحلهٔ ۰:** بخش history hygiene، branch refs و CI روی SHA نهایی
+انجام شده است؛ خود مرحله هنوز به‌طور کامل بسته نیست. خروجی‌های باقی‌مانده:
+Trusted Publisher/مجوز Space، promotion و health واقعی staging با همان SHA، و
+ثبت ruleset/required checks توسط صاحب repository. تا ثبت این evidence، مرحلهٔ ۱
+را روی production یا DB زنده شروع نکن.
 
 فرمان‌های پایه (بدون secret):
 

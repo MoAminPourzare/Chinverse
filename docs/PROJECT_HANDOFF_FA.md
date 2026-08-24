@@ -3,12 +3,21 @@
 > این فایل برای شروع یک چت یا یک Codex جدید نوشته شده است. قبل از هر تغییر، وضعیت Git و فایل‌های همین repository را دوباره بررسی کن؛ این سند snapshot وضعیت پروژه در **۲۱ اوت ۲۰۲۶ / ۳۰ مرداد ۱۴۰۵** است و جایگزین خواندن کد نیست.
 
 > **به‌روزرسانی اجرایی ۲۴ اوت ۲۰۲۶:** snapshot قدیمی بالا دیگر وضعیت جاری نیست.
-> در زمان آخرین ممیزی، branch محلی `codex/phase-8-beta-release` و SHA برابر
-> commit اصلاحات مرحلهٔ ۰ در `HEAD` محلی ثبت شده، اما هنوز روی remote/main نیست.
-> frontend و backend زنده همچنان releaseهای قدیمی‌تر را گزارش می‌کنند.
-> مرحلهٔ ۰ فقط پس از رفع blockerهای history، ruleset و promotion قابل اعلام به‌عنوان
-> کامل است. برای ادامه، [برنامهٔ مرحله‌ای انتشار](E:/Chinverse/docs/LAUNCH_READINESS_ACTION_PLAN_FA.md)
+> history شاخه‌های publishable با مجوز صاحب پروژه بازنویسی و با
+> `--force-with-lease` روی remote ثبت شده است. شاخهٔ محلی و remote فعلی
+> `codex/phase-8-beta-release` روی `7406c9c403026bde6dc7e65c47bb8ac1e01cb5f3`
+> و `main` روی `bd7b016edede215885f495370b1976a230d3a996` هستند.
+> frontend زنده `bd7b016...` و backend زنده `3b3a918...` را گزارش می‌کنند؛ پس
+> promotion همان SHA فاز ۸ هنوز اثبات نشده است. CI پس از اصلاح دو شکست cross-platform
+> باید دوباره سبز شود و ruleset/required checks نیازمند ثبت توسط صاحب repository است.
+> برای ادامه، [برنامهٔ مرحله‌ای انتشار](E:/Chinverse/docs/LAUNCH_READINESS_ACTION_PLAN_FA.md)
 > مرجع عملیاتی است.
+
+> **نتیجهٔ ادامهٔ کار:** Quality Gates روی SHA
+> `7238566467d821bd9acce70a6bf7441a06a2cd16` در run `32766872810` سبز شد؛
+> deploy run `32766872815` فقط در mirror به Hugging Face شکست خورد. برای retry باید
+> Trusted Publisher مربوط به `spaces/MoAmin9/chinverse-api` با repository/branch/workflow
+> جدید در حساب Hugging Face ثبت شود. تا آن زمان backend زنده همان `3b3a918...` است.
 
 ## ۱. خلاصه فوری
 
@@ -113,10 +122,10 @@ assistive technology دستی است؛ ۳۵۰ بازبینی provenance انسا
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-7-performance-operations`؛ release candidate محلی |
+| branch کاری | `codex/phase-8-beta-release`؛ SHA فعلی `7238566467d821bd9acce70a6bf7441a06a2cd16` |
 | frontend staging/preview | [stable branch URL فاز شش](https://chinverse-git-codex-phase-6-mobile-ux-death-stroke.vercel.app)؛ deployment=`FpnJXHMegQdxiceuU1WutAAnNdCJ` و [generated URL](https://chinverse-nndh54sbt-death-stroke.vercel.app)، محافظت‌شده با SSO |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
-| backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space) |
+| backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space)؛ فعلاً release قدیمی `3b3a918...` |
 | database target | Neon staging؛ migration فاز پنج تا head=`b5e7c9d1f3a2` هنگام startup موفق و readiness دیتابیس `ok` است |
 | فایل staging | bucket خصوصی `MoAmin9/chinverse-api-storage` با mount در `/data` |
 | ویدئو | Arvan VOD/HLS برای نمونه‌های فعلی |

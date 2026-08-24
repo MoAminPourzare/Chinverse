@@ -97,5 +97,35 @@
 - history قابل‌دسترسی هنوز یک migration قدیمی با دادهٔ display-name دارد؛
   history rewrite و force-push فقط پس از تأیید مالک پروژه انجام می‌شود.
 
-بنابراین اصلاحات کدی فاز صفر انجام شده، اما خروج فاز صفر تا تکمیل history hygiene،
-ruleset/branch protection و promotion قابل‌ردیابی هنوز باز است.
+بنابراین اصلاحات کدی فاز صفر انجام شده، اما این بخش از گزارش مربوط به وضعیت قبل
+از دریافت مجوز rewrite است. الحاقیهٔ اجرایی زیر وضعیت فعلی را ثبت می‌کند.
+
+## الحاقیهٔ اجرایی پس از rewrite — ۲۴ اوت ۲۰۲۶
+
+- history تمام refهای publishable بازنویسی شد و migration قدیمی به revision
+  no-op تبدیل شده است؛ `git grep --all` برای داده‌های شخصی و
+  `DISPLAY_NAME_UPDATES` در refهای قابل‌دسترسی پاک است.
+- شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
+  `--force-with-lease` روی remote ثبت شدند. SHA شاخهٔ phase 8 برابر
+  `7406c9c403026bde6dc7e65c47bb8ac1e01cb5f3` و SHA `main` برابر
+  `bd7b016edede215885f495370b1976a230d3a996` است؛ remote tag وجود ندارد.
+- bundle پیش از rewrite برای بازیابی محلی در
+  `.backups/phase0-history-rewrite-20260824/before.bundle` نگه‌داری شده و
+  به remote منتقل نشده است.
+- health زنده هنوز deploy همان SHA phase 8 را اثبات نمی‌کند: frontend روی
+  `bd7b016...` و backend روی `3b3a918...` است. ruleset/required checks نیز باید
+  از حساب صاحب repository ثبت و قابل‌مشاهده شود.
+
+### نتیجهٔ CI و provider — ۲۴ اوت ۲۰۲۶
+
+- Quality Gates برای SHA نهایی `7238566467d821bd9acce70a6bf7441a06a2cd16` در
+  [run 32766872810](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872810)
+  سبز شد؛ baseline، backend، migration rollback/rebuild، frontend و browser tests
+  همگی موفق بودند.
+- Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
+  در گام mirror به Hugging Face شکست خورد و health همان SHA اجرا نشد. Space عمومی
+  هنوز release قدیمی `3b3a918...` را گزارش می‌کند.
+- برای ادامهٔ deploy، Trusted Publisher در تنظیمات Space باید با resource
+  `spaces/MoAmin9/chinverse-api` و claimهای repository/branch/workflow متناظر با
+  `MoAminPourzare/Chinverse`، `codex/phase-8-beta-release` و
+  `deploy-hf-space.yml` ثبت شود؛ این اقدام خارج از دسترسی محلی این نشست است.
