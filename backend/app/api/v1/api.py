@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust
+from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust, beta
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -46,6 +46,12 @@ api_router.include_router(daily_activity.router, prefix="/daily-activity", tags=
 # ===== REFERRALS =====
 if settings.FEATURE_REFERRALS_ENABLED:
     api_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+
+# ===== CLOSED BETA =====
+# Keep the status endpoint discoverable for the client while it is disabled;
+# all write paths fail closed in the dependency/service layer.
+api_router.include_router(beta.router)
+api_router.include_router(beta.admin_router)
 
 # ===== SUBSCRIPTIONS =====
 if settings.FEATURE_SUBSCRIPTIONS_ENABLED:

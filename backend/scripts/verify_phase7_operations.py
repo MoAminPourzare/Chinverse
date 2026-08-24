@@ -99,19 +99,29 @@ def main() -> int:
     require(
         quality_workflow.count(
             "poetry run python scripts/verify_phase5_schema.py\n"
-            "          poetry run python scripts/verify_phase7_schema.py"
+            "          poetry run python scripts/verify_phase7_schema.py\n"
+            "          poetry run python scripts/verify_phase8_schema.py"
         )
         == 2,
-        "CI Phase 7 schema verification must follow Phase 5 verification in both migration passes",
+        "CI Phase 7/8 schema verification must follow Phase 5 verification in both migration passes",
     )
     require(
         local_gate.count("& $Python scripts\\verify_phase7_schema.py") == 2,
         "Local gate must execute the Phase 7 schema verifier after fresh upgrade and rollback rebuild",
     )
     require(
+        local_gate.count("& $Python scripts\\verify_phase8_schema.py") == 2,
+        "Local gate must execute the Phase 8 schema verifier after fresh upgrade and rollback rebuild",
+    )
+    require(
         'Assert-NativeSuccess "Phase 7 schema invariants"' in local_gate
         and 'Assert-NativeSuccess "Post-rebuild phase 7 schema invariants"' in local_gate,
         "Local gate does not fail fast for both Phase 7 schema verification passes",
+    )
+    require(
+        'Assert-NativeSuccess "Phase 8 schema invariants"' in local_gate
+        and 'Assert-NativeSuccess "Post-rebuild phase 8 schema invariants"' in local_gate,
+        "Local gate does not fail fast for both Phase 8 schema verification passes",
     )
 
     for path in (phase_path, rollback_path):

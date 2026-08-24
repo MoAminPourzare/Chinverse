@@ -1,0 +1,149 @@
+name: Phase 8 production release gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full lowercase Git SHA that already passed Quality Gates
+        required: true
+        type: string
+      rollout_percent:
+        description: Percentage of the approved cohort to expose
+        required: true
+        type: choice
+        options: ["5", "25", "50", "100"]
+        default: "5"
+      confirm_public:
+        description: Required only for the 100% public rollout
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: phase8-production-release
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+  issues: read
+
+jobs:
+  gate:
+    name: Verify immutable release and production health
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      ROLLOUT_PERCENT: ${{ inputs.rollout_percent }}
+      CONFIRM_PUBLIC: ${{ inputs.confirm_public }}
+      FRONTEND_HEALTH_URL: ${{ vars.PHASE8_FRONTEND_HEALTH_URL }}
+      BACKEND_HEALTH_URL: ${{ vars.PHASE8_BACKEND_HEALTH_URL }}
+    steps:
+      - name: Validate immutable SHA and rollout confirmation
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "release_sha must be a full lowercase SHA" >&2; exit 1; }
+          [[ "$ROLLOUT_PERCENT" =~ ^(5|25|50|100)$ ]] || { echo "unsupported rollout percentage" >&2; exit 1; }
+          if [[ "$ROLLOUT_PERCENT" == "100" && "$CONFIRM_PUBLIC" != "true" ]]; then
+            echo "100% rollout requires confirm_public=true" >&2
+            exit 1
+          fi
+
+      - name: Checkout exact release for ancestry check
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.release_sha }}
+
+      - name: Require successful Quality Gates for this SHA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          git merge-base --is-ancestor "$RELEASE_SHA" origin/main
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/quality-gates.yml/runs?event=push&head_sha=${RELEASE_SHA}&per_page=20"
+          payload="$(curl --fail --silent --show-error -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$api")"
+          conclusion="$(jq -r '[.workflow_runs[] | select(.head_sha == env.RELEASE_SHA)] | sort_by(.created_at) | last | if . == null then "missing" elif .status != "completed" then .status else .conclusion end' <<<"$payload")"
+          [[ "$conclusion" == "success" ]] || { echo "Quality Gates for $RELEASE_SHA: $conclusion" >&2; exit 1; }
+
+      - name: Verify release blockers and required provider evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          record = json.loads(Path("docs/PHASE_8_RELEASE_BLOCKERS.json").read_text(encoding="utf-8"))
+          condition = record["release_condition"]
+          for key in ("open_p0", "open_p1", "known_critical", "known_high"):
+              if condition.get(key) != 0:
+                  raise SystemExit(f"release blocked: {key}={condition.get(key)}")
+          pending = []
+          invalid = []
+          for gate in record["provider_gates"]:
+              status = gate.get("status")
+              if status == "pending":
+                  pending.append(gate.get("id", "<unknown>"))
+              elif status == "verified":
+                  if not gate.get("evidence") or not gate.get("verified_at"):
+                      invalid.append(gate.get("id", "<unknown>"))
+              elif status == "waived":
+                  if not gate.get("waiver") or not gate.get("waived_by"):
+                      invalid.append(gate.get("id", "<unknown>"))
+              else:
+                  invalid.append(gate.get("id", "<unknown>"))
+          if pending:
+              raise SystemExit("provider evidence is pending: " + ", ".join(pending))
+          if invalid:
+              raise SystemExit("provider evidence records are incomplete: " + ", ".join(invalid))
+          PY
+
+      - name: Verify GitHub has no open P0/P1 issues
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          open_blockers="$(gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+            --jq '.[] | select(.pull_request == null) | select(any(.labels[]?.name; test("(^|[^A-Za-z0-9])(P0|P1|Critical|High)([^A-Za-z0-9]|$)"; "i"))) | ("#" + (.number|tostring))')"
+          if [[ -n "$open_blockers" ]]; then
+            echo "Open P0/P1/Critical/High issue(s) block release: $open_blockers" >&2
+            exit 1
+          fi
+
+      - name: Probe production frontend and backend release
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in "$FRONTEND_HEALTH_URL" "$BACKEND_HEALTH_URL"; do
+            [[ "$url" =~ ^https://[^/?#]+(/[^?#]*)?$ ]] || { echo "Production health URL must be HTTPS without query/fragment" >&2; exit 1; }
+          done
+          frontend="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "$FRONTEND_HEALTH_URL")"
+          backend="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "$BACKEND_HEALTH_URL")"
+          jq -e --arg sha "$RELEASE_SHA" '.status == "ok" and .deployment_tier == "production" and .release == $sha' <<<"$frontend" >/dev/null
+          jq -e --arg sha "$RELEASE_SHA" '.status == "ok" and .deployment_tier == "production" and .release == $sha' <<<"$backend" >/dev/null
+          ready="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${BACKEND_HEALTH_URL%/}/ready")"
+          jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready" >/dev/null
+
+      - name: Publish rollout summary
+        shell: bash
+        run: |
+          {
+            echo "### Phase 8 production release gate"
+            echo
+            echo "- Release SHA: `${RELEASE_SHA}`"
+            echo "- Rollout: `${ROLLOUT_PERCENT}%`"
+            echo "- Public confirmation: `${CONFIRM_PUBLIC}`"
+            echo "- Health/readiness: passed"
+            echo
+            echo "Continue observation and use docs/PHASE_8_RELEASE_RUNBOOK_FA.md for rollback."
+          } >> "$GITHUB_STEP_SUMMARY"

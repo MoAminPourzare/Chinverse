@@ -5,6 +5,7 @@ import {
     isRetryableStatus,
     parseBoundedInteger,
     parseRetryAfterMs,
+    shouldReplayAfterAuthRefresh,
     waitForDelay,
 } from "@/lib/requestPolicy";
 
@@ -13,6 +14,8 @@ describe("requestPolicy", () => {
         expect(isIdempotentMethod("GET")).toBe(true);
         expect(isIdempotentMethod("head")).toBe(true);
         expect(isIdempotentMethod("POST")).toBe(false);
+        expect(shouldReplayAfterAuthRefresh("GET")).toBe(true);
+        expect(shouldReplayAfterAuthRefresh("PATCH")).toBe(false);
         expect(isRetryableStatus(503)).toBe(true);
         expect(isRetryableStatus(429)).toBe(true);
         expect(isRetryableStatus(404)).toBe(false);

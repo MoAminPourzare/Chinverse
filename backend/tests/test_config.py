@@ -205,6 +205,37 @@ def test_phase7_operational_settings_are_bounded_and_fail_closed():
         )
 
 
+def test_phase8_beta_and_payment_settings_are_fail_closed():
+    closed = Settings(_env_file=None)
+    assert closed.FEATURE_BETA_ENABLED is False
+    assert closed.PAYMENT_PROVIDER == "disabled"
+
+    with pytest.raises(ValidationError, match="BETA_INVITE_HASH_SECRET"):
+        Settings(
+            _env_file=None,
+            FEATURE_BETA_ENABLED=True,
+            BETA_INVITE_REQUIRED=True,
+        )
+
+    with pytest.raises(ValidationError, match="BETA_ALLOWED_EMAILS"):
+        Settings(
+            _env_file=None,
+            BETA_ALLOWED_EMAILS="not-an-email",
+        )
+
+    with pytest.raises(ValidationError, match="PAYMENT_WEBHOOK_SECRET"):
+        Settings(
+            _env_file=None,
+            PAYMENT_PROVIDER="generic_hmac",
+        )
+
+    with pytest.raises(ValidationError, match="FEATURE_SUBSCRIPTIONS_ENABLED"):
+        Settings(
+            _env_file=None,
+            FEATURE_SUBSCRIPTIONS_ENABLED=True,
+        )
+
+
 def test_production_runtime_accepts_mounted_storage_only_for_staging_tier():
     staging = Settings(
         _env_file=None,

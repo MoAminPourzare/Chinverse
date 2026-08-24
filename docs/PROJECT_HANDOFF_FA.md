@@ -626,12 +626,21 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 
 ### فاز هشت: beta و انتشار عمومی
 
-- بتای بسته و جمع‌آوری feedback
+- کنترل بتای بسته در migration head `f8a1b2c3d4e5` شامل allowlist/rollout
+  deterministic، دعوت HMAC با قابلیت revoke/expiry، consent نسخه‌دار و feedback
+  ساختاریافته با triage ادمین است؛ UI مسیر `/beta-feedback` نیز fail-closed است.
+- درگاه پرداخت در کد فقط provider boundary و webhook ledger امضاشده/idempotent
+  دارد؛ checkout واقعی و صدور entitlement عمداً تا نصب آداپتور provider و sandbox
+  smoke خاموش است.
 - production Neon و storage جدا
 - دامنه اصلی، DNS/WAF، email/SMS، Turnstile و درگاه واقعی
 - legal approval، backup drill و incident runbook
 - rollout مرحله‌ای و rollback آماده
 - شرط انتشار: هیچ P0/P1 باز و هیچ Critical/High شناخته‌شده
+
+جزئیات و blockerهای جاری در `docs/PHASE_8_BETA_RELEASE_FA.md` و
+`docs/PHASE_8_RELEASE_BLOCKERS.json` ثبت شده‌اند؛ تا provider evidenceها verified
+نشوند، این repository را نباید production-public اعلام کرد.
 
 ## ۱۴. فرمان‌های روزمره
 
@@ -695,9 +704,13 @@ restore فقط روی مقصد ایزوله انجام شود.
 - `docs/PHASE_6_MOBILE_UX_FA.md`: معیار پذیرش، پیاده‌سازی، تست‌های خودکار و blockerهای فاز شش
 - `docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md`: قرارداد performance/operations و شواهد فاز هفت
 - `docs/PHASE_7_ROLLBACK_RUNBOOK_FA.md`: alert، rollback و recovery staging
+- `docs/PHASE_8_BETA_RELEASE_FA.md`: قرارداد بتای بسته، provider gateها و staged rollout
+- `docs/PHASE_8_RELEASE_RUNBOOK_FA.md`: runbook انتشار مرحله‌ای، incident و rollback فاز هشت
+- `docs/PHASE_8_RELEASE_BLOCKERS.json`: وضعیت machine-readable شرط P0/P1 و provider evidence
 - `.github/workflows/quality-gates.yml`: pipeline اصلی
 - `scripts/check.ps1`: gate محلی
 - `scripts/check-release-baseline.ps1`: privacy/release guard
+- `scripts/verify-phase8-release.ps1`: fail-closed gate پیش از promotion production
 - `backend/app/core/config.py`: قرارداد تنظیمات و fail-closed production
 - `backend/app/core/storage.py`, `backend/app/core/uploads.py`, `backend/app/core/paths.py`: فایل و storage
 - `backend/app/api/v1/api.py`: ثبت routerهای API
@@ -724,5 +737,8 @@ alert و rollback/restore پیاده و محلی پذیرفته شده است. f
 SDK و scrubber آماده اما بدون تأیید مالک/DSN خاموش است. promotion و شواهد زنده
 release را از `docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md` بخوان. evidence gapهای
 دستگاه واقعی/assistive technology فاز شش و ۳۷۹ finding ثبت‌شده provenance/content
-review مانع ادعای آمادگی انتشار عمومی‌اند. هیچ secretی را در چت یا Git ثبت نکن و
+review مانع ادعای آمادگی انتشار عمومی‌اند. کنترل‌های محلی فاز هشت (beta allowlist،
+feedback، blocker record و protected staged-release gate) در
+`docs/PHASE_8_BETA_RELEASE_FA.md` ثبت شده‌اند؛ تا وقتی provider gateهای آن سند
+pending هستند، rollout عمومی ممنوع است. هیچ secretی را در چت یا Git ثبت نکن و
 فقط از dashboard/secret manager استفاده کن.»

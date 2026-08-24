@@ -19,6 +19,13 @@ export const parseBoundedInteger = (
 export const isIdempotentMethod = (method: string | null | undefined) =>
     IDEMPOTENT_METHODS.has((method || "get").toLowerCase());
 
+// A 401 refresh may safely replay only a request whose method is idempotent.
+// Mutations must be surfaced to the caller after the session is refreshed;
+// replaying them could duplicate a charge, upload, or other write.
+export const shouldReplayAfterAuthRefresh = (
+    method: string | null | undefined,
+) => isIdempotentMethod(method);
+
 export const isRetryableStatus = (status: number | null | undefined) =>
     typeof status === "number" && RETRYABLE_STATUS_CODES.has(status);
 

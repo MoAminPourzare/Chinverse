@@ -159,6 +159,12 @@ export default function SubscriptionSettingsPage() {
                     </div>
                 )}
 
+                {!overview.payment.checkout_available && (
+                    <div className="rounded-[22px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-7 text-amber-800">
+                        {overview.payment.message}
+                    </div>
+                )}
+
                 {checkoutResult && (
                     <div className="rounded-[22px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-800">
                         <p className="font-black">سفارش پرداخت ساخته شد</p>
@@ -187,13 +193,15 @@ export default function SubscriptionSettingsPage() {
                         type="button"
                         className="w-full"
                         onClick={handleCheckout}
-                        disabled={!selectedPlan || isCheckingOut || overview.current_subscription?.plan_id === selectedPlan?.id}
+                        disabled={!overview.payment.checkout_available || !selectedPlan || isCheckingOut || overview.current_subscription?.plan_id === selectedPlan?.id}
                         leadingIcon={isCheckingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                     >
                         {overview.current_subscription?.plan_id === selectedPlan?.id
                             ? "این پلن فعال است"
                             : isCheckingOut
                               ? "در حال ساخت سفارش…"
+                              : !overview.payment.checkout_available
+                                ? "پرداخت هنوز فعال نیست"
                               : "ادامه و پرداخت"}
                     </PrimaryButton>
                 </div>

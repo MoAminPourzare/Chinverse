@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-24",
+  "release_condition": {
+    "open_p0": 0,
+    "open_p1": 0,
+    "known_critical": 0,
+    "known_high": 0
+  },
+  "provider_gates": [
+    {
+      "id": "phase7-live-promotion",
+      "status": "pending",
+      "owner": "release-operator",
+      "evidence": "docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md",
+      "exit_evidence": "Exact SHA is deployed to staging; health/readiness, smoke, load, soak and monitor recovery are green."
+    },
+    {
+      "id": "production-neon-storage",
+      "status": "pending",
+      "owner": "release-operator",
+      "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
+      "exit_evidence": "Production Neon branch and private object-storage bucket are separate from staging and restore drill is recorded."
+    },
+    {
+      "id": "production-domain-waf",
+      "status": "pending",
+      "owner": "release-operator",
+      "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
+      "exit_evidence": "DNS, TLS, WAF rules, origin restrictions and health checks are verified on the owned domain."
+    },
+    {
+      "id": "transactional-delivery-payments",
+      "status": "pending",
+      "owner": "release-operator",
+      "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
+      "exit_evidence": "Email/SMS and payment provider sandbox-to-live smoke tests, webhook signing and reconciliation evidence exist."
+    },
+    {
+      "id": "legal-beta-consent",
+      "status": "pending",
+      "owner": "project-owner",
+      "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
+      "exit_evidence": "Terms, privacy, refund and beta consent copy are approved and linked from the production shell."
+    }
+  ]
+}

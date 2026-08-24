@@ -19,6 +19,7 @@ type SettingsItem = {
     action?: "logout";
     auth?: "required" | "guest";
     feature?: IncompleteFeature;
+    beta?: boolean;
 };
 
 const settingsItems: SettingsItem[] = [
@@ -50,6 +51,13 @@ const settingsItems: SettingsItem[] = [
         title: "نصب و دسترسی آفلاین",
         href: "/settings/app",
         icon: "/assets/chinverse/icons/notification.svg",
+    },
+    {
+        title: "بازخورد بتای چین‌ورس",
+        href: "/beta-feedback",
+        icon: "/assets/chinverse/icons/Support & Help.svg",
+        auth: "required",
+        beta: true,
     },
     {
         title: "درباره چین ورس",
@@ -125,6 +133,7 @@ export default function SettingsPage() {
 
     const visibleItems = settingsItems.filter((item) => {
         if (item.feature && !releaseConfig.features[item.feature]) return false;
+        if (item.beta && !releaseConfig.betaEnabled) return false;
         if (!item.auth) return true;
         if (isAuthenticated === null) return false;
         return item.auth === "required" ? isAuthenticated : !isAuthenticated;

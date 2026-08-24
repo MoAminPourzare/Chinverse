@@ -29,6 +29,8 @@ export interface SubscriptionOverview {
     features: string[];
     payment: {
         gateway_configured: boolean;
+        provider: string;
+        checkout_available: boolean;
         message: string;
     };
 }

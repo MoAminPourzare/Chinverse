@@ -195,6 +195,22 @@ class Settings(BaseSettings):
     FEATURE_REFERRALS_ENABLED: bool = False
     FEATURE_POINTS_ENABLED: bool = False
 
+    # Phase 8 closed-beta controls. Safe defaults keep the API closed and
+    # prevent a frontend-only flag from granting access.
+    FEATURE_BETA_ENABLED: bool = False
+    BETA_INVITE_REQUIRED: bool = True
+    BETA_ALLOWED_EMAILS: str = ""
+    BETA_ROLLOUT_PERCENT: int = 0
+    BETA_INVITE_HASH_SECRET: str = ""
+    BETA_INVITE_TTL_DAYS: int = 14
+    BETA_CONSENT_VERSION: str = "beta-v1"
+
+    # Payment is fail-closed until a reviewed provider adapter and secret are
+    # installed. No fake checkout URL is generated for the disabled default.
+    PAYMENT_PROVIDER: str = "disabled"
+    PAYMENT_WEBHOOK_SECRET: str = ""
+    PAYMENT_RETURN_URL: str = ""
+
     @model_validator(mode="after")
     def validate_production_settings(self):
         environment = self.ENVIRONMENT.lower()
@@ -205,6 +221,7 @@ class Settings(BaseSettings):
         self.REFRESH_COOKIE_SAMESITE = self.REFRESH_COOKIE_SAMESITE.strip().lower()
         self.LOG_LEVEL = self.LOG_LEVEL.strip().upper()
         self.CHAT_REALTIME_BACKEND = self.CHAT_REALTIME_BACKEND.strip().lower()
+        self.PAYMENT_PROVIDER = self.PAYMENT_PROVIDER.strip().lower()
 
         if deployment_tier not in DEPLOYMENT_TIERS:
             raise ValueError(
@@ -216,6 +233,8 @@ class Settings(BaseSettings):
             errors.append("RATE_LIMIT_BACKEND must be either 'memory' or 'database'")
         if self.CHAT_REALTIME_BACKEND not in {"memory", "database"}:
             errors.append("CHAT_REALTIME_BACKEND must be either 'memory' or 'database'")
+        if self.PAYMENT_PROVIDER not in {"disabled", "generic_hmac"}:
+            errors.append("PAYMENT_PROVIDER must be disabled or generic_hmac")
         if self.LOG_LEVEL not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             errors.append("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
         if self.ALGORITHM not in {"HS256", "HS384", "HS512"}:
@@ -270,6 +289,7 @@ class Settings(BaseSettings):
             "CHAT_PRESENCE_TTL_SECONDS": self.CHAT_PRESENCE_TTL_SECONDS,
             "CHAT_SOCKET_SEND_TIMEOUT_SECONDS": self.CHAT_SOCKET_SEND_TIMEOUT_SECONDS,
             "CHAT_MAX_CONNECTIONS_PER_USER": self.CHAT_MAX_CONNECTIONS_PER_USER,
+            "BETA_INVITE_TTL_DAYS": self.BETA_INVITE_TTL_DAYS,
         }
         for name, value in positive_settings.items():
             if value <= 0:
@@ -338,6 +358,33 @@ class Settings(BaseSettings):
             errors.append("HEALTHCHECK_CACHE_TTL_SECONDS must not exceed 300")
         if self.CHAT_MAX_CONNECTIONS_PER_USER > 20:
             errors.append("CHAT_MAX_CONNECTIONS_PER_USER must not exceed 20")
+        if not 0 <= self.BETA_ROLLOUT_PERCENT <= 100:
+            errors.append("BETA_ROLLOUT_PERCENT must be between zero and one hundred")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}", self.BETA_CONSENT_VERSION.strip()):
+            errors.append("BETA_CONSENT_VERSION must be a non-empty version identifier")
+        beta_allowlist_items = [
+            item.strip()
+            for item in re.split(r"[,\n]", self.BETA_ALLOWED_EMAILS)
+            if item.strip()
+        ]
+        invalid_beta_allowlist_count = sum(
+            1
+            for item in beta_allowlist_items
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", item)
+        )
+        if invalid_beta_allowlist_count:
+            errors.append("BETA_ALLOWED_EMAILS contains invalid email entries")
+        if self.FEATURE_BETA_ENABLED and self.BETA_INVITE_REQUIRED:
+            if not self.BETA_INVITE_HASH_SECRET.strip():
+                errors.append(
+                    "BETA_INVITE_HASH_SECRET is required when the closed beta requires invites"
+                )
+            elif len(self.BETA_INVITE_HASH_SECRET) < 32:
+                errors.append("BETA_INVITE_HASH_SECRET must be at least 32 characters")
+        if self.PAYMENT_PROVIDER != "disabled" and len(self.PAYMENT_WEBHOOK_SECRET) < 32:
+            errors.append(
+                "PAYMENT_WEBHOOK_SECRET must be at least 32 characters when a provider is enabled"
+            )
         if self.MEDIA_SIGNING_KEY and len(self.MEDIA_SIGNING_KEY) < 32:
             errors.append("MEDIA_SIGNING_KEY must be at least 32 characters when set")
         if not 0.0 <= self.SENTRY_TRACES_SAMPLE_RATE <= 1.0:
@@ -353,6 +400,10 @@ class Settings(BaseSettings):
             environment in PRODUCTION_ENVIRONMENTS
             or deployment_tier == "production"
         )
+        if self.FEATURE_SUBSCRIPTIONS_ENABLED and self.PAYMENT_PROVIDER == "disabled":
+            errors.append(
+                "FEATURE_SUBSCRIPTIONS_ENABLED requires an explicit payment provider; disabled is not a release mode"
+            )
         if not is_production_runtime:
             if errors:
                 raise ValueError("Invalid configuration: " + "; ".join(errors))

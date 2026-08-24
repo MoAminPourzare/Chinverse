@@ -270,3 +270,28 @@ GET با نرخ ۱ req/s، صفر خطا، p50=`285.232ms`، p95/p99=`398.238ms`
 Sentry SDK و privacy gate بخشی از release هستند، اما ساخت org/project، ثبت DSN و
 ارسال تله‌متری تا تأیید صریح مالک غیرفعال است. این وضعیت نباید با «Sentry فعال»
 گزارش شود.
+
+## نتیجهٔ ممیزی تکمیلی پیش از فاز هشت (۲۴ اوت ۲۰۲۶)
+
+ممیزی read-only مستقل، حکم زیر را تأیید کرد: implementation، تست و gate محلی فاز
+هفت کامل است، اما operational/release exit هنوز کامل نیست. در نتیجهٔ ممیزی، یک
+نقص P2 در interceptor احراز هویت نیز پیدا و اصلاح شد: پس از refresh موفق، replay
+فقط برای GET/HEAD/OPTIONS مجاز است و mutationهای POST/PUT/PATCH/DELETE دیگر
+خودکار replay نمی‌شوند؛ regression آن در `frontend/src/lib/requestPolicy.test.ts`
+ثبت شده است.
+
+شواهد محلی تکمیلی: verifier فاز هفت موفق، تست‌های هدفمند backend برابر ۴۶ مورد
+سبز، typecheck و performance budget فرانت سبز. بااین‌حال promotion همان SHA به
+staging، deploy/health واقعی HF و Vercel، JSONهای load/soak، اجرای monitor و
+alert/recovery، Neon restore/rollback و Sentry DSN همچنان pending هستند. بنابراین
+وضعیت فاز هفت در این سند «local implementation complete؛ production promotion
+evidence pending» است، نه انتشار عملیاتی.
+
+## شواهد نهایی مشترک با فاز هشت (۲۴ اوت ۲۰۲۶)
+
+پس از اضافه‌شدن migration و کنترل‌های بتای فاز هشت، regression کامل backend بدون
+integration برابر `174 passed, 28 deselected` با coverage=`60.34%`، Ruff و
+compileall سبز شد؛ frontend برابر `25` فایل و `84` تست، typecheck/lint و build
+تولیدی (`66` route) سبز است. این اعداد پذیرش محلی کد هستند و جای promotion،
+load/soak زنده، Sentry DSN، restore مدیریت‌شده Neon یا rollback provider را
+نمی‌گیرند؛ آن شواهد همچنان طبق جدول بالا pending است.

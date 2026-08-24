@@ -16,6 +16,7 @@ import {
     MAX_RETRY_DELAY_MS,
     parseBoundedInteger,
     parseRetryAfterMs,
+    shouldReplayAfterAuthRefresh,
     waitForDelay,
 } from "@/lib/requestPolicy";
 import {
@@ -184,7 +185,13 @@ api.interceptors.response.use(
         const path = String(config?.url || "");
         const canRefresh = !path.includes("/auth/refresh") && !path.includes("/login/access-token");
 
-        if (error.response?.status === 401 && config && !config._authRetry && canRefresh) {
+        if (
+            error.response?.status === 401
+            && config
+            && !config._authRetry
+            && canRefresh
+            && shouldReplayAfterAuthRefresh(config.method)
+        ) {
             const hadAccessToken = hasAccessToken();
             config._authRetry = true;
             const token = await refreshAccessToken();

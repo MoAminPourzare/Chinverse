@@ -46,7 +46,10 @@ from app.core.passwords import (  # noqa: E402
 
 
 EXPECTED_ENDPOINT_ID = "ep-wild-band-atse2yoq"
-EXPECTED_ALEMBIC_HEAD = "e7c4a9b2d6f1"
+# The fixture contract remains useful after later additive migrations, but it
+# must refuse a database older than the current release schema.  Phase 8 adds
+# only beta/payment tables and extends this FK contract below.
+EXPECTED_ALEMBIC_HEAD = "f8a1b2c3d4e5"
 FIXTURE_EMAIL_DOMAIN = "example.com"
 RUN_ID_PATTERN = re.compile(r"[a-z0-9](?:[a-z0-9-]{4,38}[a-z0-9])?")
 ADVISORY_LOCK_NAME = "chinverse-phase4-staging-fixtures"
@@ -79,6 +82,10 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("articles", "author_user_id", "NO ACTION"),
     ("auth_challenges", "user_id", "CASCADE"),
     ("auth_sessions", "user_id", "CASCADE"),
+    ("beta_feedback", "reviewed_by_user_id", "SET NULL"),
+    ("beta_feedback", "user_id", "CASCADE"),
+    ("beta_invites", "issued_by_user_id", "SET NULL"),
+    ("beta_invites", "redeemed_by_user_id", "SET NULL"),
     ("chat_presence_leases", "user_id", "CASCADE"),
     ("chat_realtime_events", "recipient_user_id", "CASCADE"),
     ("content_comments", "user_id", "CASCADE"),

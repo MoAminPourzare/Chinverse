@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import bad_request, not_found
+from app.core.config import settings
 
 
 DEFAULT_SUBSCRIPTION_PLANS = [
@@ -150,8 +151,18 @@ async def get_subscription_overview(db: AsyncSession, *, user_id: int) -> dict[s
         "current_subscription": current_subscription,
         "features": SUBSCRIPTION_FEATURES,
         "payment": {
+            # ``generic_hmac`` is only a signed-callback/idempotency boundary;
+            # it has no checkout adapter.  Keep this false until a reviewed
+            # commercial provider is installed so the UI cannot imply that
+            # payment is ready merely because a webhook secret exists.
             "gateway_configured": False,
-            "message": "درگاه پرداخت هنوز به پروژه وصل نشده است. سفارش پرداخت ساخته می شود، اما فعال سازی نهایی بعد از اتصال درگاه انجام خواهد شد.",
+            "provider": settings.PAYMENT_PROVIDER,
+            "checkout_available": False,
+            "message": (
+                "درگاه پرداخت هنوز به پروژه وصل نشده است."
+                if settings.PAYMENT_PROVIDER == "disabled"
+                else "آداپتور ساخت لینک پرداخت هنوز پس از بازبینی provider فعال نشده است."
+            ),
         },
     }
 
@@ -180,6 +191,8 @@ async def create_subscription_checkout(
     if current_subscription and current_subscription["plan_id"] == int(plan["id"]):
         raise bad_request("This subscription is already active for your account")
 
+    provider = settings.PAYMENT_PROVIDER
+    order_status = "created" if provider == "disabled" else "provider_pending"
     created = await db.execute(
         text(
             """
@@ -196,8 +209,8 @@ async def create_subscription_checkout(
                 :plan_id,
                 :amount,
                 'IRT',
-                'created',
-                'manual-placeholder'
+                :status,
+                :provider
             )
             RETURNING id, created_at
             """
@@ -206,6 +219,8 @@ async def create_subscription_checkout(
             "user_id": user_id,
             "plan_id": int(plan["id"]),
             "amount": float(plan["price"]),
+            "status": order_status,
+            "provider": provider,
         },
     )
     order = created.mappings().one()
@@ -213,10 +228,14 @@ async def create_subscription_checkout(
 
     return {
         "order_id": int(order["id"]),
-        "status": "gateway_not_configured",
+        "status": "gateway_not_configured" if provider == "disabled" else "provider_adapter_pending",
         "checkout_url": None,
         "amount": int(float(plan["price"])),
         "currency": "IRT",
         "plan": _serialize_plan(dict(plan)),
-        "message": "سفارش پرداخت ساخته شد. بعد از انتخاب درگاه پرداخت، این درخواست لینک پرداخت واقعی برمی گرداند.",
+        "message": (
+            "سفارش پرداخت ساخته شد. بعد از اتصال درگاه پرداخت، این درخواست لینک پرداخت واقعی برمی‌گرداند."
+            if provider == "disabled"
+            else "سفارش ثبت شد اما آداپتور provider هنوز فعال نشده است؛ هیچ entitlementی صادر نمی‌شود."
+        ),
     }
