@@ -16,6 +16,8 @@
 
 > **نتیجهٔ ادامهٔ کار:** Quality Gates روی SHA
 > `7238566467d821bd9acce70a6bf7441a06a2cd16` در run `32766872810` سبز شد؛
+> اجرای بعدی روی HEAD مستندات `1db3633d67b758bd8167cffb5e447fc402e99e5a` در
+> run `32768637283` نیز سبز شد؛
 > deploy run `32766872815` فقط در mirror به Hugging Face شکست خورد. برای retry باید
 > Trusted Publisher مربوط به `spaces/MoAmin9/chinverse-api` با repository/branch/workflow
 > جدید در حساب Hugging Face ثبت شود. تا آن زمان backend زنده همان `3b3a918...` است.

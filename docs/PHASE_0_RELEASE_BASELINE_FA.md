@@ -126,6 +126,9 @@
   [run 32766872810](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872810)
   سبز شد؛ baseline، backend، migration rollback/rebuild، frontend و browser tests
   همگی موفق بودند.
+- Quality Gates روی HEAD مستندات `1db3633d67b758bd8167cffb5e447fc402e99e5a` در
+  [run 32768637283](https://github.com/MoAminPourzare/Chinverse/actions/runs/32768637283)
+  نیز با موفقیت پایان یافت؛ تغییرات پس از SHA کد فقط مستنداتی هستند.
 - Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
   در گام mirror به Hugging Face شکست خورد و health همان SHA اجرا نشد. Space عمومی
   هنوز release قدیمی `3b3a918...` را گزارش می‌کند.

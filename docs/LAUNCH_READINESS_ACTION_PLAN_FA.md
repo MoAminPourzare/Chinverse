@@ -24,7 +24,7 @@
 | حوزه | وضعیت | توضیح کوتاه |
 |---|---|---|
 | تست محلی | ✅ | backend: `174 passed`، frontend: `84 passed`، typecheck/lint/build موفق |
-| شاخه و CI | 🔶 | آخرین SHA کد/CI-tested سبز است؛ اجرای docs-only روی HEAD فعلی هنوز در حال تکمیل است و mirror به HF به تنظیم provider نیاز دارد |
+| شاخه و CI | 🔶 | Quality Gates روی HEAD مستندات `1db3633...` در run `32768637283` سبز است؛ mirror به HF به تنظیم provider نیاز دارد |
 | دیتابیس | 🔶 | DB محلی روی `b5e7c9d1f3a2` است؛ head فاز ۸ باید `f8a1b2c3d4e5` شود |
 | staging با همین SHA | ⛔ | health، smoke و readiness برای نسخهٔ فعلی ثبت نشده است |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
@@ -137,6 +137,10 @@
 - [x] Quality Gates روی SHA نهایی `7238566467d821bd9acce70a6bf7441a06a2cd16`
   در [run 32766872810](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872810)
   سبز شد (Release baseline، Backend، Frontend و browser tests).
+- [x] پس از ثبت مستندات، Quality Gates روی HEAD مستندات `1db3633d67b758bd8167cffb5e447fc402e99e5a`
+  در [run 32768637283](https://github.com/MoAminPourzare/Chinverse/actions/runs/32768637283)
+  نیز سبز شد؛ این commit و commit‌های پس از آن docs-only هستند و SHA deployable کد
+  همان `7238566467d821bd9acce70a6bf7441a06a2cd16` باقی می‌ماند.
 - [ ] Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
   در گام `Mirror backend to staging Space` شکست خورد؛ گام health اجرا نشد و
   هیچ ادعایی دربارهٔ deploy این SHA ثبت نمی‌کنیم.
