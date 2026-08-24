@@ -4,9 +4,9 @@
 
 > **به‌روزرسانی اجرایی ۲۴ اوت ۲۰۲۶:** snapshot قدیمی بالا دیگر وضعیت جاری نیست.
 > history شاخه‌های publishable با مجوز صاحب پروژه بازنویسی و با
-> `--force-with-lease` روی remote ثبت شده است. HEAD مستندات شاخهٔ محلی و remote
-> `codex/phase-8-beta-release` روی `966b4340545374db03c718657f9fe4bd5c143aba` است؛
-> آخرین SHA کد/CI-tested `7238566467d821bd9acce70a6bf7441a06a2cd16` و `main` روی
+> `--force-with-lease` روی remote ثبت شده است. شاخهٔ `codex/phase-8-beta-release`
+> پس از SHA کد چند commit docs-only دارد؛ مقدار دقیق HEAD را با `git rev-parse HEAD`
+> بررسی کنید. آخرین SHA کد/CI-tested `7238566467d821bd9acce70a6bf7441a06a2cd16` و `main` روی
 > `bd7b016edede215885f495370b1976a230d3a996` است.
 > frontend زنده `bd7b016...` و backend زنده `3b3a918...` را گزارش می‌کنند؛ پس
 > promotion همان SHA فاز ۸ هنوز اثبات نشده است. Quality Gates روی SHA کد سبز است؛
@@ -123,7 +123,7 @@ assistive technology دستی است؛ ۳۵۰ بازبینی provenance انسا
 | بخش | محیط/وضعیت |
 | --- | --- |
 | GitHub | `https://github.com/MoAminPourzare/Chinverse` |
-| branch کاری | `codex/phase-8-beta-release`؛ SHA فعلی `7238566467d821bd9acce70a6bf7441a06a2cd16` |
+| branch کاری | `codex/phase-8-beta-release`؛ چند commit docs-only پس از SHA کد دارد؛ `git rev-parse HEAD` مقدار دقیق را نشان می‌دهد؛ آخرین SHA کد/CI-tested=`7238566467d821bd9acce70a6bf7441a06a2cd16` |
 | frontend staging/preview | [stable branch URL فاز شش](https://chinverse-git-codex-phase-6-mobile-ux-death-stroke.vercel.app)؛ deployment=`FpnJXHMegQdxiceuU1WutAAnNdCJ` و [generated URL](https://chinverse-nndh54sbt-death-stroke.vercel.app)، محافظت‌شده با SSO |
 | frontend alias قبلی | `https://chinverse.vercel.app`؛ تا merge به main مرجع فاز سه نیست |
 | backend staging | [Hugging Face Space](https://moamin9-chinverse-api.hf.space)؛ فعلاً release قدیمی `3b3a918...` |

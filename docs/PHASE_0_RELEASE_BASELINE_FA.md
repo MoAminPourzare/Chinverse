@@ -103,13 +103,16 @@
 ## الحاقیهٔ اجرایی پس از rewrite — ۲۴ اوت ۲۰۲۶
 
 - history تمام refهای publishable بازنویسی شد و migration قدیمی به revision
-  no-op تبدیل شده است؛ `git grep --all` برای داده‌های شخصی و
-  `DISPLAY_NAME_UPDATES` در refهای قابل‌دسترسی پاک است.
+  no-op تبدیل شده است؛ اسکن تاریخچهٔ مسیر migration با
+  `git log --all -G "DISPLAY_NAME_UPDATES|نام/ایمیل شخصی" -- <migration-path>`
+  در refهای قابل‌دسترسی hit ندارد. رشتهٔ guard و مستندات ممکن است بیرون از این
+  مسیر باقی مانده باشد و به‌تنهایی نشانهٔ وجود دادهٔ شخصی در history نیست.
 - شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
-  `--force-with-lease` روی remote ثبت شدند. HEAD مستندات شاخهٔ phase 8 برابر
-  `966b4340545374db03c718657f9fe4bd5c143aba`، آخرین SHA کد/CI-tested برابر
-  `7238566467d821bd9acce70a6bf7441a06a2cd16` و SHA `main` برابر
-  `bd7b016edede215885f495370b1976a230d3a996` است؛ remote tag وجود ندارد.
+  `--force-with-lease` روی remote ثبت شدند. شاخهٔ phase 8 پس از این گزارش
+  چند commit docs-only دارد؛ مقدار HEAD را با `git rev-parse HEAD` بررسی کنید.
+  آخرین SHA کد/CI-tested برابر `7238566467d821bd9acce70a6bf7441a06a2cd16` و
+  SHA `main` برابر `bd7b016edede215885f495370b1976a230d3a996` است؛ remote tag
+  وجود ندارد.
 - bundle پیش از rewrite برای بازیابی محلی در
   `.backups/phase0-history-rewrite-20260824/before.bundle` نگه‌داری شده و
   به remote منتقل نشده است.

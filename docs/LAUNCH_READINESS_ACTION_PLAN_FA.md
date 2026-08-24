@@ -24,7 +24,7 @@
 | حوزه | وضعیت | توضیح کوتاه |
 |---|---|---|
 | تست محلی | ✅ | backend: `174 passed`، frontend: `84 passed`، typecheck/lint/build موفق |
-| شاخه و CI | 🔶 | history و refها روی remote ثبت‌اند و Quality Gates سبز است؛ mirror به HF به تنظیم provider نیاز دارد |
+| شاخه و CI | 🔶 | آخرین SHA کد/CI-tested سبز است؛ اجرای docs-only روی HEAD فعلی هنوز در حال تکمیل است و mirror به HF به تنظیم provider نیاز دارد |
 | دیتابیس | 🔶 | DB محلی روی `b5e7c9d1f3a2` است؛ head فاز ۸ باید `f8a1b2c3d4e5` شود |
 | staging با همین SHA | ⛔ | health، smoke و readiness برای نسخهٔ فعلی ثبت نشده است |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
@@ -118,9 +118,10 @@
 - [x] تاریخچهٔ تمام شاخه‌های publishable با حفظ migration به‌صورت no-op بازنویسی
   شد؛ محتوای personal-data migration در refهای قابل‌دسترسی پیدا نمی‌شود.
 - [x] شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
-  `--force-with-lease` و leaseهای دقیق روی GitHub push شدند. `codex/phase-8-beta-release`
-  اکنون روی HEAD مستندات `966b4340545374db03c718657f9fe4bd5c143aba` است؛ آخرین
-  SHA کد/CI-tested برابر `7238566467d821bd9acce70a6bf7441a06a2cd16` و `main` روی
+  `--force-with-lease` و leaseهای دقیق روی GitHub push شدند. HEAD فعلی شاخهٔ
+  `codex/phase-8-beta-release` پس از این گزارش‌های docs-only است؛ مقدار دقیق آن را
+  با `git rev-parse HEAD` بخوانید. آخرین SHA کد/CI-tested برابر
+  `7238566467d821bd9acce70a6bf7441a06a2cd16` و `main` روی
   `bd7b016edede215885f495370b1976a230d3a996` است؛ tag قابل‌انتشار وجود ندارد.
 - [x] قبل از rewrite یک bundle بازیابی محلی در
   `.backups/phase0-history-rewrite-20260824/before.bundle` نگه داشته شد؛ این فایل
