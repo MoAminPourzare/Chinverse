@@ -713,13 +713,24 @@ pwsh -NoProfile -File .\scripts\backup-database.ps1
 pwsh -NoProfile -File .\scripts\restore-database.ps1 -ConfirmIsolatedTarget
 ```
 
-restore فقط روی مقصد ایزوله انجام شود.
+restore فقط روی مقصد ایزوله انجام شود. اگر Docker daemon در دسترس نیست، هر دو
+wrapper حالت native اختیاری دارند:
+
+```powershell
+pwsh -NoProfile -File .\scripts\backup-database.ps1 `
+  -DatabaseUrl $env:DATABASE_URL `
+  -PostgresClientDirectory 'D:\PostgreSQL\18\bin'
+```
+
+در restore native نیز `-ConfirmIsolatedTarget` الزامی است و `-AllowSameHost` فقط
+برای یک DB محلیِ جدا قابل‌استفاده است.
 
 ## ۱۵. فایل‌های مرجع مهم
 
 - `README.md`: bootstrap و quality gates
 - `docs/PHASE_0_RELEASE_BASELINE_FA.md`: دامنه ۲۹ تغییر و release policy
 - `docs/PHASE_1_QUALITY_BASELINE_FA.md`: CI و quality baseline
+- `docs/PHASE_1_DATABASE_RESTORE_REPORT_FA.md`: evidence اجرای migration و restore ایزوله
 - `docs/PHASE_2_DATA_STORAGE_FA.md`: migration، Neon، backup و storage
 - `docs/PHASE_3_SECURITY_TRUST_FA.md`: گزارش امنیت و تست نهایی
 - `docs/PHASE_3_THREAT_MODEL_FA.md`: مدل تهدید و فرض‌های امنیتی

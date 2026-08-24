@@ -440,8 +440,12 @@ async def accept_payment_webhook(
             # Reusing an event id with a different signed body is not an
             # idempotent retry; treat it as a provider/accounting incident.
             raise bad_request("Payment webhook event id was reused with a different payload")
+        # AsyncSession.rollback() expires ORM instances. Capture the scalar
+        # before rolling back so the idempotent retry path never attempts an
+        # implicit async refresh outside SQLAlchemy's greenlet context.
+        duplicate_status = event.status
         await db.rollback()
-        return {"accepted": True, "duplicate": True, "event_id": event_id, "status": event.status}
+        return {"accepted": True, "duplicate": True, "event_id": event_id, "status": duplicate_status}
 
     await add_audit_event(
         db,

@@ -102,6 +102,23 @@ pwsh -NoProfile -File .\scripts\restore-database.ps1 `
   -ConfirmIsolatedTarget
 ```
 
+اگر Docker روی operator یا runner در دسترس نیست، wrapperها client native را با
+همان guardها اجرا می‌کنند. مسیر client باید دقیقاً به پوشه‌ای برسد که
+`pg_dump`/`pg_restore`/`psql` در آن نصب شده‌اند و این گزینه فقط برای مقصد ایزوله
+است:
+
+```powershell
+pwsh -NoProfile -File .\scripts\backup-database.ps1 `
+  -DatabaseUrl $env:DATABASE_URL `
+  -PostgresClientDirectory 'D:\PostgreSQL\18\bin'
+
+pwsh -NoProfile -File .\scripts\restore-database.ps1 `
+  -DumpPath .\.backups\phase1\BACKUP.dump `
+  -TargetDatabaseUrl $env:RESTORE_DATABASE_URL `
+  -ConfirmIsolatedTarget -AllowSameHost `
+  -PostgresClientDirectory 'D:\PostgreSQL\18\bin'
+```
+
 برای backup legacy که metadata revision ندارد، operator پس از review dump و سند
 فاز مربوط، revision را صریح می‌دهد:
 

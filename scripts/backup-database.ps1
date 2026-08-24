@@ -2,7 +2,8 @@ param(
     [string]$DatabaseUrl = $env:DATABASE_URL,
     [string]$OutputDirectory = (Join-Path $PSScriptRoot "..\.backups"),
     [string]$SourceLabel = "unknown",
-    [string]$PostgresClientImage = "postgres:18.4-alpine3.24"
+    [string]$PostgresClientImage = "postgres:18.4-alpine3.24",
+    [string]$PostgresClientDirectory = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,14 +27,52 @@ $dumpName = "chinverse-$timestamp.dump"
 $dumpPath = Join-Path $outputPath $dumpName
 $metadataPath = "$dumpPath.json"
 $image = $PostgresClientImage
+$useNativeClient = -not [string]::IsNullOrWhiteSpace($PostgresClientDirectory)
+$nativeClientDirectory = $null
+$pgDumpPath = $null
+$psqlPath = $null
+
+function Resolve-PostgresClientExecutable {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Directory,
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $candidate = Join-Path $Directory $Name
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        $candidate = "$candidate.exe"
+    }
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        throw "Native PostgreSQL client is missing: $candidate"
+    }
+    return (Get-Item -LiteralPath $candidate).FullName
+}
+
+if ($useNativeClient) {
+    $nativeClientDirectory = [System.IO.Path]::GetFullPath($PostgresClientDirectory)
+    if (-not (Test-Path -LiteralPath $nativeClientDirectory -PathType Container)) {
+        throw "-PostgresClientDirectory does not exist or is not a directory: $nativeClientDirectory"
+    }
+    $pgDumpPath = Resolve-PostgresClientExecutable -Directory $nativeClientDirectory -Name "pg_dump"
+    $psqlPath = Resolve-PostgresClientExecutable -Directory $nativeClientDirectory -Name "psql"
+}
 
 $env:CHINVERSE_BACKUP_DATABASE_URL = $DatabaseUrl
 $env:CHINVERSE_BACKUP_FILE = $dumpName
 function Get-SourceAlembicRevision {
-    $revisionOutput = & docker run --rm `
-        -e CHINVERSE_BACKUP_DATABASE_URL `
-        $image `
-        sh -c 'psql "$CHINVERSE_BACKUP_DATABASE_URL" -v ON_ERROR_STOP=1 -tA -c "SELECT version_num FROM alembic_version ORDER BY version_num"'
+    if ($useNativeClient) {
+        $revisionOutput = & $psqlPath `
+            "--dbname=$DatabaseUrl" `
+            "-v" "ON_ERROR_STOP=1" "-tA" `
+            "-c" "SELECT version_num FROM alembic_version ORDER BY version_num"
+    } else {
+        $revisionOutput = & docker run --rm `
+            -e CHINVERSE_BACKUP_DATABASE_URL `
+            $image `
+            sh -c 'psql "$CHINVERSE_BACKUP_DATABASE_URL" -v ON_ERROR_STOP=1 -tA -c "SELECT version_num FROM alembic_version ORDER BY version_num"'
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "Could not read the source Alembic revision (exit code $LASTEXITCODE)."
     }
@@ -52,12 +91,19 @@ function Get-SourceAlembicRevision {
 try {
     $alembicRevisionBefore = Get-SourceAlembicRevision
 
-    & docker run --rm `
-        -e CHINVERSE_BACKUP_DATABASE_URL `
-        -e CHINVERSE_BACKUP_FILE `
-        -v "${outputPath}:/backup" `
-        $image `
-        sh -c 'pg_dump --dbname="$CHINVERSE_BACKUP_DATABASE_URL" --schema=public --format=custom --compress=9 --no-owner --no-acl --file="/backup/$CHINVERSE_BACKUP_FILE"'
+    if ($useNativeClient) {
+        & $pgDumpPath `
+            "--dbname=$DatabaseUrl" `
+            "--schema=public" "--format=custom" "--compress=9" `
+            "--no-owner" "--no-acl" "--file=$dumpPath"
+    } else {
+        & docker run --rm `
+            -e CHINVERSE_BACKUP_DATABASE_URL `
+            -e CHINVERSE_BACKUP_FILE `
+            -v "${outputPath}:/backup" `
+            $image `
+            sh -c 'pg_dump --dbname="$CHINVERSE_BACKUP_DATABASE_URL" --schema=public --format=custom --compress=9 --no-owner --no-acl --file="/backup/$CHINVERSE_BACKUP_FILE"'
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "pg_dump failed with exit code $LASTEXITCODE."
     }
@@ -91,7 +137,8 @@ $metadata = [ordered]@{
     dump_file = $dumpName
     size_bytes = (Get-Item -LiteralPath $dumpPath).Length
     sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $dumpPath).Hash.ToLowerInvariant()
-    postgres_client_image = $image
+    postgres_client_mode = if ($useNativeClient) { "native" } else { "docker" }
+    postgres_client_image = if ($useNativeClient) { "native-client" } else { $image }
     release_sha = ($releaseSha | Select-Object -First 1)
     alembic_revision = $alembicRevision
 }

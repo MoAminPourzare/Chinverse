@@ -25,7 +25,7 @@
 |---|---|---|
 | تست محلی | ✅ | backend: `174 passed`، frontend: `84 passed`، typecheck/lint/build موفق |
 | شاخه و CI | 🔶 | Quality Gates روی snapshotهای docs-only اخیر (runهای `32768637283`، `32769302779` و `32770142297`) سبز است؛ mirror به HF به تنظیم provider نیاز دارد |
-| دیتابیس | 🔶 | DB محلی روی `b5e7c9d1f3a2` است؛ head فاز ۸ باید `f8a1b2c3d4e5` شود |
+| دیتابیس | 🔶 | migration/restore ایزوله روی `f8a1b2c3d4e5` سبز است؛ DB محلی `chinverse_db` و branchهای Neon هنوز جداگانه باید ثبت شوند |
 | staging با همین SHA | ⛔ | health، smoke و readiness برای نسخهٔ فعلی ثبت نشده است |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
@@ -61,7 +61,7 @@
 | مرحله | عنوان | وضعیت فعلی | پیش‌نیاز | خروجی اجباری |
 |---|---|---|---|---|
 | ۰ | نسخه و CI/deploy | 🔶 history/refs انجام شد؛ CI و promotion باز | دسترسی GitHub/provider | SHA remote، pipeline سبز و deploy همان SHA |
-| ۱ | دیتابیس و restore | ⛔ باز | مرحلهٔ ۰ | schema head و restore قابل‌بازسازی |
+| ۱ | دیتابیس و restore | 🔶 | مرحلهٔ ۰ | local schema/restore سبز؛ Neon branch و retention مالک‌محور |
 | ۲ | staging | ⛔ باز | مرحلهٔ ۱ | health/readiness و smoke با SHA یکسان |
 | ۳ | عملیات | 🔶 evidence ناقص | مرحلهٔ ۲ | Sentry، load/soak، alert و rollback evidence |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence ناقص | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
@@ -176,17 +176,45 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify-phase8-release.ps1
 
 ### مرحلهٔ ۱ — migration، backup و restore ایزوله
 
-- [ ] یک PostgreSQL آزمایشی جدا (Docker یا CI service) ایجاد کن؛ روی DB فعلی
-  کاربر/production migration آزمایشی اجرا نکن.
-- [ ] `alembic upgrade head` را تا `f8a1b2c3d4e5` اجرا کن.
-- [ ] سناریوی fresh upgrade، downgrade و upgrade مجدد را ثبت کن.
-- [ ] backup و restore را روی DB ایزوله اجرا و زمان/نتیجه را ثبت کن.
-- [ ] `verify_phase8_schema.py` و تست integration واقعی beta/feedback/payment را
-  روی همین DB اجرا کن.
+- [x] یک PostgreSQL آزمایشی جدا روی native PostgreSQL 18.1 و port `55432` ایجاد
+  شد؛ DB موجود `chinverse_db` لمس نشد. Docker daemon در این نشست در دسترس نبود.
+- [x] `alembic upgrade head` تا `f8a1b2c3d4e5` اجرا شد و ۶۱ جدول public ساخته شد.
+- [x] سناریوی fresh upgrade، downgrade تا `base` و upgrade مجدد ثبت شد؛ هر سه
+  عملیات exit 0 داشتند.
+- [x] backup سفارشی و restore روی `chinverse_phase1_restore` اجرا شد؛ SHA، زمان،
+  revision و sentinel مصنوعی در گزارش مستقل ثبت شده‌اند. wrapperهای repository
+  نیز با `-PostgresClientDirectory` و client native exit 0 شدند.
+- [x] `alembic check` و verifierهای phase 2/3/4/5/7/8 و تست integration واقعی
+  beta/feedback/payment روی DB ایزوله سبز شدند.
 - [ ] Neon staging/prod branch جدا، retention و روش restore را مستند کن.
 
 **معیار پذیرش:** schema verifier سبز، head دقیق فاز ۸، restore قابل‌بازسازی و
 هیچ تغییر ناخواسته‌ای روی DB موجود.
+
+#### گزارش اجرای مرحلهٔ ۱ — ۲۵ اوت ۲۰۲۶
+
+جزئیات کامل در [گزارش migration و restore فاز ۱](E:/Chinverse/docs/PHASE_1_DATABASE_RESTORE_REPORT_FA.md)
+ثبت شده است. خلاصهٔ evidence:
+
+- تغییرات و evidence در commit `f39a8d56b69a136d7cfe333711a9996985cc8964` ثبت و
+  روی `origin/codex/phase-8-beta-release` push شده‌اند.
+
+- source ایزوله `chinverse_phase1` و target `chinverse_phase1_restore` هر دو
+  head=`f8a1b2c3d4e5` و ۶۱ جدول public دارند.
+- `alembic check` و شش verifier schema روی source و target exit 0 داشتند.
+- backup native با اندازهٔ `254721` bytes و SHA-256 برابر
+  `4ca794d54ce393e4143cde3b79f4a2b5c985e4ec302624f22045bb088aa6ba15` در
+  `20:24:09Z` ساخته و در `20:24:10Z` با exit 0 restore شد؛ `ANALYZE` نیز 0 بود.
+- suite integration پس از اصلاح idempotency پرداخت `30 passed` شد؛ تست جدید
+  service/DB واقعی است و smoke HTTP روی staging هنوز جزو مرحلهٔ ۲ است.
+- wrapperهای backup/restore با حفظ مسیر Docker، حالت native اختیاری دارند و در
+  همین نشست با checksum/revision guard روی DB ایزوله exit 0 شدند؛ اجرای Docker
+  در CI هنوز evidence جداگانهٔ provider است.
+
+**نتیجهٔ فعلی مرحلهٔ ۱:** کنترل‌های local database، migration، schema و restore
+سبز هستند؛ وضعیت مرحله به‌دلیل branch/retention/restore واقعی Neon و ثبت wrapper
+در CI همچنان 🔶 است. اولین کار مالک پروژه، ثبت این evidence provider است؛ روی
+production هیچ migration یا restore آزمایشی اجرا نشده است.
 
 **فرمان درخواست این مرحله:** `مرحلهٔ ۱ را انجام بده`
 

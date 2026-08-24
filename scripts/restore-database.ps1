@@ -6,7 +6,8 @@ param(
     [string]$ExpectedAlembicRevision = "",
     [switch]$ConfirmIsolatedTarget,
     [switch]$AllowSameHost,
-    [string]$PostgresClientImage = "postgres:18.4-alpine3.24"
+    [string]$PostgresClientImage = "postgres:18.4-alpine3.24",
+    [string]$PostgresClientDirectory = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -68,31 +69,81 @@ if ($sameHost -and -not $AllowSameHost) {
 
 $dumpDirectory = $dump.Directory.FullName
 $image = $PostgresClientImage
+$useNativeClient = -not [string]::IsNullOrWhiteSpace($PostgresClientDirectory)
+$nativeClientDirectory = $null
+$pgRestorePath = $null
+$psqlPath = $null
+
+function Resolve-PostgresClientExecutable {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Directory,
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $candidate = Join-Path $Directory $Name
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        $candidate = "$candidate.exe"
+    }
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        throw "Native PostgreSQL client is missing: $candidate"
+    }
+    return (Get-Item -LiteralPath $candidate).FullName
+}
+
+if ($useNativeClient) {
+    $nativeClientDirectory = [System.IO.Path]::GetFullPath($PostgresClientDirectory)
+    if (-not (Test-Path -LiteralPath $nativeClientDirectory -PathType Container)) {
+        throw "-PostgresClientDirectory does not exist or is not a directory: $nativeClientDirectory"
+    }
+    $pgRestorePath = Resolve-PostgresClientExecutable -Directory $nativeClientDirectory -Name "pg_restore"
+    $psqlPath = Resolve-PostgresClientExecutable -Directory $nativeClientDirectory -Name "psql"
+}
+
 $env:CHINVERSE_RESTORE_DATABASE_URL = $TargetDatabaseUrl
 $env:CHINVERSE_RESTORE_FILE = $dump.Name
 try {
-    & docker run --rm `
-        -e CHINVERSE_RESTORE_DATABASE_URL `
-        -e CHINVERSE_RESTORE_FILE `
-        -v "${dumpDirectory}:/backup:ro" `
-        $image `
-        sh -c 'pg_restore --dbname="$CHINVERSE_RESTORE_DATABASE_URL" --clean --if-exists --no-owner --no-acl --exit-on-error --single-transaction "/backup/$CHINVERSE_RESTORE_FILE"'
+    if ($useNativeClient) {
+        & $pgRestorePath `
+            "--dbname=$TargetDatabaseUrl" `
+            "--clean" "--if-exists" "--no-owner" "--no-acl" `
+            "--exit-on-error" "--single-transaction" $dump.FullName
+    } else {
+        & docker run --rm `
+            -e CHINVERSE_RESTORE_DATABASE_URL `
+            -e CHINVERSE_RESTORE_FILE `
+            -v "${dumpDirectory}:/backup:ro" `
+            $image `
+            sh -c 'pg_restore --dbname="$CHINVERSE_RESTORE_DATABASE_URL" --clean --if-exists --no-owner --no-acl --exit-on-error --single-transaction "/backup/$CHINVERSE_RESTORE_FILE"'
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "pg_restore failed with exit code $LASTEXITCODE."
     }
 
-    & docker run --rm `
-        -e CHINVERSE_RESTORE_DATABASE_URL `
-        $image `
-        sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ANALYZE" >/dev/null'
+    if ($useNativeClient) {
+        & $psqlPath "--dbname=$TargetDatabaseUrl" "-v" "ON_ERROR_STOP=1" "-c" "ANALYZE" | Out-Null
+    } else {
+        & docker run --rm `
+            -e CHINVERSE_RESTORE_DATABASE_URL `
+            $image `
+            sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "ANALYZE" >/dev/null'
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "Post-restore ANALYZE failed with exit code $LASTEXITCODE."
     }
 
-    $verifyOutput = & docker run --rm `
-        -e CHINVERSE_RESTORE_DATABASE_URL `
-        $image `
-        sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -tA -c "SELECT version_num FROM alembic_version ORDER BY version_num"'
+    if ($useNativeClient) {
+        $verifyOutput = & $psqlPath `
+            "--dbname=$TargetDatabaseUrl" `
+            "-v" "ON_ERROR_STOP=1" "-tA" `
+            "-c" "SELECT version_num FROM alembic_version ORDER BY version_num"
+    } else {
+        $verifyOutput = & docker run --rm `
+            -e CHINVERSE_RESTORE_DATABASE_URL `
+            $image `
+            sh -c 'psql "$CHINVERSE_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -tA -c "SELECT version_num FROM alembic_version ORDER BY version_num"'
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "Post-restore revision verification failed with exit code $LASTEXITCODE."
     }
