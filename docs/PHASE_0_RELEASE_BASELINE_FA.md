@@ -129,13 +129,21 @@
 - Quality Gates روی HEAD مستندات `1db3633d67b758bd8167cffb5e447fc402e99e5a` در
   [run 32768637283](https://github.com/MoAminPourzare/Chinverse/actions/runs/32768637283)
   نیز با موفقیت پایان یافت؛ تغییرات پس از SHA کد فقط مستنداتی هستند.
+- Quality Gates روی HEAD فعلی docs-only یعنی
+  `d9212b70a88d04b9196bfbf8049912380e9c859c` نیز در
+  [run 32769302779](https://github.com/MoAminPourzare/Chinverse/actions/runs/32769302779)
+  با هر سه job سبز پایان یافت؛ کد deployable همچنان همان SHA `7238566...` است.
 - Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
   در گام mirror به Hugging Face شکست خورد و health همان SHA اجرا نشد. Space عمومی
   هنوز release قدیمی `3b3a918...` را گزارش می‌کند.
-- برای ادامهٔ deploy، Trusted Publisher در تنظیمات Space باید با resource
+- بررسی خواندنی تنظیمات Space نشان داد فقط دو publisher برای refهای
+  `refs/heads/codex/phase-4-user-journeys` و
+  `refs/heads/codex/phase-5-education-media` ثبت شده‌اند؛ publisher برای
+  phase 7/8 وجود ندارد. برای ادامهٔ deploy، Trusted Publisher در تنظیمات Space باید با resource
   `spaces/MoAmin9/chinverse-api` و claimهای repository/branch/workflow متناظر با
   `MoAminPourzare/Chinverse`، `codex/phase-8-beta-release` و
-  `deploy-hf-space.yml` ثبت شود؛ این اقدام خارج از دسترسی محلی این نشست است.
+  `deploy-hf-space.yml` ثبت شود. در این نشست هیچ تنظیم provider تغییر نکرده و
+  افزودن این مجوز نیازمند تأیید صاحب Space است.
 - در سابقهٔ عمومی workflow، deploy phase 7 نیز در همان گام mirror شکست خورده،
   درحالی‌که deployهای phase 4 و phase 5 سبز بوده‌اند؛ این الگو با محدودیت claim
   branch/workflow در Trusted Publisher سازگار است، اما log خصوصی provider باید

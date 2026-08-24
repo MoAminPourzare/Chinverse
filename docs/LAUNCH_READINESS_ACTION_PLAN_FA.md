@@ -141,13 +141,18 @@
   در [run 32768637283](https://github.com/MoAminPourzare/Chinverse/actions/runs/32768637283)
   نیز سبز شد؛ این commit و commit‌های پس از آن docs-only هستند و SHA deployable کد
   همان `7238566467d821bd9acce70a6bf7441a06a2cd16` باقی می‌ماند.
+- [x] Quality Gates روی HEAD فعلی docs-only یعنی
+  `d9212b70a88d04b9196bfbf8049912380e9c859c` در
+  [run 32769302779](https://github.com/MoAminPourzare/Chinverse/actions/runs/32769302779)
+  با هر سه job سبز پایان یافت.
 - [ ] Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
   در گام `Mirror backend to staging Space` شکست خورد؛ گام health اجرا نشد و
   هیچ ادعایی دربارهٔ deploy این SHA ثبت نمی‌کنیم.
 - [ ] روی Hugging Face باید Trusted Publisher برای resource
   `spaces/MoAmin9/chinverse-api` با claimهای دقیق repository=`MoAminPourzare/Chinverse`،
   branch=`codex/phase-8-beta-release` و workflow=`deploy-hf-space.yml` ثبت شود؛
-  این تنظیم در حساب provider از این محیط قابل انجام/تأیید نیست.
+  بررسی خواندنی فعلی فقط publisherهای phase 4 و phase 5 را نشان می‌دهد؛ افزودن
+  claim فاز ۸ نیازمند تأیید صاحب Space است و در این نشست تغییر داده نشد.
 - [i] الگوی provider با runهای قبلی هم‌خوان است: phase 7 نیز در همان گام mirror
   شکست خورده، در حالی‌که runهای phase 4 و phase 5 موفق بوده‌اند؛ این قرینهٔ
   تشخیصی است و جایگزین log خصوصی provider نمی‌شود.
