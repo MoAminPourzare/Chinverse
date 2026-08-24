@@ -129,10 +129,10 @@
 - Quality Gates روی HEAD مستندات `1db3633d67b758bd8167cffb5e447fc402e99e5a` در
   [run 32768637283](https://github.com/MoAminPourzare/Chinverse/actions/runs/32768637283)
   نیز با موفقیت پایان یافت؛ تغییرات پس از SHA کد فقط مستنداتی هستند.
-- Quality Gates روی HEAD فعلی docs-only یعنی
-  `d9212b70a88d04b9196bfbf8049912380e9c859c` نیز در
+- Quality Gates روی snapshotهای docs-only پس از SHA کد در
   [run 32769302779](https://github.com/MoAminPourzare/Chinverse/actions/runs/32769302779)
-  با هر سه job سبز پایان یافت؛ کد deployable همچنان همان SHA `7238566...` است.
+  و [run 32770142297](https://github.com/MoAminPourzare/Chinverse/actions/runs/32770142297)
+  نیز با هر سه job سبز پایان یافت؛ کد deployable همچنان همان SHA `7238566...` است.
 - Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
   در گام mirror به Hugging Face شکست خورد و health همان SHA اجرا نشد. Space عمومی
   هنوز release قدیمی `3b3a918...` را گزارش می‌کند.
