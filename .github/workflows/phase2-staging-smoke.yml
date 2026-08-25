@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - "codex/phase-8-beta-release"
+    paths:
+      - ".github/workflows/phase2-staging-smoke.yml"
+      - ".github/workflows/deploy-hf-space.yml"
+      - "backend/**"
+      - "frontend/**"
   workflow_dispatch:
     inputs:
       release_sha:

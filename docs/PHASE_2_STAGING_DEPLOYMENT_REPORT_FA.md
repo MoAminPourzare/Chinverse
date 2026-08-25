@@ -1,18 +1,23 @@
 # گزارش اجرای مرحلهٔ ۲ برنامهٔ آمادگی انتشار — staging با SHA دقیق
 
-**آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۲۴ ۲۱:۰۵ UTC / ۲۰۲۶-۰۸-۲۵ ۰۰:۳۵ Asia/Tehran  
+**آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۲۶ ۰۱:۳۰ UTC / ۲۰۲۶-۰۸-۲۶ ۰۵:۰۰ Asia/Tehran
 **شاخه:** `codex/phase-8-beta-release`  
 **SHA والد هنگام شروع:** `70f649ef563e7b320e5980451c19bab44eb6b965`  
-**release SHA نهایی:** پس از commit/push و promotion ثبت می‌شود  
-**وضعیت:** 🔶 در حال اجرا؛ هنوز معیار پذیرش کامل نشده است
+**release SHA نهایی این snapshot:** `f3a17a7fac12bb63481a9d648d57e264c0d78e86`
+**وضعیت:** 🔶 شواهد staging و smoke فنی سبز؛ پذیرش کامل به‌دلیل health داخلی frontend و نبود lesson منتشرشده هنوز بسته نشده است
 
 ## نتیجهٔ کوتاه
 
-فرانت‌اندِ SHA والد روی Vercel ساخته شده، ولی backend زنده هنوز release قدیمی را
-گزارش می‌کند؛ بنابراین در این snapshot ادعای same-SHA staging نداریم. blocker
-mirror در Hugging Face به Trusted Publisher شاخهٔ فاز ۸ محدود شد و فرم آن آماده
-است، اما چون این تغییر دسترسی دائمی CI می‌سازد تا تأیید لحظه‌ای صاحب Space submit
-نشده است.
+در snapshot نهایی، Quality Gates، Vercel deployment status و HF Space برای SHA
+`f3a17a7fac12bb63481a9d648d57e264c0d78e86` سبز هستند. backend زنده همین SHA را
+گزارش می‌کند و readiness واقعیِ هدف Neon، PostgreSQL و storage متصل به `/data`
+را `ok` برمی‌گرداند. smoke exact-SHA نیز با موفقیت تمام شده است.
+
+پیش‌نمایش Vercel همچنان عمداً پشت SSO است و anonymous=`302` با
+`X-Robots-Tag: noindex` می‌دهد. چون `VERCEL_AUTOMATION_BYPASS_SECRET` در GitHub
+تعریف نشده، workflow health داخلی frontend را دور نمی‌زند و آن را **مشاهده‌نشده**
+ثبت می‌کند؛ این محدودیت به‌عنوان blocker پذیرش باقی مانده، نه اینکه با تضعیف
+حفاظت حل شود.
 
 پیش از retry، یک guard fail-closed به backend اضافه شد: runtime staging در حالت
 release فقط وقتی بالا می‌آید که `DATABASE_URL` به endpoint غیرمحرمانه و pinشدهٔ
@@ -24,23 +29,23 @@ Neon staging اشاره کند. `/health/ready` نیز نتیجهٔ این کن�
 
 | گام | وضعیت | شاهد |
 |---|---|---|
-| ۲.۱ ممیزی SHA و providerها | ✅ | remote و local روی SHA والد؛ Quality Gates run `32774924447` سبز |
-| ۲.۲ ایمن‌سازی target دیتابیس | ✅ محلی | config guard، readiness contract و ۴۳ تست هدفمند سبز |
-| ۲.۳ smoke خودکار staging | ✅ آمادهٔ اجرا | workflow جدید exact-SHA با hostهای ثابت و secret audience محدود |
+| ۲.۱ ممیزی SHA و providerها | ✅ | remote و providerها روی SHA نهایی؛ Quality Gates run `32901266092` سبز |
+| ۲.۲ ایمن‌سازی target دیتابیس | ✅ | config guard، readiness contract و live `database_target=ok` |
+| ۲.۳ smoke خودکار staging | ✅ | smoke run `32901266161` موفق؛ group بر اساس release SHA ایزوله است |
 | ۲.۴ تنظیم Trusted Publisher و متغیرهای Space | ✅ | با تأیید صاحب پروژه، publisher دقیق و endpoint guard غیرمحرمانه ثبت شد |
-| ۲.۵ deploy backend/frontend SHA نهایی | ⏳ | پس از ۲.۴ و push SHA نهایی |
-| ۲.۶ smoke زنده و cleanup | ⏳ | preflight خودکار؛ stateful با GitHub Environment=`staging` |
+| ۲.۵ deploy backend/frontend SHA نهایی | ✅ | HF deploy run `32901266138` موفق؛ Vercel deployment status در smoke تأیید شد |
+| ۲.۶ smoke زنده و cleanup | ✅ فنی / 🔶 رسانه | synthetic auth/chat/RBAC و cleanup سبز؛ catalog خالی و frontend runtime پشت SSO |
 
 ## هویت immutable release مشاهده‌شده
 
 | مورد | provider/URL | run/deployment | SHA گزارش‌شده | نتیجه |
 |---|---|---|---|---|
-| Git remote | `origin/codex/phase-8-beta-release` | branch head | `70f649ef563e7b320e5980451c19bab44eb6b965` | ✅ هنگام شروع |
-| Quality Gates | GitHub Actions | run `32774924447` | `70f649ef563e7b320e5980451c19bab44eb6b965` | ✅ |
-| frontend preview | Vercel generated preview | deployment `H6RbsY5vD4HYAaNXcp1M5HmSGfyG` | commit والد | ✅ build؛ health داخلی پشت SSO |
-| frontend branch URL | `chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app` | Vercel Git integration | commit والد | ✅ anonymous=`302` و `X-Robots-Tag: noindex` |
-| backend deploy | GitHub Actions → HF Space | run `32774924457` | target=commit والد | ⛔ mirror شکست خورد |
-| backend live | `moamin9-chinverse-api.hf.space/health` | Space فعلی | `3b3a918a66ea7df875965130ff86c7d1a1227576` | ⛔ قدیمی |
+| Git remote | `origin/codex/phase-8-beta-release` | branch head | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
+| Quality Gates | GitHub Actions | run `32901266092` | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
+| frontend deployment metadata | GitHub deployment status → Vercel | smoke run `32901266161` | source SHA=`f3a17a7...`; status=`success` | ✅؛ URL از `status.target_url` resolve شد |
+| frontend branch URL | `chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app` | Vercel Git integration | protected preview | ✅ anonymous=`302` و `X-Robots-Tag: noindex` |
+| backend deploy | GitHub Actions → HF Space | run `32901266138` | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
+| backend live | `moamin9-chinverse-api.hf.space/health` | Space فعلی | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
 
 Alias عمومی `chinverse.vercel.app` نیز هنگام ممیزی SHA قدیمی
 `bd7b016edede215885f495370b1976a230d3a996` را گزارش می‌کرد و target مرحلهٔ ۲
@@ -50,11 +55,11 @@ Alias عمومی `chinverse.vercel.app` نیز هنگام ممیزی SHA قدی�
 
 | کنترل | شاهد فعلی | نتیجه |
 |---|---|---|
-| Neon staging | سابقهٔ ثبت‌شده: branch=`br-shiny-darkness-at6obb2e`، endpoint=`ep-wild-band-atse2yoq`؛ مقدار secret جاری قابل مشاهده نیست | 🔶 guard جدید باید در deploy زنده همین endpoint را اثبات کند |
-| جلوگیری از migration روی DB اشتباه | `STAGING_DATABASE_ENDPOINT_ID` برای release staging اجباری و host مستقیم/pooler Neon دقیقاً match می‌شود | ✅ محلی؛ live pending |
+| Neon staging | branch=`br-shiny-darkness-at6obb2e`، endpoint=`ep-wild-band-atse2yoq`؛ مقدار secret جاری مشاهده نشد | ✅ live guard در readiness=`ok` |
+| جلوگیری از migration روی DB اشتباه | `STAGING_DATABASE_ENDPOINT_ID` برای release staging اجباری و host مستقیم/pooler Neon دقیقاً match می‌شود | ✅ live |
 | storage staging | bucket متصل `MoAmin9/chinverse-api-storage`، دسترسی Read & Write، mount=`/data` | ✅ تنظیم provider مشاهده شد |
 | storage mode | public variableهای Space: `FILE_STORAGE_MODE=mounted` و `MOUNTED_STORAGE_ROOT=/data` | ✅ مشاهده شد |
-| probe واقعی storage | نسخهٔ جدید readiness write/read/delete واقعی انجام می‌دهد | ⏳ deploy pending |
+| probe واقعی storage | readiness live write/read/delete واقعی انجام می‌دهد | ✅ |
 | production isolation | production runtime/DB/storage در این نشست لمس نشد | ✅ عدم mutation؛ inventory provider production هنوز مرحلهٔ مالک‌محور است |
 
 هیچ DSN، password، token، cookie یا bypass secret در این گزارش یا artifact ثبت
@@ -64,11 +69,10 @@ Alias عمومی `chinverse.vercel.app` نیز هنگام ممیزی SHA قدی�
 
 | زمان ممیزی | endpoint | HTTP/فیلدهای مشاهده‌شده | نتیجه |
 |---|---|---|---|
-| ۲۰۲۶-۰۸-۲۴ UTC | backend `/health` | `200`, tier=`staging`, release=`3b3a918...` | ⛔ SHA قدیمی |
-| ۲۰۲۶-۰۸-۲۴ UTC | backend `/health/ready` | `200`, `database=ok`؛ build قدیمی storage/target ندارد | ⛔ قرارداد جدید live نیست |
-| ۲۰۲۶-۰۸-۲۴ UTC | protected Vercel preview | anonymous `302`, `X-Robots-Tag: noindex` | ✅ edge protection |
-| پس از promotion | frontend `/api/health` + backend `/health` | باید release یکسان، tier=`staging`, indexable=`false` باشند | ⏳ |
-| پس از promotion | backend `/health/ready` | باید target/database/storage همگی `ok` باشند | ⏳ |
+| ۲۰۲۶-۰۸-۲۶ UTC | backend `/health` | `200`, tier=`staging`, indexable=`false`, release=`f3a17a7...` | ✅ |
+| ۲۰۲۶-۰۸-۲۶ UTC | backend `/health/ready` | `200`, `database_target=ok`, `database=ok`, `storage=ok` | ✅ |
+| ۲۰۲۶-۰۸-۲۶ UTC | protected Vercel preview | anonymous `302`, `X-Robots-Tag: noindex` | ✅ edge protection |
+| ۲۰۲۶-۰۸-۲۶ UTC | frontend `/api/health` | bypass secret موجود نیست؛ preview SSO باقی است | 🔶 مشاهده‌نشده، بدون bypass |
 
 ## محافظت staging و feature flags
 
@@ -91,16 +95,17 @@ workflow جدید پس از deploy این قراردادها را live و فقط
 
 | journey | وضعیت فعلی | روش نهایی و cleanup |
 |---|---|---|
-| ورود و حساب | ⏳ | Phase 4 live harness با identity مصنوعی |
+| ورود و حساب | ✅ | `phase2_backend_live_smoke.py` با identity تصادفی؛ حذف و 401 نهایی |
 | آموزش/رسانه | 🔶 empty-state | catalog زنده `200 []` است؛ empty-state معتبر است ولی signed playback live اثبات نشده |
-| چت/WebSocket | ⏳ | Phase 4 live harness، یک worker و بدون retry |
-| feedback | ⏳ | کاربر fixture باید beta/feedback خاموش را از `/beta/status` ببیند |
-| admin/RBAC/MFA | ⏳ | Phase 4 live harness با admin مصنوعی |
-| پاک‌سازی | ⏳ | dry-run → apply cleanup → dry-run نهایی با `if: always()` |
+| چت/WebSocket | ✅ | HTTP conversations و WebSocket `connection:ready`/`pong` سبز |
+| feedback | ✅ | `/beta/status`: `enabled=false`, `eligible=false`, `reason=disabled` |
+| admin/RBAC | ✅ محدود | normal user روی `/admin/users`، HTTP `403`؛ admin MFA fixture اجرا نشده |
+| پاک‌سازی | ✅ | account deletion و درخواست بعدی `/users/me`، HTTP `401` |
 
-stateful smoke فقط با Environment محافظت‌شدهٔ GitHub و secretهای staging اجرا
-می‌شود. credentialهای لازم در محیط محلی موجود نیستند؛ workflow مقدار آن‌ها را
-چاپ یا artifact نمی‌کند.
+stateful Phase 4 fixture همچنان فقط با Environment محافظت‌شدهٔ GitHub و secretهای
+staging اجرا می‌شود و در این نشست به‌دلیل نبود secretها skipped است. برای پوشش
+بدون secret، اسکریپت محدود `phase2_backend_live_smoke.py` با یک حساب تصادفی اجرا
+شد؛ credential/token چاپ نشد و cleanup باطل‌شدن token را هم اثبات کرد.
 
 ## تغییرات خارجی و مرز ایمنی
 
@@ -110,10 +115,10 @@ stateful smoke فقط با Environment محافظت‌شدهٔ GitHub و secret�
   branch=`codex/phase-8-beta-release` و workflow=`deploy-hf-space.yml` ثبت شد؛
 - HF public variable: `STAGING_DATABASE_ENDPOINT_ID=ep-wild-band-atse2yoq`
   ثبت شد؛ هیچ secret مشاهده یا تغییر نکرد؛
-- HF deploy/restart: انجام نشده؛
+- HF deploy/restart: run `32901266138` موفق؛ readiness live سبز؛
 - Vercel configuration/bypass: تغییر نکرده؛
 - Neon branch/schema/data: تغییر نکرده؛
-- fixture/user/chat data: ساخته نشده؛
+- fixture/user/chat data: یک synthetic account موقت ساخته و با موفقیت حذف شد؛
 - production DB/storage/domain و `main`: لمس نشده‌اند.
 
 ## evidence و نتایج تست
@@ -128,17 +133,26 @@ stateful smoke فقط با Environment محافظت‌شدهٔ GitHub و secret�
   نمی‌کند.
 - workflow smoke جدید response body، token و credential را upload نمی‌کند و
   hostهای frontend/backend را از input نمی‌پذیرد.
+- smoke backend نهایی: `passed=true`؛ checkهای health/readiness/signup/login/account/
+  beta/chat HTTP/chat WebSocket/RBAC/cleanup همگی `true`.
+- load smoke نهایی (read-only): `15` درخواست، `0` خطا، `p95=924.299ms` و
+  `rps=1.034`.
 
 ## معیار پذیرش و حکم فعلی
 
-- [ ] frontend و backend زنده یک release SHA گزارش کنند.
-- [ ] readiness زنده `database_target`, `database` و `storage` را `ok` گزارش کند.
+- [x] backend و Vercel deployment metadata برای SHA دقیق یکسان‌اند؛ frontend runtime
+  health به‌دلیل SSO و نبود bypass secret مشاهده نشد.
+- [x] readiness زنده `database_target`, `database` و `storage` را `ok` گزارش می‌کند.
 - [x] Vercel preview ناشناس محافظت‌شده و noindex است.
 - [x] DB target guard و smoke contract محلی تست شده‌اند.
-- [ ] stateful journeyها اجرا و fixtureها پاک شوند.
+- [x] synthetic journeyهای auth/account/chat/RBAC اجرا و cleanup تأیید شد؛ fixtureهای
+  نقش‌دار Phase 4 به secretهای owner وابسته و skipped هستند.
 - [ ] signed playback روی یک lesson رایگان منتشرشده live اثبات شود یا نبود داده
   به‌عنوان تصمیم صریح acceptance ثبت شود.
 
-**نتیجهٔ فعلی مرحلهٔ ۲:** 🔶. اولین کار باز، commit/push تغییرات و انتظار برای
-deploy same-SHA و smoke خودکار است. مجوز publisher و database target guard در
-provider ثبت شده‌اند.
+**نتیجهٔ فعلی مرحلهٔ ۲:** 🔶. استقرار same-SHA و smoke فنی تکمیل و قابل تکرار است؛
+دو blocker صریح باقی است: (۱) مشاهدهٔ frontend `/api/health` نیازمند افزودن
+`VERCEL_AUTOMATION_BYPASS_SECRET` به GitHub Environment، بدون تغییر protection؛
+(۲) catalog staging خالی است، بنابراین signed playback/entitlement روی lesson
+منتشرشده قابل اثبات نیست. تا رفع این دو مورد، این مرحله از نظر فنی آمادهٔ ادامه
+است اما به‌عنوان ✅ نهایی اعلام نمی‌شود.
