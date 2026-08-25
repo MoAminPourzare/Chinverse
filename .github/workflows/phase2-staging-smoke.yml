@@ -106,6 +106,10 @@ jobs:
                 "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${vercel_deployment_id}/statuses?per_page=20" \
                 --output "$vercel_statuses" || true
               vercel_status="$(jq -r '.[0].state // "missing"' "$vercel_statuses" 2>/dev/null || echo missing)"
+              status_target_url="$(jq -r 'map(select(((.target_url // "") | endswith(".vercel.app")))) | sort_by(.created_at) | last | .target_url // empty' "$vercel_statuses" 2>/dev/null || true)"
+              if [[ -n "$status_target_url" ]]; then
+                vercel_deployment_url="$status_target_url"
+              fi
             fi
 
             backend_release="$(jq -r '.release // "missing"' "$backend_health" 2>/dev/null || echo missing)"
