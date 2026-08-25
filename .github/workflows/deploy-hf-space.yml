@@ -139,10 +139,10 @@ jobs:
               '.status == "ok" and .deployment_tier == "staging" and .indexable == false' \
               <<<"$payload" >/dev/null; then
               ready_payload="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${STAGING_BASE_URL}/health/ready" || true)"
-              if jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready_payload" >/dev/null; then
+              if jq -e '.status == "ok" and .checks.database_target == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready_payload" >/dev/null; then
                 exit 0
               fi
-              echo "Release ${RELEASE_SHA} is live but database/storage readiness is not healthy yet (attempt ${attempt}/80)"
+              echo "Release ${RELEASE_SHA} is live but database target/storage readiness is not healthy yet (attempt ${attempt}/80)"
             else
               echo "Waiting for ${RELEASE_SHA}; staging currently reports ${deployed_sha} (attempt ${attempt}/80)"
             fi

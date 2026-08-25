@@ -19,6 +19,7 @@ PRODUCTION_ENVIRONMENTS = {"prod", "production"}
 DEPLOYMENT_TIERS = {"local", "staging", "production"}
 RELEASE_SHA_FILE = BACKEND_DIR / "RELEASE_SHA"
 RELEASE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+NEON_ENDPOINT_ID_RE = re.compile(r"^ep-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
 
 
 def resolve_release_sha(
@@ -58,6 +59,31 @@ def build_async_database_url(database_url: str) -> str:
     return async_url.render_as_string(hide_password=False)
 
 
+def database_url_matches_neon_endpoint(database_url: str, endpoint_id: str) -> bool:
+    """Match a Neon direct or pooled hostname without exposing credentials.
+
+    Neon hosts begin with either ``<endpoint-id>`` or
+    ``<endpoint-id>-pooler``.  The remaining provider/region suffix can change,
+    so the immutable endpoint identifier is the boundary we pin for staging.
+    """
+    normalized_endpoint = endpoint_id.strip().lower()
+    if not NEON_ENDPOINT_ID_RE.fullmatch(normalized_endpoint):
+        return False
+
+    try:
+        host = (make_url(database_url).host or "").strip().lower().rstrip(".")
+    except (TypeError, ValueError):
+        return False
+    if not host.endswith(".neon.tech"):
+        return False
+
+    first_label = host.split(".", 1)[0]
+    return first_label in {
+        normalized_endpoint,
+        f"{normalized_endpoint}-pooler",
+    }
+
+
 def parse_setting_list(value) -> list[str]:
     if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]
@@ -84,6 +110,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/chinverse_db"
+    STAGING_DATABASE_ENDPOINT_ID: str = ""
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30
@@ -235,6 +262,14 @@ class Settings(BaseSettings):
             errors.append("CHAT_REALTIME_BACKEND must be either 'memory' or 'database'")
         if self.PAYMENT_PROVIDER not in {"disabled", "generic_hmac"}:
             errors.append("PAYMENT_PROVIDER must be disabled or generic_hmac")
+        expected_staging_endpoint = self.STAGING_DATABASE_ENDPOINT_ID.strip().lower()
+        self.STAGING_DATABASE_ENDPOINT_ID = expected_staging_endpoint
+        if expected_staging_endpoint and not NEON_ENDPOINT_ID_RE.fullmatch(
+            expected_staging_endpoint
+        ):
+            errors.append(
+                "STAGING_DATABASE_ENDPOINT_ID must be a valid Neon endpoint id"
+            )
         if self.LOG_LEVEL not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             errors.append("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
         if self.ALGORITHM not in {"HS256", "HS384", "HS512"}:
@@ -400,6 +435,18 @@ class Settings(BaseSettings):
             environment in PRODUCTION_ENVIRONMENTS
             or deployment_tier == "production"
         )
+        if environment in PRODUCTION_ENVIRONMENTS and deployment_tier == "staging":
+            if not expected_staging_endpoint:
+                errors.append(
+                    "STAGING_DATABASE_ENDPOINT_ID is required for a staging release runtime"
+                )
+            elif not database_url_matches_neon_endpoint(
+                self.DATABASE_URL,
+                expected_staging_endpoint,
+            ):
+                errors.append(
+                    "DATABASE_URL does not target STAGING_DATABASE_ENDPOINT_ID"
+                )
         if self.FEATURE_SUBSCRIPTIONS_ENABLED and self.PAYMENT_PROVIDER == "disabled":
             errors.append(
                 "FEATURE_SUBSCRIPTIONS_ENABLED requires an explicit payment provider; disabled is not a release mode"
@@ -576,6 +623,19 @@ class Settings(BaseSettings):
     @property
     def USES_MOUNTED_STORAGE(self) -> bool:
         return self.FILE_STORAGE_MODE == "mounted"
+
+    @computed_field
+    @property
+    def STAGING_DATABASE_TARGET_VERIFIED(self) -> bool:
+        if (
+            self.ENVIRONMENT.lower() in PRODUCTION_ENVIRONMENTS
+            and self.DEPLOYMENT_TIER.lower() == "staging"
+        ):
+            return database_url_matches_neon_endpoint(
+                self.DATABASE_URL,
+                self.STAGING_DATABASE_ENDPOINT_ID,
+            )
+        return True
 
     @computed_field
     @property

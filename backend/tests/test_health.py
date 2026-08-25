@@ -59,25 +59,35 @@ async def test_liveness_does_not_call_dependency_readiness(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_readiness_reports_database_and_storage_and_fails_closed(monkeypatch):
-    readiness = AsyncMock(return_value={"database": "ok", "storage": "ok"})
+async def test_readiness_reports_database_target_and_storage_and_fails_closed(monkeypatch):
+    readiness = AsyncMock(
+        return_value={"database_target": "ok", "database": "ok", "storage": "ok"}
+    )
     monkeypatch.setattr(main_module, "readiness_checks", readiness)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         healthy = await client.get("/health/ready")
     assert healthy.status_code == 200
     assert healthy.json() == {
         "status": "ok",
-        "checks": {"database": "ok", "storage": "ok"},
+        "checks": {"database_target": "ok", "database": "ok", "storage": "ok"},
     }
     assert healthy.headers["cache-control"] == "no-store"
 
-    readiness.return_value = {"database": "ok", "storage": "failed"}
+    readiness.return_value = {
+        "database_target": "ok",
+        "database": "ok",
+        "storage": "failed",
+    }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         unavailable = await client.get("/health/ready")
     assert unavailable.status_code == 503
     assert unavailable.json() == {
         "status": "unavailable",
-        "checks": {"database": "ok", "storage": "failed"},
+        "checks": {
+            "database_target": "ok",
+            "database": "ok",
+            "storage": "failed",
+        },
     }
     assert unavailable.headers["cache-control"] == "no-store"
 
@@ -260,8 +270,9 @@ async def test_readiness_active_probe_is_single_flight_and_cached(monkeypatch):
     finally:
         health_module.reset_readiness_cache()
 
-    assert all(result == {"database": "ok", "storage": "ok"} for result in results)
-    assert cached == {"database": "ok", "storage": "ok"}
+    expected = {"database_target": "ok", "database": "ok", "storage": "ok"}
+    assert all(result == expected for result in results)
+    assert cached == expected
     database.assert_awaited_once()
     storage.assert_awaited_once()
 

@@ -27,6 +27,11 @@ async def _check_database() -> None:
         await session.execute(text("SELECT 1"))
 
 
+async def _check_database_target() -> None:
+    if not settings.STAGING_DATABASE_TARGET_VERIFIED:
+        raise RuntimeError("The database target is not the approved staging endpoint")
+
+
 async def _bounded_check(
     name: str,
     check: Callable[[], Awaitable[None]],
@@ -69,6 +74,7 @@ def reset_readiness_cache() -> None:
 
 async def _fresh_readiness_checks() -> dict[str, str]:
     results = await asyncio.gather(
+        _bounded_check("database_target", _check_database_target),
         _bounded_check("database", _check_database),
         _bounded_check("storage", probe_storage),
     )

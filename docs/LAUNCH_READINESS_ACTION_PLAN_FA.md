@@ -3,10 +3,10 @@
 > این فایل «صفحهٔ ادامهٔ کار» پروژه است. هر نشست جدید باید ابتدا این فایل را بخواند،
 > آخرین SHA و وضعیت تیک‌ها را بررسی کند و بعد فقط روی اولین کار بازشده کار کند.
 
-**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۸-۲۴
+**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۸-۲۵
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
-**نتیجهٔ فعلی:** release candidate روی remote؛ برای production عمومی آماده نیست.
+**نتیجهٔ فعلی:** مرحلهٔ ۲ در حال اجرا؛ release candidate هنوز برای production عمومی آماده نیست.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -23,10 +23,10 @@
 
 | حوزه | وضعیت | توضیح کوتاه |
 |---|---|---|
-| تست محلی | ✅ | backend: `174 passed`، frontend: `84 passed`، typecheck/lint/build موفق |
+| تست محلی | ✅ | backend non-integration: `179 passed`، frontend baseline: `84 passed`، typecheck/lint/build موفق |
 | شاخه و CI | 🔶 | Quality Gates روی snapshotهای docs-only اخیر (runهای `32768637283`، `32769302779` و `32770142297`) سبز است؛ mirror به HF به تنظیم provider نیاز دارد |
 | دیتابیس | 🔶 | migration/restore ایزوله روی `f8a1b2c3d4e5` سبز است؛ DB محلی `chinverse_db` و branchهای Neon هنوز جداگانه باید ثبت شوند |
-| staging با همین SHA | ⛔ | health، smoke و readiness برای نسخهٔ فعلی ثبت نشده است |
+| staging با همین SHA | 🔶 | frontend والد ساخته شده؛ backend قدیمی است؛ DB target guard و smoke exact-SHA آمادهٔ deploy هستند |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ⛔ | cohort، رضایت، owner بازخورد و رکورد دعوت واقعی ثبت نشده‌اند |
@@ -62,7 +62,7 @@
 |---|---|---|---|---|
 | ۰ | نسخه و CI/deploy | 🔶 history/refs انجام شد؛ CI و promotion باز | دسترسی GitHub/provider | SHA remote، pipeline سبز و deploy همان SHA |
 | ۱ | دیتابیس و restore | 🔶 | مرحلهٔ ۰ | local schema/restore سبز؛ Neon branch و retention مالک‌محور |
-| ۲ | staging | ⛔ باز | مرحلهٔ ۱ | health/readiness و smoke با SHA یکسان |
+| ۲ | staging | 🔶 در حال اجرا | مرحلهٔ ۱ | health/readiness و smoke با SHA یکسان |
 | ۳ | عملیات | 🔶 evidence ناقص | مرحلهٔ ۲ | Sentry، load/soak، alert و rollback evidence |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence ناقص | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ⛔ شروع نشده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
@@ -229,6 +229,25 @@ production هیچ migration یا restore آزمایشی اجرا نشده است
 
 **معیار پذیرش:** پاسخ health و readiness، SHA یکسان frontend/backend را نشان
 می‌دهند؛ smoke بدون خطای blocker اجرا می‌شود؛ دادهٔ staging با production قاطی نیست.
+
+#### گزارش اجرای مرحلهٔ ۲ — ۲۵ اوت ۲۰۲۶ (در حال اجرا)
+
+- **کارهای انجام‌شده:** providerها و SHAها read-only ممیزی شدند؛ علت شکست HF به
+  Trusted Publisher محدود شد؛ guard fail-closed endpoint دیتابیس staging، check
+  جدید `database_target` و workflow exact-SHA با audience ثابت Vercel اضافه شد.
+- **تست‌ها:** config/health برابر `43 passed` و suite غیر integration برابر
+  `179 passed`؛ verifier عملیات و syntax workflow سبز. catalog زندهٔ فعلی
+  `200 []` است و فقط empty-state را ثابت می‌کند.
+- **فایل‌های evidence:**
+  [گزارش مستقل مرحلهٔ ۲](E:/Chinverse/docs/PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md)،
+  `.github/workflows/phase2-staging-smoke.yml` و تغییرات deployment/readiness.
+- **وضعیت provider:** با تأیید لحظه‌ای صاحب Space، Trusted Publisher دقیق فاز ۸
+  و `STAGING_DATABASE_ENDPOINT_ID=ep-wild-band-atse2yoq` ثبت شدند؛ هیچ secret
+  مشاهده یا تغییر نکرد. کار جاری commit/push و deploy same-SHA است.
+
+**نتیجهٔ فعلی مرحلهٔ ۲:** 🔶 و نه ✅. backend زنده هنوز
+`3b3a918a66ea7df875965130ff86c7d1a1227576` را گزارش می‌کند؛ تا deploy و smoke
+same-SHA هیچ ادعای تکمیل ثبت نمی‌شود.
 
 **فرمان درخواست این مرحله:** `مرحلهٔ ۲ را انجام بده`
 

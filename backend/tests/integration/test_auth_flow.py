@@ -28,7 +28,11 @@ async def test_signup_login_and_authenticated_profile_round_trip():
         assert readiness.status_code == 200, readiness.text
         assert readiness.json() == {
             "status": "ok",
-            "checks": {"database": "ok", "storage": "ok"},
+            "checks": {
+                "database_target": "ok",
+                "database": "ok",
+                "storage": "ok",
+            },
         }
 
         signup = await client.post(

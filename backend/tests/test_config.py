@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from app.core.config import (
     Settings,
     build_async_database_url,
+    database_url_matches_neon_endpoint,
     parse_setting_list,
     resolve_release_sha,
 )
@@ -124,6 +125,44 @@ def test_async_database_url_translates_neon_libpq_parameters():
     assert "application_name=" not in async_url
 
 
+@pytest.mark.parametrize(
+    "host",
+    [
+        "ep-wild-band-atse2yoq.us-east-2.aws.neon.tech",
+        "ep-wild-band-atse2yoq-pooler.us-east-2.aws.neon.tech",
+    ],
+)
+def test_database_target_guard_accepts_direct_and_pooled_neon_hosts(host):
+    assert database_url_matches_neon_endpoint(
+        f"postgresql://chinverse:secret@{host}/neondb",
+        "ep-wild-band-atse2yoq",
+    )
+
+
+@pytest.mark.parametrize(
+    "database_url,endpoint_id",
+    [
+        (
+            "postgresql://chinverse:secret@ep-production.us-east-2.aws.neon.tech/neondb",
+            "ep-wild-band-atse2yoq",
+        ),
+        (
+            "postgresql://chinverse:secret@ep-wild-band-atse2yoq.example.com/neondb",
+            "ep-wild-band-atse2yoq",
+        ),
+        (
+            "postgresql://chinverse:secret@ep-wild-band-atse2yoq.us-east-2.aws.neon.tech/neondb",
+            "not-an-endpoint",
+        ),
+    ],
+)
+def test_database_target_guard_rejects_wrong_provider_or_endpoint(
+    database_url,
+    endpoint_id,
+):
+    assert not database_url_matches_neon_endpoint(database_url, endpoint_id)
+
+
 def test_s3_mode_requires_complete_object_storage_configuration():
     with pytest.raises(ValidationError, match="Object storage settings are missing"):
         Settings(
@@ -241,7 +280,11 @@ def test_production_runtime_accepts_mounted_storage_only_for_staging_tier():
         _env_file=None,
         ENVIRONMENT="production",
         DEPLOYMENT_TIER="staging",
-        DATABASE_URL="postgresql://chinverse_app:strong-password@db.example.com/chinverse",
+        DATABASE_URL=(
+            "postgresql://chinverse_app:strong-password@"
+            "ep-wild-band-atse2yoq-pooler.us-east-2.aws.neon.tech/chinverse"
+        ),
+        STAGING_DATABASE_ENDPOINT_ID="ep-wild-band-atse2yoq",
         SECRET_KEY="a-strong-production-secret-with-more-than-32-characters",
         BACKEND_CORS_ORIGINS="https://chinverse.vercel.app",
         BACKEND_CORS_ORIGIN_REGEX=" ",
@@ -254,6 +297,27 @@ def test_production_runtime_accepts_mounted_storage_only_for_staging_tier():
 
     assert staging.USES_MOUNTED_STORAGE is True
     assert staging.USES_OBJECT_STORAGE is False
+    assert staging.STAGING_DATABASE_TARGET_VERIFIED is True
+
+    with pytest.raises(ValidationError, match="STAGING_DATABASE_ENDPOINT_ID"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="staging",
+            DATABASE_URL="postgresql://chinverse_app:strong-password@db.example.com/chinverse",
+        )
+
+    with pytest.raises(ValidationError, match="does not target"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            DEPLOYMENT_TIER="staging",
+            DATABASE_URL=(
+                "postgresql://chinverse_app:strong-password@"
+                "ep-production.us-east-2.aws.neon.tech/chinverse"
+            ),
+            STAGING_DATABASE_ENDPOINT_ID="ep-wild-band-atse2yoq",
+        )
 
     with pytest.raises(ValidationError, match="FILE_STORAGE_MODE must be s3"):
         Settings(

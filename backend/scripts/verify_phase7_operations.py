@@ -34,6 +34,7 @@ def main() -> int:
 
     deploy_path = root / ".github" / "workflows" / "deploy-hf-space.yml"
     monitor_path = root / ".github" / "workflows" / "phase7-monitor.yml"
+    phase2_smoke_path = root / ".github" / "workflows" / "phase2-staging-smoke.yml"
     load_path = root / "backend" / "scripts" / "phase7_load_test.py"
     schema_verifier_path = root / "backend" / "scripts" / "verify_phase7_schema.py"
     backup_path = root / "scripts" / "backup-database.ps1"
@@ -51,6 +52,37 @@ def main() -> int:
     require("codex/phase-7-performance-operations" not in deploy, "Backend deploy still contains the retired Phase 7 branch guard")
     require("codex/phase-5-education-media" not in deploy, "Backend deploy still contains the Phase 5 branch guard")
     require('.checks.storage == "ok"' in deploy, "Backend deploy does not require storage readiness")
+    require(
+        '.checks.database_target == "ok"' in deploy,
+        "Backend deploy does not require the pinned staging database target",
+    )
+
+    phase2_smoke = read(phase2_smoke_path)
+    for contract in (
+        "codex/phase-8-beta-release",
+        "VERCEL_AUTOMATION_BYPASS_SECRET",
+        '.checks.database_target == "ok"',
+        '.checks.database == "ok"',
+        '.checks.storage == "ok"',
+        "/api/v1/subscriptions/me",
+        "/api/v1/referrals/me",
+        "/api/v1/beta/status",
+        "/api/v1/courses/?limit=100",
+        "phase4_staging_fixtures.py cleanup",
+    ):
+        require(contract in phase2_smoke, f"Phase 2 smoke contract is missing: {contract}")
+    require(
+        "inputs.frontend_origin" not in phase2_smoke.lower()
+        and "inputs.backend_origin" not in phase2_smoke.lower(),
+        "Phase 2 smoke must not accept provider URLs from dispatch inputs",
+    )
+    require(
+        phase2_smoke.count(
+            "https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app"
+        )
+        >= 2,
+        "Phase 2 Vercel bypass audience is not pinned to the reviewed preview host",
+    )
 
     monitor = read(monitor_path)
     for contract in (
@@ -151,6 +183,7 @@ def main() -> int:
 
     verify_yaml_syntax(deploy_path)
     verify_yaml_syntax(monitor_path)
+    verify_yaml_syntax(phase2_smoke_path)
     print("Phase 7 operational artifact verification passed.")
     return 0
 
