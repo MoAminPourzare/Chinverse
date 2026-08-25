@@ -3,13 +3,13 @@
 **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۲۶ ۰۱:۳۰ UTC / ۲۰۲۶-۰۸-۲۶ ۰۵:۰۰ Asia/Tehran
 **شاخه:** `codex/phase-8-beta-release`  
 **SHA والد هنگام شروع:** `70f649ef563e7b320e5980451c19bab44eb6b965`  
-**release SHA نهایی این snapshot:** `f3a17a7fac12bb63481a9d648d57e264c0d78e86`
+**release SHA نهایی این snapshot:** `98918b607fd67b3e6c3f6d08de354fbcb86e1759`
 **وضعیت:** 🔶 شواهد staging و smoke فنی سبز؛ پذیرش کامل به‌دلیل health داخلی frontend و نبود lesson منتشرشده هنوز بسته نشده است
 
 ## نتیجهٔ کوتاه
 
 در snapshot نهایی، Quality Gates، Vercel deployment status و HF Space برای SHA
-`f3a17a7fac12bb63481a9d648d57e264c0d78e86` سبز هستند. backend زنده همین SHA را
+`98918b607fd67b3e6c3f6d08de354fbcb86e1759` سبز هستند. backend زنده همین SHA را
 گزارش می‌کند و readiness واقعیِ هدف Neon، PostgreSQL و storage متصل به `/data`
 را `ok` برمی‌گرداند. smoke exact-SHA نیز با موفقیت تمام شده است.
 
@@ -29,23 +29,23 @@ Neon staging اشاره کند. `/health/ready` نیز نتیجهٔ این کن�
 
 | گام | وضعیت | شاهد |
 |---|---|---|
-| ۲.۱ ممیزی SHA و providerها | ✅ | remote و providerها روی SHA نهایی؛ Quality Gates run `32901266092` سبز |
+| ۲.۱ ممیزی SHA و providerها | ✅ | remote و providerها روی SHA نهایی؛ Quality Gates run `32902615699` سبز |
 | ۲.۲ ایمن‌سازی target دیتابیس | ✅ | config guard، readiness contract و live `database_target=ok` |
-| ۲.۳ smoke خودکار staging | ✅ | smoke run `32901266161` موفق؛ group بر اساس release SHA ایزوله است |
+| ۲.۳ smoke خودکار staging | ✅ | smoke run `32902615687` موفق؛ group بر اساس release SHA ایزوله است |
 | ۲.۴ تنظیم Trusted Publisher و متغیرهای Space | ✅ | با تأیید صاحب پروژه، publisher دقیق و endpoint guard غیرمحرمانه ثبت شد |
-| ۲.۵ deploy backend/frontend SHA نهایی | ✅ | HF deploy run `32901266138` موفق؛ Vercel deployment status در smoke تأیید شد |
+| ۲.۵ deploy backend/frontend SHA نهایی | ✅ | HF deploy run `32902615713` موفق؛ Vercel deployment status در smoke تأیید شد |
 | ۲.۶ smoke زنده و cleanup | ✅ فنی / 🔶 رسانه | synthetic auth/chat/RBAC و cleanup سبز؛ catalog خالی و frontend runtime پشت SSO |
 
 ## هویت immutable release مشاهده‌شده
 
 | مورد | provider/URL | run/deployment | SHA گزارش‌شده | نتیجه |
 |---|---|---|---|---|
-| Git remote | `origin/codex/phase-8-beta-release` | branch head | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
-| Quality Gates | GitHub Actions | run `32901266092` | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
-| frontend deployment metadata | GitHub deployment status → Vercel | smoke run `32901266161` | source SHA=`f3a17a7...`; status=`success` | ✅؛ URL از `status.target_url` resolve شد |
+| Git remote | `origin/codex/phase-8-beta-release` | branch head at deploy | `98918b607fd67b3e6c3f6d08de354fbcb86e1759` | ✅ |
+| Quality Gates | GitHub Actions | run `32902615699` | `98918b607fd67b3e6c3f6d08de354fbcb86e1759` | ✅ |
+| frontend deployment metadata | GitHub deployment status → Vercel | smoke run `32902615687` | source SHA=`98918b6...`; status=`success` | ✅؛ URL از `status.target_url` resolve شد |
 | frontend branch URL | `chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app` | Vercel Git integration | protected preview | ✅ anonymous=`302` و `X-Robots-Tag: noindex` |
-| backend deploy | GitHub Actions → HF Space | run `32901266138` | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
-| backend live | `moamin9-chinverse-api.hf.space/health` | Space فعلی | `f3a17a7fac12bb63481a9d648d57e264c0d78e86` | ✅ |
+| backend deploy | GitHub Actions → HF Space | run `32902615713` | `98918b607fd67b3e6c3f6d08de354fbcb86e1759` | ✅ |
+| backend live | `moamin9-chinverse-api.hf.space/health` | Space فعلی | `98918b607fd67b3e6c3f6d08de354fbcb86e1759` | ✅ |
 
 Alias عمومی `chinverse.vercel.app` نیز هنگام ممیزی SHA قدیمی
 `bd7b016edede215885f495370b1976a230d3a996` را گزارش می‌کرد و target مرحلهٔ ۲
@@ -69,7 +69,7 @@ Alias عمومی `chinverse.vercel.app` نیز هنگام ممیزی SHA قدی�
 
 | زمان ممیزی | endpoint | HTTP/فیلدهای مشاهده‌شده | نتیجه |
 |---|---|---|---|
-| ۲۰۲۶-۰۸-۲۶ UTC | backend `/health` | `200`, tier=`staging`, indexable=`false`, release=`f3a17a7...` | ✅ |
+| ۲۰۲۶-۰۸-۲۶ UTC | backend `/health` | `200`, tier=`staging`, indexable=`false`, release=`98918b6...` | ✅ |
 | ۲۰۲۶-۰۸-۲۶ UTC | backend `/health/ready` | `200`, `database_target=ok`, `database=ok`, `storage=ok` | ✅ |
 | ۲۰۲۶-۰۸-۲۶ UTC | protected Vercel preview | anonymous `302`, `X-Robots-Tag: noindex` | ✅ edge protection |
 | ۲۰۲۶-۰۸-۲۶ UTC | frontend `/api/health` | bypass secret موجود نیست؛ preview SSO باقی است | 🔶 مشاهده‌نشده، بدون bypass |
@@ -115,7 +115,7 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
   branch=`codex/phase-8-beta-release` و workflow=`deploy-hf-space.yml` ثبت شد؛
 - HF public variable: `STAGING_DATABASE_ENDPOINT_ID=ep-wild-band-atse2yoq`
   ثبت شد؛ هیچ secret مشاهده یا تغییر نکرد؛
-- HF deploy/restart: run `32901266138` موفق؛ readiness live سبز؛
+- HF deploy/restart: run `32902615713` موفق؛ readiness live سبز؛
 - Vercel configuration/bypass: تغییر نکرده؛
 - Neon branch/schema/data: تغییر نکرده؛
 - fixture/user/chat data: یک synthetic account موقت ساخته و با موفقیت حذف شد؛
@@ -135,8 +135,8 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
   hostهای frontend/backend را از input نمی‌پذیرد.
 - smoke backend نهایی: `passed=true`؛ checkهای health/readiness/signup/login/account/
   beta/chat HTTP/chat WebSocket/RBAC/cleanup همگی `true`.
-- load smoke نهایی (read-only): `15` درخواست، `0` خطا، `p95=924.299ms` و
-  `rps=1.034`.
+- load smoke نهایی (read-only): `15` درخواست، `0` خطا، `p95=430.243ms` و
+  `rps=1.035`.
 
 ## معیار پذیرش و حکم فعلی
 

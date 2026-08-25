@@ -24,9 +24,9 @@
 | حوزه | وضعیت | توضیح کوتاه |
 |---|---|---|
 | تست محلی | ✅ | backend non-integration: `179 passed`، frontend baseline: `84 passed`، typecheck/lint/build موفق |
-| شاخه و CI | ✅ مرحلهٔ ۲ | Quality Gates نهایی run `32901266092` سبز؛ branch=`codex/phase-8-beta-release` |
+| شاخه و CI | ✅ مرحلهٔ ۲ | Quality Gates نهایی run `32902615699` سبز؛ branch=`codex/phase-8-beta-release` |
 | دیتابیس | 🔶 | migration/restore ایزوله روی `f8a1b2c3d4e5` سبز است؛ DB محلی `chinverse_db` و branchهای Neon هنوز جداگانه باید ثبت شوند |
-| staging با همین SHA | 🔶 | backend/HF و Vercel deployment metadata روی `f3a17a7...` سبز؛ frontend runtime پشت SSO و catalog رسانه خالی |
+| staging با همین SHA | 🔶 | backend/HF و Vercel deployment metadata روی `98918b6...` سبز؛ frontend runtime پشت SSO و catalog رسانه خالی |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ⛔ | cohort، رضایت، owner بازخورد و رکورد دعوت واقعی ثبت نشده‌اند |
@@ -236,10 +236,10 @@ production هیچ migration یا restore آزمایشی اجرا نشده است
   `database_target`، workflow exact-SHA با host ثابت، metadata deployment status
   Vercel و smoke synthetic با cleanup اضافه و روی release SHA نهایی اجرا شد.
 - **تست‌ها:** config/health برابر `43 passed` و suite غیر integration برابر
-  `179 passed`؛ Quality Gates run `32901266092`، HF deploy run `32901266138` و
-  smoke run `32901266161` همگی موفق. backend live smoke همهٔ checkهای
+  `179 passed`؛ Quality Gates run `32902615699`، HF deploy run `32902615713` و
+  smoke run `32902615687` همگی موفق. backend live smoke همهٔ checkهای
   auth/account/chat WebSocket/RBAC/cleanup را سبز کرد؛ load smoke `15` درخواست،
-  `0` خطا، `p95=924.299ms` و `rps=1.034`. catalog زنده `200 []` است و فقط
+  `0` خطا، `p95=430.243ms` و `rps=1.035`. catalog زنده `200 []` است و فقط
   empty-state را ثابت می‌کند.
 - **فایل‌های evidence:**
   [گزارش مستقل مرحلهٔ ۲](E:/Chinverse/docs/PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md)،
@@ -250,7 +250,7 @@ production هیچ migration یا restore آزمایشی اجرا نشده است
   پیش‌نمایش Vercel anonymous=`302` و `X-Robots-Tag: noindex` است.
 
 **نتیجهٔ فعلی مرحلهٔ ۲:** 🔶. release SHA نهایی
-`f3a17a7fac12bb63481a9d648d57e264c0d78e86` روی backend live است و source SHA
+`98918b607fd67b3e6c3f6d08de354fbcb86e1759` روی backend live است و source SHA
 Vercel در smoke همان است. تنها دو مورد پذیرش باز هستند: health داخلی frontend
 به‌دلیل نبود `VERCEL_AUTOMATION_BYPASS_SECRET` مشاهده نشده و catalog خالی است،
 پس signed playback/entitlement روی lesson منتشرشده اثبات نشده است.
