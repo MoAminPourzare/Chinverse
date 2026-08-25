@@ -35,6 +35,7 @@ def main() -> int:
     deploy_path = root / ".github" / "workflows" / "deploy-hf-space.yml"
     monitor_path = root / ".github" / "workflows" / "phase7-monitor.yml"
     phase2_smoke_path = root / ".github" / "workflows" / "phase2-staging-smoke.yml"
+    phase2_live_smoke_path = root / "backend" / "scripts" / "phase2_backend_live_smoke.py"
     load_path = root / "backend" / "scripts" / "phase7_load_test.py"
     schema_verifier_path = root / "backend" / "scripts" / "verify_phase7_schema.py"
     backup_path = root / "scripts" / "backup-database.ps1"
@@ -61,6 +62,10 @@ def main() -> int:
     for contract in (
         "codex/phase-8-beta-release",
         "VERCEL_AUTOMATION_BYPASS_SECRET",
+        "GH_TOKEN: ${{ github.token }}",
+        "deployments: read",
+        "run_backend_stateful",
+        "backend-stateful-smoke:",
         '.checks.database_target == "ok"',
         '.checks.database == "ok"',
         '.checks.storage == "ok"',
@@ -69,6 +74,8 @@ def main() -> int:
         "/api/v1/beta/status",
         "/api/v1/courses/?limit=100",
         "phase4_staging_fixtures.py cleanup",
+        "frontend runtime health will remain unobserved",
+        "vercel_deployment_url",
     ):
         require(contract in phase2_smoke, f"Phase 2 smoke contract is missing: {contract}")
     require(
@@ -83,6 +90,13 @@ def main() -> int:
         >= 2,
         "Phase 2 Vercel bypass audience is not pinned to the reviewed preview host",
     )
+    live_smoke = read(phase2_live_smoke_path)
+    for contract in (
+        "refusing a non-audited staging host",
+        "deployment_tier"):
+        require(contract in live_smoke, f"Phase 2 live smoke safety contract is missing: {contract}")
+    for contract in ("/api/v1/signup", "/api/v1/chat/conversations", "/api/v1/admin/users?limit=1", "cleanup"):
+        require(contract in live_smoke, f"Phase 2 live smoke journey is missing: {contract}")
 
     monitor = read(monitor_path)
     for contract in (
