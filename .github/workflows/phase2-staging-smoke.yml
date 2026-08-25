@@ -22,7 +22,7 @@ on:
         type: boolean
 
 concurrency:
-  group: phase2-exact-sha-staging
+  group: phase2-exact-sha-staging-${{ inputs.release_sha || github.sha }}
   # A newer pushed SHA supersedes a stale smoke; leaving it queued would make
   # the exact-release gate wait for a 25-minute timeout before starting.
   cancel-in-progress: true
