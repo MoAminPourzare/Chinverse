@@ -39,6 +39,10 @@ permissions:
   contents: read
   id-token: write
 
+# Phase 2's exact-SHA smoke reads the Vercel deployment status target URL;
+# keeping this deploy workflow in the release path list ensures any promotion
+# contract change is redeployed to the same immutable backend SHA.
+
 jobs:
   deploy:
     name: Hugging Face Space
