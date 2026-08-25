@@ -96,8 +96,8 @@ jobs:
             vercel_deployment_id=""
             vercel_deployment_url=""
             if [[ -s "$vercel_deployments" ]]; then
-              vercel_deployment_id="$(jq -r '[.[] | select(((.environment_url // .target_url // "") | endswith(".vercel.app")))] | sort_by(.created_at) | last | .id // empty' "$vercel_deployments" 2>/dev/null || true)"
-              vercel_deployment_url="$(jq -r '[.[] | select(((.environment_url // .target_url // "") | endswith(".vercel.app")))] | sort_by(.created_at) | last | (.environment_url // .target_url // empty)' "$vercel_deployments" 2>/dev/null || true)"
+              vercel_deployment_id="$(jq -r '[.[] | select(.environment == "Preview" or .environment == "Production")] | sort_by(.created_at) | last | .id // empty' "$vercel_deployments" 2>/dev/null || true)"
+              vercel_deployment_url="$(jq -r '[.[] | select(.environment == "Preview" or .environment == "Production")] | sort_by(.created_at) | last | (.environment_url // .target_url // empty)' "$vercel_deployments" 2>/dev/null || true)"
             fi
             vercel_status="missing"
             if [[ -n "$vercel_deployment_id" ]]; then
