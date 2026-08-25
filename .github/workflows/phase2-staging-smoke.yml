@@ -23,7 +23,9 @@ on:
 
 concurrency:
   group: phase2-exact-sha-staging
-  cancel-in-progress: false
+  # A newer pushed SHA supersedes a stale smoke; leaving it queued would make
+  # the exact-release gate wait for a 25-minute timeout before starting.
+  cancel-in-progress: true
 
 permissions:
   contents: read
