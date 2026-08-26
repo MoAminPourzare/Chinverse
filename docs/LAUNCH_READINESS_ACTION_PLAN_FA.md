@@ -255,6 +255,10 @@ Vercel در smoke همان است. تنها دو مورد پذیرش باز هس
 به‌دلیل نبود `VERCEL_AUTOMATION_BYPASS_SECRET` مشاهده نشده و catalog خالی است،
 پس signed playback/entitlement روی lesson منتشرشده اثبات نشده است.
 
+راهنمای اجرایی و قابل‌ادامهٔ بستن این دو مورد در
+[PHASE_2_CLOSEOUT_CHECKLIST_FA](E:/Chinverse/docs/PHASE_2_CLOSEOUT_CHECKLIST_FA.md)
+ثبت شده است.
+
 **فرمان درخواست این مرحله:** `مرحلهٔ ۲ را انجام بده`
 
 ### مرحلهٔ ۳ — شواهد عملیات و بازیابی
