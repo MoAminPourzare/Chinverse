@@ -20,6 +20,9 @@
 - workflow smoke در commit‌های بعدی URL immutable deployment همان SHA را resolve
   می‌کند؛ بنابراین docs-only deployment جدیدِ branch alias، تست release را منحرف
   نمی‌کند.
+- آخرین اصلاح workflow در commit `88dbd6f3884feb28eb92bf27701ab5636dfc77a7`
+  push شده و job `readonly-preflight` را به Environment `staging` bind می‌کند؛
+  Quality Gates run `32950606427` برای آن سبز است.
 
 پس کار باقی‌مانده «رفع باگ عمومی» نیست؛ دو شاهد live برای بستن رسمی gate کم است.
 

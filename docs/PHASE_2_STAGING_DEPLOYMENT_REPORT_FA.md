@@ -1,10 +1,14 @@
 # گزارش اجرای مرحلهٔ ۲ برنامهٔ آمادگی انتشار — staging با SHA دقیق
 
-**آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۲۶ ۰۱:۳۰ UTC / ۲۰۲۶-۰۸-۲۶ ۰۵:۰۰ Asia/Tehran
+**آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۲۶ (پس از اجرای Quality Gates شمارهٔ ۶۰)
 **شاخه:** `codex/phase-8-beta-release`  
 **SHA والد هنگام شروع:** `70f649ef563e7b320e5980451c19bab44eb6b965`  
 **release SHA نهایی این snapshot:** `98918b607fd67b3e6c3f6d08de354fbcb86e1759`
 **وضعیت:** 🔶 شواهد staging و smoke فنی سبز؛ پذیرش کامل به‌دلیل health داخلی frontend و نبود lesson منتشرشده هنوز بسته نشده است
+
+**آخرین commit مستندسازی/CI:** `88dbd6f3884feb28eb92bf27701ab5636dfc77a7`
+ (workflow-only؛ release اجرایی را عوض نمی‌کند). Quality Gates شمارهٔ `32950606427`
+ برای این commit سبز است و branch با `origin` همگام است.
 
 ## نتیجهٔ کوتاه
 
@@ -160,3 +164,16 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 برای دستورهای دقیق مالک و ادامهٔ امن پس از قطع نشست، به
 [چک‌لیست بستن مرحلهٔ ۲](E:/Chinverse/docs/PHASE_2_CLOSEOUT_CHECKLIST_FA.md) مراجعه
 کن.
+
+## الحاقیهٔ پیگیری — اصلاح workflow و وضعیت نهایی قابل‌ادامه
+
+- job اصلی `readonly-preflight` اکنون به GitHub Environment به نام `staging` متصل
+  است؛ بنابراین اگر `VERCEL_AUTOMATION_BYPASS_SECRET` در همان Environment ثبت شود،
+  health داخلی frontend واقعاً قابل مشاهده خواهد بود.
+- resolve کردن deployment همچنان بر اساس metadata/status همان SHA انجام می‌شود و
+  branch alias متحرک عمداً قابل‌قبول نیست.
+- commit `88dbd6f` و Quality Gates آن سبز و push شده‌اند؛ هیچ secret، DB، storage یا
+  production در این اصلاح لمس نشده است.
+- اجرای live نهایی هنوز تا انجام دو اقدام مالک متوقف است: ثبت bypass secret و
+  اجرای workflow دستی، و ساخت یک fixture رسانهٔ synthetic در Neon staging برای
+  اثبات signed playback/entitlement (یا ثبت تصمیم صریح `accepted-empty-catalog`).
