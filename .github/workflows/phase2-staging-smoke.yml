@@ -48,6 +48,11 @@ jobs:
     name: Exact SHA, protection, readiness and closed features
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    # The frontend bypass (when configured) is a staging-environment secret.
+    # Binding the environment here makes it available to the read-only job;
+    # without this, GitHub silently supplied an empty value and the frontend
+    # runtime check could never run.
+    environment: staging
     outputs:
       # Downstream stateful checks must use the immutable Vercel deployment
       # resolved for EXPECTED_RELEASE, never the moving branch alias.
