@@ -1,5 +1,5 @@
 name: Deploy staging backend
-
+# phase2 smoke trigger: no runtime change
 on:
   push:
     branches:
