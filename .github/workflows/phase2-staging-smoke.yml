@@ -5,7 +5,9 @@ on:
     branches:
       - "codex/phase-8-beta-release"
     paths:
-      - ".github/workflows/phase2-staging-smoke.yml"
+      # Workflow-only edits are intentionally manual-dispatch-only: a workflow
+      # commit is not necessarily deployed to HF/Vercel, so using github.sha
+      # here would create a false exact-SHA failure.
       - ".github/workflows/deploy-hf-space.yml"
       - "backend/**"
       - "frontend/**"
@@ -46,6 +48,10 @@ jobs:
     name: Exact SHA, protection, readiness and closed features
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    outputs:
+      # Downstream stateful checks must use the immutable Vercel deployment
+      # resolved for EXPECTED_RELEASE, never the moving branch alias.
+      frontend_origin: ${{ steps.resolve_release.outputs.frontend_origin }}
     steps:
       - name: Validate immutable targets
         shell: bash
@@ -56,6 +62,7 @@ jobs:
           test "$FRONTEND_ORIGIN" = "https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app"
 
       - name: Wait for the exact backend release and Vercel deployment
+        id: resolve_release
         shell: bash
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
@@ -83,12 +90,6 @@ jobs:
               --output "$backend_health" "${BACKEND_ORIGIN}/health" || true
             curl --silent --show-error --connect-timeout 5 --max-time 15 \
               --output "$backend_ready" "${BACKEND_ORIGIN}/health/ready" || true
-            if [[ "$frontend_runtime_observed" == "true" ]]; then
-              curl --silent --show-error --connect-timeout 5 --max-time 15 \
-                -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" \
-                --output "$frontend_health" "${FRONTEND_ORIGIN}/api/health" || true
-            fi
-
             # The GitHub deployment record carries Vercel's immutable source
             # SHA. This is the safe fallback while preview traffic is SSO
             # protected and no bypass secret is configured.
@@ -119,6 +120,20 @@ jobs:
               fi
             fi
 
+            # The branch alias moves whenever a docs-only commit is deployed.
+            # Once GitHub has resolved the deployment for EXPECTED_RELEASE,
+            # probe that immutable URL so frontend health cannot accidentally
+            # come from a newer SHA.
+            frontend_probe_origin="$FRONTEND_ORIGIN"
+            case "$vercel_deployment_url" in
+              https://chinverse-*.vercel.app) frontend_probe_origin="$vercel_deployment_url" ;;
+            esac
+            if [[ "$frontend_runtime_observed" == "true" ]]; then
+              curl --silent --show-error --connect-timeout 5 --max-time 15 \
+                -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" \
+                --output "$frontend_health" "${frontend_probe_origin}/api/health" || true
+            fi
+
             backend_release="$(jq -r '.release // "missing"' "$backend_health" 2>/dev/null || echo missing)"
             frontend_release="not-observed"
             frontend_health_ok="true"
@@ -140,7 +155,9 @@ jobs:
                 echo "frontend_runtime_health=${frontend_runtime_observed}"
                 echo "vercel_deployment_id=${vercel_deployment_id}"
                 echo "vercel_deployment_url=${vercel_deployment_url}"
+                echo "PHASE2_FRONTEND_ORIGIN=${vercel_deployment_url}"
               } >> "$GITHUB_ENV"
+              echo "frontend_origin=${vercel_deployment_url}" >> "$GITHUB_OUTPUT"
               break
             fi
             if [[ "$attempt" == 100 ]]; then
@@ -179,10 +196,19 @@ jobs:
           set -euo pipefail
           work_dir="${RUNNER_TEMP}/phase2-contract"
           mkdir -p "$work_dir"
+          frontend_origin="${PHASE2_FRONTEND_ORIGIN:-}"
+          test -n "$frontend_origin"
+          case "$frontend_origin" in
+            https://chinverse-*.vercel.app) ;;
+            *) echo "Resolved frontend deployment is not an immutable ChinVerse Vercel URL" >&2; exit 1 ;;
+          esac
+          case "$frontend_origin" in
+            https://chinverse-git-*) echo "Moving branch alias was selected instead of an immutable deployment" >&2; exit 1 ;;
+          esac
 
           anonymous_status="$(curl --silent --show-error --output /dev/null \
             --dump-header "${work_dir}/anonymous.headers" --write-out '%{http_code}' \
-            --connect-timeout 5 --max-time 15 "${FRONTEND_ORIGIN}/")"
+            --connect-timeout 5 --max-time 15 "${frontend_origin}/")"
           case "$anonymous_status" in
             302|401|403) ;;
             *) echo "Protected preview unexpectedly returned HTTP ${anonymous_status}" >&2; exit 1 ;;
@@ -192,16 +218,16 @@ jobs:
           if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
             bypass=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
             curl --fail-with-body --silent --show-error "${bypass[@]}" \
-              "${FRONTEND_ORIGIN}/robots.txt" --output "${work_dir}/robots.txt"
+              "${frontend_origin}/robots.txt" --output "${work_dir}/robots.txt"
             grep -Eqi '^Disallow:[[:space:]]*/[[:space:]]*$' "${work_dir}/robots.txt"
             curl --fail-with-body --silent --show-error "${bypass[@]}" \
-              "${FRONTEND_ORIGIN}/login" --output "${work_dir}/login.html"
+              "${frontend_origin}/login" --output "${work_dir}/login.html"
             grep -Eqi 'noindex' "${work_dir}/login.html"
 
             for route in subscription referrals points; do
               status="$(curl --silent --show-error --output /dev/null \
                 --dump-header "${work_dir}/${route}.headers" --write-out '%{http_code}' \
-                "${bypass[@]}" "${FRONTEND_ORIGIN}/settings/${route}")"
+                "${bypass[@]}" "${frontend_origin}/settings/${route}")"
               case "$status" in 307|308) ;; *) echo "${route} route returned ${status}" >&2; exit 1 ;; esac
               grep -Eqi '^location:[[:space:]]*/settings([[:space:]]|\r)?$' "${work_dir}/${route}.headers"
             done
@@ -303,7 +329,7 @@ jobs:
       CHINVERSE_PHASE4_MODERATOR_PASSWORD: ${{ secrets.PHASE2_MODERATOR_PASSWORD }}
       CHINVERSE_PHASE4_ADMIN_PASSWORD: ${{ secrets.PHASE2_ADMIN_PASSWORD }}
       PHASE4_LIVE_VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-      PHASE4_LIVE_PREVIEW_URL: https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app
+      PHASE4_LIVE_PREVIEW_URL: ${{ needs.readonly-preflight.outputs.frontend_origin }}
       PHASE4_LIVE_API_URL: https://moamin9-chinverse-api.hf.space/api/v1
       PHASE4_LIVE_EXPECTED_API_HOST: moamin9-chinverse-api.hf.space
       PHASE4_LIVE_REFRESH_COOKIE_NAME: __Host-chinverse_refresh

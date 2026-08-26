@@ -17,6 +17,9 @@
 - deployment متادیتای Vercel برای همین SHA موفق است.
 - preview ناشناس عمداً با SSO محافظت می‌شود و `X-Robots-Tag: noindex` می‌دهد.
 - smoke بدون secret برای signup/login/account/chat/WebSocket/RBAC/cleanup موفق است.
+- workflow smoke در commit‌های بعدی URL immutable deployment همان SHA را resolve
+  می‌کند؛ بنابراین docs-only deployment جدیدِ branch alias، تست release را منحرف
+  نمی‌کند.
 
 پس کار باقی‌مانده «رفع باگ عمومی» نیست؛ دو شاهد live برای بستن رسمی gate کم است.
 
@@ -117,4 +120,3 @@ playback هنوز «اثبات‌شده» محسوب نمی‌شود.
 ```text
 مرحلهٔ ۲ را از PHASE_2_CLOSEOUT_CHECKLIST_FA.md ادامه بده
 ```
-
