@@ -79,7 +79,13 @@ export const unsaveCourse = async (courseId: number): Promise<boolean> => {
 };
 
 export const fetchCourseTaxonomy = async (): Promise<CategorySummary[]> => {
-    const response = await api.get<CategorySummary[]>('/courses/taxonomy');
+    // The admin form must not reuse an earlier empty taxonomy response. This
+    // endpoint is operational data (and the BFF already marks it no-store), so
+    // make the browser request unambiguously fresh as well.
+    const response = await api.get<CategorySummary[]>('/courses/taxonomy', {
+        params: { _fresh: Date.now() },
+        chinverseCacheTtlMs: 0,
+    });
     return Array.isArray(response.data) ? response.data : [];
 };
 
