@@ -33,7 +33,7 @@ jobs:
       BACKEND_BASE_URL: https://moamin9-chinverse-api.hf.space
       # This URL is deliberately immutable in the workflow. Never send the
       # Vercel bypass secret to a workflow-dispatch input or repository variable.
-      FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-7-performance-operations-death-stroke.vercel.app/api/health
+      FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app/api/health
       EXPECTED_FRONTEND_RELEASE: ${{ inputs.expected_frontend_release || vars.PHASE7_EXPECTED_FRONTEND_RELEASE }}
       EXPECTED_BACKEND_RELEASE: ${{ inputs.expected_backend_release || vars.PHASE7_EXPECTED_BACKEND_RELEASE }}
     steps:
@@ -49,7 +49,7 @@ jobs:
           work_dir="${RUNNER_TEMP}/phase7-monitor"
           mkdir -p "$work_dir"
 
-          if [[ "$FRONTEND_HEALTH_URL" != "https://chinverse-git-codex-phase-7-performance-operations-death-stroke.vercel.app/api/health" ]]; then
+          if [[ "$FRONTEND_HEALTH_URL" != "https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app/api/health" ]]; then
             echo "Refusing to send the Vercel bypass secret to an untrusted URL" >&2
             exit 1
           fi

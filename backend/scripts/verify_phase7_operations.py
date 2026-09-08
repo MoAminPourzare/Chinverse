@@ -115,7 +115,7 @@ def main() -> int:
         "Monitor must not accept a dispatch-controlled URL while using a bypass secret",
     )
     require(
-        "FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-7-performance-operations-death-stroke.vercel.app/api/health"
+        "FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app/api/health"
         in monitor,
         "Monitor frontend secret audience is not immutable",
     )
