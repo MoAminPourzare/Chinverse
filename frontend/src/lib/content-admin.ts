@@ -95,6 +95,14 @@ export const contentAdminService = {
         return response.data;
     },
 
+    async getCourseBySlug(slug: string): Promise<Course> {
+        const response = await api.get<Course>(`/courses/admin/courses/by-slug/${encodeURIComponent(slug)}`, {
+            params: { _fresh: Date.now() },
+            chinverseCacheTtlMs: 0,
+        });
+        return response.data;
+    },
+
     async createSection(courseId: number, payload: AdminSectionCreatePayload): Promise<Course> {
         const response = await api.post<Course>(`/courses/admin/courses/${courseId}/sections`, payload);
         return response.data;

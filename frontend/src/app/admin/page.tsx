@@ -418,6 +418,18 @@ export default function AdminPanelPage() {
             setMessage("دوره ساخته شد.");
         } catch (error) {
             console.error("Failed to create course", error);
+            if (isHttpStatus(error, 409)) {
+                try {
+                    const existing = await contentAdminService.getCourseBySlug(courseForm.slug.trim());
+                    updateCourse(existing);
+                    setSectionForm((current) => ({ ...current, course_id: String(existing.id) }));
+                    setLessonForm((current) => ({ ...current, course_id: String(existing.id) }));
+                    setMessage(`این دوره از قبل ساخته شده بود و با شناسهٔ ${toPersianDigits(existing.id)} بازیابی شد.`);
+                    return;
+                } catch (recoveryError) {
+                    console.error("Failed to recover existing course", recoveryError);
+                }
+            }
             setMessage("ساخت دوره انجام نشد.");
         } finally {
             setSaving("");

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { get } = vi.hoisted(() => ({ get: vi.fn() }));
+const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
 vi.mock("@/lib/api", () => ({
-    default: { get, post: vi.fn() },
+    default: { get, post },
 }));
 
 import { contentAdminService } from "@/lib/content-admin";
@@ -11,7 +11,19 @@ import { contentAdminService } from "@/lib/content-admin";
 describe("contentAdminService.listCourses", () => {
     beforeEach(() => {
         get.mockReset();
+        post.mockReset();
         vi.spyOn(Date, "now").mockReturnValue(1_725_000_000_000);
+    });
+
+    it("recovers a draft by its slug after an interrupted create response", async () => {
+        const course = { id: 17, slug: "phase2-closeout" };
+        get.mockResolvedValue({ data: course });
+
+        await expect(contentAdminService.getCourseBySlug("phase2-closeout")).resolves.toEqual(course);
+        expect(get).toHaveBeenCalledWith("/courses/admin/courses/by-slug/phase2-closeout", {
+            params: { _fresh: 1_725_000_000_000 },
+            chinverseCacheTtlMs: 0,
+        });
     });
 
     it("loads draft and published courses through the protected admin endpoint", async () => {

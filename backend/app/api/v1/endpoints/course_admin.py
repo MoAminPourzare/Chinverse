@@ -54,6 +54,27 @@ async def list_admin_courses(
     return result.scalars().unique().all()
 
 
+@router.get("/courses/by-slug/{slug}", response_model=schemas.Course)
+async def get_admin_course_by_slug(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user=Depends(deps.get_current_admin_user),
+    slug: str,
+) -> Any:
+    """Recover an existing draft after an interrupted admin create response."""
+    _ = current_user
+    normalized_slug = slug.strip().lower()
+    result = await db.execute(
+        select(Course)
+        .options(selectinload(Course.sections).selectinload(CourseSection.lessons))
+        .where(Course.slug == normalized_slug)
+    )
+    course = result.scalar_one_or_none()
+    if not course:
+        raise not_found("Course")
+    return course
+
+
 @router.post("/courses", response_model=schemas.Course, status_code=status.HTTP_201_CREATED)
 async def create_course(
     *,
