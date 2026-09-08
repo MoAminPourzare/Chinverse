@@ -1,9 +1,31 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "release": "8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18",
   "target": "backend",
   "base_url": "https://moamin9-chinverse-api.hf.space",
   "read_only": true,
+  "provider_saturation": {
+    "observed_at_utc": "2026-09-08T16:12:00Z",
+    "provider": "Neon",
+    "branch": "staging",
+    "branch_id": "br-shiny-darkness-at6obb2e",
+    "observation_range": "last_hour",
+    "compute": {
+      "min": "0.25 CU (~1 GB RAM)",
+      "max": "2 CU (~8 GB RAM)",
+      "ram_used_remained_below_allocated": true,
+      "cpu_used_remained_below_allocated": true
+    },
+    "deadlocks_observed": 0,
+    "pooler_client_connections": {
+      "configured_max": 10000,
+      "observed_active_peak": 2,
+      "observed_waiting_peak": 0,
+      "max_wait_seconds": 0.0
+    },
+    "postgres_connection_count": "provider marked some metrics unavailable",
+    "conclusion": "No database saturation signal was visible during the recorded load/soak window. Application CPU/RAM history is not exposed by the current HF free Space dashboard."
+  },
   "profiles": [
     {
       "profile": "smoke",

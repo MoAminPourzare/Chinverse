@@ -1,8 +1,8 @@
 # گزارش اجرای مرحلهٔ ۳ آمادگی انتشار — عملیات و بازیابی
 
 **آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۸
-**وضعیت:** 🔶 در حال اجرا؛ پیاده‌سازی محلی و شواهد load سبز است، اما Sentry/alert و
-rollback/restore مدیریت‌شده هنوز نیازمند دسترسی provider هستند.
+**وضعیت:** 🔶 در حال اجرا؛ load/soak و alert/recovery زنده سبز هستند، اما Sentry و
+rollback/restore مدیریت‌شده هنوز باید بسته شوند.
 **شاخه:** `codex/phase-8-beta-release`
 **release اجرایی مبنا:** `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`
 
@@ -16,8 +16,8 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
 | ۳.۱ | Sentry با DSN و release/environment | 🔶 | event آزمایشی scrubشده در staging و مشاهدهٔ آن در project |
 | ۳.۲ | لاگ JSON، request/correlation ID و redaction | ✅ محلی | تست redaction و request ID سبز؛ نمونهٔ runtime بدون secret |
 | ۳.۳ | health واقعی DB/storage/dependencies | ✅ | live `/health/ready` با target/database/storage=`ok` |
-| ۳.۴ | smoke/load/soak و JSON evidence | ✅ runner / 🔶 saturation | هر سه profile و JSON سبز؛ metric منابع provider هنوز باید ثبت شود |
-| ۳.۵ | monitor، alert، triage و recovery | 🔶 | manual run و issue dedup/recovery با لینک run |
+| ۳.۴ | smoke/load/soak و JSON evidence | ✅ | سه profile سبز و metric اشباع Neon ثبت شد |
+| ۳.۵ | monitor، alert، triage و recovery | ✅ | failure/recovery و issue dedup با لینک run ثبت شد |
 | ۳.۶ | rollback کد و restore دیتابیس staging | 🔶 | backup checksum/revision، restore branch ایزوله و smoke بعدی |
 | ۳.۷ | تکمیل runbook و مالکیت escalation | 🔶 | مسئول، threshold، کانال و زمان RTO/RPO ثبت‌شده |
 
@@ -43,6 +43,16 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
   عنوان ثابت و بدون response body/secret ایجاد کرد. اکنون مقدار انتظار release
   به قرارداد عادی بازگردانده می‌شود تا run بازیابی، probe واقعی را سبز و همان
   issue را خودکار ببندد.
+
+نیمهٔ recovery نیز کامل شد:
+
+- [run بازیابی #2](https://github.com/MoAminPourzare/Chinverse/actions/runs/34249260908)
+  در `18s` سبز شد؛ frontend، backend و DB/storage را واقعاً probe کرد.
+- bot در issue #1 پیام recovery شامل لینک run گذاشت و همان issue را با reason
+  `completed` بست. شمار issueهای باز پس از recovery صفر شد.
+- `/health` زنده پس از مانور release بک‌اند
+  `34fcecec1a5729cbb12c22caea1b5e53d53fc26a` را گزارش کرد و
+  `/health/ready` همچنان database_target/database/storage=`ok` بود.
 
 ## شواهد اجراشده
 
@@ -75,6 +85,12 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
 - evidence دائمی و بدون credential هر سه profile در
   [PHASE_3_LOAD_EVIDENCE.json](E:/Chinverse/docs/PHASE_3_LOAD_EVIDENCE.json)
   ثبت شده است. فایل‌های خام runner نیز در `.tmp` ignored باقی مانده‌اند.
+- نمودار یک‌ساعتهٔ Neon برای شاخهٔ staging در همان بازه نشان داد RAM و CPU مصرفی
+  پایین‌تر از allocation باقی ماند، deadlock برابر صفر بود، pooler حداکثر `2`
+  connection فعال و `0` waiting با max-wait=`0.00s` داشت (سقف تنظیم‌شده `10000`).
+  جزئیات machine-readable در همان JSON ثبت شد. provider بعضی metricهای مستقیم
+  PostgreSQL را unavailable اعلام کرد و HF Free تاریخچهٔ CPU/RAM اپلیکیشن ارائه
+  نمی‌دهد؛ این محدودیت به‌صراحت ثبت شده و به‌عنوان عدد ساختگی پر نشده است.
 
 ### اصلاح کنترل monitor
 
@@ -93,23 +109,14 @@ workflow در default branch قابل اتکاست؛ manual dispatch provider ev
 1. **Sentry:** SDK و scrubber در کد آماده‌اند، اما DSN، project و ارسال event
    فعال نشده‌اند. ثبت این موارد نیازمند تصمیم و دسترسی صاحب پروژه در Sentry است؛
    secret در چت یا Git ثبت نمی‌شود.
-2. **Alert/recovery:** workflow مانیتور issue deduplicated می‌سازد و recovery آن را
-   می‌بندد، اما یک manual run شکست‌خورده و سپس recovery با لینک run هنوز ثبت نشده؛
-   این کار به دسترسی GitHub Actions و secret bypass staging نیاز دارد. مشاهدهٔ
-   read-only مخزن نشان داد workflow روی شاخهٔ release موجود است، اما چون هنوز در
-   default branch نیست، GitHub اجرای آن را `Not found` اعلام می‌کند؛ طبق قرارداد
-   GitHub، schedule/dispatch پس از merge به default branch قابل اتکا خواهد بود.
-3. **Resource saturation:** سه profile از نظر latency/error/throughput سبز هستند،
-   اما CPU/RAM/DB connection saturation در dashboard provider هنوز ثبت نشده است.
-4. **Rollback/restore:** runbook و wrapperهای revision-aware موجودند، و backup/restore
+2. **Rollback/restore:** runbook و wrapperهای revision-aware موجودند، و backup/restore
    محلی قبلاً سبز بوده است؛ restore branch واقعی Neon و rollback provider هنوز
    بدون دسترسی dashboard اجرا نشده‌اند. production و `main` نباید در این drill
    لمس شوند.
-5. **Escalation:** نام incident commander، operator، کانال و RTO/RPO واقعی باید
+3. **Escalation:** نام incident commander، operator، کانال و RTO/RPO واقعی باید
    توسط صاحب پروژه تعیین و در `PHASE_7_ROLLBACK_RUNBOOK_FA.md` ثبت شود.
 
 ## فرمان ادامه
 
-به‌ترتیب ۳.۵ (manual monitor و alert/recovery)، ۳.۶ (backup/restore و rollback
-ایزوله)، ۳.۷ (تکمیل runbook) و ثبت metric اشباع provider ادامه داده شود. تا ثبت
-DSN و event مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.
+به‌ترتیب ۳.۶ (backup/restore و rollback ایزوله)، ۳.۷ (تکمیل runbook) و Sentry
+ادامه داده شود. تا ثبت DSN و event مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.

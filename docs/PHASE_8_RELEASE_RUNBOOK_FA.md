@@ -15,6 +15,23 @@ overwrite object، downgrade زنده یا تغییر DNS) بدون approval م�
 4. backup جدید بگیر و checksum، Alembic revision و مقصد ایزوله را ثبت کن.
 5. health URLها، alert contact و rollback owner را دو نفره تأیید کن.
 
+### مالکیت و escalation ثبت‌شده برای pre-launch staging
+
+- Incident commander و rollback owner فعلی: صاحب مخزن `MoAminPourzare`.
+- Operator فعلی staging: صاحب مخزن `MoAminPourzare` با دسترسی GitHub، Vercel، HF
+  و Neon. اجرای هم‌زمان توسط operator دوم مجاز نیست.
+- کانال ماشینی فعلی: issue عمومی deduplicated با عنوان
+  `[ops] ChinVerse staging health monitor failed`؛ فقط status و لینک run و هرگز
+  payload/secret در آن ثبت می‌شود. ساخت و بسته‌شدن خودکار آن در issue #1 اثبات شد.
+- کانال خطای اپلیکیشن: Sentry staging پس از ثبت DSN؛ هنوز فعال نشده است.
+- escalation خصوصی P0/P1 و verifier انسانی دوم هنوز توسط مالک معرفی نشده‌اند؛ تا
+  ثبت یک کانال خصوصی واقعی، rollout عمومی مجاز نیست. شماره یا ایمیل حدس زده نشده
+  و نباید در Git عمومی ثبت شود.
+- thresholdهای توقف: readiness غیر-`ok`، هر P0/P1، error-rate بیش از `1%`،
+  p95 بیش از `2500ms`، waiting DB بیشتر از صفر به‌صورت پایدار، یا خطای auth/payment.
+- RTO هدف staging برابر `30m` و RPO هدف پس از backup دوره‌ای برابر `24h` است؛ این
+  دو تا پایان drill restore فقط objective هستند و SLA محسوب نمی‌شوند.
+
 ## اجرای بتا
 
 - allowlist را با user id/email hash شده و expiry ثبت کن؛ دسترسی revoke باید فوری

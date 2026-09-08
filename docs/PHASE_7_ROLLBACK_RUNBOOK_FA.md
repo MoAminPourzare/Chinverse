@@ -173,10 +173,12 @@ active به monitoring منتقل می‌شود. RTO هدف staging ۳۰ دقی�
 | load/soak | error>۱٪ یا p95>۲۵۰۰ms | deploy نکن؛ query/egress/pool را پروفایل کن |
 
 GitHub monitor failure یک issue ops deduplicated ایجاد می‌کند و recovery آن را
-می‌بندد. schedule و workflow_dispatch این فایل جدید تنها پس از حضور workflow در
-default branch قابل‌اتکا هستند؛ پیش از merge فقط probe مستقیم و verifier محلی
-ثبت می‌شود. GitHub issue alert جایگزین pager یا Sentry نیست و مالک باید
-notification حساب را فعال نگه دارد.
+می‌بندد. schedule و workflow_dispatch تنها پس از حضور workflow در default branch
+قابل‌اتکا هستند. پیش از merge، push trigger محدود شاخهٔ
+`codex/phase-8-beta-release` فقط هنگام تغییر خود فایل monitor اجازهٔ drill دارد؛
+failure run `34248986887` issue #1 را ساخت و recovery run `34249260908` آن را بست.
+GitHub issue alert جایگزین pager یا Sentry نیست و مالک باید notification حساب را
+فعال نگه دارد.
 
 ## drill لازم پیش از بستن فاز
 
