@@ -1,14 +1,14 @@
 # گزارش اجرای مرحلهٔ ۲ برنامهٔ آمادگی انتشار — staging با SHA دقیق
 
-**آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۲۶ (پس از اجرای Quality Gates شمارهٔ ۶۰)
+**آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۸ (پس از cleanup نهایی fixture و بازآزمایی live)
 **شاخه:** `codex/phase-8-beta-release`  
 **SHA والد هنگام شروع:** `70f649ef563e7b320e5980451c19bab44eb6b965`  
-**release SHA نهایی این snapshot:** `98918b607fd67b3e6c3f6d08de354fbcb86e1759`
-**وضعیت:** 🔶 شواهد staging و smoke فنی سبز؛ پذیرش کامل به‌دلیل health داخلی frontend و نبود lesson منتشرشده هنوز بسته نشده است
+**release SHA اجرایی:** `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`
+**وضعیت فعلی:** ✅ مرحلهٔ ۲ بسته شد؛ deploy هم‌SHA، health/readiness، smoke رسانه و cleanup نهایی تأیید شده‌اند
 
-**آخرین commit مستندسازی/CI:** `88dbd6f3884feb28eb92bf27701ab5636dfc77a7`
- (workflow-only؛ release اجرایی را عوض نمی‌کند). Quality Gates شمارهٔ `32950606427`
- برای این commit سبز است و branch با `origin` همگام است.
+**آخرین release functional:** `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`
+ (deploy و smoke روی همین SHA). این به‌روزرسانی گزارش docs-only است و release اجرایی
+ را عوض نمی‌کند.
 
 ## نتیجهٔ کوتاه
 
@@ -38,7 +38,7 @@ Neon staging اشاره کند. `/health/ready` نیز نتیجهٔ این کن�
 | ۲.۳ smoke خودکار staging | ✅ | smoke run `32902615687` موفق؛ group بر اساس release SHA ایزوله است |
 | ۲.۴ تنظیم Trusted Publisher و متغیرهای Space | ✅ | با تأیید صاحب پروژه، publisher دقیق و endpoint guard غیرمحرمانه ثبت شد |
 | ۲.۵ deploy backend/frontend SHA نهایی | ✅ | HF deploy run `32902615713` موفق؛ Vercel deployment status در smoke تأیید شد |
-| ۲.۶ smoke زنده و cleanup | ✅ فنی / 🔶 رسانه | synthetic auth/chat/RBAC و cleanup سبز؛ catalog خالی و frontend runtime پشت SSO |
+| ۲.۶ smoke زنده و cleanup | ✅ | synthetic auth/chat/RBAC، signed playback/entitlement و cleanup fixture سبز |
 
 ## هویت immutable release مشاهده‌شده
 
@@ -142,7 +142,7 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 - load smoke نهایی (read-only): `15` درخواست، `0` خطا، `p95=430.243ms` و
   `rps=1.035`.
 
-## معیار پذیرش و حکم فعلی
+## معیار پذیرش و حکم snapshot پیش از cleanup (تاریخی)
 
 - [x] backend و Vercel deployment metadata برای SHA دقیق یکسان‌اند؛ frontend runtime
   health به‌دلیل SSO و نبود bypass secret مشاهده نشد.
@@ -154,7 +154,7 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 - [ ] signed playback روی یک lesson رایگان منتشرشده live اثبات شود یا نبود داده
   به‌عنوان تصمیم صریح acceptance ثبت شود.
 
-**نتیجهٔ فعلی مرحلهٔ ۲:** 🔶. استقرار same-SHA و smoke فنی تکمیل و قابل تکرار است؛
+**نتیجهٔ آن snapshot:** 🔶. استقرار same-SHA و smoke فنی تکمیل و قابل تکرار است؛
 دو blocker صریح باقی است: (۱) مشاهدهٔ frontend `/api/health` نیازمند افزودن
 `VERCEL_AUTOMATION_BYPASS_SECRET` به GitHub Environment، بدون تغییر protection؛
 (۲) catalog staging خالی است، بنابراین signed playback/entitlement روی lesson
@@ -189,6 +189,24 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 - بازآزمایی زنده موفق بود: هشدار partial-load حذف شد و پنل 69 دوره، 205 درس، 300 کلمه و دورهٔ `phase2-closeout-bf4059d` را نشان داد.
 - frontend داخلی `/api/health` در نشست SSO با `status=ok`، tier=`staging`، `indexable=false` و SHA `474d33306e7c0f4fe986650e946f32a9a3587c8d` مشاهده شد.
 - چون deploy HF قبلاً frontend-only commitها را نادیده می‌گرفت، exact-SHA smoke برای `474d333...` بدون backend هم‌SHA معطل می‌ماند. مسیر `frontend/**` به trigger deploy staging اضافه شد تا نامزدهای release همیشه روی هر دو provider یک SHA داشته باشند.
+
+### checkpoint آمادهٔ cleanup — ۲۰۲۶-۰۹-۰۸
+
+- release کاربردی نهایی: `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`.
+- [Quality Gates `34215969535`](https://github.com/MoAminPourzare/Chinverse/actions/runs/34215969535)، [HF deploy `34215969479`](https://github.com/MoAminPourzare/Chinverse/actions/runs/34215969479)، [exact-SHA smoke `34215969552`](https://github.com/MoAminPourzare/Chinverse/actions/runs/34215969552) و Vercel deployment همگی success هستند.
+- backend `/health` و frontend `/api/health` هر دو همین SHA، tier=`staging` و `indexable=false` را گزارش کردند؛ readiness دیتابیس و storage نیز ok است.
+- smoke جداگانه با یک حساب عادی تصادفی روی همین SHA تمام checkهای signup، normal-user، RBAC 403، catalog، lesson 205 playback، free entitlement، subtitle fa published، مخفی‌بودن provider URL و Range 206 را پاس کرد؛ حساب در finally حذف و 401 پس از حذف تأیید شد.
+- آخرین کار باز فقط cleanup fixture دقیق است: course/section 69، lesson 205، subtitle track 1، media assets 1/2 و دو فایل `phase2-closeout-video.mp4` و `phase2-closeout-cover.png`. چون این حذف دائمی دادهٔ ابری است، پیش از اجرای آن تأیید صریح لحظهٔ حذف لازم است.
+- مالک در ۲۰۲۶-۰۹-۰۸ حذف دقیق موارد بالا را تأیید کرد. اجرای UI قبل از هر mutation در صفحهٔ ورود Neon متوقف شد، چون پروفایل Chrome فعلی نشست Neon ندارد؛ کاربر باید فقط ورود را انجام دهد و تب SQL Editor شاخهٔ staging را باز بگذارد. هیچ داده‌ای تا این checkpoint حذف نشده است.
+
+### checkpoint نهایی بسته‌شدن مرحلهٔ ۲ — ۲۰۲۶-۰۹-۰۸
+
+- مقصد mutation با مشاهدهٔ UI تأیید شد: پروژهٔ Neon `twilight-unit-31615795`، branch=`staging`، branch ID=`br-shiny-darkness-at6obb2e` و endpoint=`ep-wild-band-atse2yoq`. production branch در این کار لمس نشد.
+- تراکنش محافظت‌شدهٔ Neon با guardهای دقیقِ id، slug، title، رابطه‌ها و checksum اجرا و commit شد. نتیجهٔ query نهایی: `course_rows=0`، `section_rows=0`، `lesson_rows=0`، `subtitle_rows=0` و `media_rows=0`.
+- فقط دو فایل fixture با نام‌های `phase2-closeout-cover.png` و `phase2-closeout-video.mp4` از bucket خصوصی `MoAmin9/chinverse-api-storage` حذف شدند؛ پس از refresh، UI مقدار `0 Bytes` و `0 files` را نشان داد. bucket و فایل دیگری حذف نشد.
+- بازآزمایی عمومی backend روی release `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`: `/health=200` با tier=`staging` و `indexable=false`؛ `/health/ready=200` با `database_target/database/storage=ok`؛ slug دورهٔ fixture و playback درس 205 هر دو `404` شدند.
+- signed playback و entitlement پیش از cleanup روی lesson رایگان منتشرشده با Range `206` و subtitle فارسی ثبت شده بود؛ پس از cleanup، نبود course/playback و خالی بودن storage تأیید شد. این ترتیب هم قابلیت رسانه و هم پاک‌سازی را اثبات می‌کند.
+- **حکم نهایی:** مرحلهٔ ۲ برنامهٔ آمادگی انتشار `✅` است. شرط‌های health/readiness، هم‌هویتی SHA، حفاظت/noindex، smoke سفرهای اصلی، اثبات رسانه و cleanup همگی ثبت شده‌اند. release هنوز برای production عمومی آماده اعلام نمی‌شود؛ مرحلهٔ بعدی برنامه، مرحلهٔ ۳ عملیات است.
 
 ## الحاقیهٔ پیگیری قدیمی — اصلاح workflow
 

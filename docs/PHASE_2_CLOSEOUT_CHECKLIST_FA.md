@@ -4,29 +4,42 @@
 منظور از «مرحلهٔ ۲» در این سند، مرحلهٔ staging در
 `docs/LAUNCH_READINESS_ACTION_PLAN_FA.md` است، نه فاز قدیمیِ دیتابیس/فایل.
 
-## وضعیت فعلی
+## وضعیت فعلی — بسته‌شده در ۲۰۲۶-۰۹-۰۸
 
 کد و استقرار برای release زیر سالم و قابل‌ردیابی است:
 
 ```text
-98918b607fd67b3e6c3f6d08de354fbcb86e1759
+8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18
 ```
 
-- backend روی HF همین SHA را گزارش می‌کند؛ `/health` و `/health/ready` سبز هستند.
+- backend و frontend staging همین SHA را گزارش می‌کنند؛ `/health` و `/health/ready` سبز هستند.
 - `database_target`، `database` و `storage` در readiness برابر `ok` هستند.
 - deployment متادیتای Vercel برای همین SHA موفق است.
 - preview ناشناس عمداً با SSO محافظت می‌شود و `X-Robots-Tag: noindex` می‌دهد.
-- smoke بدون secret برای signup/login/account/chat/WebSocket/RBAC/cleanup موفق است.
+- smoke بدون secret برای signup/login/account/chat/WebSocket/RBAC/cleanup موفق است؛
+  smoke رسانه نیز entitlement رایگان، signed playback با Range `206` و subtitle فارسی را تأیید کرد.
+- پس از smoke، fixture دقیق از Neon staging حذف شد و query نهایی برای course/section/lesson/subtitle/media همگی `0` برگشت.
+- دو فایل `phase2-closeout-cover.png` و `phase2-closeout-video.mp4` از bucket خصوصی حذف شدند؛ UI پس از refresh مقدار `0 Bytes / 0 files` را نشان داد.
+- endpointهای عمومی course fixture و playback درس 205 پس از cleanup هر دو `404` هستند؛ health همچنان `200` و readiness همچنان سبز است.
 - workflow smoke در commit‌های بعدی URL immutable deployment همان SHA را resolve
   می‌کند؛ بنابراین docs-only deployment جدیدِ branch alias، تست release را منحرف
   نمی‌کند.
-- آخرین اصلاح workflow در commit `88dbd6f3884feb28eb92bf27701ab5636dfc77a7`
-  push شده و job `readonly-preflight` را به Environment `staging` bind می‌کند؛
-  Quality Gates run `32950606427` برای آن سبز است.
+- آخرین اصلاح workflow در commit `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`
+  push شده و deployهای frontend/backend را روی یک release SHA نگه می‌دارد؛
+  Quality Gates `34215969535`، HF deploy `34215969479` و exact-SHA smoke `34215969552` سبز هستند.
 
-پس کار باقی‌مانده «رفع باگ عمومی» نیست؛ دو شاهد live برای بستن رسمی gate کم است.
+مرحلهٔ ۲ رسماً بسته است؛ کار بعدی از اولین مرحلهٔ باز، یعنی مرحلهٔ ۳ عملیات، ادامه می‌یابد.
 
-## کار ۱ — مشاهدهٔ health داخلی frontend
+## نتیجهٔ نهایی
+
+مرحلهٔ ۲ (`staging`) با وضعیت `✅` بسته شد. cleanup فقط روی branch=`staging`
+در پروژهٔ Neon `twilight-unit-31615795` و bucket خصوصی staging انجام شد؛
+production، `main` و داده‌های واقعی کاربران در این عملیات لمس نشدند.
+
+## کار ۱ — انجام‌شده: مشاهدهٔ health داخلی frontend
+
+این بخش، دستورالعمل تاریخی اجرای preflight است؛ blocker آن با مشاهدهٔ نشست SSO
+بسته شد و نیازی به ساخت bypass جدید برای بستن مرحلهٔ ۲ نیست.
 
 این کار فقط برای تست است و نباید SSO یا Deployment Protection را خاموش کند.
 
@@ -42,11 +55,11 @@
    Name: VERCEL_AUTOMATION_BYPASS_SECRET
    ```
 
-4. در **Actions → Phase 2 exact-SHA staging smoke → Run workflow**، شاخهٔ
-   `codex/phase-8-beta-release` و ورودی‌های زیر را انتخاب کن:
+4. در اجرای ثبت‌شدهٔ **Phase 2 exact-SHA staging smoke**، شاخهٔ
+   `codex/phase-8-beta-release` با release زیر استفاده شد:
 
    ```text
-   release_sha: 98918b607fd67b3e6c3f6d08de354fbcb86e1759
+   release_sha: 8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18
    run_backend_stateful: true
    run_stateful: false
    ```
@@ -57,10 +70,11 @@
    کن؛ اگر برای monitor مرحلهٔ ۷ لازم است، آن را فقط در Environment `staging` نگه
    دار و هرگز در `production` یا به‌صورت header سراسری استفاده نکن.
 
-## کار ۲ — یک محتوای synthetic برای اثبات signed playback
+## کار ۲ — انجام‌شده: محتوای synthetic و cleanup
 
-catalog staging اکنون `200 []` است. این پاسخ برای empty-state درست است، اما بدون یک
-lesson منتشرشده نمی‌توان entitlement و URL امضاشده را live اثبات کرد.
+برای اثبات live، یک course/lesson رایگان synthetic با subtitle فارسی ساخته و
+منتشر شد؛ playback امضاشده، entitlement و Range `206` تأیید شدند. سپس همان fixture
+به‌صورت محافظت‌شده حذف شد و catalog/playback نبود آن را `404` برگرداندند.
 
 محتوای واقعی یا مجوز تجاری لازم نیست؛ یک تصویر و ویدیوی کوتاه synthetic/free کافی
 است. بااین‌حال backend عمداً فقط پس از طی workflow زیر انتشار را قبول می‌کند:
@@ -89,10 +103,12 @@ lesson منتشرشده نمی‌توان entitlement و URL امضاشده را
 Course/Section/Lesson با `SAMPLE_VIDEO` می‌سازد و MediaAsset یا publication state
 ایجاد نمی‌کند. از آن برای staging استفاده نکن.
 
-## دسترسی‌هایی که لازم است
+## دسترسی‌های استفاده‌شده (تاریخی)
 
-اگر می‌خواهی من اجرای کار ۲ را انجام دهم، secretها را داخل چت نفرست. یکی از این دو
-روش را انتخاب کن:
+admin دارای MFA در staging و نشست‌های Neon/HF در ۲۰۲۶-۰۹-۰۸ آماده و استفاده شدند؛
+هیچ secret یا credential در چت، فایل یا لاگ قرار نگرفت.
+
+این گزینه‌ها فقط برای بازاجرای تاریخی هستند و برای مرحلهٔ ۲ بسته‌شده لازم نیستند:
 
 - خودت در Neon staging وارد شو و بگو «Neon staging آماده است» تا فقط همان branch را
   با fixture synthetic بررسی و cleanup کنم؛ یا
@@ -112,14 +128,12 @@ Course/Section/Lesson با `SAMPLE_VIDEO` می‌سازد و MediaAsset یا pub
 
 ## معیار نهایی و فرمان ادامه
 
-مرحلهٔ ۲ وقتی `✅` می‌شود که کار ۱ مشاهدهٔ frontend را ثبت کند و کار ۲ حداقل یک
-lesson رایگانِ منتشرشده را با signed playback/entitlement و cleanup اثبات کند.
-اگر عمداً آموزش را در این release خالی نگه می‌داری، باید همین تصمیم را صریحاً به‌عنوان
-`accepted-empty-catalog` ثبت کنی؛ در آن حالت مرحله از نظر استقرار سبز است، اما signed
-playback هنوز «اثبات‌شده» محسوب نمی‌شود.
+مرحلهٔ ۲ با ثبت هر دو شاهد بالا `✅` شده است: health داخلی frontend و یک lesson
+رایگانِ منتشرشده با signed playback/entitlement و cleanup. catalog خالی فعلی
+نتیجهٔ cleanup است، نه blocker؛ تصمیم `accepted-empty-catalog` لازم نیست.
 
-فرمان ادامه در نشست بعدی:
+فرمان ادامه در نشست بعدی (برای مرحلهٔ بعد):
 
 ```text
-مرحلهٔ ۲ را از PHASE_2_CLOSEOUT_CHECKLIST_FA.md ادامه بده
+مرحلهٔ ۳ را از LAUNCH_READINESS_ACTION_PLAN_FA.md ادامه بده
 ```

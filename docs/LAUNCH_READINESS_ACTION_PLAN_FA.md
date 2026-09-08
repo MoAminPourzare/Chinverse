@@ -5,12 +5,14 @@
 
 **آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۰۸
 
-**checkpoint مرحلهٔ ۲:** هنوز 🔶؛ دورهٔ مصنوعی 69 و درس 205 منتشر شده‌اند، signed MP4 با HTTP 206 و entitlement رایگان و subtitle فارسی زنده تأیید شد. release مشاهده‌شده `2990678545200f76e4724fb1e46f047d0381dc56` و سه pipeline آن سبز است. اصلاح پاسخ publish/archive، شاهد frontend داخلی SHA نهایی، smoke کاربر عادی و cleanup fixture هنوز باید نهایی شود. بخش checkpoint جدید در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` بر snapshotهای قدیمی زیر مقدم است.
+**checkpoint مرحلهٔ ۲:** ✅؛ deploy هم‌SHA، health/readiness، signed playback/entitlement، smoke کاربر عادی و cleanup نهایی fixture ثبت شده‌اند. release اجرایی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` است. جزئیات و شواهد در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` آمده است.
 
-**checkpoint پنل:** ورود admin/MFA زنده تأیید شد. نقص partial-load دوره‌ها به forward شدن `Content-Length` فشرده پس از decode شدن gzip/br در BFF رسید؛ اصلاح و تست شده و منتظر deploy/بازآزمایی زنده است.
+**checkpoint پنل:** ورود admin/MFA زنده تأیید شد. نقص partial-load دوره‌ها به forward شدن `Content-Length` فشرده پس از decode شدن gzip/br در BFF رسید؛ اصلاح، deploy و بازآزمایی زنده روی release نهایی موفق شد.
+
+**checkpoint نهایی مرحلهٔ ۲:** release `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` روی frontend/backend هم‌SHA و هر سه pipeline سبز است؛ پنل collectionها کامل لود شد، signed playback/entitlement روی fixture رایگان پاس شد و سپس همان fixture از Neon staging و bucket خصوصی حذف و نبود آن تأیید شد.
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
-**نتیجهٔ فعلی:** مرحلهٔ ۲ از نظر deploy و smoke فنی سبز است؛ release candidate هنوز برای production عمومی آماده نیست.
+**نتیجهٔ فعلی:** مرحلهٔ ۲ بسته است؛ release candidate هنوز برای production عمومی آماده اعلام نمی‌شود و باید مرحلهٔ ۳ عملیات تکمیل شود.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -30,7 +32,7 @@
 | تست محلی | ✅ | backend non-integration: `179 passed`، frontend baseline: `84 passed`، typecheck/lint/build موفق |
 | شاخه و CI | ✅ مرحلهٔ ۲ | Quality Gates نهایی run `32902615699` سبز؛ branch=`codex/phase-8-beta-release` |
 | دیتابیس | 🔶 | migration/restore ایزوله روی `f8a1b2c3d4e5` سبز است؛ DB محلی `chinverse_db` و branchهای Neon هنوز جداگانه باید ثبت شوند |
-| staging با همین SHA | 🔶 | backend/HF و Vercel deployment metadata روی `98918b6...` سبز؛ frontend runtime پشت SSO و catalog رسانه خالی |
+| staging با همین SHA | ✅ مرحلهٔ ۲ | backend/HF و Vercel روی `8ba6fc1...` هم‌SHA؛ health/readiness و smoke رسانه/cleanup ثبت شد |
 | عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ⛔ | cohort، رضایت، owner بازخورد و رکورد دعوت واقعی ثبت نشده‌اند |
@@ -66,7 +68,7 @@
 |---|---|---|---|---|
 | ۰ | نسخه و CI/deploy | 🔶 history/refs انجام شد؛ CI و promotion باز | دسترسی GitHub/provider | SHA remote، pipeline سبز و deploy همان SHA |
 | ۱ | دیتابیس و restore | 🔶 | مرحلهٔ ۰ | local schema/restore سبز؛ Neon branch و retention مالک‌محور |
-| ۲ | staging | 🔶 evidence فنی سبز؛ دو blocker باز | مرحلهٔ ۱ | health/readiness و smoke با SHA یکسان |
+| ۲ | staging | ✅ بسته | مرحلهٔ ۱ | health/readiness، smoke با SHA یکسان، signed playback و cleanup |
 | ۳ | عملیات | 🔶 evidence ناقص | مرحلهٔ ۲ | Sentry، load/soak، alert و rollback evidence |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence ناقص | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ⛔ شروع نشده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
@@ -253,13 +255,14 @@ production هیچ migration یا restore آزمایشی اجرا نشده است
   `database_target/database/storage=ok` است. هیچ secret مشاهده یا تغییر نکرد.
   پیش‌نمایش Vercel anonymous=`302` و `X-Robots-Tag: noindex` است.
 
-**نتیجهٔ فعلی مرحلهٔ ۲:** 🔶. release SHA نهایی
-`98918b607fd67b3e6c3f6d08de354fbcb86e1759` روی backend live است و source SHA
-Vercel در smoke همان است. تنها دو مورد پذیرش باز هستند: health داخلی frontend
-به‌دلیل نبود `VERCEL_AUTOMATION_BYPASS_SECRET` مشاهده نشده و catalog خالی است،
-پس signed playback/entitlement روی lesson منتشرشده اثبات نشده است.
+**نتیجهٔ نهایی مرحلهٔ ۲:** ✅. release اجرایی
+`8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` روی backend live و metadata Vercel
+با همان SHA ثبت شده است. health داخلی frontend در نشست SSO مشاهده شد؛ smoke
+کاربر عادی، entitlement رایگان، signed playback با Range `206` و subtitle فارسی
+پاس شدند. سپس fixture دقیق از Neon staging و bucket خصوصی حذف و نبود course،
+playback و فایل‌ها تأیید شد. production و `main` تغییر نکرده‌اند.
 
-راهنمای اجرایی و قابل‌ادامهٔ بستن این دو مورد در
+راهنمای اجرایی و قابل‌ادامهٔ بستن این مرحله در
 [PHASE_2_CLOSEOUT_CHECKLIST_FA](E:/Chinverse/docs/PHASE_2_CLOSEOUT_CHECKLIST_FA.md)
 ثبت شده است.
 
