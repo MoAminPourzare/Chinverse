@@ -26,6 +26,8 @@ export interface Course {
     /** App-signed cover URL; absent when the cover is not licensed. */
     cover_image_url?: string | null;
     cover_url?: string | null;
+    /** Registered cover asset id, exposed to authenticated admin workflows. */
+    cover_media_id?: number | null;
     level: string;
     subcategory_slug?: string | null;
     metadata_json?: Record<string, unknown>;

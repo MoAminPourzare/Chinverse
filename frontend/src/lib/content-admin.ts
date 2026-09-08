@@ -118,6 +118,14 @@ export const contentAdminService = {
         return response.data;
     },
 
+    async getMedia(mediaId: number): Promise<AdminMediaAsset> {
+        const response = await api.get<AdminMediaAsset>(`/media/admin/assets/${mediaId}`, {
+            params: { _fresh: Date.now() },
+            chinverseCacheTtlMs: 0,
+        });
+        return response.data;
+    },
+
     async reviewMediaLicense(mediaId: number, status: "approved" | "rejected", notes: string): Promise<AdminMediaAsset> {
         const response = await api.post<AdminMediaAsset>(`/media/admin/assets/${mediaId}/license-review`, { status, notes: notes.trim() || null });
         return response.data;

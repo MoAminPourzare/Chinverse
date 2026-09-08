@@ -26,6 +26,17 @@ describe("contentAdminService.listCourses", () => {
         });
     });
 
+    it("recovers an existing media asset by id", async () => {
+        const asset = { id: 2, status: "draft", license_status: "pending" };
+        get.mockResolvedValue({ data: asset });
+
+        await expect(contentAdminService.getMedia(2)).resolves.toEqual(asset);
+        expect(get).toHaveBeenCalledWith("/media/admin/assets/2", {
+            params: { _fresh: 1_725_000_000_000 },
+            chinverseCacheTtlMs: 0,
+        });
+    });
+
     it("loads draft and published courses through the protected admin endpoint", async () => {
         const courses = [{ id: 1, slug: "phase2-closeout" }];
         get.mockResolvedValue({ data: courses });

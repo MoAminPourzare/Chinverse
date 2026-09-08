@@ -801,6 +801,19 @@ async def _get_media(db: AsyncSession, media_id: int) -> MediaAsset:
     return asset
 
 
+@router.get(
+    "/media/admin/assets/{media_id}",
+    response_model=media_schemas.MediaAssetRead,
+)
+async def get_admin_media_asset(
+    media_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    _current_user=Depends(deps.get_current_admin_user),
+) -> Any:
+    """Recover an existing asset so an interrupted admin workflow can resume."""
+    return await _get_media(db, media_id)
+
+
 @router.post(
     "/media/admin/assets",
     response_model=media_schemas.MediaAssetRead,

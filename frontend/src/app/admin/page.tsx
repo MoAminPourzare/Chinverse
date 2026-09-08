@@ -438,6 +438,13 @@ export default function AdminPanelPage() {
                         setSubtitleWorkflowForm((current) => ({ ...current, lesson_id: String(existingLessonId) }));
                         setPublicationLessonId(String(existingLessonId));
                     }
+                    if (existing.cover_media_id) {
+                        try {
+                            setMediaWorkflowAsset(await contentAdminService.getMedia(existing.cover_media_id));
+                        } catch (mediaRecoveryError) {
+                            console.error("Failed to recover existing cover media", mediaRecoveryError);
+                        }
+                    }
                     setMessage(`این دوره از قبل ساخته شده بود و با شناسهٔ ${toPersianDigits(existing.id)} بازیابی شد.`);
                     return;
                 } catch (recoveryError) {
