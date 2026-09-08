@@ -16,7 +16,7 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
 | ۳.۱ | Sentry با DSN و release/environment | 🔶 | event آزمایشی scrubشده در staging و مشاهدهٔ آن در project |
 | ۳.۲ | لاگ JSON، request/correlation ID و redaction | ✅ محلی | تست redaction و request ID سبز؛ نمونهٔ runtime بدون secret |
 | ۳.۳ | health واقعی DB/storage/dependencies | ✅ | live `/health/ready` با target/database/storage=`ok` |
-| ۳.۴ | smoke/load/soak و JSON evidence | 🔶 | smoke و load سبز؛ soak در حال اجرا/ثبت نتیجه |
+| ۳.۴ | smoke/load/soak و JSON evidence | ✅ runner / 🔶 saturation | هر سه profile و JSON سبز؛ metric منابع provider هنوز باید ثبت شود |
 | ۳.۵ | monitor، alert، triage و recovery | 🔶 | manual run و issue dedup/recovery با لینک run |
 | ۳.۶ | rollback کد و restore دیتابیس staging | 🔶 | backup checksum/revision، restore branch ایزوله و smoke بعدی |
 | ۳.۷ | تکمیل runbook و مالکیت escalation | 🔶 | مسئول، threshold، کانال و زمان RTO/RPO ثبت‌شده |
@@ -46,9 +46,12 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
 - profile `load`: `869` درخواست، `0` خطا، error-rate=`0`، p50=`222.932ms`،
   p95=`359.526ms`، p99=`1130.210ms`، max=`2899.674ms`، throughput=`4.825 req/s`؛
   thresholdهای error≤۱٪ و p95≤۲۵۰۰ms سبز هستند.
-- JSON خام runner در `.tmp/phase3-backend-smoke.json` و
-  `.tmp/phase3-backend-load.json` ذخیره شد؛ این پوشه عمداً ignored است و token یا
-  credential در آن نوشته نمی‌شود.
+- profile `soak`: `1774` درخواست در `899.859s`، `0` خطا، error-rate=`0`،
+  p50=`224.337ms`، p95=`328.585ms`، p99=`618.376ms`، max=`1830.550ms` و
+  throughput=`1.971 req/s`؛ thresholdهای error≤۱٪ و p95≤۲۵۰۰ms سبز هستند.
+- evidence دائمی و بدون credential هر سه profile در
+  [PHASE_3_LOAD_EVIDENCE.json](E:/Chinverse/docs/PHASE_3_LOAD_EVIDENCE.json)
+  ثبت شده است. فایل‌های خام runner نیز در `.tmp` ignored باقی مانده‌اند.
 
 ### اصلاح کنترل monitor
 
@@ -69,9 +72,12 @@ workflow در default branch قابل اتکاست؛ manual dispatch provider ev
    secret در چت یا Git ثبت نمی‌شود.
 2. **Alert/recovery:** workflow مانیتور issue deduplicated می‌سازد و recovery آن را
    می‌بندد، اما یک manual run شکست‌خورده و سپس recovery با لینک run هنوز ثبت نشده؛
-   این کار به دسترسی GitHub Actions و secret bypass staging نیاز دارد.
-3. **Soak:** profile پانزده‌دقیقه‌ای با سقف داخلی runner در حال اجراست؛ پس از پایان
-   باید JSON و verdict آن به این سند افزوده شود.
+   این کار به دسترسی GitHub Actions و secret bypass staging نیاز دارد. مشاهدهٔ
+   read-only مخزن نشان داد workflow روی شاخهٔ release موجود است، اما چون هنوز در
+   default branch نیست، GitHub اجرای آن را `Not found` اعلام می‌کند؛ طبق قرارداد
+   GitHub، schedule/dispatch پس از merge به default branch قابل اتکا خواهد بود.
+3. **Resource saturation:** سه profile از نظر latency/error/throughput سبز هستند،
+   اما CPU/RAM/DB connection saturation در dashboard provider هنوز ثبت نشده است.
 4. **Rollback/restore:** runbook و wrapperهای revision-aware موجودند، و backup/restore
    محلی قبلاً سبز بوده است؛ restore branch واقعی Neon و rollback provider هنوز
    بدون دسترسی dashboard اجرا نشده‌اند. production و `main` نباید در این drill
@@ -81,6 +87,6 @@ workflow در default branch قابل اتکاست؛ manual dispatch provider ev
 
 ## فرمان ادامه
 
-پس از پایان soak، ابتدا نتیجهٔ آن ثبت شود؛ سپس به‌ترتیب ۳.۵ (manual monitor و
-alert/recovery)، ۳.۶ (backup/restore و rollback ایزوله) و ۳.۷ (تکمیل runbook) ادامه
-داده شود. تا ثبت DSN و event مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.
+به‌ترتیب ۳.۵ (manual monitor و alert/recovery)، ۳.۶ (backup/restore و rollback
+ایزوله)، ۳.۷ (تکمیل runbook) و ثبت metric اشباع provider ادامه داده شود. تا ثبت
+DSN و event مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.

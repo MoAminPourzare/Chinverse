@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "release": "8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18",
+  "target": "backend",
+  "base_url": "https://moamin9-chinverse-api.hf.space",
+  "read_only": true,
+  "profiles": [
+    {
+      "profile": "smoke",
+      "generated_at_utc": "2026-09-08T15:23:23.035278+00:00",
+      "configuration": {
+        "duration_seconds": 15,
+        "concurrency": 2,
+        "rate_per_second": 1.0,
+        "max_error_rate": 0.0,
+        "max_p95_ms": 2500.0,
+        "endpoints": [
+          { "path": "/health", "weight": 3 },
+          { "path": "/api/v1/courses/", "weight": 2 }
+        ],
+        "http_method": "GET"
+      },
+      "summary": {
+        "requests": 15,
+        "succeeded": 15,
+        "failed": 0,
+        "error_rate": 0.0,
+        "throughput_per_second": 1.048,
+        "elapsed_seconds": 14.312,
+        "latency_ms": {
+          "p50": 223.461,
+          "p95": 394.895,
+          "p99": 394.895,
+          "max": 394.895
+        },
+        "status_codes": { "200": 15 },
+        "error_types": {}
+      },
+      "passed": true
+    },
+    {
+      "profile": "load",
+      "generated_at_utc": "2026-09-08T15:26:57.540802+00:00",
+      "configuration": {
+        "duration_seconds": 180,
+        "concurrency": 10,
+        "rate_per_second": 5.0,
+        "max_error_rate": 0.01,
+        "max_p95_ms": 2500.0,
+        "endpoints": [
+          { "path": "/health", "weight": 3 },
+          { "path": "/api/v1/courses/", "weight": 2 }
+        ],
+        "http_method": "GET"
+      },
+      "summary": {
+        "requests": 869,
+        "succeeded": 869,
+        "failed": 0,
+        "error_rate": 0.0,
+        "throughput_per_second": 4.825,
+        "elapsed_seconds": 180.094,
+        "latency_ms": {
+          "p50": 222.932,
+          "p95": 359.526,
+          "p99": 1130.21,
+          "max": 2899.674
+        },
+        "status_codes": { "200": 869 },
+        "error_types": {}
+      },
+      "passed": true
+    },
+    {
+      "profile": "soak",
+      "generated_at_utc": "2026-09-08T15:43:08.277792+00:00",
+      "configuration": {
+        "duration_seconds": 900,
+        "concurrency": 5,
+        "rate_per_second": 2.0,
+        "max_error_rate": 0.01,
+        "max_p95_ms": 2500.0,
+        "endpoints": [
+          { "path": "/health", "weight": 3 },
+          { "path": "/api/v1/courses/", "weight": 2 }
+        ],
+        "http_method": "GET"
+      },
+      "summary": {
+        "requests": 1774,
+        "succeeded": 1774,
+        "failed": 0,
+        "error_rate": 0.0,
+        "throughput_per_second": 1.971,
+        "elapsed_seconds": 899.859,
+        "latency_ms": {
+          "p50": 224.337,
+          "p95": 328.585,
+          "p99": 618.376,
+          "max": 1830.55
+        },
+        "status_codes": { "200": 1774 },
+        "error_types": {}
+      },
+      "passed": true
+    }
+  ]
+}
