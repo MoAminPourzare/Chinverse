@@ -165,7 +165,22 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 [چک‌لیست بستن مرحلهٔ ۲](E:/Chinverse/docs/PHASE_2_CLOSEOUT_CHECKLIST_FA.md) مراجعه
 کن.
 
-## الحاقیهٔ پیگیری — اصلاح workflow و وضعیت نهایی قابل‌ادامه
+## checkpoint زنده — ۲۰۲۶-۰۹-۰۸
+
+این بخش جایگزین وضعیت قدیمی «catalog خالی» در گزارش بالاست؛ مرحله هنوز 🔶 است.
+
+- release مشاهده‌شده: `2990678545200f76e4724fb1e46f047d0381dc56`، فقط staging.
+- سه run موفق: Quality `34212336448`، HF `34212336438` و smoke `34212336460`.
+- `/health/ready`: database_target/database/storage همگی `ok`.
+- دورهٔ مصنوعی 69 با slug `phase2-closeout-bf4059d` واقعاً published است؛ section 69، lesson 205، video asset 1، cover asset 2 و subtitle track 1.
+- GET عمومی playback درس 205: entitlement.granted=true، reason=free_lesson؛ زیرنویس fa نسخهٔ 1 published است.
+- دریافت واقعی URL امضاشده با Range: HTTP 206، video/mp4، `bytes 0-31/96139` و 32 بایت؛ توکن در گزارش ذخیره نشده است. این شاهد MP4 است، نه HLS.
+- پیام خطای انتشار کاور در پنل به معنی شکست انتشار نبود: وضعیت DB پس از آن published بود. پاسخ publish/archive دوره، رابطهٔ sections/lessons را eager-load نمی‌کرد؛ اصلاح شد و 8 تست media publish محلی پاس شد.
+- نشست مرورگر قبلی اکنون `Browser is not available: 1` می‌دهد؛ ورود admin/MFA قبلاً توسط مالک انجام شده، اما دسترسی همان نشست در این checkpoint قابل استفاده نیست.
+- هنوز لازم است: deploy اصلاح پاسخ انتشار، مشاهدهٔ frontend health داخلی برای SHA نهایی، smoke کاربر عادی و cleanup دقیق fixture فوق و بررسی catalog/playback پس از cleanup. سبز بودن workflow به‌تنهایی اثبات اجرای همهٔ stepهای اختیاری نیست.
+- فایل‌های HF مختص fixture: `phase2-closeout-cover.png` و `phase2-closeout-video.mp4`. فعلاً حذف نشده‌اند؛ دوره یا asset تکراری نسازید. production و main تغییر نکرده‌اند.
+
+## الحاقیهٔ پیگیری قدیمی — اصلاح workflow
 
 - job اصلی `readonly-preflight` اکنون به GitHub Environment به نام `staging` متصل
   است؛ بنابراین اگر `VERCEL_AUTOMATION_BYPASS_SECRET` در همان Environment ثبت شود،

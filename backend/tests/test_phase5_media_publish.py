@@ -2,6 +2,7 @@ from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
@@ -10,6 +11,28 @@ from app.api.v1.endpoints import media
 from app.core import storage
 from app.core.config import settings
 from app.models.media import MediaPlaybackType
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("operation", ["publish_course", "archive_course"])
+async def test_course_transition_returns_eager_loaded_response(monkeypatch, operation):
+    course = SimpleNamespace(id=69, cover_media_id=2)
+    loaded = object()
+    db = SimpleNamespace(get=AsyncMock(return_value=course), commit=AsyncMock())
+    load = AsyncMock(return_value=loaded)
+    monkeypatch.setattr(media, "_load_course", load)
+    monkeypatch.setattr(media, "_get_media", AsyncMock(return_value=SimpleNamespace(
+        media_type="image", status="published",
+    )))
+    monkeypatch.setattr(media, "validate_media_asset", lambda _: SimpleNamespace(valid=True))
+    kwargs = {"course_id": 69, "db": db}
+    kwargs["current_user" if operation == "publish_course" else "_current_user"] = SimpleNamespace(id=10)
+
+    result = await getattr(media, operation)(**kwargs)
+
+    assert result is loaded
+    db.commit.assert_awaited_once()
+    load.assert_awaited_once_with(db, 69)
 
 
 def _asset(payload: bytes, **overrides):

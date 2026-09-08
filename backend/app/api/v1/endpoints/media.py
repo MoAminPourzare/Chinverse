@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
+from app.api.v1.endpoints.course_admin import _load_course
 from app.api.errors import bad_request, forbidden, not_found, unauthorized
 from app.api.rate_limit import write_rate_limit
 from app.core.config import settings
@@ -1234,8 +1235,9 @@ async def publish_course(
     course.published_at = utc_now()
     course.published_by_id = current_user.id
     await db.commit()
-    await db.refresh(course)
-    return course
+    # Response validation is synchronous: preload sections and lessons rather
+    # than triggering async lazy loads after the successful commit.
+    return await _load_course(db, course_id)
 
 
 @router.post(
@@ -1253,5 +1255,4 @@ async def archive_course(
         raise not_found("Course")
     course.status = PublicationStatus.ARCHIVED
     await db.commit()
-    await db.refresh(course)
-    return course
+    return await _load_course(db, course_id)
