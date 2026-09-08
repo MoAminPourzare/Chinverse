@@ -180,6 +180,13 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 - هنوز لازم است: deploy اصلاح پاسخ انتشار، مشاهدهٔ frontend health داخلی برای SHA نهایی، smoke کاربر عادی و cleanup دقیق fixture فوق و بررسی catalog/playback پس از cleanup. سبز بودن workflow به‌تنهایی اثبات اجرای همهٔ stepهای اختیاری نیست.
 - فایل‌های HF مختص fixture: `phase2-closeout-cover.png` و `phase2-closeout-video.mp4`. فعلاً حذف نشده‌اند؛ دوره یا asset تکراری نسازید. production و main تغییر نکرده‌اند.
 
+### checkpoint پنل ادمین — ۲۰۲۶-۰۹-۰۸
+
+- ورود admin با MFA روی staging توسط مالک انجام و پنل زنده مشاهده شد.
+- پنل سه کاربر را لود کرد، اما course/dictionary collectionها صفر و هشدار partial-load نشان دادند.
+- علت در BFF frontend بود: Node fetch بدنهٔ gzip/br را decode می‌کرد ولی `Content-Length` فشردهٔ upstream بدون `Content-Encoding` به مرورگر forward می‌شد؛ پاسخ‌های JSON بزرگ ناقص می‌شدند.
+- BFF اکنون برای بدنهٔ decodeشده آن طول stale را حذف می‌کند؛ ۱۰ تست proxy، lint و typecheck محلی موفق‌اند. پس از deploy باید همان نشست refresh و course 69/lesson 205 در پنل مشاهده شود.
+
 ## الحاقیهٔ پیگیری قدیمی — اصلاح workflow
 
 - job اصلی `readonly-preflight` اکنون به GitHub Environment به نام `staging` متصل

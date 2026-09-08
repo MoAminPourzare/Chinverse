@@ -54,6 +54,11 @@ const MEDIA_PROVIDER_REQUEST_HEADERS = [
     "x-request-id",
 ];
 
+const hasDecodedTransferBody = (headers: Headers) => {
+    const encoding = headers.get("content-encoding")?.trim().toLowerCase();
+    return Boolean(encoding && encoding !== "identity");
+};
+
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 async function proxy(request: NextRequest, context: RouteContext) {
@@ -154,6 +159,10 @@ async function proxy(request: NextRequest, context: RouteContext) {
 
     const responseHeaders = new Headers();
     for (const name of RESPONSE_HEADERS) {
+        // Node fetch transparently decompresses gzip/br bodies while retaining
+        // the upstream compressed Content-Length. Forwarding that stale value
+        // truncates larger JSON collections in the browser.
+        if (name === "content-length" && hasDecodedTransferBody(upstream.headers)) continue;
         const value = upstream.headers.get(name);
         if (value) responseHeaders.set(name, value);
     }

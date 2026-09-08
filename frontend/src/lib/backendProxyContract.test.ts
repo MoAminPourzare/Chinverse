@@ -14,5 +14,7 @@ describe("BFF observability contract", () => {
         expect(source).not.toContain("request.json(");
         expect(source.match(/maxRetries: 0/g)).toHaveLength(2);
         expect(source).not.toContain("x-chinverse-retry-attempt");
+        expect(source).toContain('headers.get("content-encoding")');
+        expect(source).toContain('name === "content-length" && hasDecodedTransferBody(upstream.headers)');
     });
 });

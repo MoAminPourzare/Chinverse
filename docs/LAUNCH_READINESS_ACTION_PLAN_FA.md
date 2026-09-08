@@ -6,6 +6,8 @@
 **آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۰۸
 
 **checkpoint مرحلهٔ ۲:** هنوز 🔶؛ دورهٔ مصنوعی 69 و درس 205 منتشر شده‌اند، signed MP4 با HTTP 206 و entitlement رایگان و subtitle فارسی زنده تأیید شد. release مشاهده‌شده `2990678545200f76e4724fb1e46f047d0381dc56` و سه pipeline آن سبز است. اصلاح پاسخ publish/archive، شاهد frontend داخلی SHA نهایی، smoke کاربر عادی و cleanup fixture هنوز باید نهایی شود. بخش checkpoint جدید در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` بر snapshotهای قدیمی زیر مقدم است.
+
+**checkpoint پنل:** ورود admin/MFA زنده تأیید شد. نقص partial-load دوره‌ها به forward شدن `Content-Length` فشرده پس از decode شدن gzip/br در BFF رسید؛ اصلاح و تست شده و منتظر deploy/بازآزمایی زنده است.
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
 **نتیجهٔ فعلی:** مرحلهٔ ۲ از نظر deploy و smoke فنی سبز است؛ release candidate هنوز برای production عمومی آماده نیست.
