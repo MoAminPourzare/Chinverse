@@ -19,6 +19,13 @@ from app.schemas import course as schemas
 router = APIRouter(prefix="/admin", tags=["course-admin"])
 
 
+def _normalized_media_reference(value: str | None) -> str:
+    reference = str(value or "").strip()
+    if reference and not reference.startswith(("/", "http://", "https://")):
+        return f"/{reference.lstrip('/')}"
+    return reference
+
+
 async def _load_course(db: AsyncSession, course_id: int) -> Course:
     result = await db.execute(
         select(Course)
@@ -29,6 +36,22 @@ async def _load_course(db: AsyncSession, course_id: int) -> Course:
     if not course:
         raise not_found("Course")
     return course
+
+
+@router.get("/courses", response_model=list[schemas.Course])
+async def list_admin_courses(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user=Depends(deps.get_current_admin_user),
+) -> Any:
+    """Return drafts as well as published courses for admin recovery."""
+    _ = current_user
+    result = await db.execute(
+        select(Course)
+        .options(selectinload(Course.sections).selectinload(CourseSection.lessons))
+        .order_by(Course.id.desc())
+    )
+    return result.scalars().unique().all()
 
 
 @router.post("/courses", response_model=schemas.Course, status_code=status.HTTP_201_CREATED)
@@ -58,7 +81,7 @@ async def create_course(
         raise not_found("Cover media asset")
     if str(getattr(cover_media.media_type, "value", cover_media.media_type)) != MediaType.IMAGE.value:
         raise bad_request("Course cover media must be an image asset")
-    cover_image_url = cover_media.file_url
+    cover_image_url = _normalized_media_reference(cover_media.file_url)
     level = course_in.level.strip().lower()
     if not title or not slug or not description or not cover_image_url or not level:
         raise bad_request("Course fields and a registered cover media asset cannot be empty")
@@ -143,7 +166,7 @@ async def create_lesson(
         raise bad_request("Lesson media must be a video asset")
     # Keep the legacy column populated for old internal tooling, but all
     # public playback goes through the signed media workflow.
-    video_url = media.file_url
+    video_url = _normalized_media_reference(media.file_url)
     if not lesson_title or not video_url:
         raise bad_request("Lesson title and a media reference are required")
 
@@ -154,7 +177,7 @@ async def create_lesson(
             raise not_found("Poster media asset")
         if str(getattr(poster.media_type, "value", poster.media_type)) != MediaType.IMAGE.value:
             raise bad_request("Lesson poster must be an image asset")
-        thumbnail_url = poster.file_url
+        thumbnail_url = _normalized_media_reference(poster.file_url)
 
     lesson = Lesson(
         course_id=section.course_id,

@@ -12,6 +12,7 @@ from app.core.paths import AVATARS_DIR, THUMBNAILS_DIR, VIDEOS_DIR
 from app.main import app
 from app.api.v1.endpoints.media import _local_media_path
 from app.models.media import MediaAsset
+from app.schemas.course import Course as CourseSchema
 from app.schemas.course import CourseCreate, LessonCreate
 
 
@@ -78,4 +79,35 @@ def test_local_media_resolution_uses_canonical_storage_key_not_file_url():
             description="A raw cover URL must never replace a registered media asset.",
             cover_image_url="https://provider.invalid/cover.jpg",
             level="beginner",
+        )
+
+
+def test_admin_course_response_normalizes_legacy_internal_cover_path():
+    course = CourseSchema(
+        id=1,
+        subcategory_id=10,
+        title="Staging fixture",
+        slug="staging-fixture",
+        description="A synthetic course used for staging verification.",
+        cover_image_url="uploads/phase2-closeout-cover.png",
+        cover_media_id=2,
+        level="beginner",
+        sections=[],
+    )
+
+    assert course.cover_image_url == "/uploads/phase2-closeout-cover.png"
+
+
+def test_course_media_url_rejects_scheme_relative_provider_reference():
+    with pytest.raises(ValueError, match="internal URL"):
+        CourseSchema(
+            id=1,
+            subcategory_id=10,
+            title="Unsafe fixture",
+            slug="unsafe-fixture",
+            description="A synthetic course with an unsafe cover reference.",
+            cover_image_url="//provider.invalid/cover.png",
+            cover_media_id=2,
+            level="beginner",
+            sections=[],
         )

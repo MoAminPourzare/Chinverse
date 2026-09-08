@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import PurePosixPath
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -8,12 +9,20 @@ def _validate_http_or_relative_url(value: str, *, field_name: str) -> str:
     url = value.strip()
     if not url:
         return url
-    if url.startswith("/"):
-        return url
     parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError(f"{field_name} must be a valid http(s) URL")
-    return url
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        return url
+    if parsed.scheme or parsed.netloc or url.startswith("//"):
+        raise ValueError(f"{field_name} must be a valid http(s) or internal URL")
+
+    path = parsed.path
+    if not path or "\\" in path or ".." in PurePosixPath(path).parts:
+        raise ValueError(f"{field_name} must be a safe internal URL")
+
+    # Older admin fixtures store the canonical private locator as
+    # ``uploads/...``.  API responses use an absolute-path reference so
+    # Pydantic serialization does not turn a successful insert into a 500.
+    return url if url.startswith("/") else f"/{url}"
 
 class ContentBase(BaseModel):
     content_type: str = Field(min_length=1, max_length=40)

@@ -30,7 +30,7 @@ import {
     type AdminMediaAsset,
     type AdminSubtitleTrack,
 } from "@/lib/content-admin";
-import { fetchAllCourses, fetchCourseTaxonomy, type CategorySummary, type Course } from "@/lib/courses";
+import { fetchCourseTaxonomy, type CategorySummary, type Course } from "@/lib/courses";
 import { isHttpStatus } from "@/lib/http";
 import Surface from "@/components/ui/Surface";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -285,7 +285,7 @@ export default function AdminPanelPage() {
                 adminService.listUsers(userSearch),
                 adminService.listDictionary(dictionarySearch),
                 fetchCourseTaxonomy(),
-                fetchAllCourses(),
+                contentAdminService.listCourses(),
             ]);
             setOverview(overviewData);
             setUsers(userResult.status === "fulfilled" ? userResult.value : []);

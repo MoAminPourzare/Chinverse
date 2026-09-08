@@ -69,6 +69,14 @@ export interface AdminSubtitleTrack {
 }
 
 export const contentAdminService = {
+    async listCourses(): Promise<Course[]> {
+        const response = await api.get<Course[]>("/courses/admin/courses", {
+            params: { _fresh: Date.now() },
+            chinverseCacheTtlMs: 0,
+        });
+        return response.data;
+    },
+
     async createCourse(payload: AdminCourseCreatePayload): Promise<Course> {
         const response = await api.post<Course>("/courses/admin/courses", payload);
         return response.data;
