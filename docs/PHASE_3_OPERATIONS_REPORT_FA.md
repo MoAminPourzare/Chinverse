@@ -37,8 +37,12 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
 - برای قابل اجرا شدن monitor پیش از merge به default branch، یک trigger بسیار
   محدود به push همین فایل روی `codex/phase-8-beta-release` اضافه شد و job به
   Environment امن `staging` متصل شد. نیمهٔ اول مانور با release عمداً نادرست
-  اجرا می‌شود؛ پس از مشاهدهٔ issue هشدار، همان مقدار فوراً به قرارداد عادی
-  برگردانده و recovery ثبت خواهد شد.
+  اجرا شد. [run هشدار #1](https://github.com/MoAminPourzare/Chinverse/actions/runs/34248986887)
+  طی `10s` با وضعیت failure پایان یافت و
+  [issue عملیاتی #1](https://github.com/MoAminPourzare/Chinverse/issues/1) را با
+  عنوان ثابت و بدون response body/secret ایجاد کرد. اکنون مقدار انتظار release
+  به قرارداد عادی بازگردانده می‌شود تا run بازیابی، probe واقعی را سبز و همان
+  issue را خودکار ببندد.
 
 ## شواهد اجراشده
 

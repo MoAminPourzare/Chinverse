@@ -44,9 +44,7 @@ jobs:
       # Vercel bypass secret to a workflow-dispatch input or repository variable.
       FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app/api/health
       EXPECTED_FRONTEND_RELEASE: ${{ inputs.expected_frontend_release || vars.PHASE7_EXPECTED_FRONTEND_RELEASE }}
-      # Deliberate first half of the Phase 3 alert/recovery drill. The next
-      # checkpoint restores the normal expression after the alert is observed.
-      EXPECTED_BACKEND_RELEASE: "0000000000000000000000000000000000000000"
+      EXPECTED_BACKEND_RELEASE: ${{ inputs.expected_backend_release || vars.PHASE7_EXPECTED_BACKEND_RELEASE }}
     steps:
       - name: Probe frontend, backend, database, and storage
         id: probe
