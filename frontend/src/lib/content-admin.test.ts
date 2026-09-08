@@ -24,4 +24,17 @@ describe("contentAdminService.listCourses", () => {
             chinverseCacheTtlMs: 0,
         });
     });
+
+    it("normalizes a legacy single-course response instead of crashing the admin panel", async () => {
+        const course = { id: 1, slug: "phase2-closeout" };
+        get.mockResolvedValue({ data: course });
+
+        await expect(contentAdminService.listCourses()).resolves.toEqual([course]);
+    });
+
+    it("rejects an invalid successful response so Promise.allSettled can isolate it", async () => {
+        get.mockResolvedValue({ data: { detail: "unexpected response" } });
+
+        await expect(contentAdminService.listCourses()).rejects.toThrow("invalid collection");
+    });
 });

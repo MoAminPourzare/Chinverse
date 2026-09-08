@@ -68,13 +68,26 @@ export interface AdminSubtitleTrack {
     cues: Array<{ id: number; start: number; end: number; zh_text: string; pinyin: string; target_text: string }>;
 }
 
+type AdminCourseCollection = Course[] | Course | { courses?: Course[]; items?: Course[] };
+
+function normalizeAdminCourses(payload: AdminCourseCollection): Course[] {
+    if (Array.isArray(payload)) return payload;
+    if (payload && typeof payload === "object") {
+        const collection = payload as { courses?: Course[]; items?: Course[] };
+        if (Array.isArray(collection.courses)) return collection.courses;
+        if (Array.isArray(collection.items)) return collection.items;
+        if ("id" in payload && typeof payload.id === "number") return [payload as Course];
+    }
+    throw new TypeError("Admin course endpoint returned an invalid collection");
+}
+
 export const contentAdminService = {
     async listCourses(): Promise<Course[]> {
-        const response = await api.get<Course[]>("/courses/admin/courses", {
+        const response = await api.get<AdminCourseCollection>("/courses/admin/courses", {
             params: { _fresh: Date.now() },
             chinverseCacheTtlMs: 0,
         });
-        return response.data;
+        return normalizeAdminCourses(response.data);
     },
 
     async createCourse(payload: AdminCourseCreatePayload): Promise<Course> {
