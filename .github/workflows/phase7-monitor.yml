@@ -1,6 +1,14 @@
 name: Phase 7 staging monitor
 
 on:
+  # A narrowly scoped push trigger lets the release branch exercise the
+  # monitor before this workflow reaches the default branch. It runs only
+  # when this workflow file itself changes; schedule remains default-branch-only.
+  push:
+    branches:
+      - codex/phase-8-beta-release
+    paths:
+      - .github/workflows/phase7-monitor.yml
   workflow_dispatch:
     inputs:
       expected_frontend_release:
@@ -28,6 +36,7 @@ jobs:
   health:
     name: Staging health and readiness
     runs-on: ubuntu-latest
+    environment: staging
     timeout-minutes: 5
     env:
       BACKEND_BASE_URL: https://moamin9-chinverse-api.hf.space
@@ -35,7 +44,9 @@ jobs:
       # Vercel bypass secret to a workflow-dispatch input or repository variable.
       FRONTEND_HEALTH_URL: https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app/api/health
       EXPECTED_FRONTEND_RELEASE: ${{ inputs.expected_frontend_release || vars.PHASE7_EXPECTED_FRONTEND_RELEASE }}
-      EXPECTED_BACKEND_RELEASE: ${{ inputs.expected_backend_release || vars.PHASE7_EXPECTED_BACKEND_RELEASE }}
+      # Deliberate first half of the Phase 3 alert/recovery drill. The next
+      # checkpoint restores the normal expression after the alert is observed.
+      EXPECTED_BACKEND_RELEASE: "0000000000000000000000000000000000000000"
     steps:
       - name: Probe frontend, backend, database, and storage
         id: probe

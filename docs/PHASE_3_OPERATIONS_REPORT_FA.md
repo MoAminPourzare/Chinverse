@@ -21,6 +21,25 @@ rollback/restore مدیریت‌شده هنوز نیازمند دسترسی prov
 | ۳.۶ | rollback کد و restore دیتابیس staging | 🔶 | backup checksum/revision، restore branch ایزوله و smoke بعدی |
 | ۳.۷ | تکمیل runbook و مالکیت escalation | 🔶 | مسئول، threshold، کانال و زمان RTO/RPO ثبت‌شده |
 
+## checkpoint سوم — شاخهٔ بازیابی و مانور هشدار
+
+- یک شاخهٔ کاملاً ایزوله با نام `phase3-recovery-drill-20260908` و شناسهٔ
+  `br-plain-band-atz12awk` از **staging** در Neon ساخته شد؛ production والد این
+  مانور نیست و دست‌نخورده مانده است. شاخه برای حذف خودکار در ۲۰۲۶-۰۹-۰۹ تنظیم
+  شده است.
+- baseline شاخه ثبت شد: revision الِمبیک `f8a1b2c3d4e5`، تعداد جدول‌های public
+  برابر `61`، کاربران `3`، دوره‌ها `68` و درس‌ها `204` است.
+- canary فقط روی همین شاخه ایجاد و با یک ردیف
+  `phase3-recovery-drill-20260908` تأیید شد؛ revision دیتابیس تغییر نکرد.
+- گام بعدی Neon، `Reset from parent` است که canary شاخه را حذف می‌کند؛ چون این
+  اقدام دادهٔ آزمایشی را دور می‌ریزد، تا تأیید صریح و لحظه‌ای مالک پروژه اجرا
+  نمی‌شود.
+- برای قابل اجرا شدن monitor پیش از merge به default branch، یک trigger بسیار
+  محدود به push همین فایل روی `codex/phase-8-beta-release` اضافه شد و job به
+  Environment امن `staging` متصل شد. نیمهٔ اول مانور با release عمداً نادرست
+  اجرا می‌شود؛ پس از مشاهدهٔ issue هشدار، همان مقدار فوراً به قرارداد عادی
+  برگردانده و recovery ثبت خواهد شد.
+
 ## شواهد اجراشده
 
 ### verifier و تست‌های محلی
