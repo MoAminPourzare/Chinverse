@@ -1,5 +1,5 @@
 name: Deploy staging backend
-# phase2 smoke trigger: align the final admin-course release without a runtime change
+# phase2 smoke trigger: align the final content-publication UX release without a runtime change
 on:
   push:
     branches:

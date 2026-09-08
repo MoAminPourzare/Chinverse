@@ -157,6 +157,13 @@ function toPersianDigits(value: string | number) {
     return String(value).replace(/\d/g, (digit) => digits[Number(digit)]);
 }
 
+function latestLessonId(course: Course) {
+    return course.sections?.reduce(
+        (latest, section) => section.lessons?.reduce((current, lesson) => Math.max(current, lesson.id), latest) ?? latest,
+        0,
+    ) ?? 0;
+}
+
 type DictionaryMissingKey = "pinyin" | "audio" | "persian" | "chinese" | "composition" | "definitions" | "examples" | "collocations" | "notes";
 
 const dictionaryMissingOptions: Array<{ key: DictionaryMissingKey; label: string }> = [
@@ -415,6 +422,7 @@ export default function AdminPanelPage() {
             setCourseForm((current) => ({ ...current, title: "", slug: "", description: "", cover_media_id: "", metadata_json: emptyJson }));
             setSectionForm((current) => ({ ...current, course_id: String(created.id) }));
             setLessonForm((current) => ({ ...current, course_id: String(created.id) }));
+            setPublicationCourseId(String(created.id));
             setMessage("دوره ساخته شد.");
         } catch (error) {
             console.error("Failed to create course", error);
@@ -424,6 +432,12 @@ export default function AdminPanelPage() {
                     updateCourse(existing);
                     setSectionForm((current) => ({ ...current, course_id: String(existing.id) }));
                     setLessonForm((current) => ({ ...current, course_id: String(existing.id) }));
+                    setPublicationCourseId(String(existing.id));
+                    const existingLessonId = latestLessonId(existing);
+                    if (existingLessonId) {
+                        setSubtitleWorkflowForm((current) => ({ ...current, lesson_id: String(existingLessonId) }));
+                        setPublicationLessonId(String(existingLessonId));
+                    }
                     setMessage(`این دوره از قبل ساخته شده بود و با شناسهٔ ${toPersianDigits(existing.id)} بازیابی شد.`);
                     return;
                 } catch (recoveryError) {
@@ -488,8 +502,16 @@ export default function AdminPanelPage() {
                 metadata_json: parseJsonObject(lessonForm.metadata_json),
             });
             updateCourse(updated);
+            const createdLessonId = latestLessonId(updated);
+            if (createdLessonId) {
+                setSubtitleWorkflowForm((current) => ({ ...current, lesson_id: String(createdLessonId) }));
+                setPublicationLessonId(String(createdLessonId));
+            }
+            setPublicationCourseId(String(updated.id));
             setLessonForm((current) => ({ ...current, title: "", duration_minutes: "0", media_id: "", poster_media_id: "" }));
-            setMessage("درس و ویدیو ساخته شد.");
+            setMessage(createdLessonId
+                ? `درس و ویدیو با شناسهٔ ${toPersianDigits(createdLessonId)} ساخته شد.`
+                : "درس و ویدیو ساخته شد.");
         } catch (error) {
             console.error("Failed to create lesson", error);
             setMessage("ساخت درس انجام نشد.");
