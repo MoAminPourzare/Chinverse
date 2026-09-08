@@ -1082,16 +1082,28 @@ function ContentTab(props: {
             <Surface className={cn(panelClass, "p-4")}>
                 <PanelTitle icon={<BookOpen size={18} />} title="ساخت دوره" subtitle="اول دوره را به یک زیرمجموعه وصل کن." />
                 <div className="mt-4 space-y-3">
-                    <select value={courseForm.subcategory_id} onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))} className={fieldClass}>
-                        <option value="">زیرمجموعه</option>
-                        {categories.map((category) => (
-                            <optgroup key={category.id} label={category.name}>
-                                {category.subcategories.map((subcategory) => (
-                                    <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
-                                ))}
-                            </optgroup>
-                        ))}
-                    </select>
+                    {categories.some((category) => category.subcategories.length > 0) ? (
+                        <select value={courseForm.subcategory_id} onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))} className={fieldClass}>
+                            <option value="">زیرمجموعه</option>
+                            {categories.map((category) => (
+                                <optgroup key={category.id} label={category.name}>
+                                    {category.subcategories.map((subcategory) => (
+                                        <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                                    ))}
+                                </optgroup>
+                            ))}
+                        </select>
+                    ) : (
+                        <input
+                            value={courseForm.subcategory_id}
+                            onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))}
+                            className={fieldClass}
+                            placeholder="شناسهٔ زیرمجموعه"
+                            aria-label="شناسهٔ زیرمجموعه"
+                            inputMode="numeric"
+                            dir="ltr"
+                        />
+                    )}
                     <input value={courseForm.title} onChange={(e) => setCourseForm((current) => ({ ...current, title: e.target.value }))} className={fieldClass} placeholder="عنوان دوره" />
                     <input value={courseForm.slug} onChange={(e) => setCourseForm((current) => ({ ...current, slug: e.target.value }))} className={fieldClass} placeholder="slug-example" dir="ltr" />
                     <select value={courseForm.level} onChange={(e) => setCourseForm((current) => ({ ...current, level: e.target.value }))} className={fieldClass}>

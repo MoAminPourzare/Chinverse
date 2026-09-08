@@ -1,5 +1,5 @@
 name: Deploy staging backend
-# phase2 smoke trigger: align the taxonomy-fix release without a runtime change
+# phase2 smoke trigger: align the admin-fallback release without a runtime change
 on:
   push:
     branches:
