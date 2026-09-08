@@ -186,6 +186,9 @@ staging اجرا می‌شود و در این نشست به‌دلیل نبود 
 - پنل سه کاربر را لود کرد، اما course/dictionary collectionها صفر و هشدار partial-load نشان دادند.
 - علت در BFF frontend بود: Node fetch بدنهٔ gzip/br را decode می‌کرد ولی `Content-Length` فشردهٔ upstream بدون `Content-Encoding` به مرورگر forward می‌شد؛ پاسخ‌های JSON بزرگ ناقص می‌شدند.
 - BFF اکنون برای بدنهٔ decodeشده آن طول stale را حذف می‌کند؛ ۱۰ تست proxy، lint و typecheck محلی موفق‌اند. پس از deploy باید همان نشست refresh و course 69/lesson 205 در پنل مشاهده شود.
+- بازآزمایی زنده موفق بود: هشدار partial-load حذف شد و پنل 69 دوره، 205 درس، 300 کلمه و دورهٔ `phase2-closeout-bf4059d` را نشان داد.
+- frontend داخلی `/api/health` در نشست SSO با `status=ok`، tier=`staging`، `indexable=false` و SHA `474d33306e7c0f4fe986650e946f32a9a3587c8d` مشاهده شد.
+- چون deploy HF قبلاً frontend-only commitها را نادیده می‌گرفت، exact-SHA smoke برای `474d333...` بدون backend هم‌SHA معطل می‌ماند. مسیر `frontend/**` به trigger deploy staging اضافه شد تا نامزدهای release همیشه روی هر دو provider یک SHA داشته باشند.
 
 ## الحاقیهٔ پیگیری قدیمی — اصلاح workflow
 

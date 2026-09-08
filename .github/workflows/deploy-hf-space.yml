@@ -19,6 +19,9 @@ on:
       - backend/scripts/**
       - backend/static/**
       - backend/*.py
+      # The exact-SHA staging contract requires both providers to report the
+      # same release even when a candidate changes frontend code only.
+      - frontend/**
   workflow_dispatch:
     inputs:
       release_sha:
