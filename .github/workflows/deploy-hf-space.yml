@@ -73,7 +73,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ inputs.release_sha || github.sha }}
+          # Checkout the resolved release SHA, not the workflow event SHA. This
+          # is what makes an intentional rollback deploy reproducible as well.
+          ref: ${{ env.RELEASE_SHA }}
 
       - name: Verify checked-out release
         shell: bash
