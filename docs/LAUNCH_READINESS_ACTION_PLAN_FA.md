@@ -33,7 +33,7 @@
 | شاخه و CI | ✅ مرحلهٔ ۲ | Quality Gates نهایی run `32902615699` سبز؛ branch=`codex/phase-8-beta-release` |
 | دیتابیس | 🔶 | migration/restore ایزوله روی `f8a1b2c3d4e5` سبز است؛ DB محلی `chinverse_db` و branchهای Neon هنوز جداگانه باید ثبت شوند |
 | staging با همین SHA | ✅ مرحلهٔ ۲ | backend/HF و Vercel روی `8ba6fc1...` هم‌SHA؛ health/readiness و smoke رسانه/cleanup ثبت شد |
-| عملیات | 🔶 | load/soak، Sentry، alert/recovery، rollback و Neon restore واقعی pending است |
+| عملیات | 🔶 | load/soak، alert/recovery و rollback/restore واقعی سبزند؛ فقط Sentry live مانده است |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ⛔ | cohort، رضایت، owner بازخورد و رکورد دعوت واقعی ثبت نشده‌اند |
 | پرداخت | ⏸️ | تا نصب adapter واقعی، checkout و entitlement باید خاموش بماند |
@@ -69,7 +69,7 @@
 | ۰ | نسخه و CI/deploy | 🔶 history/refs انجام شد؛ CI و promotion باز | دسترسی GitHub/provider | SHA remote، pipeline سبز و deploy همان SHA |
 | ۱ | دیتابیس و restore | 🔶 | مرحلهٔ ۰ | local schema/restore سبز؛ Neon branch و retention مالک‌محور |
 | ۲ | staging | ✅ بسته | مرحلهٔ ۱ | health/readiness، smoke با SHA یکسان، signed playback و cleanup |
-| ۳ | عملیات | 🔶 evidence ناقص | مرحلهٔ ۲ | Sentry، load/soak، alert و rollback evidence |
+| ۳ | عملیات | 🔶 فقط Sentry | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence ناقص | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ⛔ شروع نشده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
 | ۶ | پرداخت | ⏸️ اختیاری | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
@@ -272,15 +272,15 @@ playback و فایل‌ها تأیید شد. production و `main` تغییر ن�
 
 **checkpoint آغاز اجرا:** گزارش مستقل [PHASE_3_OPERATIONS_REPORT_FA](E:/Chinverse/docs/PHASE_3_OPERATIONS_REPORT_FA.md)
 اکنون صفحهٔ ادامهٔ این مرحله است. verifier، health و smoke/load/soak با evidence
-اشباع Neon سبز شده‌اند؛ alert/recovery واقعی GitHub و restore شاخهٔ Neon نیز
-ثبت شده‌اند و Sentry و rollback کد در نوبت اجرا هستند.
+اشباع Neon سبز شده‌اند؛ alert/recovery واقعی GitHub، restore شاخهٔ Neon و
+rollback/recovery کد staging نیز ثبت شده‌اند و فقط Sentry در نوبت اجراست.
 
 - [ ] Sentry production/staging را با DSN، release tag و environment درست فعال کن.
 - [x] لاگ ساختاریافتهٔ بدون secret و correlation/request id را بررسی کن.
 - [x] health واقعی DB، storage و dependencyهای ضروری را فعال و تست کن.
 - [x] smoke، load و soak را با JSON نتیجه، زمان، نرخ خطا، p95 و saturation ذخیره کن.
 - [x] یک alert عمدی ایجاد کن و دریافت، triage و recovery آن را ثبت کن.
-- [ ] rollback به آخرین SHA سالم و restore از backup را در staging تمرین کن.
+- [x] rollback به آخرین SHA سالم و restore از backup را در staging تمرین کن.
 - [x] [runbook فاز ۸](E:/Chinverse/docs/PHASE_8_RELEASE_RUNBOOK_FA.md) را با
   نام مسئول، آستانه‌ها و شماره/کانال escalation تکمیل کن.
 

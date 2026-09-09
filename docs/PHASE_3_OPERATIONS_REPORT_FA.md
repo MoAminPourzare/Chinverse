@@ -1,10 +1,10 @@
 # گزارش اجرای مرحلهٔ ۳ آمادگی انتشار — عملیات و بازیابی
 
 **آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۹
-**وضعیت:** 🔶 در حال اجرا؛ load/soak، alert/recovery، restore دیتابیس و نیمهٔ
-rollback کد زنده سبز هستند؛ بازیابی کد و Sentry باید بسته شوند.
+**وضعیت:** 🔶 در حال اجرا؛ همهٔ شواهد عملیات و rollback/restore سبز هستند و فقط
+Sentry live باید بسته شود.
 **شاخه:** `codex/phase-8-beta-release`
-**release اجرایی مبنا:** `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`
+**release اجرایی فعلی:** `d29e09d06dfc35d538ec98f653ce76c0c753a4dd`
 
 ## هدف و ترتیب اجرای مرحله
 
@@ -18,7 +18,7 @@ rollback کد زنده سبز هستند؛ بازیابی کد و Sentry بای�
 | ۳.۳ | health واقعی DB/storage/dependencies | ✅ | live `/health/ready` با target/database/storage=`ok` |
 | ۳.۴ | smoke/load/soak و JSON evidence | ✅ | سه profile سبز و metric اشباع Neon ثبت شد |
 | ۳.۵ | monitor، alert، triage و recovery | ✅ | failure/recovery و issue dedup با لینک run ثبت شد |
-| ۳.۶ | rollback کد و restore دیتابیس staging | ✅ DB / 🔶 بازیابی کد | restore شاخهٔ ایزوله و deploy SHA قبلی سبز؛ بازگشت به SHA فعلی در حال اجراست |
+| ۳.۶ | rollback کد و restore دیتابیس staging | ✅ | restore شاخهٔ ایزوله، deploy SHA قبلی و بازگشت به SHA فعلی همگی سبز |
 | ۳.۷ | تکمیل runbook و مالکیت escalation | ✅ staging | مسئول، threshold، کانال GitHub و objectiveهای RTO/RPO ثبت شدند |
 
 ## checkpoint سوم — شاخهٔ بازیابی و مانور هشدار
@@ -85,8 +85,13 @@ rollback کد زنده سبز هستند؛ بازیابی کد و Sentry بای�
   SHA سالم قبلی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` را روی HF staging مستقر کرد.
   `/health` دقیقاً همین SHA را با tier=`staging` و indexable=`false` گزارش کرد و
   `/health/ready` برای database_target/database/storage همگی `ok` بود.
-- تنظیم موقت rollback حذف شده و recovery به release فعلی از همان مسیر immutable
-  در حال اجراست؛ پس از مشاهدهٔ SHA بازیابی و readiness سبز، گام ۳.۶ بسته می‌شود.
+- تنظیم موقت rollback حذف شد. [Quality Gates #86](https://github.com/MoAminPourzare/Chinverse/actions/runs/34351737921)
+  با هر سه job سبز پایان یافت و [deploy بازیابی #36](https://github.com/MoAminPourzare/Chinverse/actions/runs/34351737924)
+  در `7m 1s` موفق شد. backend سپس release
+  `d29e09d06dfc35d538ec98f653ce76c0c753a4dd` را گزارش کرد و readiness هر سه
+  dependency همچنان `ok` بود. [smoke هم‌SHA #27](https://github.com/MoAminPourzare/Chinverse/actions/runs/34351737942)
+  نیز frontend/backend را روی همین SHA و preview محافظت‌شده تأیید کرد. گام ۳.۶
+  کامل است و production/main دست‌نخورده‌اند.
 
 ## شواهد اجراشده
 
@@ -143,12 +148,10 @@ trigger محدود شاخهٔ release اثبات شده‌اند.
 1. **Sentry:** SDK و scrubber در کد آماده‌اند، اما DSN، project و ارسال event
    فعال نشده‌اند. ثبت این موارد نیازمند تصمیم و دسترسی صاحب پروژه در Sentry است؛
    secret در چت یا Git ثبت نمی‌شود.
-2. **Recovery کد:** rollback واقعی به SHA سالم قبلی سبز است و تنظیم موقت حذف شده؛
-   فقط مشاهدهٔ deploy بازیابی روی SHA فعلی و readiness نهایی باقی مانده است.
-3. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
+2. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
    کانال خصوصی P0/P1 و verifier انسانی دوم پیش از rollout عمومی باید تعیین شوند.
 
 ## فرمان ادامه
 
-به‌ترتیب recovery کد staging و Sentry ادامه داده شود. تا ثبت DSN و event
-مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.
+فقط Sentry ادامه داده شود. تا ثبت DSN و event مشاهده‌شده، گام ۳.۱ و کل مرحلهٔ ۳
+عمداً `🔶` باقی می‌مانند.
