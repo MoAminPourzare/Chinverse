@@ -53,11 +53,8 @@ jobs:
     timeout-minutes: 30
     env:
       HF_OIDC_RESOURCE: spaces/MoAmin9/chinverse-api
-      # Temporary, controlled Phase 3 rollback drill. This SHA is an ancestor
-      # of the release branch and has a successful exact-SHA Quality Gates run.
-      # The recovery checkpoint restores the normal input/push expressions.
-      RELEASE_SHA: 8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18
-      RELEASE_REF: codex/phase-8-beta-release
+      RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+      RELEASE_REF: ${{ inputs.release_ref || github.ref_name }}
       STAGING_BASE_URL: https://moamin9-chinverse-api.hf.space
     steps:
       - name: Validate release SHA

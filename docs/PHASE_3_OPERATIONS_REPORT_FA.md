@@ -1,8 +1,8 @@
 # گزارش اجرای مرحلهٔ ۳ آمادگی انتشار — عملیات و بازیابی
 
 **آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۹
-**وضعیت:** 🔶 در حال اجرا؛ load/soak و alert/recovery زنده سبز هستند، اما Sentry و
-rollback/restore مدیریت‌شده هنوز باید بسته شوند.
+**وضعیت:** 🔶 در حال اجرا؛ load/soak، alert/recovery، restore دیتابیس و نیمهٔ
+rollback کد زنده سبز هستند؛ بازیابی کد و Sentry باید بسته شوند.
 **شاخه:** `codex/phase-8-beta-release`
 **release اجرایی مبنا:** `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18`
 
@@ -18,7 +18,7 @@ rollback/restore مدیریت‌شده هنوز باید بسته شوند.
 | ۳.۳ | health واقعی DB/storage/dependencies | ✅ | live `/health/ready` با target/database/storage=`ok` |
 | ۳.۴ | smoke/load/soak و JSON evidence | ✅ | سه profile سبز و metric اشباع Neon ثبت شد |
 | ۳.۵ | monitor، alert، triage و recovery | ✅ | failure/recovery و issue dedup با لینک run ثبت شد |
-| ۳.۶ | rollback کد و restore دیتابیس staging | ✅ DB / 🔶 کد | restore شاخهٔ ایزوله سبز؛ rollback provider کد مانده است |
+| ۳.۶ | rollback کد و restore دیتابیس staging | ✅ DB / 🔶 بازیابی کد | restore شاخهٔ ایزوله و deploy SHA قبلی سبز؛ بازگشت به SHA فعلی در حال اجراست |
 | ۳.۷ | تکمیل runbook و مالکیت escalation | ✅ staging | مسئول، threshold، کانال GitHub و objectiveهای RTO/RPO ثبت شدند |
 
 ## checkpoint سوم — شاخهٔ بازیابی و مانور هشدار
@@ -67,6 +67,26 @@ rollback/restore مدیریت‌شده هنوز باید بسته شوند.
 - زمان عملیاتی reset تا verification کمتر از دو دقیقه و RPO نسبت به آخرین
   snapshot والد صفر بود. این عدد فقط evidence همین drill شاخه‌ای است، نه SLA
   production یا جایگزین backup دوره‌ای custom-format.
+
+## checkpoint ششم — rollback واقعی کد staging
+
+- پیش از مانور، backend staging release
+  `34fcecec1a5729cbb12c22caea1b5e53d53fc26a` را با readiness کاملاً سبز گزارش
+  می‌کرد.
+- Quality Gates یک advisory تازهٔ runtime را در Next.js/Sharp کشف کرد. وابستگی‌ها
+  به `next=16.3.4`، `eslint-config-next=16.3.4` و `sharp=0.35.4` ارتقا یافتند؛
+  `npm audit --omit=dev --audit-level=low` اکنون `0 vulnerabilities` است. اجرای
+  محلی نیز lint/typecheck، `90/90` تست با coverage خطوط `94.28%`، build production
+  و performance budget را سبز کرد.
+- تلاش نخست rollback عمداً fail-closed شد، چون checkout رویداد با SHA حل‌شدهٔ
+  release یکسان نبود. workflow اصلاح شد تا همیشه `RELEASE_SHA` حل‌شده را checkout
+  کند؛ این اصلاح برای dispatch عادی و rollback تکرارپذیر مشترک است.
+- [run rollback کد #35](https://github.com/MoAminPourzare/Chinverse/actions/runs/34351328738)
+  SHA سالم قبلی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` را روی HF staging مستقر کرد.
+  `/health` دقیقاً همین SHA را با tier=`staging` و indexable=`false` گزارش کرد و
+  `/health/ready` برای database_target/database/storage همگی `ok` بود.
+- تنظیم موقت rollback حذف شده و recovery به release فعلی از همان مسیر immutable
+  در حال اجراست؛ پس از مشاهدهٔ SHA بازیابی و readiness سبز، گام ۳.۶ بسته می‌شود.
 
 ## شواهد اجراشده
 
@@ -123,13 +143,12 @@ trigger محدود شاخهٔ release اثبات شده‌اند.
 1. **Sentry:** SDK و scrubber در کد آماده‌اند، اما DSN، project و ارسال event
    فعال نشده‌اند. ثبت این موارد نیازمند تصمیم و دسترسی صاحب پروژه در Sentry است؛
    secret در چت یا Git ثبت نمی‌شود.
-2. **Rollback کد:** restore واقعی Neon و backup/restore custom-format مرحلهٔ ۱
-   سبز هستند؛ deploy یک SHA سالم قبلی و بازگشت به SHA فعلی روی staging هنوز به
-   workflow dispatch احراز هویت‌شدهٔ GitHub نیاز دارد.
+2. **Recovery کد:** rollback واقعی به SHA سالم قبلی سبز است و تنظیم موقت حذف شده؛
+   فقط مشاهدهٔ deploy بازیابی روی SHA فعلی و readiness نهایی باقی مانده است.
 3. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
    کانال خصوصی P0/P1 و verifier انسانی دوم پیش از rollout عمومی باید تعیین شوند.
 
 ## فرمان ادامه
 
-به‌ترتیب rollback کد staging و Sentry ادامه داده شود. تا ثبت DSN و event
+به‌ترتیب recovery کد staging و Sentry ادامه داده شود. تا ثبت DSN و event
 مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.
