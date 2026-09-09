@@ -272,8 +272,8 @@ playback و فایل‌ها تأیید شد. production و `main` تغییر ن�
 
 **checkpoint آغاز اجرا:** گزارش مستقل [PHASE_3_OPERATIONS_REPORT_FA](E:/Chinverse/docs/PHASE_3_OPERATIONS_REPORT_FA.md)
 اکنون صفحهٔ ادامهٔ این مرحله است. verifier، health و smoke/load/soak با evidence
-اشباع Neon سبز شده‌اند؛ alert/recovery واقعی GitHub نیز ثبت شده و Sentry و
-rollback/restore در نوبت اجرا هستند.
+اشباع Neon سبز شده‌اند؛ alert/recovery واقعی GitHub و restore شاخهٔ Neon نیز
+ثبت شده‌اند و Sentry و rollback کد در نوبت اجرا هستند.
 
 - [ ] Sentry production/staging را با DSN، release tag و environment درست فعال کن.
 - [x] لاگ ساختاریافتهٔ بدون secret و correlation/request id را بررسی کن.
@@ -281,7 +281,7 @@ rollback/restore در نوبت اجرا هستند.
 - [x] smoke، load و soak را با JSON نتیجه، زمان، نرخ خطا، p95 و saturation ذخیره کن.
 - [x] یک alert عمدی ایجاد کن و دریافت، triage و recovery آن را ثبت کن.
 - [ ] rollback به آخرین SHA سالم و restore از backup را در staging تمرین کن.
-- [ ] [runbook فاز ۸](E:/Chinverse/docs/PHASE_8_RELEASE_RUNBOOK_FA.md) را با
+- [x] [runbook فاز ۸](E:/Chinverse/docs/PHASE_8_RELEASE_RUNBOOK_FA.md) را با
   نام مسئول، آستانه‌ها و شماره/کانال escalation تکمیل کن.
 
 **معیار پذیرش:** مانیتورینگ live قابل مشاهده، alert و recovery اثبات‌شده، و

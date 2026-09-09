@@ -1,6 +1,6 @@
 # گزارش اجرای مرحلهٔ ۳ آمادگی انتشار — عملیات و بازیابی
 
-**آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۸
+**آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۹
 **وضعیت:** 🔶 در حال اجرا؛ load/soak و alert/recovery زنده سبز هستند، اما Sentry و
 rollback/restore مدیریت‌شده هنوز باید بسته شوند.
 **شاخه:** `codex/phase-8-beta-release`
@@ -18,8 +18,8 @@ rollback/restore مدیریت‌شده هنوز باید بسته شوند.
 | ۳.۳ | health واقعی DB/storage/dependencies | ✅ | live `/health/ready` با target/database/storage=`ok` |
 | ۳.۴ | smoke/load/soak و JSON evidence | ✅ | سه profile سبز و metric اشباع Neon ثبت شد |
 | ۳.۵ | monitor، alert، triage و recovery | ✅ | failure/recovery و issue dedup با لینک run ثبت شد |
-| ۳.۶ | rollback کد و restore دیتابیس staging | 🔶 | backup checksum/revision، restore branch ایزوله و smoke بعدی |
-| ۳.۷ | تکمیل runbook و مالکیت escalation | 🔶 | مسئول، threshold، کانال و زمان RTO/RPO ثبت‌شده |
+| ۳.۶ | rollback کد و restore دیتابیس staging | ✅ DB / 🔶 کد | restore شاخهٔ ایزوله سبز؛ rollback provider کد مانده است |
+| ۳.۷ | تکمیل runbook و مالکیت escalation | ✅ staging | مسئول، threshold، کانال GitHub و objectiveهای RTO/RPO ثبت شدند |
 
 ## checkpoint سوم — شاخهٔ بازیابی و مانور هشدار
 
@@ -53,6 +53,20 @@ rollback/restore مدیریت‌شده هنوز باید بسته شوند.
 - `/health` زنده پس از مانور release بک‌اند
   `34fcecec1a5729cbb12c22caea1b5e53d53fc26a` را گزارش کرد و
   `/health/ready` همچنان database_target/database/storage=`ok` بود.
+
+## checkpoint پنجم — restore واقعی شاخهٔ Neon
+
+- مالک در ۲۰۲۶-۰۹-۰۹ اقدام destructive محدود به شاخهٔ آزمایشی را صریح تأیید کرد.
+- `Reset from parent` روی `phase3-recovery-drill-20260908` اجرا شد و Neon تمام
+  database/roleهای آن را با آخرین snapshot والد `staging` جایگزین کرد؛ connection
+  string شاخه ثابت ماند و `production` یا خود `staging` تغییر نکردند.
+- verification پس از reset در `422ms` یک ردیف سالم برگرداند:
+  canary_removed=`true`، Alembic=`f8a1b2c3d4e5`، public tables=`61`، users=`3`،
+  courses=`68` و lessons=`204`. همهٔ مقادیر دقیقاً با baseline پیش از canary
+  برابر بودند.
+- زمان عملیاتی reset تا verification کمتر از دو دقیقه و RPO نسبت به آخرین
+  snapshot والد صفر بود. این عدد فقط evidence همین drill شاخه‌ای است، نه SLA
+  production یا جایگزین backup دوره‌ای custom-format.
 
 ## شواهد اجراشده
 
@@ -101,22 +115,21 @@ immutable فعلی فاز ۸ می‌سنجد:
 
 guard workflow و verifier نیز به همین audience به‌روزرسانی شده‌اند؛ bypass secret
 هرگز در URL یا input قابل‌تغییر قرار نمی‌گیرد. اجرای schedule فقط پس از قرارگیری
-workflow در default branch قابل اتکاست؛ manual dispatch provider evidence هنوز
-باز است.
+workflow در default branch قابل اتکاست؛ failure و recovery provider از push
+trigger محدود شاخهٔ release اثبات شده‌اند.
 
 ## موارد باقی‌مانده و مرز دسترسی
 
 1. **Sentry:** SDK و scrubber در کد آماده‌اند، اما DSN، project و ارسال event
    فعال نشده‌اند. ثبت این موارد نیازمند تصمیم و دسترسی صاحب پروژه در Sentry است؛
    secret در چت یا Git ثبت نمی‌شود.
-2. **Rollback/restore:** runbook و wrapperهای revision-aware موجودند، و backup/restore
-   محلی قبلاً سبز بوده است؛ restore branch واقعی Neon و rollback provider هنوز
-   بدون دسترسی dashboard اجرا نشده‌اند. production و `main` نباید در این drill
-   لمس شوند.
-3. **Escalation:** نام incident commander، operator، کانال و RTO/RPO واقعی باید
-   توسط صاحب پروژه تعیین و در `PHASE_7_ROLLBACK_RUNBOOK_FA.md` ثبت شود.
+2. **Rollback کد:** restore واقعی Neon و backup/restore custom-format مرحلهٔ ۱
+   سبز هستند؛ deploy یک SHA سالم قبلی و بازگشت به SHA فعلی روی staging هنوز به
+   workflow dispatch احراز هویت‌شدهٔ GitHub نیاز دارد.
+3. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
+   کانال خصوصی P0/P1 و verifier انسانی دوم پیش از rollout عمومی باید تعیین شوند.
 
 ## فرمان ادامه
 
-به‌ترتیب ۳.۶ (backup/restore و rollback ایزوله)، ۳.۷ (تکمیل runbook) و Sentry
-ادامه داده شود. تا ثبت DSN و event مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.
+به‌ترتیب rollback کد staging و Sentry ادامه داده شود. تا ثبت DSN و event
+مشاهده‌شده، گام ۳.۱ عمداً `🔶` باقی می‌ماند.
