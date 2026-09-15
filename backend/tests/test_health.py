@@ -443,6 +443,32 @@ def test_sentry_never_collects_local_frame_variables(monkeypatch):
     assert captured["before_send_transaction"] is observability._scrub_sentry_event
 
 
+def test_sentry_startup_verification_event_is_staging_only(monkeypatch):
+    messages: list[tuple[str, str]] = []
+
+    monkeypatch.setattr(settings, "SENTRY_DSN", "https://public@example.ingest.sentry.io/1")
+    monkeypatch.setattr(settings, "SENTRY_STARTUP_TEST_EVENT", True)
+    monkeypatch.setattr(observability.sentry_sdk, "init", lambda **_kwargs: None)
+    monkeypatch.setattr(
+        observability.sentry_sdk,
+        "capture_message",
+        lambda message, level: messages.append((message, level)),
+    )
+
+    monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "staging")
+    observability.configure_sentry()
+    assert messages == [(
+        "stage3-backend-live-check "
+        "email=synthetic@example.invalid token=synthetic-only",
+        "info",
+    )]
+
+    messages.clear()
+    monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "production")
+    observability.configure_sentry()
+    assert messages == []
+
+
 @pytest.mark.asyncio
 async def test_openapi_is_available_in_test_environment():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

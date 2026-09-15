@@ -129,6 +129,7 @@ class Settings(BaseSettings):
     LOG_JSON: bool = True
     SENTRY_DSN: str = ""
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+    SENTRY_STARTUP_TEST_EVENT: bool = False
     METRICS_ENABLED: bool = False
     METRICS_BEARER_TOKEN: str = ""
 

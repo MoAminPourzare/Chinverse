@@ -335,6 +335,18 @@ def configure_sentry() -> None:
             SqlalchemyIntegration(),
         ],
     )
+    # One-shot provider verification. Operators may briefly enable this only on
+    # staging, observe the scrubbed event, then remove the provider variable.
+    # Production can never emit this synthetic event even if misconfigured.
+    if (
+        settings.DEPLOYMENT_TIER.lower() == "staging"
+        and settings.SENTRY_STARTUP_TEST_EVENT
+    ):
+        sentry_sdk.capture_message(
+            "stage3-backend-live-check "
+            "email=synthetic@example.invalid token=synthetic-only",
+            level="info",
+        )
 
 
 METRICS_REGISTRY = CollectorRegistry(auto_describe=True)

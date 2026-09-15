@@ -275,6 +275,12 @@ playback و فایل‌ها تأیید شد. production و `main` تغییر ن�
 اشباع Neon سبز شده‌اند؛ alert/recovery واقعی GitHub، restore شاخهٔ Neon و
 rollback/recovery کد staging نیز ثبت شده‌اند و فقط Sentry در نوبت اجراست.
 
+**checkpoint Sentry در ۲۰۲۶-۰۹-۱۵:** projectهای frontend/backend ساخته و چهار
+متغیر frontend فقط روی Vercel Preview ثبت شده‌اند. اصلاح release مرورگر و smoke
+یک‌بارهٔ staging-only محلی سبز است. اولین کار باز، login مالک در HF و ثبت backend
+DSN است؛ بعد deploy هم‌SHA، مشاهدهٔ دو event scrubشده و حذف switch موقت انجام
+می‌شود. تا آن زمان وضعیت مرحله عمداً `🔶` است.
+
 - [ ] Sentry production/staging را با DSN، release tag و environment درست فعال کن.
 - [x] لاگ ساختاریافتهٔ بدون secret و correlation/request id را بررسی کن.
 - [x] health واقعی DB، storage و dependencyهای ضروری را فعال و تست کن.

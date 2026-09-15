@@ -1,6 +1,6 @@
 # گزارش اجرای مرحلهٔ ۳ آمادگی انتشار — عملیات و بازیابی
 
-**آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۰۹
+**آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۱۵
 **وضعیت:** 🔶 در حال اجرا؛ همهٔ شواهد عملیات و rollback/restore سبز هستند و فقط
 Sentry live باید بسته شود.
 **شاخه:** `codex/phase-8-beta-release`
@@ -20,6 +20,28 @@ Sentry live باید بسته شود.
 | ۳.۵ | monitor، alert، triage و recovery | ✅ | failure/recovery و issue dedup با لینک run ثبت شد |
 | ۳.۶ | rollback کد و restore دیتابیس staging | ✅ | restore شاخهٔ ایزوله، deploy SHA قبلی و بازگشت به SHA فعلی همگی سبز |
 | ۳.۷ | تکمیل runbook و مالکیت escalation | ✅ staging | مسئول، threshold، کانال GitHub و objectiveهای RTO/RPO ثبت شدند |
+
+## checkpoint هفتم — فعال‌سازی Sentry زنده
+
+- دو project مجزای `chinverse-backend-staging` (FastAPI) و
+  `chinverse-frontend-staging` (Next.js) در organization پروژه ساخته شدند.
+- در Vercel، `NEXT_PUBLIC_SENTRY_DSN`، `SENTRY_DSN`،
+  `NEXT_PUBLIC_SENTRY_ENABLED=true` و `SENTRY_ENABLED=true` فقط با scope
+  **Preview** ثبت شدند؛ هیچ مقدار Sentry به Production اضافه نشد.
+- release مرورگر از `VERCEL_GIT_COMMIT_SHA` در زمان build به
+  `NEXT_PUBLIC_RELEASE_SHA` تزریق می‌شود تا eventهای client نیز به SHA تغییرناپذیر
+  متصل باشند و یک مقدار دستی که بعداً stale شود لازم نباشد.
+- switch یک‌بارهٔ `SENTRY_STARTUP_TEST_EVENT` به frontend/backend اضافه شد. این
+  switch پیش‌فرض خاموش است، فقط در tier=`staging` event مصنوعی می‌فرستد و حتی با
+  misconfiguration در production اثری ندارد. متن مصنوعی عمداً email/token دارد
+  تا redaction زنده قابل مشاهده باشد.
+- شواهد محلی این checkpoint: backend config/health=`44 passed`، privacy فرانت
+  `3 passed`، typecheck موفق، lint با `0` خطا و دو warning قدیمی، build production
+  با `66` صفحه موفق و آزمون مستقل تزریق release موفق است.
+- checkpoint هنوز `🔶` است: نشست HF این مرورگر وارد حساب نیست. پس از login مالک،
+  backend DSN و `SENTRY_STARTUP_TEST_EVENT=true` فقط روی Space staging ثبت می‌شود؛
+  همین switch فقط روی Vercel Preview نیز موقتاً فعال، deploy هم‌SHA اجرا، eventهای
+  scrubشده در هر دو project مشاهده و سپس switchها حذف و deploy نهایی می‌شوند.
 
 ## checkpoint سوم — شاخهٔ بازیابی و مانور هشدار
 
@@ -145,20 +167,17 @@ trigger محدود شاخهٔ release اثبات شده‌اند.
 
 ## موارد باقی‌مانده و مرز دسترسی
 
-1. **Sentry:** SDK و scrubber در کد آماده‌اند، اما DSN، project و ارسال event
-   فعال نشده‌اند. ثبت این موارد نیازمند تصمیم و دسترسی صاحب پروژه در Sentry است؛
-   secret در چت یا Git ثبت نمی‌شود. در ۲۰۲۶-۰۹-۱۵ علت بازنشدن داشبورد نیز
-   قطعی شد: resolver فعلی دستگاه `s1.sentry-cdn.com` را به `0.0.0.0` و `::`
-   برمی‌گرداند و هر دو فایل JavaScript اصلی و `ads.js` از همین دامنه fail
-   می‌شوند؛ در مقابل DNSهای عمومی Cloudflare (`1.1.1.1`) و Google (`8.8.8.8`)
-   IPهای معتبر `151.101.*.217` را برگرداندند و status رسمی Sentry operational
-   بود. بنابراین blocker از DNS/شبکهٔ محلی است، نه outage سرویس یا الزاماً
-   افزونهٔ Chrome. پس از استفاده از Secure DNS/شبکهٔ سالم، ساخت project و ثبت
-   DSN و event scrubشده ادامه می‌یابد.
+1. **Sentry:** دو project ساخته شده و تنظیمات frontend فقط روی Vercel Preview
+   ثبت شده‌اند. blocker فعلی صرفاً login مالک در Hugging Face برای ثبت backend
+   DSN و switch یک‌بارهٔ smoke است؛ پس از deploy هم‌SHA باید هر دو event در Sentry
+   مشاهده و privacy/release/environment آن‌ها ثبت شود. هیچ DSN در Git یا گزارش
+   ذخیره نمی‌شود.
 2. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
    کانال خصوصی P0/P1 و verifier انسانی دوم پیش از rollout عمومی باید تعیین شوند.
 
 ## فرمان ادامه
 
-فقط Sentry ادامه داده شود. تا ثبت DSN و event مشاهده‌شده، گام ۳.۱ و کل مرحلهٔ ۳
+فقط checkpoint هفتم Sentry ادامه داده شود. از login صفحهٔ تنظیمات HF شروع کن؛
+سپس provider switchها، deploy هم‌SHA، مشاهدهٔ event و حذف switchهای یک‌باره را
+انجام بده. تا ثبت دو event مشاهده‌شده و deploy cleanup، گام ۳.۱ و کل مرحلهٔ ۳
 عمداً `🔶` باقی می‌مانند.

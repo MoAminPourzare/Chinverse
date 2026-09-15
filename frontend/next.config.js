@@ -9,6 +9,12 @@ process.env.TMP = localTempDir;
 process.env.TEMP = localTempDir;
 
 const deploymentTier = (process.env.NEXT_PUBLIC_DEPLOYMENT_TIER || 'staging').trim().toLowerCase();
+const releaseSha = (
+    process.env.VERCEL_GIT_COMMIT_SHA
+    || process.env.GITHUB_SHA
+    || process.env.NEXT_PUBLIC_RELEASE_SHA
+    || 'local'
+).trim();
 const isPublicRelease = deploymentTier === 'production';
 if (isPublicRelease) {
     const publicApiUrl = (process.env.NEXT_PUBLIC_API_URL || '').trim();
@@ -75,6 +81,12 @@ for (const rawOrigin of publicCdnOrigins) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    // Vercel exposes its commit SHA only to the server/build environment. Make
+    // the same immutable release available to the browser Sentry SDK without a
+    // manually maintained provider variable that could become stale.
+    env: {
+        NEXT_PUBLIC_RELEASE_SHA: releaseSha,
+    },
     // The same-origin BFF must retain collection-route slashes because FastAPI
     // uses them as part of its route contract. Public page routes still resolve
     // normally, while /api/backend/... reaches the catch-all handler unchanged.
