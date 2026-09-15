@@ -77,10 +77,21 @@ export default function LessonPlayerPage() {
 
     useEffect(() => {
         if (!playback) return;
-        const wait = millisecondsUntilPlaybackRefresh(playback.media.expiresAt);
-        if (wait === null) return;
-        const timer = window.setTimeout(() => void loadPlayback(true, true), Math.max(wait, 1_000));
-        return () => window.clearTimeout(timer);
+        let timeout: number | undefined;
+        const maxBrowserTimeoutMs = 2_147_000_000;
+        const scheduleRefresh = () => {
+            const wait = millisecondsUntilPlaybackRefresh(playback.media.expiresAt);
+            if (wait === null) return;
+            if (wait > maxBrowserTimeoutMs) {
+                timeout = window.setTimeout(scheduleRefresh, maxBrowserTimeoutMs);
+                return;
+            }
+            timeout = window.setTimeout(() => void loadPlayback(true, true), Math.max(wait, 1_000));
+        };
+        scheduleRefresh();
+        return () => {
+            if (timeout !== undefined) window.clearTimeout(timeout);
+        };
     }, [loadPlayback, playback]);
 
     useEffect(() => {

@@ -189,18 +189,19 @@ export default function SignupPage() {
             </div>
 
             {error && (
-                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700">
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700" role="alert" aria-live="assertive">
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
                     <p className="text-sm leading-6">{error}</p>
                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                <label className="block space-y-2">
+                <label htmlFor="signup-display-name" className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">نام و نام خانوادگی</span>
                     <div className="relative">
                         <User className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            id="signup-display-name"
                             type="text"
                             name="display_name"
                             value={formData.display_name}
@@ -210,6 +211,7 @@ export default function SignupPage() {
                             autoComplete="name"
                             maxLength={120}
                             aria-invalid={Boolean(fieldErrors.display_name)}
+                            aria-describedby={fieldErrors.display_name ? "signup-display-name-error" : undefined}
                             placeholder="نام خودت را وارد کن"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -218,14 +220,15 @@ export default function SignupPage() {
                             )}
                         />
                     </div>
-                    <FieldError message={fieldErrors.display_name} />
+                    <FieldError id="signup-display-name-error" message={fieldErrors.display_name} />
                 </label>
 
-                <label className="block space-y-2">
+                <label htmlFor="signup-email" className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">ایمیل</span>
                     <div className="relative">
                         <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            id="signup-email"
                             type="email"
                             name="email"
                             value={formData.email}
@@ -235,6 +238,7 @@ export default function SignupPage() {
                             autoComplete="email"
                             inputMode="email"
                             aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
                             placeholder="example@mail.com"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -243,14 +247,15 @@ export default function SignupPage() {
                             )}
                         />
                     </div>
-                    <FieldError message={fieldErrors.email} />
+                    <FieldError id="signup-email-error" message={fieldErrors.email} />
                 </label>
 
-                <label className="block space-y-2">
+                <label htmlFor="signup-phone" className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">شماره موبایل</span>
                     <div className="relative">
                         <Phone className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            id="signup-phone"
                             type="text"
                             name="phone"
                             value={formData.phone}
@@ -260,6 +265,7 @@ export default function SignupPage() {
                             inputMode="numeric"
                             autoComplete="tel"
                             aria-invalid={Boolean(fieldErrors.phone)}
+                            aria-describedby={fieldErrors.phone ? "signup-phone-error" : undefined}
                             placeholder="09121234567"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -268,7 +274,7 @@ export default function SignupPage() {
                             )}
                         />
                     </div>
-                    <FieldError message={fieldErrors.phone} />
+                    <FieldError id="signup-phone-error" message={fieldErrors.phone} />
                 </label>
 
                 <label htmlFor="signup-password" className="block space-y-2">
@@ -287,6 +293,7 @@ export default function SignupPage() {
                             autoComplete="new-password"
                             maxLength={128}
                             aria-invalid={Boolean(fieldErrors.password)}
+                            aria-describedby={fieldErrors.password ? "signup-password-error" : "signup-password-hint"}
                             placeholder="••••••••"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -303,18 +310,19 @@ export default function SignupPage() {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
-                    <FieldError message={fieldErrors.password} />
+                    <FieldError id="signup-password-error" message={fieldErrors.password} />
                     {!fieldErrors.password && (
-                        <p className="text-xs leading-5 text-slate-500">حداقل ۱۵ کاراکتر؛ استفاده از عبارت طولانی و به‌یادماندنی بهتر است.</p>
+                        <p id="signup-password-hint" className="text-xs leading-5 text-slate-500">حداقل ۱۵ کاراکتر؛ استفاده از عبارت طولانی و به‌یادماندنی بهتر است.</p>
                     )}
                 </label>
 
                 {releaseConfig.features.referrals && (
-                    <label className="block space-y-2">
+                    <label htmlFor="signup-referral-code" className="block space-y-2">
                         <span className="text-sm font-semibold text-slate-700">کد دعوت دوستان</span>
                         <div className="relative">
                             <Gift className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <input
+                                id="signup-referral-code"
                                 type="text"
                                 name="referral_code"
                                 value={formData.referral_code}
@@ -323,6 +331,7 @@ export default function SignupPage() {
                                 dir="ltr"
                                 autoComplete="off"
                                 aria-invalid={Boolean(fieldErrors.referral_code)}
+                                aria-describedby={fieldErrors.referral_code ? "signup-referral-error" : undefined}
                                 placeholder="اختیاری، مثلا CH12AB"
                                 maxLength={32}
                                 className={cn(
@@ -332,7 +341,7 @@ export default function SignupPage() {
                                 )}
                             />
                         </div>
-                        <FieldError message={fieldErrors.referral_code} />
+                        <FieldError id="signup-referral-error" message={fieldErrors.referral_code} />
                     </label>
                 )}
 
@@ -349,6 +358,8 @@ export default function SignupPage() {
                                 setLegalAccepted(event.target.checked);
                                 setFieldErrors((current) => ({ ...current, legal: "" }));
                             }}
+                            aria-invalid={Boolean(fieldErrors.legal)}
+                            aria-describedby={fieldErrors.legal ? "signup-legal-error" : undefined}
                             className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
                         />
                         <label htmlFor="legal-acceptance" className="text-xs leading-6 text-slate-600">
@@ -361,7 +372,7 @@ export default function SignupPage() {
                             {" "}را خوانده‌ام و می‌پذیرم.
                         </label>
                     </div>
-                    <FieldError message={fieldErrors.legal} />
+                    <FieldError id="signup-legal-error" message={fieldErrors.legal} />
                 </div>
 
                 <TurnstileWidget action="signup" onTokenChange={setTurnstileToken} resetKey={turnstileResetKey} />
@@ -374,7 +385,7 @@ export default function SignupPage() {
     );
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ id, message }: { id: string; message?: string }) {
     if (!message) return null;
-    return <p className="text-xs font-bold leading-5 text-rose-600">{message}</p>;
+    return <p id={id} className="text-xs font-bold leading-5 text-rose-600" role="alert">{message}</p>;
 }

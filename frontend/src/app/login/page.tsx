@@ -96,7 +96,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700">
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700" role="alert" aria-live="assertive">
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
                     <p className="text-sm leading-6">{error}</p>
                 </div>
@@ -107,19 +107,25 @@ export default function LoginPage() {
                 </p>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <label className="block space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                <label htmlFor="login-email" className="block space-y-2">
                     <span className="text-sm font-semibold text-slate-700">ایمیل</span>
                     <div className="relative">
                         <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
+                            id="login-email"
                             type="email"
+                            name="email"
                             value={email}
                             onChange={(e) => {
                                 setEmail(e.target.value);
                                 setFieldErrors((current) => ({ ...current, email: "" }));
                             }}
                             dir="ltr"
+                            autoComplete="email"
+                            inputMode="email"
+                            aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby={fieldErrors.email ? "login-email-error" : undefined}
                             placeholder="example@mail.com"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -127,7 +133,7 @@ export default function LoginPage() {
                             )}
                         />
                     </div>
-                    <FieldError message={fieldErrors.email} />
+                    <FieldError id="login-email-error" message={fieldErrors.email} />
                 </label>
 
                 <label htmlFor="login-password" className="block space-y-2">
@@ -147,6 +153,8 @@ export default function LoginPage() {
                             dir="ltr"
                             autoComplete="current-password"
                             maxLength={128}
+                            aria-invalid={Boolean(fieldErrors.password)}
+                            aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
                             placeholder="••••••••"
                             className={cn(
                                 "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
@@ -162,7 +170,7 @@ export default function LoginPage() {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
-                    <FieldError message={fieldErrors.password} />
+                    <FieldError id="login-password-error" message={fieldErrors.password} />
                     <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-xs font-bold text-[#155aa6] hover:text-[#0f4e92]">
                         رمز عبورت را فراموش کرده‌ای؟
                     </Link>
@@ -195,7 +203,7 @@ export default function LoginPage() {
     );
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ id, message }: { id: string; message?: string }) {
     if (!message) return null;
-    return <p className="text-xs font-bold leading-5 text-rose-600">{message}</p>;
+    return <p id={id} className="text-xs font-bold leading-5 text-rose-600" role="alert">{message}</p>;
 }

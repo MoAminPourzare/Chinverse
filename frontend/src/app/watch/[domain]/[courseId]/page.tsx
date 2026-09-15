@@ -251,12 +251,23 @@ export default function SharedWatchPage() {
 
     useEffect(() => {
         if (!playback) return;
-        const wait = millisecondsUntilPlaybackRefresh(playback.media.expiresAt);
-        if (wait === null) return;
-        const timeout = window.setTimeout(() => {
-            void loadPlayback(playback.lesson.id, { forceRefresh: true, preservePosition: true });
-        }, Math.max(wait, 1_000));
-        return () => window.clearTimeout(timeout);
+        let timeout: number | undefined;
+        const maxBrowserTimeoutMs = 2_147_000_000;
+        const scheduleRefresh = () => {
+            const wait = millisecondsUntilPlaybackRefresh(playback.media.expiresAt);
+            if (wait === null) return;
+            if (wait > maxBrowserTimeoutMs) {
+                timeout = window.setTimeout(scheduleRefresh, maxBrowserTimeoutMs);
+                return;
+            }
+            timeout = window.setTimeout(() => {
+                void loadPlayback(playback.lesson.id, { forceRefresh: true, preservePosition: true });
+            }, Math.max(wait, 1_000));
+        };
+        scheduleRefresh();
+        return () => {
+            if (timeout !== undefined) window.clearTimeout(timeout);
+        };
     }, [loadPlayback, playback]);
 
     const unlockOrientation = useCallback(() => {
@@ -803,12 +814,12 @@ export default function SharedWatchPage() {
                                     ref={(element) => { if (active) activeSubtitleRef.current = element; }}
                                     type="button"
                                     onClick={() => seekTo(item.start + 0.02)}
-                                    className={cn("lesson-subtitle-row block w-full rounded-[16px] px-3 py-3 text-center transition-all duration-300", active ? "bg-white opacity-100 shadow-sm ring-1 ring-[#d5e1ef]" : "opacity-65 hover:bg-white/70 hover:opacity-100")}
+                                    className={cn("lesson-subtitle-row block w-full rounded-[16px] px-3 py-3 text-center transition-all duration-300", active ? "bg-white shadow-sm ring-1 ring-[#d5e1ef]" : "hover:bg-white/70")}
                                     aria-label={`${[item.translation, item.chinese, item.pinyin].filter(Boolean).join("، ")}؛ رفتن به ${formatTime(item.start)}`}
                                 >
                                     {showChineseText && item.chinese && <p className={cn("font-cjk text-[16px] font-black leading-8", active ? "text-[#155aa6]" : "text-slate-700")} dir="ltr" lang="zh-CN">{renderChineseWithHighlights(item.chinese, item.highlightedWords)}</p>}
-                                    {showPinyinText && item.pinyin && <p className={cn("font-latin text-[12px] font-bold leading-5", active ? "text-[#4d7fb7]" : "text-slate-400")} dir="ltr" lang="zh-Latn">{item.pinyin}</p>}
-                                    {showTranslationText && item.translation && <p className={cn("mt-1 text-[15px] font-medium leading-8", active ? "text-slate-700" : "text-slate-500")}>{item.translation}</p>}
+                                    {showPinyinText && item.pinyin && <p className={cn("font-latin text-[12px] font-bold leading-5", active ? "text-[#315f94]" : "text-slate-600")} dir="ltr" lang="zh-Latn">{item.pinyin}</p>}
+                                    {showTranslationText && item.translation && <p className={cn("mt-1 text-[15px] font-medium leading-8", active ? "text-slate-700" : "text-slate-600")}>{item.translation}</p>}
                                 </button>
                             );
                         })}
@@ -818,7 +829,7 @@ export default function SharedWatchPage() {
                 <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0"><h2 className="text-base font-black text-slate-950">ادامهٔ دوره</h2><p className="mt-1 truncate text-xs font-medium text-slate-500" {...getDirectionalTextProps(course.title)}>{course.title}</p></div>
-                        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">{lessonIndex + 1}/{allLessons.length}</span>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">{lessonIndex + 1}/{allLessons.length}</span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                         {previousLesson ? <Link href={`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${previousLesson.id}`} className="rounded-[18px] border border-[#dfe6f0] bg-white px-3 py-3 text-center text-xs font-black text-slate-600">درس قبلی</Link> : <span className="rounded-[18px] border border-[#dfe6f0] bg-slate-50 px-3 py-3 text-center text-xs font-black text-slate-300">درس قبلی</span>}

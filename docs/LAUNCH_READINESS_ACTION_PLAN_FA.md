@@ -311,6 +311,22 @@ rollback در زمان توافق‌شده انجام می‌شود.
 
 ### مرحلهٔ ۴ — تست واقعی موبایل و دسترس‌پذیری
 
+**checkpoint شروع مرحلهٔ ۴ — ۲۰۲۶-۰۹-۱۵:** اجرای مرحله روی branch
+`codex/phase-8-beta-release` و release اجرایی
+`42360d0160ea643183127e281fafe32f55faa044` آغاز شد. ممیزی اولیه وجود پوشش
+شبیه‌سازی‌شدهٔ mobile Chromium/WebKit، WCAG 2.2 و PWA را تأیید کرد، اما evidence
+دستگاه واقعی هنوز ثبت نشده است. وضعیت و اولین کار باز در
+[گزارش زندهٔ مرحلهٔ ۴](E:/Chinverse/docs/PHASE_4_MOBILE_ACCESSIBILITY_REPORT_FA.md)
+نگه‌داری می‌شود. وضعیت مرحله تا تکمیل Android/iOS واقعی `🔶` است.
+
+**checkpoint خودکار ۴.۲ — ۲۰۲۶-۰۹-۱۵:** hardening کد و gateهای موبایل تمام شد.
+مشکل refresh-loop پلیر ناشی از سرریز timer طولانی در Safari/WebKit رفع شد؛
+دسترس‌پذیری خطاهای فرم و کنتراست lesson نیز اصلاح شد. gate جدید ورود، آموزش،
+fullscreen/back/rotation/zoom و subscription staging روی Chromium/WebKit برابر
+`6/6` و authenticated journeyها برابر `18/18` سبز است. suite جامع
+WCAG/mobile/PWA و production service-worker نیز سبز است. کار باز فقط deploy
+همین commit و ثبت evidence دو دستگاه واقعی است؛ وضعیت تا آن زمان `🔶` می‌ماند.
+
 - [ ] Android Chrome واقعی: keyboard، safe-area، fullscreen، rotation، back
   gesture، zoom ۲۰۰٪، PWA install/update/offline.
 - [ ] iOS Safari واقعی: همان journeyها، به‌خصوص keyboard، viewport، fullscreen
