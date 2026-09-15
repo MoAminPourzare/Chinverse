@@ -1,10 +1,10 @@
 # گزارش اجرای مرحلهٔ ۳ آمادگی انتشار — عملیات و بازیابی
 
 **آخرین به‌روزرسانی:** ۲۰۲۶-۰۹-۱۵
-**وضعیت:** 🔶 در حال اجرا؛ همهٔ شواهد عملیات و rollback/restore سبز هستند و فقط
-Sentry live باید بسته شود.
+**وضعیت:** ✅ بسته؛ Sentry زندهٔ frontend/backend، privacy، health، load/soak،
+alert/recovery و rollback/restore staging همگی با evidence ثبت شده‌اند.
 **شاخه:** `codex/phase-8-beta-release`
-**release اجرایی فعلی:** `d29e09d06dfc35d538ec98f653ce76c0c753a4dd`
+**release اجرایی نهایی:** `42360d0160ea643183127e281fafe32f55faa044`
 
 ## هدف و ترتیب اجرای مرحله
 
@@ -13,8 +13,8 @@ Sentry live باید بسته شود.
 
 | گام | موضوع | وضعیت فعلی | معیار خروج |
 |---|---|---|---|
-| ۳.۱ | Sentry با DSN و release/environment | 🔶 | event آزمایشی scrubشده در staging و مشاهدهٔ آن در project |
-| ۳.۲ | لاگ JSON، request/correlation ID و redaction | ✅ محلی | تست redaction و request ID سبز؛ نمونهٔ runtime بدون secret |
+| ۳.۱ | Sentry با DSN و release/environment | ✅ | eventهای آزمایشی scrubشده در هر دو project staging مشاهده شدند |
+| ۳.۲ | لاگ JSON، request/correlation ID و redaction | ✅ | تست redaction و request ID سبز؛ redaction در runtime زنده نیز مشاهده شد |
 | ۳.۳ | health واقعی DB/storage/dependencies | ✅ | live `/health/ready` با target/database/storage=`ok` |
 | ۳.۴ | smoke/load/soak و JSON evidence | ✅ | سه profile سبز و metric اشباع Neon ثبت شد |
 | ۳.۵ | monitor، alert، triage و recovery | ✅ | failure/recovery و issue dedup با لینک run ثبت شد |
@@ -38,10 +38,30 @@ Sentry live باید بسته شود.
 - شواهد محلی این checkpoint: backend config/health=`44 passed`، privacy فرانت
   `3 passed`، typecheck موفق، lint با `0` خطا و دو warning قدیمی، build production
   با `66` صفحه موفق و آزمون مستقل تزریق release موفق است.
-- checkpoint هنوز `🔶` است: نشست HF این مرورگر وارد حساب نیست. پس از login مالک،
-  backend DSN و `SENTRY_STARTUP_TEST_EVENT=true` فقط روی Space staging ثبت می‌شود؛
-  همین switch فقط روی Vercel Preview نیز موقتاً فعال، deploy هم‌SHA اجرا، eventهای
-  scrubشده در هر دو project مشاهده و سپس switchها حذف و deploy نهایی می‌شوند.
+- backend DSN به‌صورت secret فقط در HF Space staging ثبت شد؛
+  `SENTRY_TRACES_SAMPLE_RATE=0` باقی ماند و switch یک‌باره فقط برای یک restart
+  staging فعال شد. storage bucket نیز در همان پنل با دسترسی Read & Write روی
+  `/data` مشاهده شد.
+- در project بک‌اند، issue با کلید `CHINVERSE-BACKEND-STAGING-1` و پیام
+  `stage3-backend-live-check` مشاهده شد. tagهای `environment=staging` و
+  release=`42360d0160ea643183127e281fafe32f55faa044` درست بودند و email/token
+  مصنوعی به‌ترتیب `[redacted-email]` و `[redacted]` نمایش داده شدند.
+- در project فرانت‌اند، issueهای `CHINVERSE-FRONTEND-STAGING-1/2` با پیام
+  `stage3-frontend-live-check` مشاهده شدند. `environment=staging`، همان release
+  کامل و redaction زندهٔ email/token تأیید شد.
+- switch موقت Vercel به `false` بازگردانده و Preview همان branch بدون promotion
+  به Production دوباره build شد. switch موقت HF حذف شد و Space به‌صورت خودکار
+  restart شد؛ DSNها و enabled flagهای دائمی staging دست‌نخورده باقی ماندند.
+- پس از cleanup، backend `/health` با HTTP `200` همان release، tier=`staging` و
+  `indexable=false` را گزارش کرد و `/health/ready` برای
+  database_target/database/storage همگی `ok` بود. health داخلی frontend نیز در
+  نشست SSO مالک `ok` مشاهده شد؛ probe ناشناس Preview همچنان `302` و
+  `X-Robots-Tag: noindex` است.
+- [Quality Gates #89](https://github.com/MoAminPourzare/Chinverse/actions/runs/34962265847)،
+  [HF deploy #37](https://github.com/MoAminPourzare/Chinverse/actions/runs/34962265826)
+  و [smoke هم‌SHA #28](https://github.com/MoAminPourzare/Chinverse/actions/runs/34962265752)
+  برای همین release هر سه با conclusion=`success` پایان یافتند. Production و
+  `main` در این checkpoint تغییر نکردند.
 
 ## checkpoint سوم — شاخهٔ بازیابی و مانور هشدار
 
@@ -167,17 +187,14 @@ trigger محدود شاخهٔ release اثبات شده‌اند.
 
 ## موارد باقی‌مانده و مرز دسترسی
 
-1. **Sentry:** دو project ساخته شده و تنظیمات frontend فقط روی Vercel Preview
-   ثبت شده‌اند. blocker فعلی صرفاً login مالک در Hugging Face برای ثبت backend
-   DSN و switch یک‌بارهٔ smoke است؛ پس از deploy هم‌SHA باید هر دو event در Sentry
-   مشاهده و privacy/release/environment آن‌ها ثبت شود. هیچ DSN در Git یا گزارش
-   ذخیره نمی‌شود.
-2. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
-   کانال خصوصی P0/P1 و verifier انسانی دوم پیش از rollout عمومی باید تعیین شوند.
+1. **مرحلهٔ ۳:** blocker فنی باز ندارد. هیچ DSN یا credential در Git، CI output
+   یا این گزارش ذخیره نشده است.
+2. **مرز rollout:** کانال خصوصی P0/P1 و verifier انسانی دوم هنوز باید پیش از
+   rollout عمومی در مرحلهٔ ۷ تعیین شوند؛ این مورد معیار خروج عملیات staging را
+   نقض نمی‌کند و به‌عنوان پیش‌نیاز rollout باقی می‌ماند.
 
 ## فرمان ادامه
 
-فقط checkpoint هفتم Sentry ادامه داده شود. از login صفحهٔ تنظیمات HF شروع کن؛
-سپس provider switchها، deploy هم‌SHA، مشاهدهٔ event و حذف switchهای یک‌باره را
-انجام بده. تا ثبت دو event مشاهده‌شده و deploy cleanup، گام ۳.۱ و کل مرحلهٔ ۳
-عمداً `🔶` باقی می‌مانند.
+مرحلهٔ ۳ بسته است. ادامهٔ نقشهٔ آمادگی انتشار باید از **مرحلهٔ ۴ — تست واقعی
+موبایل و دسترس‌پذیری** انجام شود؛ تنظیمات دائمی Sentry staging حفظ شوند و switch
+یک‌باره فقط با یک سناریوی آزمایشی جدید و مستند دوباره فعال شود.

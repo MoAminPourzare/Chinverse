@@ -3,7 +3,7 @@
 > این فایل «صفحهٔ ادامهٔ کار» پروژه است. هر نشست جدید باید ابتدا این فایل را بخواند،
 > آخرین SHA و وضعیت تیک‌ها را بررسی کند و بعد فقط روی اولین کار بازشده کار کند.
 
-**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۰۸
+**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۱۵
 
 **checkpoint مرحلهٔ ۲:** ✅؛ deploy هم‌SHA، health/readiness، signed playback/entitlement، smoke کاربر عادی و cleanup نهایی fixture ثبت شده‌اند. release اجرایی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` است. جزئیات و شواهد در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` آمده است.
 
@@ -12,7 +12,9 @@
 **checkpoint نهایی مرحلهٔ ۲:** release `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` روی frontend/backend هم‌SHA و هر سه pipeline سبز است؛ پنل collectionها کامل لود شد، signed playback/entitlement روی fixture رایگان پاس شد و سپس همان fixture از Neon staging و bucket خصوصی حذف و نبود آن تأیید شد.
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
-**نتیجهٔ فعلی:** مرحلهٔ ۲ بسته است؛ release candidate هنوز برای production عمومی آماده اعلام نمی‌شود و باید مرحلهٔ ۳ عملیات تکمیل شود.
+**نتیجهٔ فعلی:** مرحلهٔ ۳ نیز بسته است؛ release candidate هنوز برای production
+عمومی آماده اعلام نمی‌شود و ادامهٔ کار از مرحلهٔ ۴، تست واقعی موبایل و
+دسترس‌پذیری، انجام می‌شود.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -33,7 +35,7 @@
 | شاخه و CI | ✅ مرحلهٔ ۲ | Quality Gates نهایی run `32902615699` سبز؛ branch=`codex/phase-8-beta-release` |
 | دیتابیس | 🔶 | migration/restore ایزوله روی `f8a1b2c3d4e5` سبز است؛ DB محلی `chinverse_db` و branchهای Neon هنوز جداگانه باید ثبت شوند |
 | staging با همین SHA | ✅ مرحلهٔ ۲ | backend/HF و Vercel روی `8ba6fc1...` هم‌SHA؛ health/readiness و smoke رسانه/cleanup ثبت شد |
-| عملیات | 🔶 | load/soak، alert/recovery و rollback/restore واقعی سبزند؛ فقط Sentry live مانده است |
+| عملیات | ✅ مرحلهٔ ۳ | Sentry زنده و scrubشده، load/soak، alert/recovery، health و rollback/restore واقعی سبزند |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ⛔ | cohort، رضایت، owner بازخورد و رکورد دعوت واقعی ثبت نشده‌اند |
 | پرداخت | ⏸️ | تا نصب adapter واقعی، checkout و entitlement باید خاموش بماند |
@@ -69,7 +71,7 @@
 | ۰ | نسخه و CI/deploy | 🔶 history/refs انجام شد؛ CI و promotion باز | دسترسی GitHub/provider | SHA remote، pipeline سبز و deploy همان SHA |
 | ۱ | دیتابیس و restore | 🔶 | مرحلهٔ ۰ | local schema/restore سبز؛ Neon branch و retention مالک‌محور |
 | ۲ | staging | ✅ بسته | مرحلهٔ ۱ | health/readiness، smoke با SHA یکسان، signed playback و cleanup |
-| ۳ | عملیات | 🔶 فقط Sentry | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
+| ۳ | عملیات | ✅ بسته | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence ناقص | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ⛔ شروع نشده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
 | ۶ | پرداخت | ⏸️ اختیاری | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
@@ -275,13 +277,16 @@ playback و فایل‌ها تأیید شد. production و `main` تغییر ن�
 اشباع Neon سبز شده‌اند؛ alert/recovery واقعی GitHub، restore شاخهٔ Neon و
 rollback/recovery کد staging نیز ثبت شده‌اند و فقط Sentry در نوبت اجراست.
 
-**checkpoint Sentry در ۲۰۲۶-۰۹-۱۵:** projectهای frontend/backend ساخته و چهار
-متغیر frontend فقط روی Vercel Preview ثبت شده‌اند. اصلاح release مرورگر و smoke
-یک‌بارهٔ staging-only محلی سبز است. اولین کار باز، login مالک در HF و ثبت backend
-DSN است؛ بعد deploy هم‌SHA، مشاهدهٔ دو event scrubشده و حذف switch موقت انجام
-می‌شود. تا آن زمان وضعیت مرحله عمداً `🔶` است.
+**checkpoint نهایی Sentry در ۲۰۲۶-۰۹-۱۵:** projectهای frontend/backend ساخته و
+تنظیمات provider فقط در HF staging و Vercel Preview ثبت شدند. eventهای
+`stage3-backend-live-check` و `stage3-frontend-live-check` با
+environment=`staging`، release دقیق
+`42360d0160ea643183127e281fafe32f55faa044` و redaction زندهٔ email/token در
+Sentry مشاهده شدند. switchهای یک‌باره پس از evidence خاموش/حذف و هر دو provider
+پاک‌سازی شدند؛ Production و `main` تغییر نکردند.
 
-- [ ] Sentry production/staging را با DSN، release tag و environment درست فعال کن.
+- [x] Sentry staging را با DSN، release tag و environment درست فعال و eventهای
+  scrubشدهٔ frontend/backend را مشاهده کن؛ Production خارج از این checkpoint است.
 - [x] لاگ ساختاریافتهٔ بدون secret و correlation/request id را بررسی کن.
 - [x] health واقعی DB، storage و dependencyهای ضروری را فعال و تست کن.
 - [x] smoke، load و soak را با JSON نتیجه، زمان، نرخ خطا، p95 و saturation ذخیره کن.
@@ -292,6 +297,15 @@ DSN است؛ بعد deploy هم‌SHA، مشاهدهٔ دو event scrubشده و
 
 **معیار پذیرش:** مانیتورینگ live قابل مشاهده، alert و recovery اثبات‌شده، و
 rollback در زمان توافق‌شده انجام می‌شود.
+
+**نتیجهٔ نهایی مرحلهٔ ۳:** ✅. release اجرایی
+`42360d0160ea643183127e281fafe32f55faa044` است. Quality Gates run
+`34962265847`، HF deploy run `34962265826` و smoke هم‌SHA run `34962265752`
+همگی سبز شدند. پس از cleanup، backend health/readiness و frontend health داخلی
+سبز، Preview ناشناس `302 + noindex` و switchهای startup-test غیرفعال هستند.
+جزئیات کامل در
+[PHASE_3_OPERATIONS_REPORT_FA](E:/Chinverse/docs/PHASE_3_OPERATIONS_REPORT_FA.md)
+ثبت شده است. اولین مرحلهٔ باز اکنون مرحلهٔ ۴ است.
 
 **فرمان درخواست این مرحله:** `مرحلهٔ ۳ را انجام بده`
 
