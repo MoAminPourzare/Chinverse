@@ -147,7 +147,14 @@ trigger محدود شاخهٔ release اثبات شده‌اند.
 
 1. **Sentry:** SDK و scrubber در کد آماده‌اند، اما DSN، project و ارسال event
    فعال نشده‌اند. ثبت این موارد نیازمند تصمیم و دسترسی صاحب پروژه در Sentry است؛
-   secret در چت یا Git ثبت نمی‌شود.
+   secret در چت یا Git ثبت نمی‌شود. در ۲۰۲۶-۰۹-۱۵ علت بازنشدن داشبورد نیز
+   قطعی شد: resolver فعلی دستگاه `s1.sentry-cdn.com` را به `0.0.0.0` و `::`
+   برمی‌گرداند و هر دو فایل JavaScript اصلی و `ads.js` از همین دامنه fail
+   می‌شوند؛ در مقابل DNSهای عمومی Cloudflare (`1.1.1.1`) و Google (`8.8.8.8`)
+   IPهای معتبر `151.101.*.217` را برگرداندند و status رسمی Sentry operational
+   بود. بنابراین blocker از DNS/شبکهٔ محلی است، نه outage سرویس یا الزاماً
+   افزونهٔ Chrome. پس از استفاده از Secure DNS/شبکهٔ سالم، ساخت project و ثبت
+   DSN و event scrubشده ادامه می‌یابد.
 2. **Escalation خصوصی:** owner، operator، thresholdها و کانال GitHub ثبت شده‌اند؛
    کانال خصوصی P0/P1 و verifier انسانی دوم پیش از rollout عمومی باید تعیین شوند.
 
