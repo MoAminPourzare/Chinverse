@@ -61,7 +61,7 @@ test.describe("authentication forms", () => {
   for (const route of ["/login", "/signup"]) {
     test(`${route} can reveal and hide the password`, async ({ page }) => {
       await page.goto(route);
-      const password = page.locator(`#${route.slice(1)}-password`);
+      const password = page.locator(`#${route.slice(1)}-password:visible`);
       await expect(password).toBeVisible();
       await password.fill("Secure123");
 

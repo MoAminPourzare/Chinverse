@@ -104,6 +104,22 @@ gesture، zoom ۲۰۰٪، fullscreen، focus، contrast، خطاهای فرم و
 - **نتیجهٔ خودکار:** شکاف کدی شناخته‌شده یا P1 باز باقی نمانده است. تنها gate
   مانده evidence سخت‌افزار واقعی در گام‌های ۴.۳، ۴.۴ و بخش دستی ۴.۵ است.
 
+### checkpoint CI همان-SHA
+
+- اولین push با SHA `0f0665be749024c795ac7d18cf9e887e6ca2ae5e` تمام
+  gateهای backend/build/unit را پاس کرد اما Browser tests را قرمز کرد و deploy
+  طبق قرارداد متوقف شد.
+- اجرای محلی دقیق شرایط CI (`164` تست، دو worker و production server) علت را
+  بازتولید کرد: تست قدیمی password selector در لحظهٔ hydration دو نسخهٔ موقت
+  route را می‌دید. selector به عنصر visible محدود شد.
+- همان اجرای پرفشار یک مورد flaky کنتراست در فریم آغازین animation نوار پایین
+  WebKit نشان داد؛ fade opacity حذف شد تا رنگ متن در تمام فریم‌ها نسبت ثابت
+  WCAG داشته باشد، در حالی که حرکت transform حفظ شده است.
+- targeted regression در شرایط CI با دو worker و سه تکرار روی Chromium/WebKit
+  اجرا شد: `126 passed` در `3.9m`، بدون retry یا flaky. build production نیز
+  پس از تغییر exit `0` داشت.
+- **اقدام بعدی:** commit/push و انتظار برای سه workflow سبز روی SHA جایگزین.
+
 ## blocker جاری
 
 blocker کدی شناخته‌شده‌ای باقی نمانده است. gate نهایی به evidence یک Android
