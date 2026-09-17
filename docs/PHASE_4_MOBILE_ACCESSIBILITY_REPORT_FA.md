@@ -120,9 +120,21 @@ gesture، zoom ۲۰۰٪، fullscreen، focus، contrast، خطاهای فرم و
   پس از تغییر exit `0` داشت.
 - **اقدام بعدی:** commit/push و انتظار برای سه workflow سبز روی SHA جایگزین.
 
+### checkpoint CI تکرار کامل — ۲۰۲۶-۰۹-۱۷
+
+- پس از اصلاح selector و animation، suite کامل دقیقاً با قرارداد CI دوباره روی
+  production server loopback اجرا شد: `CI=true`، دو worker، تمام ۱۶۴ مورد
+  Playwright و همهٔ پروفایل‌های desktop/mobile Chromium، mobile WebKit و PWA.
+- نتیجه: `156 passed`، `8 skipped`، exit `0` در `3.4m`. skipها سناریوهای
+  عمداً وابسته به staging live یا محدودیت ذاتی یک مرورگر هستند؛ شکست، retry و
+  flaky ثبت نشد.
+- این checkpoint مستنداتی برای trigger کردن CI و deploy staging تازه commit
+  می‌شود. تا سبزشدن workflowها، هیچ ادعای deploy جدید یا sign-off نهایی ثبت
+  نمی‌شود.
+
 ## blocker جاری
 
-blocker کدی شناخته‌شده‌ای باقی نمانده است. gate نهایی به evidence یک Android
-Chrome و یک iOS Safari واقعی وابسته است. پس از deploy همین commit روی staging،
-صاحب پروژه فقط چک‌لیست کوتاه دستگاه را اجرا می‌کند؛ نتیجه و evidence بدون PII
-در همین فایل ثبت خواهد شد.
+blocker کدی شناخته‌شده‌ای باقی نمانده است. ابتدا سه workflow این checkpoint باید
+سبز شوند؛ سپس gate نهایی به evidence یک Android Chrome و یک iOS Safari واقعی
+وابسته است. پس از deploy همین commit روی staging، صاحب پروژه فقط چک‌لیست کوتاه
+دستگاه را اجرا می‌کند؛ نتیجه و evidence بدون PII در همین فایل ثبت خواهد شد.
