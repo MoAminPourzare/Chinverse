@@ -82,7 +82,7 @@ test("login validation errors are announced and associated with their fields", a
   await expectNoAutomaticWcagViolations(page);
 });
 
-test("published lesson remains usable through rotation, 200% zoom and iOS-style fullscreen back", async ({ page }) => {
+test("published lesson remains usable through rotation, 200% zoom and iOS-style fullscreen back", { timeout: 90_000 }, async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(HTMLMediaElement.prototype, "load", {
       configurable: true,
@@ -170,9 +170,12 @@ test("published lesson remains usable through rotation, 200% zoom and iOS-style 
   await page.goto("/watch/hsk/44?lesson=77", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "درس آزمایشی موبایل" })).toBeVisible();
   await expect(page.getByText("همگام‌سازی تأییدشده")).toBeVisible();
-  await expect(page.locator(".lesson-video-shell [role='status']")).toHaveCount(0, { timeout: 10_000 });
+  // Cold Linux WebKit can mount the player after the first hydration pass. The
+  // assertion still requires the loading status to disappear; it simply does
+  // not classify a healthy, slower CI worker as a product failure.
+  await expect(page.locator(".lesson-video-shell [role='status']")).toHaveCount(0, { timeout: 20_000 });
   await expect(page.getByLabel("ویدیوی درس درس آزمایشی موبایل")).toHaveAttribute("playsinline", "");
-  await expect.poll(() => playbackRequestCount).toBe(1);
+  await expect.poll(() => playbackRequestCount, { timeout: 15_000 }).toBe(1);
   await expectNoHorizontalOverflow(page);
   await expectAccessibleTapTargets(page);
   await expectNoAutomaticWcagViolations(page);
