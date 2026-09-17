@@ -82,7 +82,8 @@ test("login validation errors are announced and associated with their fields", a
   await expectNoAutomaticWcagViolations(page);
 });
 
-test("published lesson remains usable through rotation, 200% zoom and iOS-style fullscreen back", { timeout: 90_000 }, async ({ page }) => {
+test("published lesson remains usable through rotation, 200% zoom and iOS-style fullscreen back", async ({ page }, testInfo) => {
+  testInfo.setTimeout(90_000);
   await page.addInitScript(() => {
     Object.defineProperty(HTMLMediaElement.prototype, "load", {
       configurable: true,
