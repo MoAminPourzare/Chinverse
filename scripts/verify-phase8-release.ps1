@@ -83,6 +83,23 @@ foreach ($requiredDefault in @(
     }
 }
 
+$backendEnv = Get-Content -Raw -LiteralPath (Join-Path $root "backend\.env.example")
+foreach ($requiredDefault in @(
+    "FEATURE_SUBSCRIPTIONS_ENABLED=false",
+    "PAYMENT_PROVIDER=disabled"
+)) {
+    if (-not $backendEnv.Contains($requiredDefault)) {
+        throw "Missing fail-closed backend payment default: $requiredDefault"
+    }
+}
+
+$freeBetaPaymentGate = $providerGates | Where-Object { $_.id -eq "payments-free-beta" }
+if ($null -ne $freeBetaPaymentGate -and [string]$freeBetaPaymentGate.status -eq "waived") {
+    if (-not ([string]$freeBetaPaymentGate.waiver).Contains("SKIPPED-FREE-BETA")) {
+        throw "The free-beta payment waiver must explicitly record SKIPPED-FREE-BETA."
+    }
+}
+
 $workflow = Get-Content -Raw -LiteralPath (Join-Path $root ".github\workflows\phase8-release-gate.yml")
 if ($workflow -match "(?m)^\s+push:") {
     throw "Phase 8 production gate must not deploy on push; keep it manual/protected."

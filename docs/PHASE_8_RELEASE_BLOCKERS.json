@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-24",
+  "updated_at": "2026-09-19",
   "release_condition": {
     "open_p0": 0,
     "open_p1": 0,
@@ -30,11 +30,21 @@
       "exit_evidence": "DNS, TLS, WAF rules, origin restrictions and health checks are verified on the owned domain."
     },
     {
-      "id": "transactional-delivery-payments",
+      "id": "transactional-delivery",
       "status": "pending",
       "owner": "release-operator",
       "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
-      "exit_evidence": "Email/SMS and payment provider sandbox-to-live smoke tests, webhook signing and reconciliation evidence exist."
+      "exit_evidence": "Email/SMS provider smoke tests and delivery evidence exist."
+    },
+    {
+      "id": "payments-free-beta",
+      "status": "waived",
+      "owner": "project-owner",
+      "evidence": "docs/PHASE_6_PAYMENT_ENTITLEMENT_REPORT_FA.md",
+      "exit_evidence": "Reopen Phase 6 and complete provider sandbox-to-live smoke, webhook and reconciliation evidence before any paid launch.",
+      "waiver": "SKIPPED-FREE-BETA: the current launch is free and all subscription, checkout and payment provider flags remain disabled.",
+      "waived_by": "project-owner",
+      "waived_at": "2026-09-19"
     },
     {
       "id": "legal-beta-consent",

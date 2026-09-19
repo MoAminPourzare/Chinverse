@@ -12,9 +12,10 @@
 **checkpoint نهایی مرحلهٔ ۲:** release `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` روی frontend/backend هم‌SHA و هر سه pipeline سبز است؛ پنل collectionها کامل لود شد، signed playback/entitlement روی fixture رایگان پاس شد و سپس همان fixture از Neon staging و bucket خصوصی حذف و نبود آن تأیید شد.
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
-**نتیجهٔ فعلی:** مرحلهٔ ۳ بسته است؛ evidence دستی مرحلهٔ ۴ به تصمیم صاحب پروژه
-فعلاً deferred مانده و مرحلهٔ ۵، بتای بسته و پشتیبانی، شروع شده است. release
-candidate هنوز برای production عمومی آماده اعلام نمی‌شود.
+**نتیجهٔ فعلی:** مرحله‌های ۳ و ۵ بسته‌اند؛ evidence دستی مرحلهٔ ۴ به تصمیم صاحب
+پروژه فعلاً deferred مانده و مرحلهٔ ۶ برای لانچ رایگان با
+`SKIPPED-FREE-BETA` بسته شده است. مرحلهٔ بعدی gate نهایی و rollout مرحلهٔ ۷ است؛
+release candidate هنوز برای production عمومی آماده اعلام نمی‌شود.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -38,7 +39,7 @@ candidate هنوز برای production عمومی آماده اعلام نمی�
 | عملیات | ✅ مرحلهٔ ۳ | Sentry زنده و scrubشده، load/soak، alert/recovery، health و rollback/restore واقعی سبزند |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ✅ مرحلهٔ ۵ | cohort واقعی owner، consent و چرخهٔ feedback/triage/resolution روی staging ثبت شد؛ P0/P1 باز صفر است |
-| پرداخت | 🔶 مرحلهٔ ۶ شروع شد | audit آغاز شد؛ core در حال تکمیل است و انتخاب provider/حساب پذیرنده هنوز ownerمحور است |
+| پرداخت | ✅ `SKIPPED-FREE-BETA` | لانچ فعلی رایگان است؛ featureهای اشتراک/checkout خاموش و provider gate برای لانچ پولی آینده pending است |
 | مجوز محتوا | ⏸️ | طبق تصمیم صاحب پروژه از مسیر بحرانی این برنامه خارج شده؛ وضعیت حقوقی تأیید نشده است |
 
 صفرهای P0/P1 در `PHASE_8_RELEASE_BLOCKERS.json` فقط یک declaration محلی هستند،
@@ -74,7 +75,7 @@ candidate هنوز برای production عمومی آماده اعلام نمی�
 | ۳ | عملیات | ✅ بسته | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence دستی deferred توسط owner | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ✅ بسته | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
-| ۶ | پرداخت | 🔶 شروع شده؛ provider باز | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
+| ۶ | پرداخت | ✅ `SKIPPED-FREE-BETA` | مرحلهٔ ۵؛ فقط در لانچ پولی | پرداخت عمداً خاموش؛ core ثبت و fail-closed |
 | ۷ | rollout | ⛔ قفل | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
 
 ## ترتیب اجرای مرحله‌ها
@@ -406,6 +407,13 @@ open=`0` و P0/P1 باز=`0/0` بود. تصمیم owner برابر `continue` ث
 
 ### مرحلهٔ ۶ — پرداخت و entitlement (فقط اگر لانچ پولی لازم است)
 
+**تصمیم نهایی صاحب پروژه — ۲۰۲۶-۰۹-۱۹:** لانچ فعلی رایگان است؛ بنابراین این مرحله
+برای این rollout با شناسهٔ `SKIPPED-FREE-BETA` بسته شد. هستهٔ lifecycle پرداخت در
+commitهای `7191bc1` و `d9fa0ad` ثبت شده، اما هیچ checkout، provider، webhook
+تجاری یا entitlement پولی فعال نیست. این تصمیم فقط دامنهٔ launch فعلی را مشخص
+می‌کند و provider gate پرداخت برای زمانی که لانچ پولی انتخاب شود، pending باقی
+می‌ماند.
+
 **checkpoint شروع — ۲۰۲۶-۰۹-۱۹:** audit اولیه روی SHA
 `5682c10390a74771bf8d4c8e3825d1671c52b8fb` انجام شد. schema سفارش، ledger
 callback و entitlement رسانه موجودند، اما checkout عمداً placeholder است و
@@ -423,7 +431,7 @@ chargeback و reconciliation بدون PII تست‌پذیر شدند. baseline �
 ruff کل backend سبز بود. provider تجاری، sandbox و live smoke هنوز انجام نشده و
 feature پرداخت خاموش است.
 
-- [ ] provider و کشور/روش تسویه را انتخاب و owner آن را تأیید کن.
+- [x] تصمیم launch رایگان و شناسهٔ `SKIPPED-FREE-BETA` توسط owner ثبت شد.
 - [x] هستهٔ checkout/order، webhook امضاشده، timestamp/replay protection و
   idempotency پیاده شد؛ اجرای end-to-end با sandbox provider هنوز باقی است.
 - [x] entitlement فقط از رویداد تأییدشده صادر می‌شود و expiry، revoke، refund و
@@ -431,16 +439,19 @@ feature پرداخت خاموش است.
   هنوز باقی است.
 - [x] reconciliation روزانه و audit ledger بدون PII پیاده شد؛ ثبت evidence روی
   staging پس از اجرای migration باقی است.
-- [ ] ابتدا با مبلغ آزمایشی live، سپس rollout محدود انجام بده.
-- [ ] تا سبزشدن همهٔ موارد بالا، `FEATURE_SUBSCRIPTIONS_ENABLED` خاموش بماند.
+- [ ] برای لانچ پولی آینده provider، sandbox، live smoke و rollout پرداخت اجرا شود.
+- [x] `FEATURE_SUBSCRIPTIONS_ENABLED=false`،
+  `NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS=false` و `PAYMENT_PROVIDER=disabled` باقی
+  ماندند.
 
-**معیار پذیرش:** خرید، تمدید، لغو، refund و webhook تکراری در sandbox و live
-قابل ردیابی‌اند و entitlement اشتباه یا دائمی ایجاد نمی‌شود.
+**معیار پذیرش این rollout رایگان:** هیچ checkout یا entitlement پولی فعال نباشد،
+فلگ‌ها fail-closed باشند و تصمیم `SKIPPED-FREE-BETA` در گزارش ثبت شده باشد.
+معیار خرید sandbox/live فقط هنگام فعال‌شدن لانچ پولی لازم است.
 
 **فرمان درخواست این مرحله:** `مرحلهٔ ۶ را انجام بده`
 
-اگر لانچ فعلاً رایگان است، این مرحله را با تصمیم صریح صاحب پروژه
-`SKIPPED-FREE-BETA` علامت بزن؛ اما feature flag اشتراک و checkout همچنان خاموش بماند.
+برای لانچ پولی آینده، این مرحله باید دوباره باز شود و provider gateهای sandbox/live
+با evidence واقعی تکمیل شوند؛ تا آن زمان feature flag اشتراک و checkout خاموش بماند.
 
 ### مرحلهٔ ۷ — gate نهایی و rollout مرحله‌ای
 

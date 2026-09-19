@@ -656,8 +656,9 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
   ساختاریافته با triage ادمین است؛ UI مسیر `/beta-feedback` نیز fail-closed است.
 - هستهٔ پرداخت اکنون order lifecycle، webhook timestampدار با replay/idempotency،
   تطبیق amount/currency/reference، entitlement source، refund/chargeback revoke
-  و ledger/reconciliation بدون PII دارد؛ checkout تجاری و provider واقعی عمداً تا
-  نصب آداپتور و sandbox smoke خاموش است.
+  و ledger/reconciliation بدون PII دارد؛ با تصمیم owner برای لانچ رایگان فعلی،
+  مرحلهٔ ۶ با `SKIPPED-FREE-BETA` بسته شده و checkout تجاری، provider واقعی و
+  entitlement پولی عمداً خاموش هستند.
 - production Neon و storage جدا
 - دامنه اصلی، DNS/WAF، email/SMS، Turnstile و درگاه واقعی
 - legal approval، backup drill و incident runbook

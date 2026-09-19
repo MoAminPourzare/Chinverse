@@ -1,7 +1,7 @@
 # گزارش اجرای مرحلهٔ ۶ آمادگی لانچ — پرداخت و entitlement
 
-**وضعیت:** 🔶 core پیاده‌سازی و تست محلی شد؛ provider تجاری، sandbox و live هنوز
-باقی است و feature پرداخت fail-closed مانده است.
+**وضعیت:** ✅ `SKIPPED-FREE-BETA` — لانچ فعلی رایگان است؛ core ثبت شده و feature
+پرداخت fail-closed و خاموش مانده است.
 
 **تاریخ شروع:** ۲۰۲۶-۰۹-۱۹
 
@@ -9,10 +9,13 @@
 
 **SHA مبنا:** `5682c10390a74771bf8d4c8e3825d1671c52b8fb`
 
+**SHA checkpoint هسته:** `d9fa0ad73367e215b779a42966794719996df8c1`
+
 ## ۱. تصمیم انتشار
 
-این مرحله فقط برای لانچ پولی لازم است. با درخواست صاحب پروژه، مسیر پولی وارد فاز
-آماده‌سازی شد؛ بااین‌حال هیچ provider یا حساب تسویه‌ای هنوز تأیید نشده است.
+این مرحله فقط برای لانچ پولی لازم است. صاحب پروژه تصمیم گرفت لانچ فعلی رایگان باشد؛
+بنابراین مرحله برای این rollout با `SKIPPED-FREE-BETA` بسته می‌شود. هیچ provider یا
+حساب تسویه‌ای فعال نشده است.
 تا زمان تکمیل sandbox و یک تراکنش کم‌مبلغ کنترل‌شده، مقادیر زیر باید خاموش بمانند:
 
 ```text
@@ -29,8 +32,8 @@ Production و `main` خارج از دامنهٔ این مرحله‌اند.
   `payment_webhook_events` وجود دارند.
 - مسیر checkout فعلی فقط order محلی می‌سازد و عمداً URL پرداخت تولید نمی‌کند.
 - `generic_hmac` فقط مرز امضا و idempotency callback است و provider تجاری نیست.
-- webhook فعلی entitlement صادر نمی‌کند؛ بنابراین callback جعلی نمی‌تواند محتوای
-  پولی را باز کند.
+- با `PAYMENT_PROVIDER=disabled`، webhook عمومی رد می‌شود و entitlement پولی صادر
+  نمی‌کند؛ هستهٔ صدور امن فقط برای بازشدن آتی provider تأییدشده آماده است.
 - entitlement رسانه فقط subscription با status=`active` و بازهٔ معتبر را قبول
   می‌کند و revoke/expiry را در هر درخواست دوباره می‌سنجد.
 - تنظیمات اجازه نمی‌دهند feature اشتراک همراه provider=`disabled` روشن شود.
@@ -70,7 +73,8 @@ Production و `main` خارج از دامنهٔ این مرحله‌اند.
   ruff کل backend سبز بود؛ یک تست واحد timestampدار دیگر نیز به suite اضافه شد و
   نتیجهٔ نهایی آن در CI ثبت می‌شود.
 - [x] feature اشتراک و checkout عمومی خاموش ماند.
-- [ ] provider، حساب پذیرنده و روش تسویه توسط owner تأیید شود.
+- [x] provider، حساب پذیرنده و روش تسویه برای `SKIPPED-FREE-BETA` موضوع این rollout
+  نیست و عمداً فعال نشد.
 - [x] lifecycle داخلی payment/entitlement و migration تکمیل شد؛ اجرای migration روی
   staging/DB جداگانه هنوز باید با credential همان محیط انجام شود.
 - [x] امضای timestampدار، replay و idempotency در کد و تست integration نوشته شد؛
@@ -79,16 +83,18 @@ Production و `main` خارج از دامنهٔ این مرحله‌اند.
   integration پوشش داده شد؛ expiry در entitlement query موجود است.
 - [x] reconciliation و audit ledger بدون PII پیاده و تست شد؛ اجرای DB واقعی باقی
   است.
-- [ ] adapter provider منتخب و sandbox واقعی سبز شود.
-- [ ] تراکنش live کم‌مبلغ و refund کنترل‌شده ثبت شود.
-- [ ] rollout محدود و observation window بدون P0/P1 تکمیل شود.
+- [x] adapter provider، sandbox و تراکنش live برای لانچ رایگان لازم نیستند و به
+  backlog لانچ پولی منتقل شدند.
+- [x] rollout پرداخت و observation window برای لانچ رایگان لازم نیست و به backlog
+  لانچ پولی منتقل شد.
 
-## ۶. معیار بسته‌شدن
+## ۶. معیار بسته‌شدن این rollout رایگان
 
-خرید، تمدید، لغو، refund و callback تکراری باید در sandbox و live قابل‌ردیابی
-باشند؛ entitlement فقط از رویداد تأییدشده صادر شود و refund/chargeback/expiry آن
-را ببندد. تا قبل از آن وضعیت `🔶` باقی می‌ماند.
+هیچ checkout یا entitlement پولی نباید فعال باشد، defaultهای پرداخت باید fail-closed
+باقی بمانند و تصمیم `SKIPPED-FREE-BETA` در گزارش ثبت شود. خرید، تمدید، لغو، refund
+و callback تکراری در sandbox/live فقط با بازشدن دوبارهٔ مرحله برای لانچ پولی لازم
+خواهند بود.
 
-**اولین blocker بیرونی:** نام provider و credential حساب پذیرنده هنوز از سوی
-owner ارائه و تأیید نشده است. این blocker مانع تکمیل core و تست محلی نیست، اما
-مانع اعلام `✅` و روشن‌کردن feature است.
+**یادداشت آینده:** نام provider و credential حساب پذیرنده هنوز ارائه نشده‌اند؛ این
+برای لانچ رایگان blocker نیست، اما provider gate پرداخت را برای لانچ پولی آینده
+pending نگه می‌دارد. هیچ feature پرداختی با این تصمیم روشن نمی‌شود.

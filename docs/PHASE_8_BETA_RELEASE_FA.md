@@ -117,6 +117,12 @@ reference، entitlement و revoke refund/chargeback و ledger/reconciliation د�
 واقعی یا checkout قابل‌فروش نیست** و تا نصب adapter تأییدشده نباید فلگ اشتراک
 production روشن شود.
 
+برای rollout فعلی، صاحب پروژه لانچ رایگان را انتخاب کرده و مرحلهٔ ۶ با
+`SKIPPED-FREE-BETA` بسته شده است. در رکورد blockerها، gate پرداخت جداگانه waived
+است؛ این waiver فقط تا وقتی معتبر است که subscription، checkout و provider خاموش
+باشند. email/SMS همچنان gate مستقل و pending است و پیش از هر لانچ پولی، مرحلهٔ ۶
+باید دوباره باز و evidence sandbox/live تکمیل شود.
+
 ## staged rollout
 
 ترتیب مجاز: internal operator → cohort بتا (۵٪) → ۲۵٪ → ۵۰٪ → ۱۰۰٪. هر مرحله
