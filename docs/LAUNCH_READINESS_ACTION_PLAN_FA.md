@@ -418,9 +418,10 @@ credential پذیرنده، sandbox و live smoke همچنان owner/providerم�
 `c9e4b6a8d2f1` برای timestamp/replay، order lifecycle، entitlement source، revoke
 و `payment_ledger_entries` اضافه شد. webhook فقط پس از تطبیق provider، order،
 amount، currency و reference entitlement می‌دهد؛ success/renewal، refund و
-chargeback و reconciliation بدون PII تست‌پذیر شدند. تست واحد backend برابر
-`185 passed`، coverage=`60.04%` و ruff کل backend سبز است. provider تجاری،
-sandbox و live smoke هنوز انجام نشده و feature پرداخت خاموش است.
+chargeback و reconciliation بدون PII تست‌پذیر شدند. baseline تست backend برابر
+`185 passed` و coverage=`60.04%` بود و یک تست timestampدار جدید اضافه شده است؛
+ruff کل backend سبز بود. provider تجاری، sandbox و live smoke هنوز انجام نشده و
+feature پرداخت خاموش است.
 
 - [ ] provider و کشور/روش تسویه را انتخاب و owner آن را تأیید کن.
 - [x] هستهٔ checkout/order، webhook امضاشده، timestamp/replay protection و
