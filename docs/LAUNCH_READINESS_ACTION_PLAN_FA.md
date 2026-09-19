@@ -335,6 +335,10 @@ SHA، staging/noindex، readiness دیتابیس و storage، حفاظت preview
 تا ثبت Android Chrome و iOS Safari واقعی و screen-reader/PWA دستی `🔶` باقی
 می‌ماند.
 
+پیش از journey آموزش روی دستگاه واقعی، یک lesson رایگان و مصنوعی در catalog
+staging منتشر کن؛ smoke فعلی catalog خالی (`200 []`) را ثبت کرده و signed
+playback واقعی را اثبات نمی‌کند.
+
 - [ ] Android Chrome واقعی: keyboard، safe-area، fullscreen، rotation، back
   gesture، zoom ۲۰۰٪، PWA install/update/offline.
 - [ ] iOS Safari واقعی: همان journeyها، به‌خصوص keyboard، viewport، fullscreen

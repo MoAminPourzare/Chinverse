@@ -154,7 +154,8 @@ gesture، zoom ۲۰۰٪، fullscreen، focus، contrast، خطاهای فرم و
 ## blocker جاری
 
 blocker کدی شناخته‌شده‌ای باقی نمانده است. سه workflow این checkpoint سبز
-شده‌اند؛ blocker باقی‌مانده فقط evidence یک Android Chrome و یک iOS Safari
-واقعی و بخش دستی PWA/screen-reader است. پس از اجرای چک‌لیست کوتاه دستگاه،
-نتیجه و evidence بدون PII در همین فایل ثبت خواهد شد و می‌توان وضعیت را به ✅
-تغییر داد.
+شده‌اند؛ blockerهای پذیرش باقی‌مانده عبارت‌اند از: (۱) انتشار یک lesson رایگان
+و مصنوعی در catalog staging برای journey واقعی آموزش، (۲) evidence یک Android
+Chrome و یک iOS Safari واقعی، و (۳) بخش دستی PWA/screen-reader. پس از فراهم‌کردن
+fixture و اجرای چک‌لیست دستگاه، نتیجه و evidence بدون PII در همین فایل ثبت
+خواهد شد و می‌توان وضعیت را به ✅ تغییر داد.
