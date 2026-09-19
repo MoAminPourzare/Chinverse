@@ -117,3 +117,17 @@ def test_application_sql_does_not_reference_removed_tables():
                 )
 
     assert not offenders, f"Application SQL references removed tables: {offenders}"
+
+
+def test_subscription_plan_downgrade_preserves_referenced_history():
+    backend_dir = Path(__file__).resolve().parents[1]
+    migration = (
+        backend_dir
+        / "alembic"
+        / "versions"
+        / "d7e9b2c4f6a8_add_subscription_orders.py"
+    ).read_text(encoding="utf-8")
+
+    assert "DELETE FROM subscription_plans AS plan" in migration
+    assert "NOT EXISTS" in migration
+    assert "subscription.plan_id = plan.id" in migration

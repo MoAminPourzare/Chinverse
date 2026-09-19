@@ -51,6 +51,10 @@ Run شروع:
   fixture مرحلهٔ ۴ شکست خورد. علت hardcode شدن Alembic head قدیمی در ابزار fixture
   بود؛ safety contract اکنون head یکتای migration graph را در زمان اجرا می‌خواند و
   تست regression دارد.
+- اجرای بعدی روی `d76ce32` تمام integrationها را با `32 passed` عبور داد، اما
+  downgrade تا base روی plan پیش‌فرضی که subscription به آن ارجاع داشت شکست خورد.
+  migration قدیمی اکنون plan وابسته را بدون حذف تاریخچهٔ اشتراک حفظ می‌کند؛ حذف
+  نهایی tableها در ادامهٔ downgrade کامل همچنان انجام می‌شود.
 
 ## ۳.۱ سخت‌سازی rollout gate
 

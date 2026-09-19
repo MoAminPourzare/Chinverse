@@ -74,4 +74,18 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS ix_user_subscriptions_user_status_end")
     op.execute("DROP INDEX IF EXISTS ix_subscription_orders_user_created")
     op.execute("DROP TABLE IF EXISTS subscription_orders")
-    op.execute("DELETE FROM subscription_plans WHERE id IN (1001, 1002, 1003)")
+    # Never delete a plan that has become part of durable subscription
+    # history. A full downgrade to base will later drop both legacy tables;
+    # a one-revision downgrade must preserve referenced data instead of
+    # deleting user subscriptions or failing on the foreign key.
+    op.execute(
+        """
+        DELETE FROM subscription_plans AS plan
+        WHERE plan.id IN (1001, 1002, 1003)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM user_subscriptions AS subscription
+              WHERE subscription.plan_id = plan.id
+          )
+        """
+    )
