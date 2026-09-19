@@ -100,6 +100,8 @@ try {
             Assert-NativeSuccess "Phase 4 schema invariants"
             & $Python scripts\verify_phase5_schema.py
             Assert-NativeSuccess "Phase 5 schema invariants"
+            & $Python scripts\verify_phase6_schema.py
+            Assert-NativeSuccess "Phase 6 schema invariants"
             & $Python scripts\verify_phase7_schema.py
             Assert-NativeSuccess "Phase 7 schema invariants"
             & $Python scripts\verify_phase8_schema.py
@@ -120,6 +122,8 @@ try {
             Assert-NativeSuccess "Post-rebuild phase 4 schema invariants"
             & $Python scripts\verify_phase5_schema.py
             Assert-NativeSuccess "Post-rebuild phase 5 schema invariants"
+            & $Python scripts\verify_phase6_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 6 schema invariants"
             & $Python scripts\verify_phase7_schema.py
             Assert-NativeSuccess "Post-rebuild phase 7 schema invariants"
             & $Python scripts\verify_phase8_schema.py

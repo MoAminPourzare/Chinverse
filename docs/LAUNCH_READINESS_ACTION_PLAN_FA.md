@@ -76,7 +76,7 @@ release candidate هنوز برای production عمومی آماده اعلام 
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence دستی deferred توسط owner | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ✅ بسته | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
 | ۶ | پرداخت | ✅ `SKIPPED-FREE-BETA` | مرحلهٔ ۵؛ فقط در لانچ پولی | پرداخت عمداً خاموش؛ core ثبت و fail-closed |
-| ۷ | rollout | ⛔ قفل | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
+| ۷ | rollout | 🔶 در حال اجرا؛ production gateها باز | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
 
 ## ترتیب اجرای مرحله‌ها
 
@@ -455,6 +455,15 @@ feature پرداخت خاموش است.
 
 ### مرحلهٔ ۷ — gate نهایی و rollout مرحله‌ای
 
+**checkpoint شروع — ۲۰۲۶-۰۹-۱۹:** inventory زندهٔ GitHub با REST بازسازی شد؛
+تعداد issue باز و blockerهای P0/P1/Critical/High هر دو صفر بود. repository ruleset
+عمومی ندارد، environmentهای `Preview`، `Production` و `staging` protection rule
+ندارند و SHA مرحلهٔ ۶ هنوز ancestor شاخهٔ `main` نیست. Quality Gates روی SHA
+`e89386d` اجرا شد؛ Release baseline سبز و Backend در verifier ترتیب schema شکست
+خورد. drift ترتیب `Phase 5 → 6 → 7 → 8` در CI/local gate/test اصلاح شد و اجرای
+محلی Ruff و verifier عملیاتی سبز است. گزارش زنده در
+`LAUNCH_READINESS_STAGE_7_REPORT_FA.md` نگه‌داری می‌شود.
+
 - [ ] blocker inventory را از issue tracker و evidence واقعی بازسازی کن؛ فقط به
   JSON دستی اکتفا نکن.
 - [ ] quality gate و migration gate همان SHA را دوباره اجرا کن.
@@ -505,3 +514,4 @@ SHA و branch:
 - [ممیزی محتوای فاز ۵](E:/Chinverse/docs/PHASE_5_DATA_LICENSE_AUDIT_FA.md)
 - [برگهٔ blockerهای فاز ۸](E:/Chinverse/docs/PHASE_8_RELEASE_BLOCKERS.json)
 - [runbook انتشار](E:/Chinverse/docs/PHASE_8_RELEASE_RUNBOOK_FA.md)
+- [گزارش زندهٔ مرحلهٔ ۷](E:/Chinverse/docs/LAUNCH_READINESS_STAGE_7_REPORT_FA.md)

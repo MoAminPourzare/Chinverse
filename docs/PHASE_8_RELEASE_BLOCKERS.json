@@ -7,6 +7,13 @@
     "known_critical": 0,
     "known_high": 0
   },
+  "issue_inventory": {
+    "checked_at": "2026-09-19T20:13:00Z",
+    "source": "GitHub REST issues API (open issues, pull requests excluded)",
+    "open_issues": 0,
+    "open_blocking_issues": 0,
+    "blocking_labels": ["P0", "P1", "Critical", "High"]
+  },
   "provider_gates": [
     {
       "id": "phase7-live-promotion",

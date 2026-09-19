@@ -12,6 +12,7 @@ from scripts import (
     verify_phase3_schema,
     verify_phase4_schema,
     verify_phase5_schema,
+    verify_phase6_schema,
     verify_phase7_schema,
     verify_phase8_schema,
 )
@@ -55,6 +56,7 @@ def test_every_phase_schema_verifier_targets_the_current_head():
         verify_phase3_schema.EXPECTED_HEAD,
         verify_phase4_schema.EXPECTED_HEAD,
         verify_phase5_schema.EXPECTED_HEAD,
+        verify_phase6_schema.EXPECTED_HEAD,
         verify_phase7_schema.EXPECTED_HEAD,
         verify_phase8_schema.EXPECTED_HEAD,
     } == {expected_head}
