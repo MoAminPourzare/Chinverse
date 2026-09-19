@@ -363,6 +363,12 @@ playback واقعی را اثبات نمی‌کند.
 `PHASE_5_CLOSED_BETA_SUPPORT_REPORT_FA.md` ثبت شده است. وضعیت تا deploy همان SHA،
 تعریف تسترهای واقعی و ثبت یک چرخهٔ feedback/triage برابر `🔶` می‌ماند.
 
+**checkpoint staging — ۲۰۲۶-۰۹-۱۹:** release
+`82e7dd42dd80f8c36b445cf4e214f069c13cb30b` deploy شد. Quality Gates run
+`35438620093`، deploy run `35438620153` و exact-SHA smoke run `35438620050`
+همگی سبزند؛ migration/integration/rollback، تطابق SHA، readiness و noindex تأیید
+شدند. blocker بعدی فقط اجرای cohort واقعی و حداقل یک feedback/triage cycle است.
+
 - [ ] تعداد cohort، معیار انتخاب، allowlist و تاریخ شروع/پایان beta را مشخص کن.
 - [ ] consent، privacy notice، شرایط بازخورد و مسیر حذف کاربر را ثبت کن.
 - [ ] owner بازخورد، SLA پاسخ، moderation و escalation incident را تعیین کن.

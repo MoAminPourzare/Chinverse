@@ -6,7 +6,7 @@
 **تاریخ شروع:** ۲۰۲۶-۰۹-۱۹  
 **شاخه:** `codex/phase-8-beta-release`  
 **SHA مبنا:** `93fca4d85d1e848bdb223991d2e7ec834cef67c1`  
-**SHA اجرایی این مرحله:** پس از CI/deploy ثبت می‌شود.
+**SHA اجرایی این مرحله:** `82e7dd42dd80f8c36b445cf4e214f069c13cb30b`
 
 ## ۱. دامنه و cohort اولیه
 
@@ -113,11 +113,18 @@ owner decision: continue | pause | rollback | close
 - Alembic: تنها head برابر `a7d2c5e8f1b4`.
 - frontend beta service test: `1 passed`؛ typecheck و production build با route
   `/beta-feedback` موفق.
-- CI/deploy staging: در checkpoint بعدی ثبت می‌شود.
+- [Quality Gates run 35438620093](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620093):
+  موفق؛ backend unit/integration، migration parity، rollback/rebuild، container،
+  frontend lint/typecheck/test/build/browser همگی سبز.
+- [Deploy staging run 35438620153](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620153):
+  موفق برای SHA دقیق بالا.
+- [Exact-SHA smoke run 35438620050](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620050):
+  موفق؛ backend/frontend هم‌SHA، protection، noindex، readiness و بسته‌بودن
+  قابلیت‌های حساس تأیید شد.
 
 ## ۸. موارد لازم برای تبدیل وضعیت به ✅
 
-- [ ] migration و release این مرحله روی staging deploy و exact-SHA smoke سبز شود.
+- [x] migration و release این مرحله روی staging deploy و exact-SHA smoke سبز شد.
 - [ ] secretهای beta فقط در محیط staging تنظیم شوند.
 - [ ] حداقل یک دعوت واقعی با admin/MFA صادر، redeem و در صورت نیاز revoke/expiry
   آزمایش شود.
