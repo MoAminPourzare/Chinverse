@@ -327,6 +327,14 @@ fullscreen/back/rotation/zoom و subscription staging روی Chromium/WebKit ب�
 WCAG/mobile/PWA و production service-worker نیز سبز است. کار باز فقط deploy
 همین commit و ثبت evidence دو دستگاه واقعی است؛ وضعیت تا آن زمان `🔶` می‌ماند.
 
+**checkpoint staging نهایی — ۲۰۲۶-۰۹-۱۹:** commit نهایی
+`3db95ad80335f293b92a4773c843008a60513fa0` روی همین شاخه deploy شد و هر سه
+workflowِ Quality gates، deploy backend و exact-SHA smoke سبز شدند. smoke تطابق
+SHA، staging/noindex، readiness دیتابیس و storage، حفاظت preview و بسته‌بودن
+مسیرهای اشتراک/پرداخت را تأیید کرد. نتیجهٔ خودکار مرحله کامل است؛ وضعیت کلی
+تا ثبت Android Chrome و iOS Safari واقعی و screen-reader/PWA دستی `🔶` باقی
+می‌ماند.
+
 - [ ] Android Chrome واقعی: keyboard، safe-area، fullscreen، rotation، back
   gesture، zoom ۲۰۰٪، PWA install/update/offline.
 - [ ] iOS Safari واقعی: همان journeyها، به‌خصوص keyboard، viewport، fullscreen

@@ -5,11 +5,11 @@
 
 ## وضعیت جاری
 
-- **وضعیت:** 🔶 در حال اجرا
+- **وضعیت:** 🔶 خودکار و staging سبز؛ evidence دستگاه واقعی باقی است
 - **شروع:** ۲۰۲۶-۰۹-۱۵، ساعت ۱۸:۲۱ به وقت تهران
 - **شاخه:** `codex/phase-8-beta-release`
-- **HEAD هنگام شروع:** `240a4c8ec920a3d25ff24a4949b24535d0e94708`
-- **release اجرایی staging:** `42360d0160ea643183127e281fafe32f55faa044`
+- **HEAD فعلی:** `3db95ad80335f293b92a4773c843008a60513fa0`
+- **release اجرایی staging:** `3db95ad80335f293b92a4773c843008a60513fa0`
 - **محیط هدف:** staging محافظت‌شده و `noindex`
 - **مرحلهٔ پیشین:** مرحلهٔ ۳ بسته و سبز
 
@@ -25,7 +25,7 @@ gesture، zoom ۲۰۰٪، fullscreen، focus، contrast، خطاهای فرم و
 | گام | موضوع | وضعیت | نتیجه / اقدام بعدی |
 |---|---|---|---|
 | ۴.۱ | ممیزی و baseline خودکار release فعلی | ✅ | lint/typecheck/unit/build و suite کامل mobile/WCAG/PWA سبز |
-| ۴.۲ | سخت‌سازی پوشش خودکار مسیرهای اصلی | ✅ | gate آموزش/ورود/اشتراک `6/6` و authenticated journeyها `18/18` سبز |
+| ۴.۲ | سخت‌سازی پوشش خودکار مسیرهای اصلی | ✅ | gate آموزش/ورود/اشتراک `6/6` و authenticated journeyها `18/18` سبز؛ CI همان SHA سبز |
 | ۴.۳ | Android Chrome واقعی + TalkBack | ⏳ | نیازمند دستگاه واقعی صاحب پروژه |
 | ۴.۴ | iOS Safari واقعی + VoiceOver | ⏳ | نیازمند دستگاه واقعی صاحب پروژه |
 | ۴.۵ | PWA نصب/آپدیت/offline و media fullscreen | 🔶 | قرارداد production worker و fullscreen خودکار سبز؛ تأیید کوتاه روی دستگاه مانده |
@@ -132,9 +132,29 @@ gesture، zoom ۲۰۰٪، fullscreen، focus، contrast، خطاهای فرم و
   می‌شود. تا سبزشدن workflowها، هیچ ادعای deploy جدید یا sign-off نهایی ثبت
   نمی‌شود.
 
+### checkpoint CI و staging نهایی — ۲۰۲۶-۰۹-۱۹
+
+- خطای CI روی SHA قبلی در WebKit از تست بود، نه محصول: mock تست با
+  `route.fulfill` پاسخ redirect با status `307` می‌ساخت و Playwright آن را رد
+  می‌کرد. mock به پاسخ موفق و خالی `video/mp4` تغییر کرد؛ codec ویدیو در این
+  تست عمداً mock است.
+- typecheck پس از اصلاح سبز شد و commit نهایی روی همین شاخه به
+  `3db95ad80335f293b92a4773c843008a60513fa0` رسید.
+- هر سه workflow همان SHA سبز شدند:
+  [Quality gates run 96](https://github.com/MoAminPourzare/Chinverse/actions/runs/35433046013)،
+  [Deploy staging backend run 42](https://github.com/MoAminPourzare/Chinverse/actions/runs/35433045885)،
+  [Phase 2 exact-SHA smoke run 33](https://github.com/MoAminPourzare/Chinverse/actions/runs/35433045959).
+- smoke همان-SHA تأیید کرد: backend و frontend با SHA دقیق، tier=`staging` و
+  `noindex`، readiness دیتابیس و storage سالم، preview ناشناس محافظت‌شده با
+  `302` و مسیرهای اشتراک/پرداخت غیرفعال. catalog staging در این run خالی بود؛
+  بنابراین این run شواهد lesson واقعی تولید نمی‌کند.
+- نتیجهٔ اتوماتیک مرحله اکنون کامل و قابل تکرار است؛ وضعیت کلی عمداً تا ثبت
+  Android Chrome و iOS Safari واقعی `🔶` باقی می‌ماند.
+
 ## blocker جاری
 
-blocker کدی شناخته‌شده‌ای باقی نمانده است. ابتدا سه workflow این checkpoint باید
-سبز شوند؛ سپس gate نهایی به evidence یک Android Chrome و یک iOS Safari واقعی
-وابسته است. پس از deploy همین commit روی staging، صاحب پروژه فقط چک‌لیست کوتاه
-دستگاه را اجرا می‌کند؛ نتیجه و evidence بدون PII در همین فایل ثبت خواهد شد.
+blocker کدی شناخته‌شده‌ای باقی نمانده است. سه workflow این checkpoint سبز
+شده‌اند؛ blocker باقی‌مانده فقط evidence یک Android Chrome و یک iOS Safari
+واقعی و بخش دستی PWA/screen-reader است. پس از اجرای چک‌لیست کوتاه دستگاه،
+نتیجه و evidence بدون PII در همین فایل ثبت خواهد شد و می‌توان وضعیت را به ✅
+تغییر داد.
