@@ -58,6 +58,8 @@ Run شروع:
 - attestation هر پله ۹۰ روز نگه‌داری می‌شود.
 - workflow فقط promotion انجام‌شده را validate می‌کند و provider/DNS را تغییر
   نمی‌دهد.
+- triggerهای deploy و exact-SHA smoke برای `backend/tests/**` همسان شدند تا smoke
+  منتظر SHAای نماند که backend هرگز deploy نکرده است.
 
 ## ۴. gateهای باقی‌مانده
 
