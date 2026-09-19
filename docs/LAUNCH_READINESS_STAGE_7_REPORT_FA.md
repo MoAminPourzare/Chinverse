@@ -47,6 +47,10 @@ Run شروع:
 - اجرای بعدی Backend از Static checks عبور کرد و در تست timestamp webhook شکست
   خورد؛ fixture تست به قرارداد عدد صحیح تابع اصلاح شد. نتیجهٔ محلی نهایی:
   `186 passed, 32 deselected`، مجموعهٔ هدف `17 passed`، Ruff و هر دو verifier سبز.
+- اجرای Quality روی `8a9d3e2` تا migration و schema parity سبز بود و فقط integration
+  fixture مرحلهٔ ۴ شکست خورد. علت hardcode شدن Alembic head قدیمی در ابزار fixture
+  بود؛ safety contract اکنون head یکتای migration graph را در زمان اجرا می‌خواند و
+  تست regression دارد.
 
 ## ۳.۱ سخت‌سازی rollout gate
 

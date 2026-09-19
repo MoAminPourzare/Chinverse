@@ -7,6 +7,7 @@ from app.core.legal import LEGAL_DOCUMENT_VERSIONS
 from app.db.base_class import Base
 import app.models  # noqa: F401
 from scripts.phase4_staging_fixtures import (
+    EXPECTED_ALEMBIC_HEAD,
     EXPECTED_USER_FOREIGN_KEYS,
     FixtureSafetyError,
     build_verified_ssl_context,
@@ -17,6 +18,7 @@ from scripts.phase4_staging_fixtures import (
     normalize_run_id,
     validate_and_normalize_database_url,
 )
+from scripts.schema_verification import repository_alembic_head
 
 
 def _database_url(
@@ -72,6 +74,10 @@ def test_fixture_connection_uses_a_hostname_verifying_system_ca_context():
 
     assert context.check_hostname is True
     assert context.verify_mode == ssl.CERT_REQUIRED
+
+
+def test_fixture_contract_tracks_the_repository_migration_head():
+    assert EXPECTED_ALEMBIC_HEAD == repository_alembic_head()
 
 
 @pytest.mark.parametrize("value", ["", "short", "-invalid", "invalid-", "has space"])

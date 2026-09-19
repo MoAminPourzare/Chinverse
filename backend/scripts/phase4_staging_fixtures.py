@@ -43,13 +43,15 @@ from app.core.passwords import (  # noqa: E402
     password_contains_account_data,
     validate_new_password,
 )
+from scripts.schema_verification import repository_alembic_head  # noqa: E402
 
 
 EXPECTED_ENDPOINT_ID = "ep-wild-band-atse2yoq"
 # The fixture contract remains useful after later additive migrations, but it
-# must refuse a database older than the current release schema.  Phase 8 adds
-# only beta/payment tables and extends this FK contract below.
-EXPECTED_ALEMBIC_HEAD = "a7d2c5e8f1b4"
+# must refuse any database that is not at the repository's single release
+# head. Resolving this from the migration graph prevents the safety check from
+# becoming stale whenever a later phase adds a migration.
+EXPECTED_ALEMBIC_HEAD = repository_alembic_head()
 FIXTURE_EMAIL_DOMAIN = "example.com"
 RUN_ID_PATTERN = re.compile(r"[a-z0-9](?:[a-z0-9-]{4,38}[a-z0-9])?")
 ADVISORY_LOCK_NAME = "chinverse-phase4-staging-fixtures"
@@ -320,7 +322,7 @@ async def verify_database_contract(connection: asyncpg.Connection) -> None:
     found_heads = {str(row["version_num"]) for row in heads}
     if found_heads != {EXPECTED_ALEMBIC_HEAD}:
         raise FixtureSafetyError(
-            "Database Alembic revision does not exactly match the approved Phase 4 head."
+            "Database Alembic revision does not exactly match the approved release head."
         )
 
     foreign_keys = {
