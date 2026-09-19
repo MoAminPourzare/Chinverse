@@ -373,6 +373,12 @@ playback واقعی را اثبات نمی‌کند.
 بدون SQL یا ابزار بیرونی summary روزانه را ببیند، دعوت صادر/لغو کند و feedback
 را با severity و note triage کند. production build با `67` route سبز است.
 
+**checkpoint نهایی کد و CI — ۲۰۲۶-۰۹-۱۹:** commit نهایی
+`2ed32db756eb860357937a13d02d17857e277312` روی branch منتشر شد. Quality Gates
+`35439383731`، deploy staging `35439383768` و exact-SHA smoke
+`35439383901` همگی موفق‌اند. بنابراین gate فنی آماده است؛ وضعیت مرحله تا اجرای
+cohort واقعی و یک چرخهٔ feedback/triage همچنان `🔶` است.
+
 - [ ] تعداد cohort، معیار انتخاب، allowlist و تاریخ شروع/پایان beta را مشخص کن.
 - [ ] consent، privacy notice، شرایط بازخورد و مسیر حذف کاربر را ثبت کن.
 - [ ] owner بازخورد، SLA پاسخ، moderation و escalation incident را تعیین کن.

@@ -6,7 +6,10 @@
 **تاریخ شروع:** ۲۰۲۶-۰۹-۱۹  
 **شاخه:** `codex/phase-8-beta-release`  
 **SHA مبنا:** `93fca4d85d1e848bdb223991d2e7ec834cef67c1`  
-**SHA اجرایی این مرحله:** `82e7dd42dd80f8c36b445cf4e214f069c13cb30b`
+**SHA اجرایی این مرحله:** `2ed32db756eb860357937a13d02d17857e277312`
+
+مهاجرت و اولین deploy staging با `82e7dd42dd80f8c36b445cf4e214f069c13cb30b`
+انجام شد و commit نهایی `2ed32db` پنل عملیات بتا را به همان مسیر اضافه کرد.
 
 ## ۱. دامنه و cohort اولیه
 
@@ -116,12 +119,12 @@ owner decision: continue | pause | rollback | close
 - Alembic: تنها head برابر `a7d2c5e8f1b4`.
 - frontend beta service test: `1 passed`؛ typecheck و production build با route
   `/beta-feedback` و `/admin/beta` (در مجموع `67` route) موفق.
-- [Quality Gates run 35438620093](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620093):
+- [Quality Gates run 35439383731](https://github.com/MoAminPourzare/Chinverse/actions/runs/35439383731):
   موفق؛ backend unit/integration، migration parity، rollback/rebuild، container،
   frontend lint/typecheck/test/build/browser همگی سبز.
-- [Deploy staging run 35438620153](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620153):
+- [Deploy staging run 35439383768](https://github.com/MoAminPourzare/Chinverse/actions/runs/35439383768):
   موفق برای SHA دقیق بالا.
-- [Exact-SHA smoke run 35438620050](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620050):
+- [Exact-SHA smoke run 35439383901](https://github.com/MoAminPourzare/Chinverse/actions/runs/35439383901):
   موفق؛ backend/frontend هم‌SHA، protection، noindex، readiness و بسته‌بودن
   قابلیت‌های حساس تأیید شد.
 
