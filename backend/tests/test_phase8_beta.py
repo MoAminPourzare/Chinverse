@@ -107,12 +107,12 @@ def test_webhook_signature_is_constant_time_and_fail_closed() -> None:
 def test_timestamped_webhook_signature_binds_timestamp_and_payload() -> None:
     payload = b'{"id":"evt_1"}'
     secret = "p" * 32
-    timestamp = "1760000000"
+    timestamp = 1_760_000_000
     signed = f"{timestamp}.".encode() + payload
     signature = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
     assert verify_timestamped_webhook_signature(payload, signature, secret, timestamp)
-    assert not verify_timestamped_webhook_signature(payload, signature, secret, "1760000001")
-    assert not verify_timestamped_webhook_signature(payload, signature, secret, "")
+    assert not verify_timestamped_webhook_signature(payload, signature, secret, 1_760_000_001)
+    assert not verify_timestamped_webhook_signature(payload, signature, secret, 0)
 
 
 def test_payment_provider_boundary_never_fabricates_checkout() -> None:

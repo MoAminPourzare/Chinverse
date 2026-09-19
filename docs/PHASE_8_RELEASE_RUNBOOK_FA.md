@@ -49,11 +49,14 @@ workflow `.github/workflows/phase8-release-gate.yml` فقط manual و environmen
 protected است. ورودی `release_sha` باید full lowercase SHA باشد و با آخرین run
 موفق Quality Gates یکی باشد. ترتیب rollout:
 
-`5% → 25% → 50% → 100%`
+`internal → 5% → 25% → 50% → 100%`
 
-برای هر پله health/readiness و error budget را به‌مدت توافق‌شده observe کن. پله‌ی
-بعدی بدون approval صریح محیط اجرا نمی‌شود. `100%` بدون `confirm_public=true` fail
-می‌شود.
+پیش از اجرای gate، operator باید promotion همان پله را در provider انجام داده و
+یک URL شواهد HTTPS وارد کند؛ workflow خودش DNS، cohort یا provider را mutate
+نمی‌کند. هر پله health/readiness را ۱۵، ۳۰ یا ۶۰ دقیقه observe و attestation JSON
+می‌سازد. پلهٔ بعدی فقط با `run_id` موفق پلهٔ قبلی و همان release/rollback SHA
+مجاز است. `rollback_sha` باید SHA سالم، متفاوت از release و ancestor شاخهٔ `main`
+باشد. `100%` بدون `confirm_public=true` fail می‌شود.
 
 ## rollback frontend/backend
 

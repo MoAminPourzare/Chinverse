@@ -44,6 +44,20 @@ Run شروع:
   همسان شد.
 - evidence محلی پس از اصلاح: Ruff سبز و
   `verify_phase7_operations.py --repo-root ..` سبز.
+- اجرای بعدی Backend از Static checks عبور کرد و در تست timestamp webhook شکست
+  خورد؛ fixture تست به قرارداد عدد صحیح تابع اصلاح شد. نتیجهٔ محلی نهایی:
+  `186 passed, 32 deselected`، مجموعهٔ هدف `17 passed`، Ruff و هر دو verifier سبز.
+
+## ۳.۱ سخت‌سازی rollout gate
+
+- پلهٔ `internal` پیش از ۵٪ اضافه شد.
+- `rollback_sha` سالم و متفاوت برای هر اجرا اجباری شد.
+- هر پله به attestation موفق پلهٔ قبلی با همان release/rollback SHA وابسته است.
+- URL evidence مربوط به promotion provider اجباری و HTTPS است.
+- health/readiness در window واقعی ۱۵، ۳۰ یا ۶۰ دقیقه تکرار می‌شود.
+- attestation هر پله ۹۰ روز نگه‌داری می‌شود.
+- workflow فقط promotion انجام‌شده را validate می‌کند و provider/DNS را تغییر
+  نمی‌دهد.
 
 ## ۴. gateهای باقی‌مانده
 
@@ -65,6 +79,7 @@ Run شروع:
 - [x] inventory issueها از GitHub زنده بازسازی شد.
 - [x] وضعیت ruleset، environment و ancestry بررسی شد.
 - [x] اولین شکست Quality Gates ریشه‌یابی و اصلاح شد.
+- [x] قرارداد rollout ترتیبی، rollback SHA، observation و attestation سخت‌سازی شد.
 - [ ] Quality Gates نهایی و migration/integration همان SHA سبز شود.
 - [ ] SHA نهایی روی staging frontend/backend deploy و exact-SHA smoke سبز شود.
 - [ ] provider gateهای لازم verified یا waiver محدود و موجه داشته باشند.

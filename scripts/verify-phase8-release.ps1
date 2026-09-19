@@ -110,6 +110,20 @@ if (-not $workflow.Contains("environment:")) {
 if (-not $workflow.Contains("confirm_public")) {
     throw "Phase 8 production gate must require explicit public-release confirmation."
 }
+foreach ($requiredContract in @(
+    "rollback_sha:",
+    'options: ["internal", "5", "25", "50", "100"]',
+    "observation_minutes:",
+    "previous_stage_run_id:",
+    "promotion_evidence_url:",
+    "Verify rollout stage continuity",
+    "Observe production health window",
+    "phase8-rollout-attestation"
+)) {
+    if (-not $workflow.Contains($requiredContract)) {
+        throw "Phase 8 production gate is missing rollout contract: $requiredContract"
+    }
+}
 
 Write-Host "Phase 8 local release safety gate passed: no known P0/P1/Critical/High blockers." -ForegroundColor Green
 if (-not $RequireAllProviderGates) {

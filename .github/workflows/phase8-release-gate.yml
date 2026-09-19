@@ -7,12 +7,30 @@ on:
         description: Full lowercase Git SHA that already passed Quality Gates
         required: true
         type: string
+      rollback_sha:
+        description: Last known-good full lowercase Git SHA for immediate rollback
+        required: true
+        type: string
       rollout_percent:
-        description: Percentage of the approved cohort to expose
+        description: Approved rollout stage to validate after provider promotion
         required: true
         type: choice
-        options: ["5", "25", "50", "100"]
-        default: "5"
+        options: ["internal", "5", "25", "50", "100"]
+        default: "internal"
+      observation_minutes:
+        description: Health observation window for this rollout stage
+        required: true
+        type: choice
+        options: ["15", "30", "60"]
+        default: "15"
+      previous_stage_run_id:
+        description: Successful preceding gate run ID; empty only for internal
+        required: false
+        type: string
+      promotion_evidence_url:
+        description: HTTPS evidence for the provider-side promotion being validated
+        required: true
+        type: string
       confirm_public:
         description: Required only for the 100% public rollout
         required: true
@@ -37,7 +55,11 @@ jobs:
       name: production
     env:
       RELEASE_SHA: ${{ inputs.release_sha }}
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
       ROLLOUT_PERCENT: ${{ inputs.rollout_percent }}
+      OBSERVATION_MINUTES: ${{ inputs.observation_minutes }}
+      PREVIOUS_STAGE_RUN_ID: ${{ inputs.previous_stage_run_id }}
+      PROMOTION_EVIDENCE_URL: ${{ inputs.promotion_evidence_url }}
       CONFIRM_PUBLIC: ${{ inputs.confirm_public }}
       FRONTEND_HEALTH_URL: ${{ vars.PHASE8_FRONTEND_HEALTH_URL }}
       BACKEND_HEALTH_URL: ${{ vars.PHASE8_BACKEND_HEALTH_URL }}
@@ -47,7 +69,23 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "release_sha must be a full lowercase SHA" >&2; exit 1; }
-          [[ "$ROLLOUT_PERCENT" =~ ^(5|25|50|100)$ ]] || { echo "unsupported rollout percentage" >&2; exit 1; }
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "rollback_sha must be a full lowercase SHA" >&2; exit 1; }
+          [[ "$RELEASE_SHA" != "$ROLLBACK_SHA" ]] || { echo "release_sha and rollback_sha must differ" >&2; exit 1; }
+          [[ "$ROLLOUT_PERCENT" =~ ^(internal|5|25|50|100)$ ]] || { echo "unsupported rollout stage" >&2; exit 1; }
+          [[ "$OBSERVATION_MINUTES" =~ ^(15|30|60)$ ]] || { echo "unsupported observation window" >&2; exit 1; }
+          [[ "$PROMOTION_EVIDENCE_URL" =~ ^https://[^[:space:]]+$ ]] || { echo "promotion_evidence_url must be HTTPS" >&2; exit 1; }
+          case "$ROLLOUT_PERCENT" in
+            internal) expected_previous="" ;;
+            5) expected_previous="internal" ;;
+            25) expected_previous="5" ;;
+            50) expected_previous="25" ;;
+            100) expected_previous="50" ;;
+          esac
+          if [[ -z "$expected_previous" ]]; then
+            [[ -z "$PREVIOUS_STAGE_RUN_ID" ]] || { echo "internal rollout must not claim a previous stage" >&2; exit 1; }
+          else
+            [[ "$PREVIOUS_STAGE_RUN_ID" =~ ^[1-9][0-9]*$ ]] || { echo "rollout ${ROLLOUT_PERCENT} requires a previous gate run ID" >&2; exit 1; }
+          fi
           if [[ "$ROLLOUT_PERCENT" == "100" && "$CONFIRM_PUBLIC" != "true" ]]; then
             echo "100% rollout requires confirm_public=true" >&2
             exit 1
@@ -68,10 +106,40 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           git merge-base --is-ancestor "$RELEASE_SHA" origin/main
-          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/quality-gates.yml/runs?event=push&head_sha=${RELEASE_SHA}&per_page=20"
-          payload="$(curl --fail --silent --show-error -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$api")"
-          conclusion="$(jq -r '[.workflow_runs[] | select(.head_sha == env.RELEASE_SHA)] | sort_by(.created_at) | last | if . == null then "missing" elif .status != "completed" then .status else .conclusion end' <<<"$payload")"
-          [[ "$conclusion" == "success" ]] || { echo "Quality Gates for $RELEASE_SHA: $conclusion" >&2; exit 1; }
+          git merge-base --is-ancestor "$ROLLBACK_SHA" origin/main
+          for candidate in "$RELEASE_SHA" "$ROLLBACK_SHA"; do
+            api="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/quality-gates.yml/runs?event=push&head_sha=${candidate}&per_page=20"
+            payload="$(curl --fail --silent --show-error -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$api")"
+            conclusion="$(jq -r --arg sha "$candidate" '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.created_at) | last | if . == null then "missing" elif .status != "completed" then .status else .conclusion end' <<<"$payload")"
+            [[ "$conclusion" == "success" ]] || { echo "Quality Gates for $candidate: $conclusion" >&2; exit 1; }
+          done
+
+      - name: Download preceding rollout attestation
+        if: inputs.rollout_percent != 'internal'
+        uses: actions/download-artifact@v7
+        with:
+          name: phase8-rollout-attestation
+          path: previous-rollout
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.previous_stage_run_id }}
+
+      - name: Verify rollout stage continuity
+        if: inputs.rollout_percent != 'internal'
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$ROLLOUT_PERCENT" in
+            5) expected_previous="internal" ;;
+            25) expected_previous="5" ;;
+            50) expected_previous="25" ;;
+            100) expected_previous="50" ;;
+          esac
+          jq -e \
+            --arg release "$RELEASE_SHA" \
+            --arg rollback "$ROLLBACK_SHA" \
+            --arg stage "$expected_previous" \
+            '.release_sha == $release and .rollback_sha == $rollback and .rollout_stage == $stage and .result == "success"' \
+            previous-rollout/attestation.json >/dev/null
 
       - name: Verify release blockers and required provider evidence
         shell: bash
@@ -134,6 +202,43 @@ jobs:
           ready="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${BACKEND_HEALTH_URL%/}/ready")"
           jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready" >/dev/null
 
+      - name: Observe production health window
+        shell: bash
+        run: |
+          set -euo pipefail
+          for minute in $(seq 1 "$OBSERVATION_MINUTES"); do
+            frontend="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "$FRONTEND_HEALTH_URL")"
+            backend="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "$BACKEND_HEALTH_URL")"
+            ready="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${BACKEND_HEALTH_URL%/}/ready")"
+            jq -e --arg sha "$RELEASE_SHA" '.status == "ok" and .deployment_tier == "production" and .release == $sha' <<<"$frontend" >/dev/null
+            jq -e --arg sha "$RELEASE_SHA" '.status == "ok" and .deployment_tier == "production" and .release == $sha' <<<"$backend" >/dev/null
+            jq -e '.status == "ok" and .checks.database == "ok" and .checks.storage == "ok"' <<<"$ready" >/dev/null
+            if [[ "$minute" -lt "$OBSERVATION_MINUTES" ]]; then
+              sleep 60
+            fi
+          done
+
+      - name: Write rollout attestation
+        shell: bash
+        run: |
+          jq -n \
+            --arg release_sha "$RELEASE_SHA" \
+            --arg rollback_sha "$ROLLBACK_SHA" \
+            --arg rollout_stage "$ROLLOUT_PERCENT" \
+            --arg observation_minutes "$OBSERVATION_MINUTES" \
+            --arg promotion_evidence_url "$PROMOTION_EVIDENCE_URL" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            '{schema_version: 1, result: "success", release_sha: $release_sha, rollback_sha: $rollback_sha, rollout_stage: $rollout_stage, observation_minutes: ($observation_minutes | tonumber), promotion_evidence_url: $promotion_evidence_url, run_id: $run_id}' \
+            > attestation.json
+
+      - name: Upload rollout attestation
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase8-rollout-attestation
+          path: attestation.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Publish rollout summary
         shell: bash
         run: |
@@ -141,7 +246,10 @@ jobs:
             echo "### Phase 8 production release gate"
             echo
             echo "- Release SHA: `${RELEASE_SHA}`"
-            echo "- Rollout: `${ROLLOUT_PERCENT}%`"
+            echo "- Rollback SHA: `${ROLLBACK_SHA}`"
+            echo "- Rollout stage: `${ROLLOUT_PERCENT}`"
+            echo "- Observation: `${OBSERVATION_MINUTES} minutes`"
+            echo "- Promotion evidence: ${PROMOTION_EVIDENCE_URL}"
             echo "- Public confirmation: `${CONFIRM_PUBLIC}`"
             echo "- Health/readiness: passed"
             echo
