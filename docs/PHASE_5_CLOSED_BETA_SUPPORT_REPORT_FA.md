@@ -64,6 +64,9 @@ feedback جدید ابتدا `open/unclassified` است. owner آن را با se
 - `PATCH /api/v1/admin/beta/feedback/{id}` علاوه بر status و note می‌تواند
   severity را ثبت کند و audit event بسازد.
 - privacy notice به UI رضایت‌نامهٔ بتا اضافه شد.
+- صفحهٔ `/admin/beta` برای admin/MFA اضافه شد: summary، صدور یک‌بارهٔ کد دعوت،
+  revoke، فهرست بدون PII و triage همراه severity/note را بدون نیاز به SQL یا
+  فراخوانی دستی API انجام می‌دهد.
 
 ## ۵. تنظیم امن staging پیش از اولین دعوت
 
@@ -112,7 +115,7 @@ owner decision: continue | pause | rollback | close
 - `ruff` برای endpoint، model، migration و تست‌های تغییرکرده: موفق.
 - Alembic: تنها head برابر `a7d2c5e8f1b4`.
 - frontend beta service test: `1 passed`؛ typecheck و production build با route
-  `/beta-feedback` موفق.
+  `/beta-feedback` و `/admin/beta` (در مجموع `67` route) موفق.
 - [Quality Gates run 35438620093](https://github.com/MoAminPourzare/Chinverse/actions/runs/35438620093):
   موفق؛ backend unit/integration، migration parity، rollback/rebuild، container،
   frontend lint/typecheck/test/build/browser همگی سبز.

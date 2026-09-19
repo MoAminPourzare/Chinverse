@@ -369,6 +369,10 @@ playback واقعی را اثبات نمی‌کند.
 همگی سبزند؛ migration/integration/rollback، تطابق SHA، readiness و noindex تأیید
 شدند. blocker بعدی فقط اجرای cohort واقعی و حداقل یک feedback/triage cycle است.
 
+**checkpoint پنل عملیات:** صفحهٔ `/admin/beta` اضافه شد تا admin/MFA بتواند
+بدون SQL یا ابزار بیرونی summary روزانه را ببیند، دعوت صادر/لغو کند و feedback
+را با severity و note triage کند. production build با `67` route سبز است.
+
 - [ ] تعداد cohort، معیار انتخاب، allowlist و تاریخ شروع/پایان beta را مشخص کن.
 - [ ] consent، privacy notice، شرایط بازخورد و مسیر حذف کاربر را ثبت کن.
 - [ ] owner بازخورد، SLA پاسخ، moderation و escalation incident را تعیین کن.

@@ -829,6 +829,9 @@ export default function AdminPanelPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Link href="/admin/beta" title="عملیات بتای بسته" aria-label="مدیریت cohort و بازخورد بتا" className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
+                            <Users size={17} />
+                        </Link>
                         <Link href="/admin/support" title="تیکت‌های پشتیبانی" aria-label="مدیریت تیکت‌های پشتیبانی" className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-[#155aa6] hover:bg-blue-100">
                             <Headphones size={17} />
                         </Link>
