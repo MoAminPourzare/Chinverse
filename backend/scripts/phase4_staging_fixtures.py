@@ -49,7 +49,7 @@ EXPECTED_ENDPOINT_ID = "ep-wild-band-atse2yoq"
 # The fixture contract remains useful after later additive migrations, but it
 # must refuse a database older than the current release schema.  Phase 8 adds
 # only beta/payment tables and extends this FK contract below.
-EXPECTED_ALEMBIC_HEAD = "f8a1b2c3d4e5"
+EXPECTED_ALEMBIC_HEAD = "a7d2c5e8f1b4"
 FIXTURE_EMAIL_DOMAIN = "example.com"
 RUN_ID_PATTERN = re.compile(r"[a-z0-9](?:[a-z0-9-]{4,38}[a-z0-9])?")
 ADVISORY_LOCK_NAME = "chinverse-phase4-staging-fixtures"
