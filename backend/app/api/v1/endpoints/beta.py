@@ -7,16 +7,17 @@ from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
-from app.core.config import settings
+from app.core.config import resolve_release_sha, settings
 from app.core.phase8 import EMAIL_RE
-from app.models.phase8 import BetaFeedback
+from app.models.phase8 import BetaFeedback, BetaInvite
+from app.models.security import LegalAcceptance
 from app.models.user import User
 from app.services.auth_security import add_audit_event, utc_now
 from app.services.phase8_beta import (
@@ -101,6 +102,7 @@ class BetaFeedbackOut(BaseModel):
 
 class BetaFeedbackAdminOut(BetaFeedbackOut):
     user_id: int
+    severity: Literal["unclassified", "P0", "P1", "P2", "P3"]
     triage_note: Optional[str]
     reviewed_at: Optional[datetime]
     reviewed_by_user_id: Optional[int]
@@ -108,6 +110,7 @@ class BetaFeedbackAdminOut(BetaFeedbackOut):
 
 class BetaFeedbackUpdateIn(BaseModel):
     status: Literal["open", "triaged", "resolved", "dismissed"]
+    severity: Optional[Literal["unclassified", "P0", "P1", "P2", "P3"]] = None
     triage_note: Optional[str] = Field(default=None, max_length=4000)
 
     @field_validator("triage_note", mode="before")
@@ -145,6 +148,36 @@ class BetaInviteIssueOut(BaseModel):
 class BetaInviteRevokeOut(BaseModel):
     invite_id: int
     status: Literal["issued", "redeemed", "revoked", "expired"]
+
+
+class BetaInviteAdminOut(BaseModel):
+    """Safe invite projection for the operational beta dashboard."""
+
+    invite_id: int
+    status: Literal["issued", "redeemed", "revoked", "expired"]
+    has_email_binding: bool
+    expires_at: datetime
+    redeemed_at: Optional[datetime]
+    created_at: datetime
+
+
+class BetaSummaryOut(BaseModel):
+    """PII-free snapshot used by the daily beta/support check-in."""
+
+    enabled: bool
+    invite_required: bool
+    rollout_percent: int
+    consent_version: str
+    release_sha: str
+    invite_counts: dict[str, int]
+    feedback_counts: dict[str, int]
+    unresolved_severity_counts: dict[str, int]
+    consent_count: int
+    invite_total: int
+    feedback_total: int
+    open_feedback_count: int
+    open_p0_p1_count: int
+    generated_at: datetime
 
 
 def _status_payload(decision, *, consent_accepted: bool) -> dict[str, Any]:
@@ -278,6 +311,88 @@ async def admin_revoke_beta_invite(
     return {"invite_id": invite.id, "status": invite.status}
 
 
+@admin_router.get("/invites", response_model=list[BetaInviteAdminOut])
+async def admin_list_beta_invites(
+    db: AsyncSession = Depends(deps.get_db),
+    _current_user: User = Depends(deps.get_current_admin_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
+) -> list[dict[str, Any]]:
+    """List invite lifecycle state without exposing codes or PII."""
+
+    result = await db.execute(
+        select(BetaInvite)
+        .order_by(desc(BetaInvite.created_at), desc(BetaInvite.id))
+        .offset(pagination.skip)
+        .limit(pagination.limit)
+    )
+    return [
+        {
+            "invite_id": invite.id,
+            "status": invite.status,
+            "has_email_binding": invite.email_hash is not None,
+            "expires_at": invite.expires_at,
+            "redeemed_at": invite.redeemed_at,
+            "created_at": invite.created_at,
+        }
+        for invite in result.scalars().all()
+    ]
+
+
+@admin_router.get("/summary", response_model=BetaSummaryOut)
+async def admin_beta_summary(
+    db: AsyncSession = Depends(deps.get_db),
+    _current_user: User = Depends(deps.get_current_admin_user),
+) -> dict[str, Any]:
+    """Return the PII-free daily closed-beta operational snapshot."""
+
+    invite_rows = await db.execute(
+        select(BetaInvite.status, func.count(BetaInvite.id)).group_by(BetaInvite.status)
+    )
+    feedback_rows = await db.execute(
+        select(BetaFeedback.status, func.count(BetaFeedback.id)).group_by(
+            BetaFeedback.status
+        )
+    )
+    unresolved_severity_rows = await db.execute(
+        select(BetaFeedback.severity, func.count(BetaFeedback.id))
+        .where(BetaFeedback.status.in_(("open", "triaged")))
+        .group_by(BetaFeedback.severity)
+    )
+    consent_count = int(
+        await db.scalar(
+            select(func.count(LegalAcceptance.id)).where(
+                LegalAcceptance.document_type == "beta",
+                LegalAcceptance.document_version == settings.BETA_CONSENT_VERSION,
+            )
+        )
+        or 0
+    )
+    invite_counts = {str(status): int(count) for status, count in invite_rows.all()}
+    feedback_counts = {str(status): int(count) for status, count in feedback_rows.all()}
+    unresolved_severity_counts = {
+        str(severity): int(count) for severity, count in unresolved_severity_rows.all()
+    }
+    feedback_total = sum(feedback_counts.values())
+    return {
+        "enabled": settings.FEATURE_BETA_ENABLED,
+        "invite_required": settings.BETA_INVITE_REQUIRED,
+        "rollout_percent": settings.BETA_ROLLOUT_PERCENT,
+        "consent_version": settings.BETA_CONSENT_VERSION,
+        "release_sha": resolve_release_sha(settings.RELEASE_SHA),
+        "invite_counts": invite_counts,
+        "feedback_counts": feedback_counts,
+        "unresolved_severity_counts": unresolved_severity_counts,
+        "consent_count": consent_count,
+        "invite_total": sum(invite_counts.values()),
+        "feedback_total": feedback_total,
+        "open_feedback_count": feedback_counts.get("open", 0),
+        "open_p0_p1_count": unresolved_severity_counts.get(
+            "P0", 0
+        ) + unresolved_severity_counts.get("P1", 0),
+        "generated_at": utc_now(),
+    }
+
+
 @admin_router.get("/feedback", response_model=list[BetaFeedbackAdminOut])
 async def admin_list_beta_feedback(
     feedback_status: Optional[str] = Query(default=None, alias="status"),
@@ -316,6 +431,8 @@ async def admin_update_beta_feedback(
     if not feedback:
         raise not_found("Beta feedback")
     feedback.status = payload.status
+    if payload.severity is not None:
+        feedback.severity = payload.severity
     feedback.triage_note = payload.triage_note
     feedback.reviewed_at = utc_now()
     feedback.reviewed_by_user_id = current_user.id
@@ -325,7 +442,11 @@ async def admin_update_beta_feedback(
         request=request,
         actor_user_id=current_user.id,
         subject=str(feedback.id),
-        details={"status": payload.status, "has_note": bool(payload.triage_note)},
+        details={
+            "status": payload.status,
+            "severity": payload.severity,
+            "has_note": bool(payload.triage_note),
+        },
     )
     await db.commit()
     await db.refresh(feedback)

@@ -164,8 +164,62 @@ def test_phase8_beta_paths_are_present_in_openapi() -> None:
     assert "/api/v1/beta/invites/redeem" in paths
     assert "/api/v1/beta/consent" in paths
     assert "/api/v1/beta/feedback" in paths
+    assert "/api/v1/admin/beta/invites" in paths
     assert "/api/v1/admin/beta/invites/{invite_id}/revoke" in paths
+    assert "/api/v1/admin/beta/summary" in paths
+    assert "/api/v1/admin/beta/feedback" in paths
     assert "/api/v1/admin/beta/feedback/{feedback_id}" in paths
+
+
+class _GroupedRows:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def all(self):
+        return self.rows
+
+
+class _BetaSummaryDb:
+    def __init__(self):
+        self.execute_calls = 0
+
+    async def execute(self, _statement):
+        self.execute_calls += 1
+        if self.execute_calls == 1:
+            return _GroupedRows([("issued", 3), ("redeemed", 2), ("revoked", 1)])
+        if self.execute_calls == 2:
+            return _GroupedRows([("open", 2), ("triaged", 1), ("resolved", 4)])
+        return _GroupedRows([("P1", 1), ("P2", 2)])
+
+    async def scalar(self, _statement):
+        return 2
+
+
+def test_beta_admin_summary_is_aggregate_and_pii_free() -> None:
+    import asyncio
+
+    from app.api.v1.endpoints.beta import admin_beta_summary
+
+    user = User(
+        id=10,
+        email="admin@example.com",
+        phone="+989120000010",
+        password_hash="not-used",
+    )
+    payload = asyncio.run(
+        admin_beta_summary(db=_BetaSummaryDb(), _current_user=user)
+    )
+    assert payload["invite_counts"] == {"issued": 3, "redeemed": 2, "revoked": 1}
+    assert payload["feedback_counts"] == {"open": 2, "triaged": 1, "resolved": 4}
+    assert payload["invite_total"] == 6
+    assert payload["feedback_total"] == 7
+    assert payload["open_feedback_count"] == 2
+    assert payload["unresolved_severity_counts"] == {"P1": 1, "P2": 2}
+    assert payload["open_p0_p1_count"] == 1
+    assert payload["consent_count"] == 2
+    serialized = str(payload).casefold()
+    assert "admin@example.com" not in serialized
+    assert "+989120000010" not in serialized
 
 
 def test_beta_consent_is_fail_closed_when_beta_is_disabled() -> None:

@@ -159,7 +159,10 @@ export default function BetaFeedbackPage() {
                 <main className="mx-auto flex max-w-[390px] flex-1 flex-col justify-center">
                     <h2 className="text-xl font-black text-slate-900 dark:text-white">رضایت‌نامه‌ی بتا</h2>
                     <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">برای ارسال بازخورد، نسخه‌ی فعلی رضایت‌نامه‌ی بتا را بخوان و تأیید کن. این رضایت قابل ثبت و پیگیری است.</p>
-                    <Link href="/legal/terms" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#155aa6]/30 px-4 text-sm font-black text-[#155aa6]">مشاهده شرایط استفاده</Link>
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                        <Link href="/legal/terms" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#155aa6]/30 px-3 text-center text-sm font-black text-[#155aa6]">شرایط استفاده</Link>
+                        <Link href="/legal/privacy" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#155aa6]/30 px-3 text-center text-sm font-black text-[#155aa6]">حریم خصوصی</Link>
+                    </div>
                     <label className="mt-5 flex min-h-11 items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold leading-6 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         <input type="checkbox" checked={consentChecked} onChange={(event) => setConsentChecked(event.target.checked)} className="mt-1 h-5 w-5 accent-[#155aa6]" />
                         <span>نسخه‌ی <b dir="ltr">{consentVersion}</b> را خواندم و با شرکت در بتای محدود و ارسال بازخورد موافقم.</span>

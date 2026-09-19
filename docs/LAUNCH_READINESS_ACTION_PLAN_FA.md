@@ -3,7 +3,7 @@
 > این فایل «صفحهٔ ادامهٔ کار» پروژه است. هر نشست جدید باید ابتدا این فایل را بخواند،
 > آخرین SHA و وضعیت تیک‌ها را بررسی کند و بعد فقط روی اولین کار بازشده کار کند.
 
-**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۱۵
+**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۱۹
 
 **checkpoint مرحلهٔ ۲:** ✅؛ deploy هم‌SHA، health/readiness، signed playback/entitlement، smoke کاربر عادی و cleanup نهایی fixture ثبت شده‌اند. release اجرایی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` است. جزئیات و شواهد در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` آمده است.
 
@@ -12,9 +12,9 @@
 **checkpoint نهایی مرحلهٔ ۲:** release `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` روی frontend/backend هم‌SHA و هر سه pipeline سبز است؛ پنل collectionها کامل لود شد، signed playback/entitlement روی fixture رایگان پاس شد و سپس همان fixture از Neon staging و bucket خصوصی حذف و نبود آن تأیید شد.
 **شاخهٔ محلی:** `codex/phase-8-beta-release`
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
-**نتیجهٔ فعلی:** مرحلهٔ ۳ نیز بسته است؛ release candidate هنوز برای production
-عمومی آماده اعلام نمی‌شود و ادامهٔ کار از مرحلهٔ ۴، تست واقعی موبایل و
-دسترس‌پذیری، انجام می‌شود.
+**نتیجهٔ فعلی:** مرحلهٔ ۳ بسته است؛ evidence دستی مرحلهٔ ۴ به تصمیم صاحب پروژه
+فعلاً deferred مانده و مرحلهٔ ۵، بتای بسته و پشتیبانی، شروع شده است. release
+candidate هنوز برای production عمومی آماده اعلام نمی‌شود.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -37,7 +37,7 @@
 | staging با همین SHA | ✅ مرحلهٔ ۲ | backend/HF و Vercel روی `8ba6fc1...` هم‌SHA؛ health/readiness و smoke رسانه/cleanup ثبت شد |
 | عملیات | ✅ مرحلهٔ ۳ | Sentry زنده و scrubشده، load/soak، alert/recovery، health و rollback/restore واقعی سبزند |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
-| بتای واقعی | ⛔ | cohort، رضایت، owner بازخورد و رکورد دعوت واقعی ثبت نشده‌اند |
+| بتای واقعی | 🔶 | hardening، consent/privacy و گزارش aggregate آماده؛ cohort و feedback cycle واقعی ثبت نشده‌اند |
 | پرداخت | ⏸️ | تا نصب adapter واقعی، checkout و entitlement باید خاموش بماند |
 | مجوز محتوا | ⏸️ | طبق تصمیم صاحب پروژه از مسیر بحرانی این برنامه خارج شده؛ وضعیت حقوقی تأیید نشده است |
 
@@ -72,8 +72,8 @@
 | ۱ | دیتابیس و restore | 🔶 | مرحلهٔ ۰ | local schema/restore سبز؛ Neon branch و retention مالک‌محور |
 | ۲ | staging | ✅ بسته | مرحلهٔ ۱ | health/readiness، smoke با SHA یکسان، signed playback و cleanup |
 | ۳ | عملیات | ✅ بسته | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
-| ۴ | موبایل/دسترس‌پذیری | 🔶 evidence ناقص | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
-| ۵ | بتای بسته | ⛔ شروع نشده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
+| ۴ | موبایل/دسترس‌پذیری | 🔶 evidence دستی deferred توسط owner | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
+| ۵ | بتای بسته | 🔶 شروع شده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
 | ۶ | پرداخت | ⏸️ اختیاری | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
 | ۷ | rollout | ⛔ قفل | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
 
@@ -354,6 +354,14 @@ playback واقعی را اثبات نمی‌کند.
 **فرمان درخواست این مرحله:** `مرحلهٔ ۴ را انجام بده`
 
 ### مرحلهٔ ۵ — بتای بسته و پشتیبانی
+
+**checkpoint شروع — ۲۰۲۶-۰۹-۱۹:** قرارداد invite/consent/feedback از قبل موجود
+بود و در این مرحله با فهرست امن دعوت‌ها، summary روزانهٔ بدون PII، severity
+قابل ممیزی و شمارندهٔ P0/P1 سخت‌سازی شد. privacy notice کنار consent قرار گرفت
+و تنها head migration به `a7d2c5e8f1b4` رسید. تست‌های متمرکز backend (`11`)
+و frontend (`1`) سبزند. برنامهٔ cohort پنج‌نفره، SLA و escalation در
+`PHASE_5_CLOSED_BETA_SUPPORT_REPORT_FA.md` ثبت شده است. وضعیت تا deploy همان SHA،
+تعریف تسترهای واقعی و ثبت یک چرخهٔ feedback/triage برابر `🔶` می‌ماند.
 
 - [ ] تعداد cohort، معیار انتخاب، allowlist و تاریخ شروع/پایان beta را مشخص کن.
 - [ ] consent، privacy notice، شرایط بازخورد و مسیر حذف کاربر را ثبت کن.

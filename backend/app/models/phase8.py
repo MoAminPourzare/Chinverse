@@ -71,6 +71,10 @@ class BetaFeedback(Base, TimestampMixin):
             "status IN ('open', 'triaged', 'resolved', 'dismissed')",
             name="ck_beta_feedback_status",
         ),
+        CheckConstraint(
+            "severity IN ('unclassified', 'P0', 'P1', 'P2', 'P3')",
+            name="ck_beta_feedback_severity",
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -88,6 +92,9 @@ class BetaFeedback(Base, TimestampMixin):
     )
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'open'")
+    )
+    severity: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default=text("'unclassified'")
     )
     triage_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
