@@ -37,7 +37,7 @@ candidate هنوز برای production عمومی آماده اعلام نمی�
 | staging با همین SHA | ✅ مرحلهٔ ۲ | backend/HF و Vercel روی `8ba6fc1...` هم‌SHA؛ health/readiness و smoke رسانه/cleanup ثبت شد |
 | عملیات | ✅ مرحلهٔ ۳ | Sentry زنده و scrubشده، load/soak، alert/recovery، health و rollback/restore واقعی سبزند |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
-| بتای واقعی | 🔶 | hardening، consent/privacy و گزارش aggregate آماده؛ cohort و feedback cycle واقعی ثبت نشده‌اند |
+| بتای واقعی | ✅ مرحلهٔ ۵ | cohort واقعی owner، consent و چرخهٔ feedback/triage/resolution روی staging ثبت شد؛ P0/P1 باز صفر است |
 | پرداخت | ⏸️ | تا نصب adapter واقعی، checkout و entitlement باید خاموش بماند |
 | مجوز محتوا | ⏸️ | طبق تصمیم صاحب پروژه از مسیر بحرانی این برنامه خارج شده؛ وضعیت حقوقی تأیید نشده است |
 
@@ -73,7 +73,7 @@ candidate هنوز برای production عمومی آماده اعلام نمی�
 | ۲ | staging | ✅ بسته | مرحلهٔ ۱ | health/readiness، smoke با SHA یکسان، signed playback و cleanup |
 | ۳ | عملیات | ✅ بسته | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence دستی deferred توسط owner | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
-| ۵ | بتای بسته | 🔶 شروع شده | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
+| ۵ | بتای بسته | ✅ بسته | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
 | ۶ | پرداخت | ⏸️ اختیاری | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
 | ۷ | rollout | ⛔ قفل | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
 
@@ -376,15 +376,28 @@ playback واقعی را اثبات نمی‌کند.
 **checkpoint نهایی کد و CI — ۲۰۲۶-۰۹-۱۹:** commit نهایی
 `2ed32db756eb860357937a13d02d17857e277312` روی branch منتشر شد. Quality Gates
 `35439383731`، deploy staging `35439383768` و exact-SHA smoke
-`35439383901` همگی موفق‌اند. بنابراین gate فنی آماده است؛ وضعیت مرحله تا اجرای
-cohort واقعی و یک چرخهٔ feedback/triage همچنان `🔶` است.
+`35439383901` همگی موفق‌اند. در این checkpoint gate فنی آماده شد؛ اجرای زندهٔ
+cohort و چرخهٔ feedback/triage در checkpoint بعدی ثبت و مرحله بسته شد.
 
-- [ ] تعداد cohort، معیار انتخاب، allowlist و تاریخ شروع/پایان beta را مشخص کن.
-- [ ] consent، privacy notice، شرایط بازخورد و مسیر حذف کاربر را ثبت کن.
-- [ ] owner بازخورد، SLA پاسخ، moderation و escalation incident را تعیین کن.
-- [ ] invite/revoke/expiry و idempotency را روی DB واقعی staging تست کن.
-- [ ] dashboard یا گزارش روزانهٔ خطا، retention، feedback و incident بساز.
-- [ ] staging و beta را private و noindex نگه دار تا gate انتشار باز شود.
+**checkpoint اجرای زنده و بستن مرحله — ۲۰۲۶-۰۹-۱۹:** flag و secret بتا فقط روی
+HF staging فعال شدند و `NEXT_PUBLIC_BETA_MODE=true` فقط به Vercel Preview branch
+`codex/phase-8-beta-release` محدود شد. owner با admin/MFA یک دعوت واقعی صادر و
+redeem کرد، consent نسخهٔ `beta-v1` را پذیرفت، feedback واقعی ثبت کرد و همان
+رکورد را با severity=`P3`، note عملیاتی و status=`resolved` بست. snapshot نهایی
+بدون PII برابر invited/redeemed/consented=`1/1/1`، feedback resolved=`1`،
+open=`0` و P0/P1 باز=`0/0` بود. تصمیم owner برابر `continue` ثبت شد. Production
+و `main` تغییر نکردند. جزئیات در `PHASE_5_CLOSED_BETA_SUPPORT_REPORT_FA.md` است.
+
+- [x] تعداد cohort، معیار انتخاب، سقف دعوت و بازهٔ هفت‌روزه مشخص شد؛ cohort اول
+  با owner واقعی آغاز شد.
+- [x] consent، privacy notice، شرایط بازخورد و مسیر حذف کاربر ثبت شد.
+- [x] owner بازخورد، SLA پاسخ، moderation و escalation incident تعیین شد.
+- [x] invite و redeem روی DB واقعی staging اجرا شد؛ revoke/expiry/idempotency در
+  integration suite پوشش دارد و مشاهدهٔ expiry طبیعی follow-up غیرمسدودکننده است.
+- [x] dashboard ادمین و snapshot روزانهٔ بدون PII برای دعوت، consent، feedback
+  و P0/P1 ساخته و با دادهٔ واقعی پر شد.
+- [x] staging و beta private/noindex باقی ماند و flag فرانت‌اند فقط به Preview
+  همین branch محدود شد.
 
 **معیار پذیرش:** cohort واقعی و owner مشخص است، حداقل یک چرخهٔ بازخورد و triage
 ثبت شده، و هیچ incident P0/P1 باز باقی نمانده است.

@@ -1,7 +1,7 @@
 # گزارش اجرای مرحلهٔ ۵ آمادگی لانچ — بتای بسته و پشتیبانی
 
-**وضعیت:** 🔶 شروع و hardening محلی انجام شد؛ cohort واقعی و یک چرخهٔ feedback
-روی staging هنوز باید ثبت شود.
+**وضعیت:** ✅ معیار پذیرش مرحله روی staging برآورده شد؛ cohort واقعی owner،
+consent و چرخهٔ کامل feedback/triage/resolution ثبت شد و شمارندهٔ P0/P1 باز صفر است.
 
 **تاریخ شروع:** ۲۰۲۶-۰۹-۱۹  
 **شاخه:** `codex/phase-8-beta-release`  
@@ -10,6 +10,12 @@
 
 مهاجرت و اولین deploy staging با `82e7dd42dd80f8c36b445cf4e214f069c13cb30b`
 انجام شد و commit نهایی `2ed32db` پنل عملیات بتا را به همان مسیر اضافه کرد.
+
+**زمان اجرای زنده:** `2026-09-19T15:42:51Z`
+
+**owner عملیاتی:** صاحب پروژه
+
+**تصمیم owner:** `continue`
 
 ## ۱. دامنه و cohort اولیه
 
@@ -131,14 +137,36 @@ owner decision: continue | pause | rollback | close
 ## ۸. موارد لازم برای تبدیل وضعیت به ✅
 
 - [x] migration و release این مرحله روی staging deploy و exact-SHA smoke سبز شد.
-- [ ] secretهای beta فقط در محیط staging تنظیم شوند.
-- [ ] حداقل یک دعوت واقعی با admin/MFA صادر، redeem و در صورت نیاز revoke/expiry
-  آزمایش شود.
-- [ ] حداقل یک تستر consent را بپذیرد و یک feedback واقعی ثبت کند.
-- [ ] feedback با severity و note triage و سپس resolved/dismissed شود.
-- [ ] یک snapshot روزانه و یک تصمیم owner ثبت شود.
-- [ ] Sentry و issue tracker هیچ P0/P1 باز نشان ندهند.
+- [x] `FEATURE_BETA_ENABLED=true` و `BETA_INVITE_HASH_SECRET` فقط در HF staging
+  تنظیم شدند؛ مقدار secret در Git، گزارش یا خروجی ابزار ثبت نشد.
+- [x] یک دعوت واقعی با admin/MFA صادر و با حساب owner روی DB واقعی staging
+  redeem شد؛ backend فقط digest را نگه داشت.
+- [x] owner نسخهٔ `beta-v1` را پذیرفت و یک feedback واقعی با امتیاز `5` ثبت کرد.
+- [x] feedback با severity=`P3` و note عملیاتی triage و سپس `resolved` شد.
+- [x] snapshot بدون PII و تصمیم `continue` ثبت شد.
+- [x] snapshot نهایی پنل بتا `open=0` و `open P0/P1=0` نشان داد؛ در چرخهٔ زنده
+  نیز incident متناظر مشاهده نشد.
+- [x] `NEXT_PUBLIC_BETA_MODE=true` فقط برای Preview branch
+  `codex/phase-8-beta-release` در Vercel ثبت شد؛ Production و `main` تغییر نکردند.
 
-**اولین blocker بیرونی:** هنوز هویت پنج تستر و تاریخ صدور اولین دعوت واقعی مشخص
-نشده است؛ این مورد را نمی‌توان با fixture ساختگی جایگزین و «cohort واقعی» اعلام
-کرد.
+### snapshot نهایی بدون PII
+
+```text
+UTC time: 2026-09-19T15:42:51Z
+backend functional release SHA: 2ed32db756eb860357937a13d02d17857e277312
+invited / redeemed / consented: 1 / 1 / 1
+feedback open / triaged / resolved: 0 / 0 / 1
+unresolved P0 / P1: 0 / 0
+incident links: none observed during the live cycle
+owner decision: continue
+```
+
+Vercel Preview با deployment شناسهٔ `47zmVygMKH4HKp71M4tDGwcjBhi9` و source
+`6e7ad04f87b4fe3d18cd97f4dbc35687b9c6c2c9` برای دریافت flag branch-only
+redeploy شد. این source فقط checkpoint مستندات پس از release اجرایی بالا است.
+
+**یادداشت غیرمسدودکننده:** مسیرهای expiry/revoke/idempotency در suite integration
+پوشش دارند. در اجرای زنده، دعوت مصرف‌شده به‌درستی `redeemed` باقی ماند و revoke
+مصنوعی برای تغییر تاریخچهٔ همان دعوت انجام نشد؛ مشاهدهٔ expiry طبیعی یک دعوت
+کوتاه‌عمر می‌تواند در چرخهٔ روزانهٔ بعدی ثبت شود، اما جزو معیار پذیرش رسمی این
+مرحله نیست.
