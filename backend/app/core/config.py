@@ -238,6 +238,7 @@ class Settings(BaseSettings):
     PAYMENT_PROVIDER: str = "disabled"
     PAYMENT_WEBHOOK_SECRET: str = ""
     PAYMENT_RETURN_URL: str = ""
+    PAYMENT_WEBHOOK_TOLERANCE_SECONDS: int = 300
 
     @model_validator(mode="after")
     def validate_production_settings(self):
@@ -421,6 +422,8 @@ class Settings(BaseSettings):
             errors.append(
                 "PAYMENT_WEBHOOK_SECRET must be at least 32 characters when a provider is enabled"
             )
+        if not 30 <= self.PAYMENT_WEBHOOK_TOLERANCE_SECONDS <= 900:
+            errors.append("PAYMENT_WEBHOOK_TOLERANCE_SECONDS must be between 30 and 900")
         if self.MEDIA_SIGNING_KEY and len(self.MEDIA_SIGNING_KEY) < 32:
             errors.append("MEDIA_SIGNING_KEY must be at least 32 characters when set")
         if not 0.0 <= self.SENTRY_TRACES_SAMPLE_RATE <= 1.0:

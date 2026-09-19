@@ -118,6 +118,7 @@ async def get_current_subscription(db: AsyncSession, *, user_id: int) -> dict[st
             JOIN subscription_plans p ON p.id = s.plan_id
             WHERE s.user_id = :user_id
               AND s.status = 'active'
+              AND s.start_date <= CURRENT_DATE
               AND s.end_date >= CURRENT_DATE
             ORDER BY s.end_date DESC
             LIMIT 1

@@ -123,3 +123,47 @@ class PaymentWebhookEvent(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(32), nullable=False, server_default=text("'received'"))
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     error_code: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    provider_created_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class PaymentLedgerEntry(Base, TimestampMixin):
+    """Append-only record of payment-driven entitlement mutations."""
+
+    __tablename__ = "payment_ledger_entries"
+    __table_args__ = (
+        UniqueConstraint("event_id", name="uq_payment_ledger_event"),
+        Index("ix_payment_ledger_order_created", "order_id", "created_at"),
+        Index("ix_payment_ledger_user_created", "user_id", "created_at"),
+        CheckConstraint(
+            "action IN ('grant', 'renew', 'refund', 'chargeback', 'reject')",
+            name="ck_payment_ledger_action",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("payment_webhook_events.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    order_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("subscription_orders.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    subscription_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("user_subscriptions.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    action: Mapped[str] = mapped_column(String(24), nullable=False)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    currency: Mapped[str] = mapped_column(String(16), nullable=False)
+    provider_reference: Mapped[str] = mapped_column(String(255), nullable=False)

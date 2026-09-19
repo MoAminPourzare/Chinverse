@@ -108,6 +108,7 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("post_comments", "user_id", "NO ACTION"),
     ("post_likes", "user_id", "NO ACTION"),
     ("posts", "author_user_id", "NO ACTION"),
+    ("payment_ledger_entries", "user_id", "CASCADE"),
     ("security_audit_events", "actor_user_id", "SET NULL"),
     ("study_sessions", "user_id", "NO ACTION"),
     ("subscription_orders", "user_id", "CASCADE"),

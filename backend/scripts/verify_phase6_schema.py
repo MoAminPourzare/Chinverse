@@ -1,4 +1,4 @@
-"""Fail-closed database contract for Phase 8 beta/payment tables."""
+"""Fail-closed database contract for Phase 6 payment lifecycle tables."""
 
 from __future__ import annotations
 
@@ -16,57 +16,27 @@ from scripts.schema_verification import repository_alembic_head  # noqa: E402
 
 
 EXPECTED_HEAD = repository_alembic_head()
-REQUIRED_TABLES = {
-    "beta_invites",
-    "beta_feedback",
-    "payment_webhook_events",
-    "payment_ledger_entries",
-}
 REQUIRED_COLUMNS = {
-    "beta_invites": {
-        "id",
-        "code_hash",
-        "email_hash",
-        "status",
-        "expires_at",
-        "redeemed_at",
-        "redeemed_by_user_id",
-        "issued_by_user_id",
-        "created_at",
-        "updated_at",
-    },
-    "beta_feedback": {
+    "subscription_orders": {
         "id",
         "user_id",
-        "kind",
-        "rating",
-        "message",
-        "steps_to_reproduce",
-        "route",
-        "release_sha",
-        "client_metadata",
+        "plan_id",
+        "amount",
+        "currency",
         "status",
-        "severity",
-        "triage_note",
-        "reviewed_at",
-        "reviewed_by_user_id",
-        "created_at",
-        "updated_at",
-    },
-    "payment_webhook_events": {
-        "id",
         "provider",
-        "event_id",
-        "event_type",
-        "order_id",
-        "payload_hash",
-        "status",
-        "processed_at",
-        "error_code",
-        "provider_created_at",
-        "created_at",
-        "updated_at",
+        "provider_reference",
+        "checkout_url",
+        "paid_at",
+        "closed_at",
+        "failure_code",
     },
+    "user_subscriptions": {
+        "source_order_id",
+        "revoked_at",
+        "revocation_reason",
+    },
+    "payment_webhook_events": {"provider_created_at"},
     "payment_ledger_entries": {
         "id",
         "event_id",
@@ -81,38 +51,24 @@ REQUIRED_COLUMNS = {
         "updated_at",
     },
 }
+REQUIRED_TABLES = set(REQUIRED_COLUMNS)
 REQUIRED_INDEXES = {
-    "uq_beta_invites_code_hash",
-    "ix_beta_invites_email_status",
-    "ix_beta_invites_expires_status",
-    "ix_beta_feedback_status_created",
-    "ix_beta_feedback_user_created",
-    "ix_beta_feedback_release_created",
-    "uq_payment_webhook_provider_event",
-    "ix_payment_webhook_events_order_created",
+    "uq_subscription_orders_provider_reference",
+    "uq_user_subscriptions_source_order",
     "uq_payment_ledger_event",
     "ix_payment_ledger_order_created",
     "ix_payment_ledger_user_created",
 }
 REQUIRED_CHECK_CONSTRAINTS = {
-    "ck_beta_invites_status",
-    "ck_beta_feedback_rating",
-    "ck_beta_feedback_status",
-    "ck_beta_feedback_severity",
-    "ck_payment_ledger_action",
     "ck_subscription_orders_status",
+    "ck_payment_ledger_action",
 }
 REQUIRED_FOREIGN_KEY_DELETE_RULES = {
-    ("beta_invites", "redeemed_by_user_id"): "SET NULL",
-    ("beta_invites", "issued_by_user_id"): "SET NULL",
-    ("beta_feedback", "user_id"): "CASCADE",
-    ("beta_feedback", "reviewed_by_user_id"): "SET NULL",
-    ("payment_webhook_events", "order_id"): "SET NULL",
+    ("user_subscriptions", "source_order_id"): "SET NULL",
     ("payment_ledger_entries", "event_id"): "CASCADE",
     ("payment_ledger_entries", "order_id"): "CASCADE",
     ("payment_ledger_entries", "user_id"): "CASCADE",
     ("payment_ledger_entries", "subscription_id"): "SET NULL",
-    ("user_subscriptions", "source_order_id"): "SET NULL",
 }
 
 
@@ -178,22 +134,19 @@ async def verify() -> dict[str, object]:
 
     if head != EXPECTED_HEAD:
         raise RuntimeError(f"Expected Alembic head {EXPECTED_HEAD}, found {head}")
-    missing_tables = REQUIRED_TABLES - tables
-    if missing_tables:
-        raise RuntimeError(f"Phase 8 tables are missing: {sorted(missing_tables)}")
+    if missing_tables := REQUIRED_TABLES - tables:
+        raise RuntimeError(f"Phase 6 tables are missing: {sorted(missing_tables)}")
     missing_columns = {
         table: sorted(required - columns_by_table.get(table, set()))
         for table, required in REQUIRED_COLUMNS.items()
         if required - columns_by_table.get(table, set())
     }
     if missing_columns:
-        raise RuntimeError(f"Phase 8 columns are missing: {missing_columns}")
-    missing_indexes = REQUIRED_INDEXES - indexes
-    if missing_indexes:
-        raise RuntimeError(f"Phase 8 indexes are missing: {sorted(missing_indexes)}")
-    missing_checks = REQUIRED_CHECK_CONSTRAINTS - check_constraints
-    if missing_checks:
-        raise RuntimeError(f"Phase 8 check constraints are missing: {sorted(missing_checks)}")
+        raise RuntimeError(f"Phase 6 columns are missing: {missing_columns}")
+    if missing_indexes := REQUIRED_INDEXES - indexes:
+        raise RuntimeError(f"Phase 6 indexes are missing: {sorted(missing_indexes)}")
+    if missing_checks := REQUIRED_CHECK_CONSTRAINTS - check_constraints:
+        raise RuntimeError(f"Phase 6 check constraints are missing: {sorted(missing_checks)}")
     invalid_delete_rules = {
         f"{table}.{column}": {
             "expected": expected,
@@ -203,18 +156,13 @@ async def verify() -> dict[str, object]:
         if foreign_key_delete_rules.get((table, column)) != expected
     }
     if invalid_delete_rules:
-        raise RuntimeError(f"Phase 8 foreign-key delete rules are invalid: {invalid_delete_rules}")
-
+        raise RuntimeError(f"Phase 6 foreign-key delete rules are invalid: {invalid_delete_rules}")
     return {
         "alembic_head": head,
         "tables": sorted(REQUIRED_TABLES),
         "required_columns": {table: sorted(columns) for table, columns in REQUIRED_COLUMNS.items()},
         "required_indexes": sorted(REQUIRED_INDEXES),
         "required_check_constraints": sorted(REQUIRED_CHECK_CONSTRAINTS),
-        "required_foreign_key_delete_rules": {
-            f"{table}.{column}": rule
-            for (table, column), rule in sorted(REQUIRED_FOREIGN_KEY_DELETE_RULES.items())
-        },
     }
 
 

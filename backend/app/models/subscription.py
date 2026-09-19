@@ -1,8 +1,19 @@
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import BigInteger, Boolean, Date, Float, ForeignKey, Index, String, desc
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    UniqueConstraint,
+    desc,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin
@@ -14,6 +25,9 @@ if TYPE_CHECKING:
 class SubscriptionStatus(str, Enum):
     ACTIVE = "active"
     EXPIRED = "expired"
+    REVOKED = "revoked"
+    REFUNDED = "refunded"
+    CHARGEBACK = "chargeback"
 
 
 class SubscriptionPlan(Base, TimestampMixin):
@@ -37,6 +51,7 @@ class UserSubscription(Base, TimestampMixin):
             "status",
             desc("end_date"),
         ),
+        UniqueConstraint("source_order_id", name="uq_user_subscriptions_source_order"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
@@ -58,6 +73,13 @@ class UserSubscription(Base, TimestampMixin):
         String,
         default=SubscriptionStatus.ACTIVE,
     )
+    source_order_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("subscription_orders.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revocation_reason: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     user: Mapped["User"] = relationship()
     plan: Mapped["SubscriptionPlan"] = relationship(back_populates="subscriptions")

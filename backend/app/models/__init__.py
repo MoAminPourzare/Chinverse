@@ -46,4 +46,9 @@ from app.models.operational import (
     UserReferral,
     UserReferralCode,
 )
-from app.models.phase8 import BetaFeedback, BetaInvite, PaymentWebhookEvent
+from app.models.phase8 import (
+    BetaFeedback,
+    BetaInvite,
+    PaymentLedgerEntry,
+    PaymentWebhookEvent,
+)

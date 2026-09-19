@@ -654,9 +654,10 @@ authenticated/role/WebSocket روی Preview محافظت‌شده. fixtureها �
 - کنترل بتای بسته در migration head `f8a1b2c3d4e5` شامل allowlist/rollout
   deterministic، دعوت HMAC با قابلیت revoke/expiry، consent نسخه‌دار و feedback
   ساختاریافته با triage ادمین است؛ UI مسیر `/beta-feedback` نیز fail-closed است.
-- درگاه پرداخت در کد فقط provider boundary و webhook ledger امضاشده/idempotent
-  دارد؛ checkout واقعی و صدور entitlement عمداً تا نصب آداپتور provider و sandbox
-  smoke خاموش است.
+- هستهٔ پرداخت اکنون order lifecycle، webhook timestampدار با replay/idempotency،
+  تطبیق amount/currency/reference، entitlement source، refund/chargeback revoke
+  و ledger/reconciliation بدون PII دارد؛ checkout تجاری و provider واقعی عمداً تا
+  نصب آداپتور و sandbox smoke خاموش است.
 - production Neon و storage جدا
 - دامنه اصلی، DNS/WAF، email/SMS، Turnstile و درگاه واقعی
 - legal approval، backup drill و incident runbook

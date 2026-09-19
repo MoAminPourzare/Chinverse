@@ -38,7 +38,7 @@ candidate هنوز برای production عمومی آماده اعلام نمی�
 | عملیات | ✅ مرحلهٔ ۳ | Sentry زنده و scrubشده، load/soak، alert/recovery، health و rollback/restore واقعی سبزند |
 | موبایل واقعی | 🔶 | Android Chrome/iOS Safari، PWA واقعی و assistive technology کامل اثبات نشده‌اند |
 | بتای واقعی | ✅ مرحلهٔ ۵ | cohort واقعی owner، consent و چرخهٔ feedback/triage/resolution روی staging ثبت شد؛ P0/P1 باز صفر است |
-| پرداخت | ⏸️ | تا نصب adapter واقعی، checkout و entitlement باید خاموش بماند |
+| پرداخت | 🔶 مرحلهٔ ۶ شروع شد | audit آغاز شد؛ core در حال تکمیل است و انتخاب provider/حساب پذیرنده هنوز ownerمحور است |
 | مجوز محتوا | ⏸️ | طبق تصمیم صاحب پروژه از مسیر بحرانی این برنامه خارج شده؛ وضعیت حقوقی تأیید نشده است |
 
 صفرهای P0/P1 در `PHASE_8_RELEASE_BLOCKERS.json` فقط یک declaration محلی هستند،
@@ -74,7 +74,7 @@ candidate هنوز برای production عمومی آماده اعلام نمی�
 | ۳ | عملیات | ✅ بسته | مرحلهٔ ۲ | Sentry live با event scrubشده؛ سایر evidenceها سبزند |
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence دستی deferred توسط owner | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ✅ بسته | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
-| ۶ | پرداخت | ⏸️ اختیاری | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
+| ۶ | پرداخت | 🔶 شروع شده؛ provider باز | مرحلهٔ ۵؛ فقط در لانچ پولی | checkout و entitlement قابل‌ردیابی |
 | ۷ | rollout | ⛔ قفل | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
 
 ## ترتیب اجرای مرحله‌ها
@@ -406,12 +406,30 @@ open=`0` و P0/P1 باز=`0/0` بود. تصمیم owner برابر `continue` ث
 
 ### مرحلهٔ ۶ — پرداخت و entitlement (فقط اگر لانچ پولی لازم است)
 
+**checkpoint شروع — ۲۰۲۶-۰۹-۱۹:** audit اولیه روی SHA
+`5682c10390a74771bf8d4c8e3825d1671c52b8fb` انجام شد. schema سفارش، ledger
+callback و entitlement رسانه موجودند، اما checkout عمداً placeholder است و
+`generic_hmac` provider تجاری محسوب نمی‌شود. featureهای backend/frontend و
+`PAYMENT_PROVIDER` خاموش ماندند. اجرای core و تست محلی آغاز شد؛ انتخاب provider،
+credential پذیرنده، sandbox و live smoke همچنان owner/providerمحورند. گزارش زنده
+در `PHASE_6_PAYMENT_ENTITLEMENT_REPORT_FA.md` نگه‌داری می‌شود.
+
+**checkpoint core — ۲۰۲۶-۰۹-۱۹:** migration
+`c9e4b6a8d2f1` برای timestamp/replay، order lifecycle، entitlement source، revoke
+و `payment_ledger_entries` اضافه شد. webhook فقط پس از تطبیق provider، order،
+amount، currency و reference entitlement می‌دهد؛ success/renewal، refund و
+chargeback و reconciliation بدون PII تست‌پذیر شدند. تست واحد backend برابر
+`185 passed`، coverage=`60.04%` و ruff کل backend سبز است. provider تجاری،
+sandbox و live smoke هنوز انجام نشده و feature پرداخت خاموش است.
+
 - [ ] provider و کشور/روش تسویه را انتخاب و owner آن را تأیید کن.
-- [ ] checkout واقعی، webhook امضاشده، timestamp/replay protection و idempotency
-  را با sandbox تست کن.
-- [ ] entitlement را فقط از رویداد تأییدشده صادر کن؛ expiry، revoke، refund و
-  chargeback را تست کن.
-- [ ] reconciliation روزانه و audit ledger را ثبت کن.
+- [x] هستهٔ checkout/order، webhook امضاشده، timestamp/replay protection و
+  idempotency پیاده شد؛ اجرای end-to-end با sandbox provider هنوز باقی است.
+- [x] entitlement فقط از رویداد تأییدشده صادر می‌شود و expiry، revoke، refund و
+  chargeback در مسیر core و تست integration پوشش داده شده‌اند؛ اجرای DB واقعی
+  هنوز باقی است.
+- [x] reconciliation روزانه و audit ledger بدون PII پیاده شد؛ ثبت evidence روی
+  staging پس از اجرای migration باقی است.
 - [ ] ابتدا با مبلغ آزمایشی live، سپس rollout محدود انجام بده.
 - [ ] تا سبزشدن همهٔ موارد بالا، `FEATURE_SUBSCRIPTIONS_ENABLED` خاموش بماند.
 

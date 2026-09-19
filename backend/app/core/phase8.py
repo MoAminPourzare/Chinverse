@@ -145,3 +145,17 @@ def verify_webhook_signature(payload: bytes, signature: str | None, secret: str)
         return False
     expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     return hmac.compare_digest(candidate, expected)
+
+
+def verify_timestamped_webhook_signature(
+    payload: bytes,
+    signature: str | None,
+    secret: str,
+    timestamp: int,
+) -> bool:
+    """Verify ``HMAC-SHA256(f"{timestamp}.{body}")`` in constant time."""
+
+    if timestamp <= 0:
+        return False
+    signed_payload = str(timestamp).encode("ascii") + b"." + payload
+    return verify_webhook_signature(signed_payload, signature, secret)

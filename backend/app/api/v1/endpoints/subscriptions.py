@@ -12,7 +12,7 @@ from app.services.subscriptions import (
     create_subscription_checkout,
     get_subscription_overview,
 )
-from app.services.phase8_beta import accept_payment_webhook
+from app.services.payments import accept_payment_webhook
 
 router = APIRouter()
 
@@ -64,11 +64,13 @@ async def payment_webhook(
     if not isinstance(payload, dict):
         raise bad_request("Payment webhook payload must be an object")
     signature = request.headers.get("x-payment-signature")
+    timestamp = request.headers.get("x-payment-timestamp")
     return await accept_payment_webhook(
         db,
         provider=provider.strip().lower(),
         raw_body=raw_body,
         signature=signature,
+        timestamp=timestamp,
         payload=payload,
         request=request,
     )

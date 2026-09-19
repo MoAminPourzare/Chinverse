@@ -14,6 +14,7 @@ from app.core.phase8 import (
     hash_invite_code,
     normalize_invite_code,
     rollout_bucket,
+    verify_timestamped_webhook_signature,
     verify_webhook_signature,
 )
 from app.services.phase8_beta import sanitize_client_metadata
@@ -101,6 +102,17 @@ def test_webhook_signature_is_constant_time_and_fail_closed() -> None:
     assert verify_webhook_signature(payload, f"sha256={signature}", secret)
     assert not verify_webhook_signature(payload, signature[:-1], secret)
     assert not verify_webhook_signature(payload, signature, "")
+
+
+def test_timestamped_webhook_signature_binds_timestamp_and_payload() -> None:
+    payload = b'{"id":"evt_1"}'
+    secret = "p" * 32
+    timestamp = "1760000000"
+    signed = f"{timestamp}.".encode() + payload
+    signature = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    assert verify_timestamped_webhook_signature(payload, signature, secret, timestamp)
+    assert not verify_timestamped_webhook_signature(payload, signature, secret, "1760000001")
+    assert not verify_timestamped_webhook_signature(payload, signature, secret, "")
 
 
 def test_payment_provider_boundary_never_fabricates_checkout() -> None:

@@ -78,8 +78,9 @@ eligibility و consent بازخورد ساختاریافته را در DB نگه
 باطل و feedback را triage کند. `FEATURE_BETA_ENABLED=false` پیش‌فرض
 است و UI به‌تنهایی نمی‌تواند دسترسی را باز کند.
 
-درگاه پرداخت فقط interface و ledger امضای callback/idempotency دارد؛
-`PAYMENT_PROVIDER=disabled` پیش‌فرض است و `generic_hmac` checkout یا entitlement
+هستهٔ پرداخت order lifecycle، webhook timestampدار، تطبیق order/amount/currency/
+reference، entitlement و revoke refund/chargeback و ledger/reconciliation دارد؛
+اما `PAYMENT_PROVIDER=disabled` پیش‌فرض است و `generic_hmac` checkout تجاری
 صادر نمی‌کند. تا نصب و بازبینی آداپتور واقعی و secret provider، فعال‌سازی پرداخت
 عمومی مجاز نیست.
 
@@ -112,9 +113,9 @@ eligibility و consent بازخورد ساختاریافته را در DB نگه
 5. entitlement فقط از webhook تأییدشده صادر و با revoke/expiry دوباره بررسی شود؛
 6. secret، شماره، token و payload خصوصی در logs یا report نیاید.
 
-کد فعلی payment فقط مرز callback امضاشده و idempotency را fail-closed نگه می‌دارد؛
-این **درگاه واقعی یا checkout قابل‌فروش نیست** و تا نصب adapter تأییدشده نباید
-فلگ اشتراک production روشن شود.
+کد فعلی payment هستهٔ lifecycle را fail-closed نگه می‌دارد، اما هنوز **درگاه
+واقعی یا checkout قابل‌فروش نیست** و تا نصب adapter تأییدشده نباید فلگ اشتراک
+production روشن شود.
 
 ## staged rollout
 
