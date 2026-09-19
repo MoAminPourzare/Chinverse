@@ -159,8 +159,12 @@ test("published lesson remains usable through rotation, 200% zoom and iOS-style 
     }
     if (path === "/media/assets/12/content") {
       return route.fulfill({
-        status: 307,
-        headers: { location: "/assets/chinverse/logos/logonomy-1771069751778.mp4" },
+        // Playwright's route.fulfill rejects 3xx responses. The production BFF
+        // returns a signed redirect here, but this test only needs a successful
+        // media response because the media element's codec methods are mocked.
+        status: 200,
+        contentType: "video/mp4",
+        body: Buffer.alloc(0),
       });
     }
     if (path === "/vocabulary/matches") return json(route, { matches: [[]] });
