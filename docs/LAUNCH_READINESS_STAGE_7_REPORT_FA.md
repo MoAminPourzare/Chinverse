@@ -1,8 +1,11 @@
 # گزارش زندهٔ مرحلهٔ ۷ آمادگی لانچ — gate نهایی و rollout
 
-**وضعیت:** 🔶 در حال اجرا؛ staging/CI سبز و rollout عمومی تا تکمیل provider gateها قفل است.
+**وضعیت:** ✅ `CLOSED-PREPUBLIC`؛ مرحله برای بتای رایگان و غیرعمومی بسته است و
+rollout عمومی عمداً اجرا نشده است.
 
 **تاریخ شروع:** ۲۰۲۶-۰۹-۱۹
+
+**تاریخ بسته‌شدن دامنهٔ فعلی:** ۲۰۲۶-۰۹-۲۰
 
 **شاخه:** `codex/phase-8-beta-release`
 
@@ -16,6 +19,21 @@
   مجاز است.
 - لانچ فعلی رایگان است؛ payment gate با `SKIPPED-FREE-BETA` waived و همهٔ فلگ‌های
   اشتراک/checkout خاموش‌اند.
+
+## ۱.۱ تصمیم نهایی دامنه — ۲۰۲۶-۰۹-۲۰
+
+صاحب پروژه تأیید کرد که دامنهٔ فعلی فقط staging/بتای رایگان و غیرعمومی است:
+
+- merge به `main`، production deploy، دامنهٔ عمومی و rollout درصدی در این مرحله
+  درخواست نشده‌اند.
+- سرویس production ایمیل/SMS فعال نیست و محصول فعلاً چنین deliveryای ارائه
+  نمی‌کند.
+- gateهای صرفاً production با waiver محدود بسته می‌شوند، نه با ادعای verification.
+- قواعد محافظتی GitHub، approval محیط Production و شرط `confirm_public=true`
+  حفظ شده‌اند تا این موارد تصادفی دور زده نشوند.
+
+پیش از هر انتشار عمومی، فعال‌سازی ارسال واقعی یا قابلیت پولی، این مرحله باید
+دوباره باز شود و waiver مرتبط با evidence زنده جایگزین شود.
 
 ## ۲. inventory زندهٔ شروع
 
@@ -110,7 +128,7 @@ runner ممیزی‌شدهٔ GET-only روی backend staging و release دقیق
 - triggerهای deploy و exact-SHA smoke برای `backend/tests/**` همسان شدند تا smoke
   منتظر SHAای نماند که backend هرگز deploy نکرده است.
 
-## ۴. gateهای باقی‌مانده
+## ۴. نتیجهٔ نهایی gateها در دامنهٔ فعلی
 
 | gate | وضعیت | شرط خروج |
 |---|---|---|
@@ -118,13 +136,13 @@ runner ممیزی‌شدهٔ GET-only روی backend staging و release دقیق
 | exact-SHA staging | ✅ | deploy `35468137203` و smoke `35468137100` سبز |
 | GitHub protection | ✅ | ruleset `23709505` و approval محیط Production فعال |
 | staging operations | ✅ | smoke/load/soak و health/readiness پس از بار سبز |
-| production Neon/storage | ⛔ | جداسازی و restore evidence واقعی |
-| domain/DNS/TLS/WAF | ⛔ | دامنهٔ مالک و probe بیرونی |
-| email/SMS delivery | ⛔ | provider و smoke واقعی |
-| legal/beta consent | ⛔ | تأیید owner و evidence لینک‌های production |
+| production Neon/storage | ⏸️ waived | `SKIPPED-PREPUBLIC`؛ پیش از production عمومی دوباره باز شود |
+| domain/DNS/TLS/WAF | ⏸️ waived | `SKIPPED-PREPUBLIC`؛ پیش از دامنه/لانچ عمومی دوباره باز شود |
+| email/SMS delivery | ⏸️ waived | `SKIPPED-NO-OUTBOUND-DELIVERY`؛ پیش از ارسال واقعی دوباره باز شود |
+| legal/beta consent | ⏸️ waived | `SKIPPED-PREPUBLIC-FREE`؛ consent staging تست شده؛ approval تولید قبل از public/paid لازم است |
 | payment | ✅ waived | فقط تا وقتی لانچ رایگان و فلگ‌ها خاموش‌اند |
-| `main` ancestry | ⛔ | SHA تأییدشده از مسیر محافظت‌شده وارد `main` شود |
-| rollout | ⛔ | internal سپس ۵/۲۵/۵۰/۱۰۰ با observation و rollback |
+| `main` ancestry | ⏸️ خارج از دامنه | عمداً merge نشد؛ پیش از انتشار عمومی لازم است |
+| rollout | ⏸️ `SKIPPED-PUBLIC-ROLLOUT` | internal/۵/۲۵/۵۰/۱۰۰ عمداً اجرا نشد |
 
 ## ۵. checklist زنده
 
@@ -134,14 +152,16 @@ runner ممیزی‌شدهٔ GET-only روی backend staging و release دقیق
 - [x] قرارداد rollout ترتیبی، rollback SHA، observation و attestation سخت‌سازی شد.
 - [x] Quality Gates نهایی و migration/integration همان SHA سبز شد.
 - [x] SHA نهایی روی staging frontend/backend deploy و exact-SHA smoke سبز شد.
-- [ ] provider gateهای لازم verified یا waiver محدود و موجه داشته باشند.
+- [x] همهٔ provider gateهای دامنهٔ فعلی verified یا دارای waiver محدود و موجه‌اند.
 - [x] branch/environment protection واقعی تنظیم شد.
-- [ ] merge محافظت‌شده به `main` انجام شود.
-- [ ] rollout internal و سپس ۵٪، ۲۵٪ و ۵۰٪ با observation ثبت شود.
-- [ ] فقط با approval نهایی owner، rollout ۱۰۰٪ و `confirm_public=true` اجرا شود.
+- [x] merge محافظت‌شده به `main` برای دامنهٔ غیرعمومی `SKIPPED` شد؛ `main` تغییر نکرد.
+- [x] rollout internal و ۵٪/۲۵٪/۵۰٪ با تصمیم صاحب پروژه `SKIPPED-PUBLIC-ROLLOUT` شد.
+- [x] rollout ۱۰۰٪ و `confirm_public=true` اجرا نشد و قفل عمومی حفظ شد.
 
-## ۶. اولین blocker
+## ۶. وضعیت بسته‌شدن و شرط بازگشایی
 
-اولین blocker باقی‌مانده providerهای production است: Neon/storage مستقل، دامنه و
-WAF، delivery تراکنشی و تأیید نسخهٔ production اسناد/consent. تا زمان ثبت این
-evidenceها، merge به `main` و rollout عمومی عمداً انجام نمی‌شود.
+مرحلهٔ ۷ برای دامنهٔ فعلی blocker باز ندارد و با وضعیت
+`✅ CLOSED-PREPUBLIC` بسته شد. این وضعیت به‌معنای لانچ عمومی یا production-ready
+بودن نیست. پیش از هر public launch باید production Neon/storage، دامنه/WAF،
+نسخهٔ production اسناد و—فقط اگر فعال می‌شود—email/SMS یا پرداخت، دوباره باز و
+با evidence واقعی verified شوند؛ سپس merge محافظت‌شده و rollout مرحله‌ای اجرا شود.

@@ -1,6 +1,20 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-19",
+  "updated_at": "2026-09-20",
+  "release_scope": {
+    "status": "CLOSED-PREPUBLIC",
+    "scope": "free non-public staging beta",
+    "public_launch": false,
+    "paid_features": false,
+    "outbound_transactional_delivery": false,
+    "owner_confirmed_at": "2026-09-20",
+    "reopen_before": [
+      "merge to main for a public release",
+      "production rollout",
+      "enabling email or SMS delivery",
+      "enabling paid features"
+    ]
+  },
   "release_condition": {
     "open_p0": 0,
     "open_p1": 0,
@@ -26,24 +40,33 @@
     },
     {
       "id": "production-neon-storage",
-      "status": "pending",
+      "status": "waived",
       "owner": "release-operator",
       "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
-      "exit_evidence": "Production Neon branch and private object-storage bucket are separate from staging and restore drill is recorded."
+      "exit_evidence": "Reopen and verify a separate production Neon branch, private storage and restore drill before any public production rollout.",
+      "waiver": "SKIPPED-PREPUBLIC: no production deployment or public users are in the current scope.",
+      "waived_by": "project-owner",
+      "waived_at": "2026-09-20"
     },
     {
       "id": "production-domain-waf",
-      "status": "pending",
+      "status": "waived",
       "owner": "release-operator",
       "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
-      "exit_evidence": "DNS, TLS, WAF rules, origin restrictions and health checks are verified on the owned domain."
+      "exit_evidence": "Reopen and verify the owned domain, DNS, TLS, WAF, origin restrictions and external health checks before public launch.",
+      "waiver": "SKIPPED-PREPUBLIC: an owned production domain and public rollout are outside the current scope.",
+      "waived_by": "project-owner",
+      "waived_at": "2026-09-20"
     },
     {
       "id": "transactional-delivery",
-      "status": "pending",
+      "status": "waived",
       "owner": "release-operator",
       "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
-      "exit_evidence": "Email/SMS provider smoke tests and delivery evidence exist."
+      "exit_evidence": "Reopen and record provider delivery evidence before enabling verification, reset, notification or marketing email/SMS.",
+      "waiver": "SKIPPED-NO-OUTBOUND-DELIVERY: the current free non-public staging scope does not promise or send production email/SMS.",
+      "waived_by": "project-owner",
+      "waived_at": "2026-09-20"
     },
     {
       "id": "payments-free-beta",
@@ -57,10 +80,13 @@
     },
     {
       "id": "legal-beta-consent",
-      "status": "pending",
+      "status": "waived",
       "owner": "project-owner",
       "evidence": "docs/PHASE_8_BETA_RELEASE_FA.md",
-      "exit_evidence": "Terms, privacy, refund and beta consent copy are approved and linked from the production shell."
+      "exit_evidence": "Reopen and approve the production Terms, Privacy and, if applicable, refund copy before public or paid launch.",
+      "waiver": "SKIPPED-PREPUBLIC-FREE: staging beta consent, Terms and Privacy flows are tested; production legal/refund approval is outside the current non-public free scope.",
+      "waived_by": "project-owner",
+      "waived_at": "2026-09-20"
     }
   ]
 }

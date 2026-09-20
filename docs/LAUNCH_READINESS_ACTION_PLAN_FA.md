@@ -3,7 +3,7 @@
 > این فایل «صفحهٔ ادامهٔ کار» پروژه است. هر نشست جدید باید ابتدا این فایل را بخواند،
 > آخرین SHA و وضعیت تیک‌ها را بررسی کند و بعد فقط روی اولین کار بازشده کار کند.
 
-**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۱۹
+**آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۲۰
 
 **checkpoint مرحلهٔ ۲:** ✅؛ deploy هم‌SHA، health/readiness، signed playback/entitlement، smoke کاربر عادی و cleanup نهایی fixture ثبت شده‌اند. release اجرایی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` است. جزئیات و شواهد در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` آمده است.
 
@@ -14,8 +14,9 @@
 **commit پایهٔ پیش از اصلاحات این مرحله:** `158c686333b398d144af457ed5253080df4b8c62`
 **نتیجهٔ فعلی:** مرحله‌های ۳ و ۵ بسته‌اند؛ evidence دستی مرحلهٔ ۴ به تصمیم صاحب
 پروژه فعلاً deferred مانده و مرحلهٔ ۶ برای لانچ رایگان با
-`SKIPPED-FREE-BETA` بسته شده است. مرحلهٔ بعدی gate نهایی و rollout مرحلهٔ ۷ است؛
-release candidate هنوز برای production عمومی آماده اعلام نمی‌شود.
+`SKIPPED-FREE-BETA` بسته شده است. مرحلهٔ ۷ نیز برای بتای رایگان و غیرعمومی با
+`CLOSED-PREPUBLIC` بسته شد؛ rollout عمومی عمداً انجام نشده و release candidate
+هنوز برای production عمومی آماده اعلام نمی‌شود.
 **مسئول تصمیم‌های provider و دسترسی‌های بیرونی:** صاحب پروژه
 
 ## تصمیم دامنهٔ این برنامه دربارهٔ محتوا
@@ -76,7 +77,7 @@ release candidate هنوز برای production عمومی آماده اعلام 
 | ۴ | موبایل/دسترس‌پذیری | 🔶 evidence دستی deferred توسط owner | مرحلهٔ ۲ | ماتریس دستگاه و journeyهای واقعی |
 | ۵ | بتای بسته | ✅ بسته | مرحله‌های ۲ تا ۴ | cohort، consent و feedback cycle |
 | ۶ | پرداخت | ✅ `SKIPPED-FREE-BETA` | مرحلهٔ ۵؛ فقط در لانچ پولی | پرداخت عمداً خاموش؛ core ثبت و fail-closed |
-| ۷ | rollout | 🔶 در حال اجرا؛ production gateها باز | همهٔ موارد لازم | rollout مرحله‌ای و approval نهایی |
+| ۷ | rollout | ✅ `CLOSED-PREPUBLIC`؛ rollout عمومی عمداً `SKIPPED` | همهٔ موارد لازم در دامنهٔ فعلی | staging سبز، guard عمومی و waiverهای محدود ثبت‌شده |
 
 ## ترتیب اجرای مرحله‌ها
 
@@ -455,6 +456,15 @@ feature پرداخت خاموش است.
 
 ### مرحلهٔ ۷ — gate نهایی و rollout مرحله‌ای
 
+**checkpoint بسته‌شدن دامنهٔ فعلی — ۲۰۲۶-۰۹-۲۰:** صاحب پروژه تأیید کرد که
+لانچ عمومی در دامنهٔ فعلی نیست، محصول رایگان است و email/SMS production ارائه
+نمی‌شود. staging، CI، exact-SHA smoke، load/soak، health/readiness، recovery و
+حفاظت branch/environment سبزند. gateهای صرفاً production با waiverهای محدود
+`SKIPPED-PREPUBLIC`، `SKIPPED-NO-OUTBOUND-DELIVERY` و
+`SKIPPED-PREPUBLIC-FREE` ثبت شدند. `main` و Production تغییر نکردند و rollout
+درصدی با `SKIPPED-PUBLIC-ROLLOUT` عمداً اجرا نشد. وضعیت مرحله برای این دامنه
+`✅ CLOSED-PREPUBLIC` است؛ پیش از public/paid/outbound launch باید دوباره باز شود.
+
 **checkpoint شروع — ۲۰۲۶-۰۹-۱۹:** inventory زندهٔ GitHub با REST بازسازی شد؛
 تعداد issue باز و blockerهای P0/P1/Critical/High هر دو صفر بود. repository ruleset
 عمومی ندارد، environmentهای `Preview`، `Production` و `staging` protection rule
@@ -467,15 +477,18 @@ feature پرداخت خاموش است.
 - [x] blocker inventory را از issue tracker و evidence واقعی بازسازی کن؛ فقط به
   JSON دستی اکتفا نکن.
 - [x] quality gate و migration gate همان SHA را دوباره اجرا کن.
-- [ ] همهٔ provider gateهای مورد نیاز را به `verified` با لینک evidence تبدیل کن.
-- [ ] rollout محافظت‌شده را به‌ترتیب `internal → 5% → 25% → 50% → 100%` اجرا کن.
-- [ ] بین مراحل observation window توافق‌شده داشته باش و thresholdهای 5xx، auth،
-  payment، p95 و saturation را بررسی کن.
-- [ ] در هر شکست threshold، rollout را متوقف و به SHA سالم rollback کن.
-- [ ] `confirm_public=true` را فقط پس از approval نهایی صاحب پروژه فعال کن.
+- [x] همهٔ gateهای دامنهٔ فعلی `verified` یا با waiver محدود صاحب پروژه بسته شدند.
+- [x] rollout عمومی `internal → 5% → 25% → 50% → 100%` برای دامنهٔ غیرعمومی
+  `SKIPPED-PUBLIC-ROLLOUT` شد؛ اجرای واقعی به بازگشایی مرحله موکول است.
+- [x] observation و thresholdهای rollout عمومی همراه خود rollout deferred شدند؛
+  load/soak و health staging سبزند.
+- [x] قرارداد توقف و rollback تست و حفظ شد؛ production rollout اجرا نشد.
+- [x] `confirm_public=true` فعال نشد و approval نهایی عمومی همچنان اجباری است.
 
-**معیار پذیرش:** هیچ P0/P1 حل‌نشده، evidence کامل providerها، health سبز و
-rollback آزمایش‌شده وجود دارد؛ سپس و فقط سپس انتشار عمومی قابل اعلام است.
+**معیار پذیرش دامنهٔ فعلی:** P0/P1 باز صفر، staging و health سبز، rollback
+آزمایش‌شده، gateهای لازم verified/waived و public rollout قفل است. این معیار
+برآورده شد. معیار انتشار عمومی بدون تغییر باقی می‌ماند: waiverهای production
+باید با evidence واقعی جایگزین و rollout مرحله‌ای پس از approval اجرا شود.
 
 **فرمان درخواست این مرحله:** `مرحلهٔ ۷ را انجام بده`
 
