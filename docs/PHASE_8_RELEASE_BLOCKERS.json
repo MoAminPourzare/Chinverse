@@ -17,10 +17,12 @@
   "provider_gates": [
     {
       "id": "phase7-live-promotion",
-      "status": "pending",
+      "status": "verified",
       "owner": "release-operator",
-      "evidence": "docs/PHASE_7_PERFORMANCE_OPERATIONS_FA.md",
-      "exit_evidence": "Exact SHA is deployed to staging; health/readiness, smoke, load, soak and monitor recovery are green."
+      "evidence": "docs/LAUNCH_READINESS_STAGE_7_REPORT_FA.md",
+      "exit_evidence": "Exact SHA is deployed to staging; health/readiness, smoke, load, soak and monitor recovery are green.",
+      "verified_at": "2026-09-20",
+      "verification": "Release 54973b82341924f5056ba1d8d3cbb108c5c166ab passed Quality Gates, immutable HF/Vercel staging deployment, exact-SHA smoke, post-soak DB/storage readiness, and bounded GET-only smoke/load/soak. Alert/recovery evidence remains recorded in the Phase 7 operations report."
     },
     {
       "id": "production-neon-storage",

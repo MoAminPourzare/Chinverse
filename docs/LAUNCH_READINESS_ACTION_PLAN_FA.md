@@ -464,9 +464,9 @@ feature پرداخت خاموش است.
 محلی Ruff و verifier عملیاتی سبز است. گزارش زنده در
 `LAUNCH_READINESS_STAGE_7_REPORT_FA.md` نگه‌داری می‌شود.
 
-- [ ] blocker inventory را از issue tracker و evidence واقعی بازسازی کن؛ فقط به
+- [x] blocker inventory را از issue tracker و evidence واقعی بازسازی کن؛ فقط به
   JSON دستی اکتفا نکن.
-- [ ] quality gate و migration gate همان SHA را دوباره اجرا کن.
+- [x] quality gate و migration gate همان SHA را دوباره اجرا کن.
 - [ ] همهٔ provider gateهای مورد نیاز را به `verified` با لینک evidence تبدیل کن.
 - [ ] rollout محافظت‌شده را به‌ترتیب `internal → 5% → 25% → 50% → 100%` اجرا کن.
 - [ ] بین مراحل observation window توافق‌شده داشته باش و thresholdهای 5xx، auth،
@@ -488,7 +488,7 @@ rollback آزمایش‌شده وجود دارد؛ سپس و فقط سپس ان�
 - [ ] coverage پایین endpointهای حساس را بازبینی و برای auth/admin/subscription
   تست منفی و race اضافه کن.
 - [ ] snapshotهای قدیمی handoff و URLهای staging را با وضعیت فعلی همگام کن.
-- [ ] قواعد branch protection و required checks را در GitHub اثبات و مستند کن.
+- [x] قواعد branch protection و required checks را در GitHub اثبات و مستند کن.
 
 ## قالب ثبت پایان هر نشست
 
