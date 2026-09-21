@@ -1342,16 +1342,25 @@ function ContentTab(props: {
                 <div className="mt-4 rounded-2xl border border-[#cfe0f8] bg-[#f4f8ff] p-3">
                     <p className="text-xs font-black text-[#155aa6]">آپلود مستقیم فایل خصوصی</p>
                     <p className="mt-1 text-xs leading-6 text-slate-600">ابتدا نوع رسانه و اطلاعات منبع و حقوق را در فرم بالا وارد کن. سرور اثرانگشت فایل را خودش ثبت می‌کند؛ پس از آپلود، مجوز را تأیید و رسانه را منتشر کن.</p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <input
-                            key={mediaWorkflowForm.media_type}
-                            aria-label="فایل تصویر یا ویدیو"
-                            type="file"
-                            accept={mediaWorkflowForm.media_type === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm"}
-                            onChange={(event) => setSelectedMediaFile(event.target.files?.[0] || null)}
-                            disabled={isWorkflowSaving || mediaWorkflowForm.media_type === "audio"}
-                            className="min-w-0 flex-1 text-xs text-slate-700 file:me-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-bold file:text-[#155aa6]"
-                        />
+                    <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <label className={cn(
+                            "flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-white bg-white px-3 py-2 text-xs shadow-sm",
+                            (isWorkflowSaving || mediaWorkflowForm.media_type === "audio") && "cursor-not-allowed opacity-55",
+                        )}>
+                            <input
+                                key={mediaWorkflowForm.media_type}
+                                aria-label="فایل تصویر یا ویدیو"
+                                type="file"
+                                accept={mediaWorkflowForm.media_type === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm"}
+                                onChange={(event) => setSelectedMediaFile(event.target.files?.[0] || null)}
+                                disabled={isWorkflowSaving || mediaWorkflowForm.media_type === "audio"}
+                                className="sr-only"
+                            />
+                            <span className="shrink-0 font-black text-[#155aa6]">انتخاب فایل</span>
+                            <span className="min-w-0 truncate text-slate-500" dir={selectedMediaFile ? "ltr" : "rtl"}>
+                                {selectedMediaFile?.name || "فایلی انتخاب نشده"}
+                            </span>
+                        </label>
                         <PrimaryButton
                             onClick={() => selectedMediaFile && onUploadMedia(selectedMediaFile)}
                             disabled={isWorkflowSaving || !selectedMediaFile || mediaWorkflowForm.media_type === "audio"}
