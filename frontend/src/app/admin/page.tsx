@@ -820,28 +820,30 @@ export default function AdminPanelPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] pb-10" dir="rtl">
             <header className="sticky top-0 z-30 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                <div className="mx-auto flex max-w-6xl flex-col gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                         <BackButton href="/" />
-                        <div>
-                            <h1 className="text-lg font-black text-slate-950">پنل ادمین چین‌ورس</h1>
-                            <p className="text-xs font-bold text-slate-400">محتوا، ویدیو، دیکشنری و کاربران</p>
+                        <div className="min-w-0">
+                            <h1 className="text-lg font-black leading-7 text-slate-950">پنل ادمین چین‌ورس</h1>
+                            <p className="text-xs font-bold leading-5 text-slate-500">محتوا، ویدیو، دیکشنری و کاربران</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Link href="/admin/beta" title="عملیات بتای بسته" aria-label="مدیریت cohort و بازخورد بتا" className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
-                            <Users size={17} />
-                        </Link>
-                        <Link href="/admin/support" title="تیکت‌های پشتیبانی" aria-label="مدیریت تیکت‌های پشتیبانی" className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-[#155aa6] hover:bg-blue-100">
-                            <Headphones size={17} />
-                        </Link>
-                        <Link href="/moderation" title="گزارش‌ها" aria-label="مدیریت گزارش‌ها" className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
-                            <Flag size={17} />
-                        </Link>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Link href="/admin/beta" title="عملیات بتای بسته" aria-label="مدیریت cohort و بازخورد بتا" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
+                                <Users size={17} />
+                            </Link>
+                            <Link href="/admin/support" title="تیکت‌های پشتیبانی" aria-label="مدیریت تیکت‌های پشتیبانی" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[#155aa6] hover:bg-blue-100">
+                                <Headphones size={17} />
+                            </Link>
+                            <Link href="/moderation" title="گزارش‌ها" aria-label="مدیریت گزارش‌ها" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
+                                <Flag size={17} />
+                            </Link>
+                        </div>
                         <button
                             type="button"
                             onClick={loadAdminData}
-                            className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
                         >
                             <RefreshCw size={15} />
                             تازه‌سازی
@@ -851,7 +853,7 @@ export default function AdminPanelPage() {
             </header>
 
             <main className="mx-auto max-w-6xl px-4 py-5">
-                <nav className="no-scrollbar mb-5 flex gap-2 overflow-x-auto">
+                <nav aria-label="بخش‌های پنل ادمین" className="mb-5 flex flex-wrap gap-2">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const active = activeTab === tab.id;
@@ -860,6 +862,7 @@ export default function AdminPanelPage() {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
+                                aria-pressed={active}
                                 className={cn(
                                     "inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition",
                                     active ? "bg-[#155aa6] text-white shadow-[0_12px_28px_rgba(21,90,166,0.24)]" : "bg-white text-slate-600 hover:bg-[#eef6ff] hover:text-[#155aa6]",
