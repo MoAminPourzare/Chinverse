@@ -1178,7 +1178,6 @@ function ContentTab(props: {
         onPublishCourse,
     } = props;
     const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null);
-    useEffect(() => setSelectedMediaFile(null), [mediaWorkflowForm.media_type]);
     const isWorkflowSaving = Boolean(saving);
     return (
         <div className="motion-list grid gap-4 xl:grid-cols-3">
@@ -1271,7 +1270,10 @@ function ContentTab(props: {
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <label className="space-y-1 text-xs font-black text-slate-500">
                         نوع رسانه
-                        <select value={mediaWorkflowForm.media_type} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, media_type: e.target.value as MediaWorkflowForm["media_type"] }))} className={fieldClass} disabled={isWorkflowSaving}>
+                        <select value={mediaWorkflowForm.media_type} onChange={(e) => {
+                            setSelectedMediaFile(null);
+                            setMediaWorkflowForm((current) => ({ ...current, media_type: e.target.value as MediaWorkflowForm["media_type"] }));
+                        }} className={fieldClass} disabled={isWorkflowSaving}>
                             <option value="video">ویدیو</option>
                             <option value="image">تصویر</option>
                             <option value="audio">صدا</option>
