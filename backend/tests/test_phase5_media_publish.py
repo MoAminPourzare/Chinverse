@@ -2,15 +2,108 @@ from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
 
 from app.api.v1.endpoints import media
 from app.core import storage
+from app.core.storage import StoredFile
 from app.core.config import settings
 from app.models.media import MediaPlaybackType
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("media_type,folder,extension,mime", [
+    ("image", "thumbnails", "webp", "image/webp"),
+    ("video", "videos", "mp4", "video/mp4"),
+])
+async def test_admin_upload_registers_exact_private_bytes_as_draft(
+    monkeypatch, tmp_path, media_type, folder, extension, mime,
+):
+    payload = b"synthetic-media-bytes"
+    destination = tmp_path / folder
+    destination.mkdir()
+    filename = f"fixture.{extension}"
+    (destination / filename).write_bytes(payload)
+    stored = StoredFile(
+        public_url=f"/uploads/{folder}/{filename}",
+        storage_key=f"uploads/{folder}/{filename}",
+        filename=filename,
+        content_type=mime,
+        size_bytes=len(payload),
+        extension=extension,
+    )
+    save = AsyncMock(return_value=stored)
+    monkeypatch.setattr(media, "save_thumbnail_upload" if media_type == "image" else "save_video_upload", save)
+    monkeypatch.setattr(media, "THUMBNAILS_DIR" if media_type == "image" else "VIDEOS_DIR", destination)
+    monkeypatch.setattr(media.settings, "FILE_STORAGE_MODE", "mounted")
+    db = SimpleNamespace(add=MagicMock(), commit=AsyncMock(), refresh=AsyncMock(), rollback=AsyncMock())
+
+    asset = await media.upload_admin_media_asset(
+        file=SimpleNamespace(filename=filename),
+        media_type=media_type,
+        source_name="Synthetic fixture",
+        rights_holder="Chinverse",
+        license_type="owned",
+        duration_seconds=4 if media_type == "video" else None,
+        source_url=None,
+        license_url=None,
+        db=db,
+        current_user=SimpleNamespace(id=42),
+    )
+
+    db.add.assert_called_once_with(asset)
+    db.commit.assert_awaited_once()
+    assert asset.user_id == 42
+    assert asset.storage_provider == "mounted"
+    assert asset.checksum_sha256 == sha256(payload).hexdigest()
+    assert asset.file_size_bytes == len(payload)
+    assert asset.status == "draft"
+    assert asset.license_status == "pending"
+    assert asset.metadata_json == {"origin": "admin_upload"}
+
+
+@pytest.mark.asyncio
+async def test_admin_upload_removes_file_when_database_commit_fails(monkeypatch, tmp_path):
+    destination = tmp_path / "videos"
+    destination.mkdir()
+    (destination / "fixture.mp4").write_bytes(b"fixture")
+    stored = StoredFile(
+        public_url="/uploads/videos/fixture.mp4",
+        storage_key="uploads/videos/fixture.mp4",
+        filename="fixture.mp4",
+        content_type="video/mp4",
+        size_bytes=7,
+        extension="mp4",
+    )
+    monkeypatch.setattr(media, "save_video_upload", AsyncMock(return_value=stored))
+    monkeypatch.setattr(media, "VIDEOS_DIR", destination)
+    monkeypatch.setattr(media.settings, "FILE_STORAGE_MODE", "mounted")
+    delete = AsyncMock(return_value=True)
+    monkeypatch.setattr(media, "delete_public_file", delete)
+    db = SimpleNamespace(
+        add=MagicMock(), commit=AsyncMock(side_effect=RuntimeError("commit failed")),
+        refresh=AsyncMock(), rollback=AsyncMock(),
+    )
+
+    with pytest.raises(RuntimeError, match="commit failed"):
+        await media.upload_admin_media_asset(
+            file=SimpleNamespace(filename="fixture.mp4"),
+            media_type="video",
+            source_name="Synthetic fixture",
+            rights_holder="Chinverse",
+            license_type="owned",
+            duration_seconds=4,
+            source_url=None,
+            license_url=None,
+            db=db,
+            current_user=SimpleNamespace(id=42),
+        )
+
+    db.rollback.assert_awaited_once()
+    delete.assert_awaited_once_with(stored.public_url)
 
 
 @pytest.mark.asyncio

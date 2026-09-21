@@ -37,6 +37,30 @@ describe("contentAdminService.listCourses", () => {
         });
     });
 
+    it("sends the selected file and provenance as multipart fields", async () => {
+        const file = new File(["fixture"], "fixture.mp4", { type: "video/mp4" });
+        const asset = { id: 9, status: "draft", license_status: "pending" };
+        post.mockResolvedValue({ data: asset });
+
+        await expect(contentAdminService.uploadMedia({
+            file,
+            media_type: "video",
+            source_name: "Owner review fixture",
+            rights_holder: "Chinverse",
+            license_type: "owned",
+            duration_seconds: 4,
+        })).resolves.toEqual(asset);
+
+        expect(post).toHaveBeenCalledWith("/media/admin/assets/upload", expect.any(FormData));
+        const body = post.mock.calls[0][1] as FormData;
+        expect(body.get("file")).toBe(file);
+        expect(body.get("media_type")).toBe("video");
+        expect(body.get("source_name")).toBe("Owner review fixture");
+        expect(body.get("rights_holder")).toBe("Chinverse");
+        expect(body.get("license_type")).toBe("owned");
+        expect(body.get("duration_seconds")).toBe("4");
+    });
+
     it("loads draft and published courses through the protected admin endpoint", async () => {
         const courses = [{ id: 1, slug: "phase2-closeout" }];
         get.mockResolvedValue({ data: courses });

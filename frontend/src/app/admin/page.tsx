@@ -572,6 +572,50 @@ export default function AdminPanelPage() {
         }
     };
 
+    const handleUploadMedia = async (file: File) => {
+        const mediaType = mediaWorkflowForm.media_type;
+        if (mediaType === "audio") return setMessage("آپلود مستقیم فعلاً فقط برای تصویر و ویدیو فعال است.");
+        const duration = mediaWorkflowForm.duration_seconds.trim()
+            ? Number(normalizeDigits(mediaWorkflowForm.duration_seconds))
+            : null;
+        const validationError =
+            (!mediaWorkflowForm.source_name.trim() ? "نام منبع را وارد کن." : "") ||
+            (!mediaWorkflowForm.rights_holder.trim() ? "دارندهٔ حقوق را وارد کن." : "") ||
+            (!mediaWorkflowForm.license_type.trim() ? "نوع مجوز را وارد کن." : "") ||
+            (duration !== null && (!Number.isFinite(duration) || duration < 0) ? "مدت رسانه معتبر نیست." : "");
+        if (validationError) return setMessage(validationError);
+
+        setSaving("media-upload");
+        try {
+            const asset = await contentAdminService.uploadMedia({
+                file,
+                media_type: mediaType,
+                source_name: mediaWorkflowForm.source_name.trim(),
+                rights_holder: mediaWorkflowForm.rights_holder.trim(),
+                license_type: mediaWorkflowForm.license_type.trim(),
+                duration_seconds: mediaType === "video" ? duration : null,
+                source_url: mediaWorkflowForm.source_url.trim() || null,
+                license_url: mediaWorkflowForm.license_url.trim() || null,
+            });
+            setMediaWorkflowAsset(asset);
+            setMediaWorkflowForm((current) => ({
+                ...current,
+                playback_type: "progressive",
+                storage_provider: asset.storage_provider,
+                file_url: asset.file_url,
+                storage_key: asset.storage_key,
+                mime_type: asset.mime_type || "",
+                checksum_sha256: asset.checksum_sha256 || "",
+            }));
+            setMessage(`فایل با شناسهٔ ${asset.id} به‌صورت پیش‌نویس خصوصی ذخیره شد؛ اکنون مجوز را بازبینی کن.`);
+        } catch (error) {
+            console.error("Failed to upload media", error);
+            setMessage("آپلود رسانه انجام نشد؛ نوع فایل، حجم و اتصال را بررسی کن.");
+        } finally {
+            setSaving("");
+        }
+    };
+
     const handleReviewMedia = async (status: "approved" | "rejected") => {
         if (!mediaWorkflowAsset) return setMessage("ابتدا رسانه را ثبت کن.");
         setSaving(`media-review-${status}`);
@@ -597,8 +641,15 @@ export default function AdminPanelPage() {
         try {
             const asset = await contentAdminService.publishMedia(mediaWorkflowAsset.id);
             setMediaWorkflowAsset(asset);
-            setLessonForm((current) => ({ ...current, media_id: String(asset.id) }));
-            setMessage(`رسانهٔ ${asset.id} منتشر شد و در فرم درس انتخاب شد.`);
+            if (asset.media_type === "image") {
+                setCourseForm((current) => ({ ...current, cover_media_id: String(asset.id) }));
+                setMessage(`تصویر ${asset.id} منتشر شد و در فرم جلد دوره انتخاب شد.`);
+            } else if (asset.media_type === "video") {
+                setLessonForm((current) => ({ ...current, media_id: String(asset.id) }));
+                setMessage(`ویدیوی ${asset.id} منتشر شد و در فرم درس انتخاب شد.`);
+            } else {
+                setMessage(`رسانهٔ ${asset.id} منتشر شد.`);
+            }
         } catch (error) {
             console.error("Failed to publish media", error);
             setMessage("انتشار رسانه رد شد؛ وضعیت مجوز و کنترل‌های فنی را بررسی کن.");
@@ -912,6 +963,7 @@ export default function AdminPanelPage() {
                             onCreateSection={handleCreateSection}
                             onCreateLesson={handleCreateLesson}
                             onRegisterMedia={handleRegisterMedia}
+                            onUploadMedia={handleUploadMedia}
                             onReviewMedia={handleReviewMedia}
                             onPublishMedia={handlePublishMedia}
                             onIngestSubtitle={handleIngestSubtitle}
@@ -1082,6 +1134,7 @@ function ContentTab(props: {
     onCreateSection: () => void;
     onCreateLesson: () => void;
     onRegisterMedia: () => void;
+    onUploadMedia: (file: File) => void;
     onReviewMedia: (status: "approved" | "rejected") => void;
     onPublishMedia: () => void;
     onIngestSubtitle: () => void;
@@ -1115,6 +1168,7 @@ function ContentTab(props: {
         onCreateSection,
         onCreateLesson,
         onRegisterMedia,
+        onUploadMedia,
         onReviewMedia,
         onPublishMedia,
         onIngestSubtitle,
@@ -1123,6 +1177,8 @@ function ContentTab(props: {
         onPublishLesson,
         onPublishCourse,
     } = props;
+    const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null);
+    useEffect(() => setSelectedMediaFile(null), [mediaWorkflowForm.media_type]);
     const isWorkflowSaving = Boolean(saving);
     return (
         <div className="motion-list grid gap-4 xl:grid-cols-3">
@@ -1281,13 +1337,33 @@ function ContentTab(props: {
                         <input value={mediaWorkflowForm.license_notes} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, license_notes: e.target.value }))} className={fieldClass} disabled={isWorkflowSaving} />
                     </label>
                 </div>
+                <div className="mt-4 rounded-2xl border border-[#cfe0f8] bg-[#f4f8ff] p-3">
+                    <p className="text-xs font-black text-[#155aa6]">آپلود مستقیم فایل خصوصی</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-600">ابتدا نوع رسانه و اطلاعات منبع و حقوق را در فرم بالا وارد کن. سرور اثرانگشت فایل را خودش ثبت می‌کند؛ پس از آپلود، مجوز را تأیید و رسانه را منتشر کن.</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <input
+                            key={mediaWorkflowForm.media_type}
+                            aria-label="فایل تصویر یا ویدیو"
+                            type="file"
+                            accept={mediaWorkflowForm.media_type === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm"}
+                            onChange={(event) => setSelectedMediaFile(event.target.files?.[0] || null)}
+                            disabled={isWorkflowSaving || mediaWorkflowForm.media_type === "audio"}
+                            className="min-w-0 flex-1 text-xs text-slate-700 file:me-3 file:rounded-xl file:border-0 file:bg-white file:px-3 file:py-2 file:font-bold file:text-[#155aa6]"
+                        />
+                        <PrimaryButton
+                            onClick={() => selectedMediaFile && onUploadMedia(selectedMediaFile)}
+                            disabled={isWorkflowSaving || !selectedMediaFile || mediaWorkflowForm.media_type === "audio"}
+                            leadingIcon={saving === "media-upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        >آپلود فایل</PrimaryButton>
+                    </div>
+                </div>
                 {mediaWorkflowAsset && (
                     <div role="status" className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold leading-6 text-slate-600">
                         شناسهٔ رسانه: <b dir="ltr">{toPersianDigits(mediaWorkflowAsset.id)}</b> · وضعیت: <b>{mediaWorkflowAsset.status}</b> · مجوز: <b>{mediaWorkflowAsset.license_status}</b> · بازبینی: <b>{toPersianDigits(mediaWorkflowAsset.revision)}</b>
                     </div>
                 )}
                 <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                    <PrimaryButton onClick={onRegisterMedia} disabled={isWorkflowSaving} leadingIcon={saving === "media-register" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}>ثبت پیش‌نویس</PrimaryButton>
+                    <PrimaryButton onClick={onRegisterMedia} disabled={isWorkflowSaving} leadingIcon={saving === "media-register" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}>ثبت دستی پیش‌نویس</PrimaryButton>
                     <button type="button" onClick={() => onReviewMedia("approved")} disabled={isWorkflowSaving || !mediaWorkflowAsset || mediaWorkflowAsset.license_status === "approved"} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">تأیید مجوز</button>
                     <button type="button" onClick={() => onReviewMedia("rejected")} disabled={isWorkflowSaving || !mediaWorkflowAsset || mediaWorkflowAsset.license_status === "rejected"} className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 disabled:cursor-not-allowed disabled:opacity-45">رد مجوز</button>
                     <PrimaryButton onClick={onPublishMedia} disabled={isWorkflowSaving || !mediaWorkflowAsset || mediaWorkflowAsset.license_status !== "approved" || mediaWorkflowAsset.status === "published"} leadingIcon={saving === "media-publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}>انتشار رسانه</PrimaryButton>

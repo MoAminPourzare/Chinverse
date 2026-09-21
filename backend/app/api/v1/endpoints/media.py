@@ -17,7 +17,7 @@ import re
 from typing import Any
 
 from anyio import to_thread
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,13 +28,15 @@ from app.api.v1.endpoints.course_admin import _load_course
 from app.api.errors import bad_request, forbidden, not_found, unauthorized
 from app.api.rate_limit import write_rate_limit
 from app.core.config import settings
-from app.core.paths import UPLOADS_DIR
+from app.core.paths import THUMBNAILS_DIR, UPLOADS_DIR, VIDEOS_DIR
 from app.core.storage import (
+    delete_public_file,
     iter_object_storage_body,
     object_storage_digest,
     open_object_storage_stream,
     read_object_storage_bytes,
 )
+from app.core.uploads import save_thumbnail_upload, save_video_upload
 from app.models.course import (
     Course,
     Lesson,
@@ -49,6 +51,7 @@ from app.models.media import (
     MediaLicenseStatus,
     MediaPlaybackType,
     MediaPublicationStatus,
+    MediaType,
 )
 from app.schemas import course as course_schemas
 from app.schemas import media as media_schemas
@@ -799,6 +802,96 @@ async def _get_media(db: AsyncSession, media_id: int) -> MediaAsset:
     asset = await db.get(MediaAsset, media_id)
     if not asset:
         raise not_found("Media asset")
+    return asset
+
+
+@router.post(
+    "/media/admin/assets/upload",
+    response_model=media_schemas.MediaAssetRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def upload_admin_media_asset(
+    file: UploadFile = File(...),
+    media_type: str = Form(..., max_length=40),
+    source_name: str = Form(..., max_length=255),
+    rights_holder: str = Form(..., max_length=255),
+    license_type: str = Form(..., max_length=120),
+    duration_seconds: float | None = Form(None, ge=0),
+    source_url: str | None = Form(None, max_length=1000),
+    license_url: str | None = Form(None, max_length=1000),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user=Depends(deps.get_current_admin_user),
+) -> Any:
+    """Store an admin-owned file privately and register its exact bytes as a draft."""
+    media_type = media_type.strip().lower()
+    source_name = source_name.strip()
+    rights_holder = rights_holder.strip()
+    license_type = license_type.strip()
+    if media_type not in {MediaType.IMAGE.value, MediaType.VIDEO.value}:
+        raise bad_request("Only image and video uploads are supported")
+    if not source_name or not rights_holder or not license_type:
+        raise bad_request("Source, rights holder and license type are required")
+
+    stored = None
+    try:
+        if media_type == MediaType.IMAGE.value:
+            stored = await save_thumbnail_upload(
+                file,
+                destination_dir=THUMBNAILS_DIR,
+                public_url_prefix="/uploads/thumbnails",
+                private_object=True,
+            )
+            destination_dir = THUMBNAILS_DIR
+        else:
+            stored = await save_video_upload(
+                file,
+                destination_dir=VIDEOS_DIR,
+                public_url_prefix="/uploads/videos",
+                private_object=True,
+            )
+            destination_dir = VIDEOS_DIR
+
+        if settings.FILE_STORAGE_MODE == "s3":
+            digest = await object_storage_digest(
+                stored.storage_key,
+                bucket_name=_private_media_bucket(),
+            )
+            checksum, size_bytes = digest.checksum_sha256, digest.size_bytes
+        else:
+            checksum, size_bytes = await to_thread.run_sync(
+                _local_file_digest,
+                destination_dir / stored.filename,
+            )
+
+        asset = MediaAsset(
+            user_id=current_user.id,
+            media_type=MediaType(media_type),
+            file_url=stored.public_url,
+            storage_provider=settings.FILE_STORAGE_MODE,
+            storage_key=stored.storage_key,
+            mime_type=stored.content_type,
+            file_size_bytes=size_bytes,
+            duration_seconds=duration_seconds if media_type == MediaType.VIDEO.value else None,
+            playback_type=MediaPlaybackType.PROGRESSIVE,
+            checksum_sha256=checksum,
+            source_name=source_name,
+            source_url=(source_url.strip() or None) if source_url else None,
+            rights_holder=rights_holder,
+            license_type=license_type,
+            license_url=(license_url.strip() or None) if license_url else None,
+            status=MediaPublicationStatus.DRAFT,
+            license_status=MediaLicenseStatus.PENDING,
+            metadata_json={"origin": "admin_upload"},
+        )
+        db.add(asset)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        if stored is not None:
+            await delete_public_file(stored.public_url)
+        raise
+    await db.refresh(asset)
     return asset
 
 

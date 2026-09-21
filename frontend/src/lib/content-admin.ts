@@ -52,8 +52,22 @@ export interface AdminMediaAsset {
     revision: number;
     media_type: string;
     playback_type: string;
+    file_url: string;
+    storage_provider: "local" | "mounted" | "s3";
     storage_key: string;
+    mime_type: string | null;
     checksum_sha256: string | null;
+}
+
+export interface AdminMediaUploadPayload {
+    file: File;
+    media_type: "image" | "video";
+    source_name: string;
+    rights_holder: string;
+    license_type: string;
+    duration_seconds?: number | null;
+    source_url?: string | null;
+    license_url?: string | null;
 }
 
 export interface AdminSubtitleTrack {
@@ -115,6 +129,20 @@ export const contentAdminService = {
 
     async registerMedia(payload: AdminMediaAssetCreatePayload): Promise<AdminMediaAsset> {
         const response = await api.post<AdminMediaAsset>("/media/admin/assets", payload);
+        return response.data;
+    },
+
+    async uploadMedia(payload: AdminMediaUploadPayload): Promise<AdminMediaAsset> {
+        const formData = new FormData();
+        formData.append("file", payload.file);
+        formData.append("media_type", payload.media_type);
+        formData.append("source_name", payload.source_name);
+        formData.append("rights_holder", payload.rights_holder);
+        formData.append("license_type", payload.license_type);
+        if (payload.duration_seconds != null) formData.append("duration_seconds", String(payload.duration_seconds));
+        if (payload.source_url) formData.append("source_url", payload.source_url);
+        if (payload.license_url) formData.append("license_url", payload.license_url);
+        const response = await api.post<AdminMediaAsset>("/media/admin/assets/upload", formData);
         return response.data;
     },
 
