@@ -117,8 +117,8 @@ export default function HSKCourseDetailPage() {
                                 <article className="grid grid-cols-[1fr_34%] gap-3">
                                     <div className="min-w-0 py-1 text-left">
                                         <h3 className="truncate font-serif text-[18px] leading-7 text-[#2f343b] dark:text-white">{getHskLessonTitle(course, index)}</h3>
-                                        <p className="mt-1 truncate text-[10px] font-medium text-[#717985] dark:text-slate-300" dir="rtl">{publishedLesson ? "ویدیو آمادهٔ پخش است" : "ویدیوی این درس هنوز منتشر نشده است"}</p>
-                                        <p className="mt-5 text-right text-[9px] font-medium text-[#777f89] dark:text-slate-400" dir="rtl">{publishedLesson ? "برای تماشا باز کن" : "در دست آماده‌سازی"}</p>
+                                        <p className="mt-1 truncate text-[10px] font-medium text-[#717985] dark:text-slate-300" dir="rtl">{publishedLesson ? "ویدیو آمادهٔ پخش است" : hasError ? "وضعیت ویدیو نامشخص است" : isLoading ? "در حال بررسی ویدیو…" : "ویدیوی این درس هنوز منتشر نشده است"}</p>
+                                        <p className="mt-5 text-right text-[9px] font-medium text-[#777f89] dark:text-slate-400" dir="rtl">{publishedLesson ? "برای تماشا باز کن" : hasError || isLoading ? "" : "در دست آماده‌سازی"}</p>
                                     </div>
                                     <div className="min-h-[86px] rounded-[10px] border border-white/70 bg-[linear-gradient(45deg,#f8f8f8_25%,transparent_25%),linear-gradient(-45deg,#f8f8f8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8f8f8_75%),linear-gradient(-45deg,transparent_75%,#f8f8f8_75%)] bg-[length:14px_14px] bg-[position:0_0,0_7px,7px_-7px,-7px_0px] group-hover:bg-white dark:border-slate-600 dark:bg-slate-800 dark:group-hover:bg-slate-700" aria-hidden />
                                 </article>

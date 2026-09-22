@@ -62,7 +62,7 @@ export default function HSKPlannedLessonPage() {
                         </div>
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#fff6df] px-2.5 py-1 text-[10px] font-black text-[#9a6a00]">
                             <Clock3 size={12} />
-                            {publishedLesson ? "آمادهٔ پخش" : "به‌زودی"}
+                            {publishedLesson ? "آمادهٔ پخش" : hasError ? "نامشخص" : isLoading ? "در حال بررسی" : "به‌زودی"}
                         </span>
                     </div>
                     <p className="mt-3 text-xs leading-6 text-[#646d79] dark:text-slate-300">{publishedLesson ? "ویدیو و اطلاعات منتشرشدهٔ این درس در پلیر اصلی نمایش داده می‌شوند." : "عنوان، ترتیب و مسیر این درس آماده شده است. پس از انتشار ویدیو، مدت و زیرنویس از دادهٔ واقعی نمایش داده می‌شوند."}</p>
