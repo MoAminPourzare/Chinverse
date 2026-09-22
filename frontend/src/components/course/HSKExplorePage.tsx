@@ -31,11 +31,8 @@ export default function HSKExplorePage() {
                                 />
                             </div>
                             <div className="px-1.5 pt-1.5 text-left" dir="ltr">
-                                <div className="mb-1 h-[3px] overflow-hidden rounded-full bg-[#b8d9f5]">
-                                    <div className="h-full w-[9%] rounded-full bg-[#155aa6]" />
-                                </div>
                                 <h2 className="truncate text-[11px] font-bold leading-5 text-[#343941] dark:text-white">{course.title}</h2>
-                                <p className="text-[9px] font-medium text-[#8a929d] dark:text-slate-400" dir="rtl">{course.lessonCount} درس</p>
+                                <p className="text-[9px] font-medium text-[#8a929d] dark:text-slate-400" dir="rtl">{course.lessonCount} درس برنامه‌ریزی‌شده</p>
                             </div>
                         </Link>
                     ))}

@@ -5,12 +5,16 @@ import { useParams } from "next/navigation";
 import { Clock3, Play } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import { getHskCourse, getHskLessonTitle } from "@/lib/hskCatalog";
+import { findPublishedHskLesson, getPublishedHskLessonHref } from "@/lib/hskPublished";
+import { useHskPublishedCourse } from "@/lib/useHskPublishedCourse";
 
 export default function HSKPlannedLessonPage() {
     const params = useParams<{ id: string; lesson: string }>();
     const course = getHskCourse(params?.id);
+    const { publishedCourse, isLoading, hasError } = useHskPublishedCourse(course);
     const lessonIndex = Number(params?.lesson) - 1;
     const isValidLesson = course && Number.isInteger(lessonIndex) && lessonIndex >= 0 && lessonIndex < course.lessonCount;
+    const publishedLesson = isValidLesson ? findPublishedHskLesson(publishedCourse, lessonIndex + 1) : undefined;
 
     if (!course || !isValidLesson) {
         return (
@@ -44,8 +48,9 @@ export default function HSKPlannedLessonPage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/12 ring-1 ring-white/20">
                             <Play size={25} className="mr-0.5 fill-current" />
                         </div>
-                        <h2 className="mt-4 text-base font-black">جای ویدیوی درس آماده است</h2>
-                        <p className="mt-2 text-[11px] leading-6 text-slate-300">فایل اصلی این درس بعداً روی سرور رسانه قرار می‌گیرد و از همین صفحه پخش می‌شود.</p>
+                        <h2 className="mt-4 text-base font-black">{publishedLesson ? "ویدیوی این درس آماده است" : "جای ویدیوی درس آماده است"}</h2>
+                        <p className="mt-2 text-[11px] leading-6 text-slate-300">{hasError ? "وضعیت ویدیو دریافت نشد؛ دوباره صفحه را باز کن." : isLoading ? "در حال بررسی ویدیوی منتشرشده…" : publishedLesson ? "برای تماشای ویدیو، پلیر درس را باز کن." : "فایل اصلی این درس هنوز منتشر نشده است."}</p>
+                        {publishedCourse && publishedLesson && <Link href={getPublishedHskLessonHref(publishedCourse, publishedLesson)} className="mt-4 rounded-xl bg-white px-4 py-2 text-xs font-black text-[#155aa6]">تماشای ویدیو</Link>}
                     </div>
                 </section>
 
@@ -57,10 +62,10 @@ export default function HSKPlannedLessonPage() {
                         </div>
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#fff6df] px-2.5 py-1 text-[10px] font-black text-[#9a6a00]">
                             <Clock3 size={12} />
-                            به‌زودی
+                            {publishedLesson ? "آمادهٔ پخش" : "به‌زودی"}
                         </span>
                     </div>
-                    <p className="mt-3 text-xs leading-6 text-[#646d79] dark:text-slate-300">عنوان، ترتیب و مسیر این درس آماده شده است. پس از بارگذاری ویدیو، مدت، زیرنویس و واژه‌های همان درس به آن متصل می‌شوند.</p>
+                    <p className="mt-3 text-xs leading-6 text-[#646d79] dark:text-slate-300">{publishedLesson ? "ویدیو و اطلاعات منتشرشدهٔ این درس در پلیر اصلی نمایش داده می‌شوند." : "عنوان، ترتیب و مسیر این درس آماده شده است. پس از انتشار ویدیو، مدت و زیرنویس از دادهٔ واقعی نمایش داده می‌شوند."}</p>
                 </section>
 
                 <nav className="mt-4 grid grid-cols-2 gap-2" aria-label="جابجایی بین درس‌ها">

@@ -11,7 +11,6 @@ export interface HskCatalogCourse {
     levelLabel: string;
     description: string;
     audience: string[];
-    rating: number;
 }
 
 const beginnerDescription =
@@ -41,7 +40,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که هیچ پیش‌زمینه‌ای از زبان چینی ندارد",
             "کسی که می‌خواهد یادگیری را اصولی و بر اساس یک مسیر مشخص شروع کند",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-2",
@@ -57,7 +55,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که می‌خواهد مکالمهٔ روزمره و کاربردی را تقویت کند",
             "زبان‌آموزی که برای رفتن به سطح متوسط آماده می‌شود",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-3",
@@ -73,7 +70,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که می‌خواهد دایرهٔ واژگانش را گسترده‌تر کند",
             "فردی که می‌خواهد در موقعیت‌های واقعی روان‌تر ارتباط برقرار کند",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-4-shang",
@@ -90,7 +86,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "داوطلب سطح چهار آزمون HSK",
             "کسی که آمادهٔ متن‌ها و گفت‌وگوهای طولانی‌تر است",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-4-xia",
@@ -107,7 +102,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که به تمرین جدی‌تر شنیدن و خواندن نیاز دارد",
             "داوطلب سطح چهار آزمون HSK",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-5-shang",
@@ -124,7 +118,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که برای دانشگاه یا کار به زبان چینی نیاز دارد",
             "داوطلب سطح پنج آزمون HSK",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-5-xia",
@@ -141,7 +134,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که می‌خواهد نوشته‌ها و گفت‌وگوهای متنوع‌تری را دنبال کند",
             "داوطلب سطح پنج آزمون HSK",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-6-shang",
@@ -158,7 +150,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "دانشجو یا متخصصی که با زبان چینی کار می‌کند",
             "کسی که می‌خواهد درک مطلب و دامنهٔ واژگان پیشرفته‌تری داشته باشد",
         ],
-        rating: 4,
     },
     {
         slug: "hsk-6-xia",
@@ -175,7 +166,6 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
             "کسی که برای استفادهٔ دانشگاهی یا حرفه‌ای از زبان آماده می‌شود",
             "داوطلب سطح شش آزمون HSK",
         ],
-        rating: 4,
     },
 ];
 
