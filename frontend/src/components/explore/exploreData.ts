@@ -46,7 +46,7 @@ export const entertainmentItems: ExploreItem[] = [
 ];
 
 export const artSkillItems: ExploreItem[] = [
-    { title: "آشپزی", id: "arts-cooking", href: "/explore/arts-cooking", icon: Flame, color: gold },
+    { title: "آشپزی", id: "cooking", href: "/explore/cooking", icon: Flame, color: gold },
     { title: "هنرهای رزمی", id: "martial-arts", href: "/explore/martial-arts", icon: Sparkles, color: blue },
     { title: "تمرینات انرژی و سلامت", id: "energy-health", href: "/explore/energy-health", icon: Headphones, color: jade },
     { title: "خطاطی", id: "calligraphy", href: "/explore/calligraphy", icon: PencilLine, color: slate },
