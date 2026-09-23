@@ -55,7 +55,7 @@ export const artSkillItems: ExploreItem[] = [
 
 export const cultureThoughtItems: ExploreItem[] = [
     { title: "متون کلاسیک آموزشی", id: "culture-texts", href: "/explore/culture-texts", icon: BookOpen, color: slate },
-    { title: "داستان‌های تاریخی", id: "historical-stories", href: "/explore/historical-stories", icon: Sparkles, color: gold },
+    { title: "داستان‌های کهن", id: "historical-stories", href: "/explore/historical-stories", icon: Sparkles, color: gold },
     { title: "شعر و ادبیات کلاسیک", id: "classical-poetry", href: "/explore/classical-poetry", icon: PencilLine, color: blue },
     { title: "آیین‌ها و جشن‌ها", id: "festivals-customs", href: "/explore/festivals-customs", icon: Flame, color: jade },
 ];

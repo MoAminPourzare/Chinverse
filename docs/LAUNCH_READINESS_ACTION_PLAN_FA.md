@@ -5,6 +5,13 @@
 
 **آخرین snapshot ثبت‌شده:** ۲۰۲۶-۰۹-۲۰
 
+**مسیر فعال ادامه — بازبینی دستی و یادگیری برای لانچ:** صاحب پروژه اکنون می‌خواهد
+با بررسی شخصی محصول و آموزش قدم‌به‌قدم برای انتشار آماده شود. جلسه‌ها و نقطهٔ
+ادامه در [OWNER_LAUNCH_WALKTHROUGH_FA](OWNER_LAUNCH_WALKTHROUGH_FA.md) و موارد
+باز در [OWNER_LAUNCH_REVIEW_LOG_FA](OWNER_LAUNCH_REVIEW_LOG_FA.md) ثبت می‌شوند.
+بسته‌شدن غیرعمومی مرحلهٔ ۷ سابقهٔ معتبر همان دامنه است؛ پیش از انتشار عمومی،
+waiverها و یافته‌های جدید دوباره ارزیابی می‌شوند.
+
 **checkpoint مرحلهٔ ۲:** ✅؛ deploy هم‌SHA، health/readiness، signed playback/entitlement، smoke کاربر عادی و cleanup نهایی fixture ثبت شده‌اند. release اجرایی `8ba6fc1bba12589f2c2b5bd48ad5d93ea5a7be18` است. جزئیات و شواهد در `PHASE_2_STAGING_DEPLOYMENT_REPORT_FA.md` آمده است.
 
 **checkpoint پنل:** ورود admin/MFA زنده تأیید شد. نقص partial-load دوره‌ها به forward شدن `Content-Length` فشرده پس از decode شدن gzip/br در BFF رسید؛ اصلاح، deploy و بازآزمایی زنده روی release نهایی موفق شد.

@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { TOPIC_TALKS_CATALOG } from "@/lib/topicTalksCatalog";
 
 export default function TopicTalksDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="topic-talks"
-            explorePath="/explore/topic-talks"
-            eyebrow="گفتارهای موضوعی"
-            countKeys={["episodes_count"]}
+            title="گفتارهای موضوعی"
+            basePath="/topic-talks"
+            catalog={TOPIC_TALKS_CATALOG}
             countLabel="گفتار"
-            accentClass="bg-[#155aa6]"
+            unitPlural="گفتارهای"
+            descriptionHeading="معرفی پادکست:"
+            listHeading="گفتارهای مجموعه"
+            eyebrow="سرگرمی و رسانه"
         />
     );
 }

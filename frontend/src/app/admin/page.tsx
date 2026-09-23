@@ -1208,7 +1208,7 @@ function ContentTab(props: {
                     )}
                     <input value={courseForm.title} onChange={(e) => setCourseForm((current) => ({ ...current, title: e.target.value }))} className={fieldClass} placeholder="عنوان دوره" />
                     <input value={courseForm.slug} onChange={(e) => setCourseForm((current) => ({ ...current, slug: e.target.value }))} className={fieldClass} placeholder="slug-example" dir="ltr" />
-                    <p className="text-xs leading-5 text-slate-500">برای اتصال دورهٔ HSK به کاتالوگ، slug را دقیقاً مثل مسیر سطح وارد کن؛ مثلاً <span dir="ltr">hsk-4-xia</span>.</p>
+                    <p className="text-xs leading-5 text-slate-500">برای اتصال دوره به فهرست‌های برنامه‌ریزی‌شده، زیرمجموعه و slug را دقیقاً مثل مسیر آن وارد کن؛ مثلاً <span dir="ltr">hsk-4-xia</span>، <span dir="ltr">grace-mandarin-character</span> یا <span dir="ltr">chinese-zero-to-hero-grammar</span>.</p>
                     <select value={courseForm.level} onChange={(e) => setCourseForm((current) => ({ ...current, level: e.target.value }))} className={fieldClass}>
                         <option value="beginner">مقدماتی</option>
                         <option value="intermediate">متوسط</option>
@@ -1261,7 +1261,7 @@ function ContentTab(props: {
                         اطلاعات تکمیلی درس (JSON)
                         <textarea value={lessonForm.metadata_json} onChange={(e) => setLessonForm((current) => ({ ...current, metadata_json: e.target.value }))} className={`${textAreaClass} font-mono`} dir="ltr" aria-label="اطلاعات تکمیلی درس" />
                     </label>
-                    <p className="text-xs leading-5 text-slate-500">برای اتصال درس HSK، اینجا مثلاً <span dir="ltr">{"{\"lesson_index\":1}"}</span> وارد کن. این عدد جایگاه درس در همان جلد است؛ برای درس ۱۱ کتاب HSK 4 پایین، جایگاه ۱ است.</p>
+                    <p className="text-xs leading-5 text-slate-500">برای اتصال درس به فهرست برنامه‌ریزی‌شدهٔ همان زیرمجموعه، اینجا مثلاً <span dir="ltr">{"{\"lesson_index\":1}"}</span> وارد کن. این عدد جایگاه درس در همان دوره است؛ برای درس ۱۱ کتاب HSK 4 پایین، جایگاه ۱ است.</p>
                     <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">
                         <input type="checkbox" checked={lessonForm.is_free} onChange={(e) => setLessonForm((current) => ({ ...current, is_free: e.target.checked }))} />
                         درس رایگان

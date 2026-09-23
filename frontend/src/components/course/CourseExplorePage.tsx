@@ -49,7 +49,7 @@ const labelsBySlug: Record<string, string> = {
     calligraphy: "خطاطی",
     "tea-culture": "فرهنگ چای",
     "culture-texts": "متون کلاسیک آموزشی",
-    "historical-stories": "داستان‌های تاریخی",
+    "historical-stories": "داستان‌های کهن",
     "classical-poetry": "شعر و ادبیات کلاسیک",
     "festivals-customs": "آیین‌ها و جشن‌ها",
 };

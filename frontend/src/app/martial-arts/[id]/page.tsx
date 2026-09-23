@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { MARTIAL_ARTS_CATALOG } from "@/lib/martialArtsCatalog";
 
 export default function MartialArtsDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="martial-arts"
-            explorePath="/explore/martial-arts"
-            eyebrow="هنرهای رزمی"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-[#155aa6]"
+            title="هنرهای رزمی"
+            basePath="/martial-arts"
+            catalog={MARTIAL_ARTS_CATALOG}
+            countLabel="قسمت"
+            unitPlural="قسمت‌های"
+            descriptionHeading="معرفی دوره:"
+            listHeading="قسمت‌های دوره"
+            eyebrow="هنر و مهارت‌های چینی"
         />
     );
 }

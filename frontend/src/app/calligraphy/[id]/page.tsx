@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { CALLIGRAPHY_CATALOG } from "@/lib/calligraphyCatalog";
 
 export default function CalligraphyDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="calligraphy"
-            explorePath="/explore/calligraphy"
-            eyebrow="خطاطی"
-            countKeys={["lesson_count"]}
+            title="خطاطی"
+            basePath="/calligraphy"
+            catalog={CALLIGRAPHY_CATALOG}
             countLabel="درس"
-            accentClass="bg-indigo-600"
+            unitPlural="درس‌های"
+            descriptionHeading="معرفی دوره:"
+            listHeading="درس‌های دوره"
+            eyebrow="هنر و مهارت‌های چینی"
         />
     );
 }

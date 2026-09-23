@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { ENERGY_HEALTH_CATALOG } from "@/lib/energyHealthCatalog";
 
 export default function EnergyHealthDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="energy-health"
-            explorePath="/explore/energy-health"
-            eyebrow="تمرینات انرژی و سلامت"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-emerald-600"
+            title="تمرینات انرژی و سلامت"
+            basePath="/energy-health"
+            catalog={ENERGY_HEALTH_CATALOG}
+            countLabel="تمرین"
+            unitPlural="تمرین‌های"
+            descriptionHeading="معرفی دوره:"
+            listHeading="تمرین‌های دوره"
+            eyebrow="هنر و مهارت‌های چینی"
         />
     );
 }

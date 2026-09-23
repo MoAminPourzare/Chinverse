@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { GRAMMAR_CATALOG } from "@/lib/grammarCatalog";
 
 export default function GrammarDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="grammar"
-            explorePath="/explore/grammar"
-            eyebrow="گرامر"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-emerald-600"
-        />
-    );
+    return <PlannedCourseDetailPage domain="grammar" title="گرامر" basePath="/grammar" catalog={GRAMMAR_CATALOG} />;
 }

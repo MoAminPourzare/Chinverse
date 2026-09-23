@@ -1,14 +1,5 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import MusicArtistExplorePage from "@/components/course/MusicArtistExplorePage";
 
 export default function MusicExplorePage() {
-    return (
-        <CourseExplorePage
-            title="موسیقی"
-            subcategorySlug="music"
-            detailPath="/music"
-            layout="square"
-            countKeys={["tracks_count"]}
-            countLabel="آهنگ"
-        />
-    );
+    return <MusicArtistExplorePage />;
 }

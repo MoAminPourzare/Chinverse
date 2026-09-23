@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { FESTIVALS_CUSTOMS_CATALOG } from "@/lib/festivalsCustomsCatalog";
 
 export default function FestivalsCustomsDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="festivals-customs"
-            explorePath="/explore/festivals-customs"
-            eyebrow="آیین‌ها و جشن‌ها"
-            countKeys={["lesson_count"]}
+            title="آیین‌ها و جشن‌ها"
+            basePath="/festivals-customs"
+            catalog={FESTIVALS_CUSTOMS_CATALOG}
             countLabel="درس"
-            accentClass="bg-[#155aa6]"
+            unitPlural="درس‌های"
+            descriptionHeading="معرفی برنامه:"
+            listHeading="درس‌های برنامه"
+            eyebrow="فرهنگ و اندیشهٔ چین"
         />
     );
 }

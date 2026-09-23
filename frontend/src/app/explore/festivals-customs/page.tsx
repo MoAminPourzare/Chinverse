@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { FESTIVALS_CUSTOMS_CATALOG } from "@/lib/festivalsCustomsCatalog";
 
 export default function FestivalsCustomsExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="آیین‌ها و جشن‌ها"
-            subcategorySlug="festivals-customs"
-            detailPath="/festivals-customs"
-            layout="list"
+            basePath="/festivals-customs"
+            catalog={FESTIVALS_CUSTOMS_CATALOG}
             countLabel="درس"
-            accentClass="bg-blue-700"
         />
     );
 }

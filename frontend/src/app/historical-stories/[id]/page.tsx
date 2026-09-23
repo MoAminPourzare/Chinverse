@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { HISTORICAL_STORIES_CATALOG } from "@/lib/historicalStoriesCatalog";
 
 export default function HistoricalStoriesDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="historical-stories"
-            explorePath="/explore/historical-stories"
-            eyebrow="داستان‌های تاریخی"
-            countKeys={["lesson_count"]}
+            title="داستان‌های کهن"
+            basePath="/historical-stories"
+            catalog={HISTORICAL_STORIES_CATALOG}
             countLabel="درس"
-            accentClass="bg-stone-600"
+            unitPlural="درس‌های"
+            descriptionHeading="معرفی برنامه:"
+            listHeading="درس‌های برنامه"
+            eyebrow="فرهنگ و اندیشهٔ چین"
         />
     );
 }

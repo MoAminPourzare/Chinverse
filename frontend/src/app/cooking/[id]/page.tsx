@@ -1,14 +1,18 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { COOKING_CATALOG } from "@/lib/cookingCatalog";
 
 export default function CookingDetailPage() {
     return (
-        <CourseDetailPage
+        <PlannedCourseDetailPage
             domain="cooking"
-            explorePath="/explore/cooking"
-            eyebrow="آشپزی"
-            countKeys={["episodes_count"]}
+            title="آشپزی"
+            basePath="/cooking"
+            catalog={COOKING_CATALOG}
             countLabel="قسمت"
-            accentClass="bg-[#155aa6]"
+            unitPlural="قسمت‌های"
+            descriptionHeading="معرفی برنامه:"
+            listHeading="قسمت‌های برنامه"
+            eyebrow="هنر و مهارت‌های چینی"
         />
     );
 }
