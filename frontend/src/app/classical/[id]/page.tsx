@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { CLASSICAL_CATALOG } from "@/lib/classicalCatalog";
 
 export default function ClassicalDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="classical"
-            explorePath="/explore/classical"
-            eyebrow="زبان چینی کلاسیک"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-slate-700"
-        />
-    );
+    return <PlannedCourseDetailPage domain="classical" title="زبان چینی کلاسیک" basePath="/classical" catalog={CLASSICAL_CATALOG} />;
 }

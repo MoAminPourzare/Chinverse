@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import CultureTextsDetailPage from "@/components/course/CultureTextsDetailPage";
 
-export default function CultureTextsDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="culture-texts"
-            explorePath="/explore/culture-texts"
-            eyebrow="متون کلاسیک آموزشی"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-slate-700"
-        />
-    );
+export default function CultureTextsPage() {
+    return <CultureTextsDetailPage />;
 }

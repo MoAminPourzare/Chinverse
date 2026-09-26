@@ -95,6 +95,16 @@ export interface SupportTicketResponse {
     ticket_id: number;
 }
 
+export interface SupportTicket {
+    id: number;
+    user_id: number;
+    message: string;
+    status: "open" | "in_progress" | "closed";
+    admin_reply: string | null;
+    responded_at: string | null;
+    created_at: string;
+}
+
 // ===== SERVICE =====
 
 export const communityService = {
@@ -154,6 +164,13 @@ export const communityService = {
     },
 
     // Support
+    async getSupportTickets(skip = 0, limit = 20): Promise<SupportTicket[]> {
+        const response = await api.get<SupportTicket[]>('/community/support', {
+            params: { skip, limit }
+        });
+        return Array.isArray(response.data) ? response.data : [];
+    },
+
     async submitSupportTicket(data: SupportTicketCreate): Promise<SupportTicketResponse> {
         const response = await api.post<SupportTicketResponse>('/community/support', data);
         return response.data;

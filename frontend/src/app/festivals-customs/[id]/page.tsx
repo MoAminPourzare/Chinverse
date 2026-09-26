@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import FestivalsCustomsDetailPage from "@/components/course/FestivalsCustomsDetailPage";
 
-export default function FestivalsCustomsDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="festivals-customs"
-            explorePath="/explore/festivals-customs"
-            eyebrow="آیین‌ها و جشن‌ها"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+export default function FestivalsCustomsPage() {
+    return <FestivalsCustomsDetailPage />;
 }

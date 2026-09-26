@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useParams, useRouter } from "next/navigation";
 import {
     Bookmark,
@@ -65,7 +65,7 @@ const domainLabels: Record<string, string> = {
     calligraphy: "خطاطی",
     "tea-culture": "فرهنگ چای",
     "culture-texts": "متون کلاسیک آموزشی",
-    "historical-stories": "داستان‌های تاریخی",
+    "historical-stories": "داستان‌های کهن",
     "classical-poetry": "شعر و ادبیات کلاسیک",
     "festivals-customs": "آیین‌ها و جشن‌ها",
 };

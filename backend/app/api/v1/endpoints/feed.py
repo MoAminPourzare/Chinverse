@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.api import deps
 from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
-from app.models.user import User, UserGalleryItem
+from app.models.user import User, UserGalleryItem, UserStatus
 from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
 
@@ -73,7 +73,9 @@ async def get_feed(
 
     gallery_result = await db.execute(
         select(UserGalleryItem)
+        .join(User, User.id == UserGalleryItem.user_id)
         .options(selectinload(UserGalleryItem.user).selectinload(User.profile))
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .order_by(desc(UserGalleryItem.created_at))
         .limit(fetch_limit)
     )
@@ -82,7 +84,9 @@ async def get_feed(
     # Fetch latest services with user info
     service_result = await db.execute(
         select(UserService)
+        .join(User, User.id == UserService.user_id)
         .options(selectinload(UserService.user).selectinload(User.profile))
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .order_by(desc(UserService.created_at))
         .limit(fetch_limit)
     )
@@ -144,8 +148,13 @@ async def get_post_detail(
 ) -> Any:
     result = await db.execute(
         select(UserGalleryItem)
+        .join(User, User.id == UserGalleryItem.user_id)
         .options(selectinload(UserGalleryItem.user).selectinload(User.profile))
-        .where(UserGalleryItem.id == post_id)
+        .where(
+            UserGalleryItem.id == post_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
     )
     item = result.scalar_one_or_none()
     if not item:

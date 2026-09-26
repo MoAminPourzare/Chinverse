@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { userService } from "@/services/user.service";
+import { authService } from "@/services/auth.service";
 
 export function useOptionalCurrentUserId() {
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
     useEffect(() => {
-        if (typeof window === "undefined" || !localStorage.getItem("token")) {
-            return;
-        }
-
         let cancelled = false;
 
-        void userService.getMe()
+        void authService.restoreSession()
+            .then(async (authenticated) => {
+                if (!authenticated) return null;
+                return userService.getMe();
+            })
             .then((me) => {
                 if (!cancelled) {
-                    setCurrentUserId(Number(me.id));
+                    setCurrentUserId(me ? Number(me.id) : null);
                 }
             })
             .catch(() => {

@@ -7,10 +7,10 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import upload_rate_limit, write_rate_limit
-from app.core.paths import SERVICE_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
+from app.core.paths import SERVICE_UPLOAD_DIR
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
-from app.models.user import User
+from app.models.user import User, UserStatus
 from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
 from app.schemas.service import Service, ServiceWithProvider
@@ -117,7 +117,7 @@ async def create_service(
     except Exception:
         await db.rollback()
         if banner_url:
-            delete_public_file(banner_url)
+            await delete_public_file(banner_url)
         raise
 
     try:
@@ -193,11 +193,11 @@ async def update_service(
     except Exception:
         await db.rollback()
         if new_banner_url:
-            delete_public_file(new_banner_url)
+            await delete_public_file(new_banner_url)
         raise
 
     if new_banner_url and old_banner_url:
-        safe_unlink(resolve_backend_file_url(old_banner_url))
+        await delete_public_file(old_banner_url)
 
     return service
 
@@ -223,14 +223,14 @@ async def delete_service(
     if not service:
         raise not_found("Service")
     
-    # Delete banner file if exists
-    if service.banner_url:
-        safe_unlink(resolve_backend_file_url(service.banner_url))
+    banner_url = service.banner_url
     await db.execute(delete(ContentComment).where(ContentComment.target_type == "service", ContentComment.target_id == service_id))
     await db.execute(delete(ContentLike).where(ContentLike.target_type == "service", ContentLike.target_id == service_id))
     
     await db.delete(service)
     await db.commit()
+    if banner_url:
+        await delete_public_file(banner_url)
 
 
 # ===== PUBLIC ENDPOINTS =====
@@ -249,7 +249,9 @@ async def get_public_services(
     
     result = await db.execute(
         select(UserService)
+        .join(User, User.id == UserService.user_id)
         .options(selectinload(UserService.user).selectinload(User.profile))
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .order_by(UserService.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -301,8 +303,13 @@ async def get_public_service(
 
     result = await db.execute(
         select(UserService)
+        .join(User, User.id == UserService.user_id)
         .options(selectinload(UserService.user).selectinload(User.profile))
-        .where(UserService.id == service_id)
+        .where(
+            UserService.id == service_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
     )
     service = result.scalar_one_or_none()
     if not service:

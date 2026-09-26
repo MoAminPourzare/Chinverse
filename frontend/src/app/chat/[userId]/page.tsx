@@ -1,16 +1,21 @@
 'use client';
 
-import Image from 'next/image';
+import Image from '@/components/ui/PublicMediaImage';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCheck, Send, User as UserIcon } from 'lucide-react';
+import { CheckCheck, RefreshCw, Send, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { getMediaUrl } from '@/lib/media';
 import { getDirectionalTextProps, getTextAlign } from '@/lib/textDirection';
 import { chatService, ChatMessage } from '@/services/chat.service';
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
+import UserTrustActions from '@/components/trust/UserTrustActions';
 import { userService } from '@/services/user.service';
 import { validateTextLength, validationMessage } from '@/validation';
+import { useAdaptivePolling } from '@/hooks/useAdaptivePolling';
+import { computeBackoffDelayMs } from '@/lib/requestPolicy';
+import { startChatHeartbeat } from '@/lib/chatHeartbeat';
+import type { ChatHeartbeat } from '@/lib/chatHeartbeat';
 
 export default function ChatRoomPage() {
     const params = useParams();
@@ -20,8 +25,10 @@ export default function ChatRoomPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [sendError, setSendError] = useState('');
+    const [historyReady, setHistoryReady] = useState(false);
     const [connectionState, setConnectionState] = useState<'connecting' | 'live' | 'polling'>('connecting');
     const [otherUser, setOtherUser] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -46,6 +53,11 @@ export default function ChatRoomPage() {
     const appendMessages = useCallback((incomingMessages: ChatMessage[]) => {
         if (incomingMessages.length === 0) return;
 
+        lastMessageIdRef.current = incomingMessages.reduce(
+            (maxId, message) => Math.max(maxId, message.id),
+            lastMessageIdRef.current,
+        );
+
         setMessages((previousMessages) => {
             const existingIds = new Set(previousMessages.map((message) => message.id));
             const uniqueMessages = incomingMessages.filter((message) => !existingIds.has(message.id));
@@ -57,54 +69,158 @@ export default function ChatRoomPage() {
         });
     }, []);
 
-    const fetchData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const me = await userService.getMe();
-            setCurrentUserId(Number(me.id));
+    const markIncomingRead = useCallback(async (incomingMessages: ChatMessage[]) => {
+        if (!incomingMessages.some((message) => message.sender_id === userId && !message.is_read)) return;
 
-            const otherUserProfile = await userService.getPublicProfile(userId);
+        const result = await chatService.markConversationRead(userId);
+        const readIds = new Set(result.message_ids);
+        setMessages((current) => current.map((message) => (
+            (readIds.has(message.id) || message.sender_id === userId)
+                ? { ...message, is_read: true }
+                : message
+        )));
+    }, [userId]);
+
+    const fetchData = useCallback(async (signal?: AbortSignal) => {
+        setIsLoading(true);
+        setLoadError('');
+        setHistoryReady(false);
+        try {
+            const [me, otherUserProfile, history] = await Promise.all([
+                userService.getMe(signal),
+                userService.getPublicProfile(userId, signal),
+                chatService.getMessageHistory(userId, 0, 50, signal),
+            ]);
+            if (signal?.aborted) return;
+            setCurrentUserId(Number(me.id));
             setOtherUser({
                 display_name: otherUserProfile.profile?.display_name || null,
                 avatar_url: otherUserProfile.profile?.avatar_url || null,
             });
-
-            const history = await chatService.getMessageHistory(userId);
-            setMessages(history);
+            appendMessages(history);
+            setHistoryReady(true);
+            void markIncomingRead(history).catch((error) => {
+                console.error('Failed to mark chat history as read', error);
+            });
         } catch (error) {
+            if (signal?.aborted) return;
             console.error('Failed to fetch chat data:', error);
+            setLoadError('گفت‌وگو بارگذاری نشد. اتصال را بررسی کن و دوباره تلاش کن.');
         } finally {
-            setIsLoading(false);
+            if (!signal?.aborted) setIsLoading(false);
         }
-    }, [userId]);
+    }, [appendMessages, markIncomingRead, userId]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        lastMessageIdRef.current = 0;
+        setMessages([]);
+        setHistoryReady(false);
+        const controller = new AbortController();
+        void fetchData(controller.signal);
+        return () => controller.abort();
+    }, [fetchData, userId]);
 
     useEffect(() => {
-        const socketUrl = chatService.getWebSocketUrl();
         let reconnectTimer: number | undefined;
+        let handshakeTimer: number | undefined;
+        let heartbeat: ChatHeartbeat | undefined;
+        let heartbeatSocket: WebSocket | undefined;
+        let reconnectAttempt = 0;
         let isActive = true;
 
+        const clearHandshakeTimer = () => {
+            if (handshakeTimer) {
+                window.clearTimeout(handshakeTimer);
+                handshakeTimer = undefined;
+            }
+        };
+
+        const clearHeartbeatTimer = (expectedSocket?: WebSocket) => {
+            if (expectedSocket && heartbeatSocket !== expectedSocket) return;
+            heartbeat?.stop();
+            heartbeat = undefined;
+            heartbeatSocket = undefined;
+        };
+
+        const canConnect = () => (
+            isActive
+            && navigator.onLine !== false
+            && document.visibilityState !== 'hidden'
+        );
+
+        const scheduleReconnect = (connect: () => void, immediate = false) => {
+            if (!canConnect()) return;
+            if (reconnectTimer) window.clearTimeout(reconnectTimer);
+            const delay = immediate
+                ? 0
+                : computeBackoffDelayMs({
+                    attempt: reconnectAttempt++,
+                    baseDelayMs: 1_000,
+                    maxDelayMs: 30_000,
+                    jitterRatio: 0.25,
+                });
+            reconnectTimer = window.setTimeout(connect, delay);
+        };
+
         const connect = () => {
-            if (!socketUrl || !isActive) {
+            const socketUrl = chatService.getWebSocketUrl();
+            if (!socketUrl || !canConnect()) {
                 setConnectionState('polling');
                 return;
             }
 
+            if (socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) {
+                return;
+            }
+
             setConnectionState('connecting');
-            const socket = new WebSocket(socketUrl);
+            let socket: WebSocket;
+            try {
+                socket = new WebSocket(socketUrl);
+            } catch (error) {
+                console.error('Failed to open chat websocket', error);
+                setConnectionState('polling');
+                scheduleReconnect(connect);
+                return;
+            }
             socketRef.current = socket;
+            clearHandshakeTimer();
+            handshakeTimer = window.setTimeout(() => {
+                if (!isActive || socketRef.current !== socket) return;
+                setConnectionState('polling');
+                socket.close();
+            }, 10_000);
 
             socket.onopen = () => {
-                setConnectionState('live');
-                socket.send(JSON.stringify({ type: 'ping' }));
+                const token = chatService.getWebSocketAuthToken();
+                if (!token) {
+                    socket.close();
+                    return;
+                }
+                socket.send(JSON.stringify({ type: 'auth', token }));
             };
 
             socket.onmessage = (event) => {
                 try {
                     const payload = JSON.parse(event.data);
+
+                    if (payload.type === 'connection:ready') {
+                        clearHandshakeTimer();
+                        reconnectAttempt = 0;
+                        setConnectionState('live');
+                        clearHeartbeatTimer();
+                        heartbeatSocket = socket;
+                        heartbeat = startChatHeartbeat(socket, {
+                            isCurrent: () => isActive && socketRef.current === socket,
+                            onTimeout: () => setConnectionState('polling'),
+                        });
+                        return;
+                    }
+
+                    if (payload.type === 'pong') {
+                        if (heartbeatSocket === socket) heartbeat?.acknowledgePong();
+                        return;
+                    }
 
                     if (payload.type === 'messages:read' && payload.reader_id === userId) {
                         const readIds = new Set<number>(payload.message_ids || []);
@@ -119,8 +235,8 @@ export default function ChatRoomPage() {
                     const message = payload.message as ChatMessage;
                     if (message.sender_id === userId || message.receiver_id === userId) {
                         appendMessages([message]);
-                        if (message.sender_id === userId && message.receiver_id === currentUserId) {
-                            void chatService.markConversationRead(userId).catch((error) => {
+                        if (message.sender_id === userId) {
+                            void markIncomingRead([message]).catch((error) => {
                                 console.error('Failed to mark live chat message as read', error);
                             });
                         }
@@ -131,48 +247,69 @@ export default function ChatRoomPage() {
             };
 
             socket.onerror = () => {
+                clearHandshakeTimer();
                 setConnectionState('polling');
+                socket.close();
             };
 
             socket.onclose = () => {
+                clearHandshakeTimer();
+                clearHeartbeatTimer(socket);
+                if (socketRef.current === socket) socketRef.current = null;
                 if (!isActive) return;
                 setConnectionState('polling');
-                reconnectTimer = window.setTimeout(connect, 3000);
+                scheduleReconnect(connect);
             };
         };
 
+        const syncAvailability = () => {
+            if (!canConnect()) {
+                setConnectionState('polling');
+                socketRef.current?.close();
+                return;
+            }
+            scheduleReconnect(connect, true);
+        };
+
         connect();
+        window.addEventListener('online', syncAvailability);
+        window.addEventListener('offline', syncAvailability);
+        document.addEventListener('visibilitychange', syncAvailability);
 
         return () => {
             isActive = false;
+            clearHandshakeTimer();
+            clearHeartbeatTimer();
             if (reconnectTimer) window.clearTimeout(reconnectTimer);
+            window.removeEventListener('online', syncAvailability);
+            window.removeEventListener('offline', syncAvailability);
+            document.removeEventListener('visibilitychange', syncAvailability);
             socketRef.current?.close();
             socketRef.current = null;
         };
-    }, [appendMessages, currentUserId, userId]);
+    }, [appendMessages, markIncomingRead, userId]);
 
-    useEffect(() => {
-        let isActive = true;
-
-        const pollNewMessages = async () => {
-            try {
-                const afterId = lastMessageIdRef.current;
-                if (!afterId) return;
-                const latest = await chatService.getNewMessages(userId, afterId);
-                if (isActive) {
-                    appendMessages(latest);
-                }
-            } catch (error) {
-                console.error('Failed to poll chat messages', error);
+    useAdaptivePolling({
+        task: async (signal) => {
+            const afterId = lastMessageIdRef.current;
+            const latest = await chatService.getNewMessages(userId, afterId, signal);
+            appendMessages(latest);
+            if (latest.some((message) => message.sender_id === userId && !message.is_read)) {
+                void markIncomingRead(latest).catch((error) => {
+                    console.error('Failed to mark polled chat messages as read', error);
+                });
             }
-        };
-
-        const interval = window.setInterval(pollNewMessages, connectionState === 'live' ? 15_000 : 4_000);
-        return () => {
-            isActive = false;
-            window.clearInterval(interval);
-        };
-    }, [appendMessages, connectionState, userId]);
+            return latest.length > 0;
+        },
+        enabled: historyReady && Number.isFinite(userId) && userId > 0,
+        // The initial history request has already completed and seeded the
+        // cursor, so this immediate incremental poll cannot duplicate the
+        // full-history read and keeps failover responsive.
+        runImmediately: true,
+        baseIntervalMs: connectionState === 'live' ? 30_000 : 4_000,
+        maxIntervalMs: connectionState === 'live' ? 90_000 : 30_000,
+        onError: (error) => console.error('Failed to poll chat messages', error),
+    });
 
     const handleSend = async () => {
         const messageContent = newMessage.trim();
@@ -229,7 +366,7 @@ export default function ChatRoomPage() {
         <div className="flex h-full min-h-full flex-col bg-[#f7f8fa]" dir="rtl">
             <header className="shrink-0 border-b border-[#dfe3ea] bg-[#f0f2f5] px-5 pb-3 pt-5">
                 <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3">
-                    <BackButton onClick={() => router.back()} className="justify-self-end" />
+                    <SafeBackButton fallback="/chat" className="justify-self-end" />
 
                     <div className="flex min-w-0 items-center justify-center gap-3">
                         <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
@@ -247,7 +384,7 @@ export default function ChatRoomPage() {
                         </div>
                     </div>
 
-                    <span aria-hidden />
+                    <UserTrustActions userId={userId} onBlocked={() => router.replace('/community')} />
                 </div>
             </header>
 
@@ -255,6 +392,22 @@ export default function ChatRoomPage() {
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
+                    </div>
+                ) : loadError ? (
+                    <div className="flex h-full flex-col items-center justify-center px-5 text-center">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6]">
+                            <RefreshCw className="h-9 w-9" />
+                        </div>
+                        <h2 className="mt-6 text-lg font-black text-slate-900">گفت‌وگو باز نشد</h2>
+                        <p className="mt-2 max-w-[290px] text-sm leading-7 text-slate-500">{loadError}</p>
+                        <button
+                            type="button"
+                            onClick={() => void fetchData()}
+                            className="mt-6 inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#155aa6] px-5 text-sm font-black text-white"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            تلاش دوباره
+                        </button>
                     </div>
                 ) : groupedMessages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-5 text-center">

@@ -1,0 +1,416 @@
+name: Phase 2 exact-SHA staging smoke
+
+on:
+  push:
+    branches:
+      - "codex/phase-8-beta-release"
+    paths:
+      # Workflow-only edits are intentionally manual-dispatch-only: a workflow
+      # commit is not necessarily deployed to HF/Vercel, so using github.sha
+      # here would create a false exact-SHA failure.
+      - ".github/workflows/deploy-hf-space.yml"
+      - "backend/**"
+      - "frontend/**"
+      - "docs/PHASE_5_MEDIA_LICENSE_REGISTRY.csv"
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full lowercase Git SHA already deployed to both staging providers
+        required: true
+        type: string
+      run_stateful:
+        description: Run synthetic login/chat/admin smoke with cleanup
+        required: true
+        default: false
+        type: boolean
+      run_backend_stateful:
+        description: Run the no-secret synthetic backend smoke with guaranteed account cleanup
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: phase2-exact-sha-staging-${{ inputs.release_sha || github.sha }}
+  # A newer pushed SHA supersedes a stale smoke; leaving it queued would make
+  # the exact-release gate wait for a 25-minute timeout before starting.
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: read
+
+env:
+  BACKEND_ORIGIN: https://moamin9-chinverse-api.hf.space
+  FRONTEND_ORIGIN: https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app
+  EXPECTED_RELEASE: ${{ inputs.release_sha || github.sha }}
+
+jobs:
+  readonly-preflight:
+    name: Exact SHA, protection, readiness and closed features
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    # The frontend bypass (when configured) is a staging-environment secret.
+    # Binding the environment here makes it available to the read-only job;
+    # without this, GitHub silently supplied an empty value and the frontend
+    # runtime check could never run.
+    environment: staging
+    outputs:
+      # Downstream stateful checks must use the immutable Vercel deployment
+      # resolved for EXPECTED_RELEASE, never the moving branch alias.
+      frontend_origin: ${{ steps.resolve_release.outputs.frontend_origin }}
+    steps:
+      - name: Validate immutable targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_RELEASE" =~ ^[0-9a-f]{40}$ ]]
+          test "$BACKEND_ORIGIN" = "https://moamin9-chinverse-api.hf.space"
+          test "$FRONTEND_ORIGIN" = "https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app"
+
+      - name: Wait for the exact backend release and Vercel deployment
+        id: resolve_release
+        shell: bash
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work_dir="${RUNNER_TEMP}/phase2-readonly"
+          mkdir -p "$work_dir"
+          backend_health="${work_dir}/backend-health.json"
+          backend_ready="${work_dir}/backend-ready.json"
+          frontend_health="${work_dir}/frontend-health.json"
+          vercel_deployments="${work_dir}/vercel-deployments.json"
+          vercel_statuses="${work_dir}/vercel-statuses.json"
+
+          frontend_runtime_observed="false"
+          if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+            frontend_runtime_observed="true"
+          else
+            echo "::warning::VERCEL_AUTOMATION_BYPASS_SECRET is not configured; frontend runtime health will remain unobserved behind the protected preview edge."
+          fi
+
+          for attempt in $(seq 1 100); do
+            rm -f "$backend_health" "$backend_ready" "$frontend_health" "$vercel_deployments" "$vercel_statuses"
+            curl --silent --show-error --connect-timeout 5 --max-time 15 \
+              --output "$backend_health" "${BACKEND_ORIGIN}/health" || true
+            curl --silent --show-error --connect-timeout 5 --max-time 15 \
+              --output "$backend_ready" "${BACKEND_ORIGIN}/health/ready" || true
+            # The GitHub deployment record carries Vercel's immutable source
+            # SHA. This is the safe fallback while preview traffic is SSO
+            # protected and no bypass secret is configured.
+            curl --silent --show-error --fail --connect-timeout 5 --max-time 15 \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments?sha=${EXPECTED_RELEASE}&per_page=100" \
+              --output "$vercel_deployments" || true
+            vercel_deployment_id=""
+            vercel_deployment_url=""
+            if [[ -s "$vercel_deployments" ]]; then
+              vercel_deployment_id="$(jq -r '[.[] | select(.environment == "Preview" or .environment == "Production")] | sort_by(.created_at) | last | .id // empty' "$vercel_deployments" 2>/dev/null || true)"
+              vercel_deployment_url="$(jq -r '[.[] | select(.environment == "Preview" or .environment == "Production")] | sort_by(.created_at) | last | (.environment_url // .target_url // empty)' "$vercel_deployments" 2>/dev/null || true)"
+            fi
+            vercel_status="missing"
+            if [[ -n "$vercel_deployment_id" ]]; then
+              curl --silent --show-error --fail --connect-timeout 5 --max-time 15 \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${vercel_deployment_id}/statuses?per_page=20" \
+                --output "$vercel_statuses" || true
+              vercel_status="$(jq -r '.[0].state // "missing"' "$vercel_statuses" 2>/dev/null || echo missing)"
+              status_target_url="$(jq -r 'map(select(((.target_url // "") | endswith(".vercel.app")))) | sort_by(.created_at) | last | .target_url // empty' "$vercel_statuses" 2>/dev/null || true)"
+              if [[ -n "$status_target_url" ]]; then
+                vercel_deployment_url="$status_target_url"
+              fi
+            fi
+
+            # The branch alias moves whenever a docs-only commit is deployed.
+            # Once GitHub has resolved the deployment for EXPECTED_RELEASE,
+            # probe that immutable URL so frontend health cannot accidentally
+            # come from a newer SHA.
+            frontend_probe_origin="$FRONTEND_ORIGIN"
+            case "$vercel_deployment_url" in
+              https://chinverse-*.vercel.app) frontend_probe_origin="$vercel_deployment_url" ;;
+            esac
+            if [[ "$frontend_runtime_observed" == "true" ]]; then
+              curl --silent --show-error --connect-timeout 5 --max-time 15 \
+                -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" \
+                --output "$frontend_health" "${frontend_probe_origin}/api/health" || true
+            fi
+
+            backend_release="$(jq -r '.release // "missing"' "$backend_health" 2>/dev/null || echo missing)"
+            frontend_release="not-observed"
+            frontend_health_ok="true"
+            if [[ "$frontend_runtime_observed" == "true" ]]; then
+              frontend_release="$(jq -r '.release // "missing"' "$frontend_health" 2>/dev/null || echo missing)"
+              frontend_health_ok="$(jq -e '.status == "ok" and .deployment_tier == "staging" and .indexable == false' "$frontend_health" >/dev/null 2>&1 && echo true || echo false)"
+            fi
+            vercel_url_ok="false"
+            case "$vercel_deployment_url" in
+              https://chinverse-*.vercel.app) vercel_url_ok="true" ;;
+            esac
+            if [[ "$backend_release" == "$EXPECTED_RELEASE" ]] \
+              && [[ "$vercel_status" == "success" || "$vercel_status" == "SUCCESS" ]] \
+              && [[ "$vercel_url_ok" == "true" ]] \
+              && jq -e '.status == "ok" and .deployment_tier == "staging" and .indexable == false' "$backend_health" >/dev/null \
+              && jq -e '.status == "ok" and .checks.database_target == "ok" and .checks.database == "ok" and .checks.storage == "ok"' "$backend_ready" >/dev/null \
+              && [[ "$frontend_health_ok" == "true" || "$frontend_runtime_observed" == "false" ]]; then
+              {
+                echo "frontend_runtime_health=${frontend_runtime_observed}"
+                echo "vercel_deployment_id=${vercel_deployment_id}"
+                echo "vercel_deployment_url=${vercel_deployment_url}"
+                echo "PHASE2_FRONTEND_ORIGIN=${vercel_deployment_url}"
+              } >> "$GITHUB_ENV"
+              echo "frontend_origin=${vercel_deployment_url}" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            if [[ "$attempt" == 100 ]]; then
+              echo "Timed out waiting for exact-SHA backend readiness and successful Vercel deployment metadata" >&2
+              exit 1
+            fi
+            echo "Waiting for exact release (attempt ${attempt}/100; backend=${backend_release}; frontend_runtime=${frontend_release}; vercel_status=${vercel_status}; vercel_url=${vercel_deployment_url:-missing})"
+            sleep 15
+          done
+
+          test "$(jq -r '.release' "$backend_health")" = "$EXPECTED_RELEASE"
+          case "${vercel_deployment_url}" in
+            https://chinverse-*.vercel.app) ;;
+            *) echo "Unexpected Vercel deployment URL: ${vercel_deployment_url}" >&2; exit 1 ;;
+          esac
+          if [[ "${frontend_runtime_observed}" == "true" ]]; then
+            test "$(jq -r '.release' "$frontend_health")" = "$EXPECTED_RELEASE"
+          fi
+          {
+            echo "### Exact release evidence"
+            echo
+            echo "- Backend runtime SHA: \`$(jq -r '.release' "$backend_health")\`"
+            echo "- Vercel deployment: \`${vercel_deployment_id}\` (${vercel_deployment_url})"
+            if [[ "${frontend_runtime_observed}" == "true" ]]; then
+              echo "- Frontend runtime health: observed with protected-preview bypass; SHA matched."
+            else
+              echo "- Frontend runtime health: **not observed** (preview remains SSO-protected; no bypass secret configured)."
+            fi
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Verify staging protection, noindex and fail-closed routes
+        shell: bash
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          work_dir="${RUNNER_TEMP}/phase2-contract"
+          mkdir -p "$work_dir"
+          frontend_origin="${PHASE2_FRONTEND_ORIGIN:-}"
+          test -n "$frontend_origin"
+          case "$frontend_origin" in
+            https://chinverse-*.vercel.app) ;;
+            *) echo "Resolved frontend deployment is not an immutable ChinVerse Vercel URL" >&2; exit 1 ;;
+          esac
+          case "$frontend_origin" in
+            https://chinverse-git-*) echo "Moving branch alias was selected instead of an immutable deployment" >&2; exit 1 ;;
+          esac
+
+          anonymous_status="$(curl --silent --show-error --output /dev/null \
+            --dump-header "${work_dir}/anonymous.headers" --write-out '%{http_code}' \
+            --connect-timeout 5 --max-time 15 "${frontend_origin}/")"
+          case "$anonymous_status" in
+            302|401|403) ;;
+            *) echo "Protected preview unexpectedly returned HTTP ${anonymous_status}" >&2; exit 1 ;;
+          esac
+          grep -Eqi '^x-robots-tag:.*noindex' "${work_dir}/anonymous.headers"
+
+          if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+            bypass=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+            curl --fail-with-body --silent --show-error "${bypass[@]}" \
+              "${frontend_origin}/robots.txt" --output "${work_dir}/robots.txt"
+            grep -Eqi '^Disallow:[[:space:]]*/[[:space:]]*$' "${work_dir}/robots.txt"
+            curl --fail-with-body --silent --show-error "${bypass[@]}" \
+              "${frontend_origin}/login" --output "${work_dir}/login.html"
+            grep -Eqi 'noindex' "${work_dir}/login.html"
+
+            for route in subscription referrals points; do
+              status="$(curl --silent --show-error --output /dev/null \
+                --dump-header "${work_dir}/${route}.headers" --write-out '%{http_code}' \
+                "${bypass[@]}" "${frontend_origin}/settings/${route}")"
+              case "$status" in 307|308) ;; *) echo "${route} route returned ${status}" >&2; exit 1 ;; esac
+              grep -Eqi '^location:[[:space:]]*/settings([[:space:]]|\r)?$' "${work_dir}/${route}.headers"
+            done
+          else
+            echo "::warning::Skipped protected frontend robots/login/disabled-route checks because VERCEL_AUTOMATION_BYPASS_SECRET is absent. Anonymous edge protection/noindex was verified above."
+          fi
+
+          probe_status() {
+            local expected="$1"
+            local path="$2"
+            local actual
+            actual="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --connect-timeout 5 --max-time 15 "${BACKEND_ORIGIN}${path}")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "${path}: expected HTTP ${expected}, received ${actual}" >&2
+              exit 1
+            fi
+          }
+
+          probe_status 404 /docs
+          probe_status 401 /api/v1/users/me
+          probe_status 401 /api/v1/beta/status
+          probe_status 404 /api/v1/subscriptions/me
+          probe_status 404 /api/v1/subscriptions/checkout
+          probe_status 404 /api/v1/subscriptions/webhook/generic_hmac
+          probe_status 404 /api/v1/referrals/me
+          probe_status 404 /api/v1/referrals/validate/PHASE2DISABLED
+
+          curl --fail-with-body --silent --show-error \
+            "${BACKEND_ORIGIN}/api/v1/courses/?limit=100" \
+            --output "${work_dir}/courses.json"
+          jq -e 'type == "array"' "${work_dir}/courses.json" >/dev/null
+          if ! jq -e '[.. | objects | select(has("storage_key") or has("provider_url") or has("video_url"))] | length == 0' \
+            "${work_dir}/courses.json" >/dev/null; then
+            echo "Public course DTO leaked a provider/storage field" >&2
+            exit 1
+          fi
+          course_count="$(jq 'length' "${work_dir}/courses.json")"
+
+          {
+            echo "### Phase 2 exact-SHA read-only staging smoke"
+            echo
+            echo "- Release: \`${EXPECTED_RELEASE}\`"
+            echo "- Frontend/backend health: exact SHA, staging, noindex"
+            echo "- Backend readiness: database target, query and storage write/read/delete are healthy"
+            echo "- Anonymous preview protection: HTTP ${anonymous_status}"
+            if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+              echo "- Protected frontend routes: robots/login/disabled subscription-referral-points checks passed"
+            else
+              echo "- Protected frontend routes: not observed behind SSO (bypass secret absent)"
+            fi
+            echo "- Disabled subscription/referral/payment surfaces: closed"
+            echo "- Published course catalog count: ${course_count} (an empty catalog validates the empty state, not signed playback)"
+          } >>"$GITHUB_STEP_SUMMARY"
+
+  backend-stateful-smoke:
+    name: Synthetic backend account, chat and RBAC smoke
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_backend_stateful }}
+    needs: readonly-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PHASE2_BACKEND_ORIGIN: https://moamin9-chinverse-api.hf.space
+      EXPECTED_RELEASE: ${{ inputs.release_sha }}
+    steps:
+      - name: Checkout immutable release
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install poetry==2.4.1
+          poetry sync --with dev --no-root --no-interaction
+
+      - name: Run synthetic backend smoke with cleanup
+        working-directory: backend
+        run: poetry run python scripts/phase2_backend_live_smoke.py --base-url "$PHASE2_BACKEND_ORIGIN" --expected-release "$EXPECTED_RELEASE"
+
+  stateful-smoke:
+    name: Synthetic login, account, chat, feedback and admin journeys
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_stateful }}
+    needs: readonly-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    env:
+      DATABASE_URL: ${{ secrets.PHASE2_STAGING_DATABASE_URL }}
+      CHINVERSE_PHASE4_RUN_ID: p2-${{ github.run_id }}-${{ github.run_attempt }}
+      CHINVERSE_PHASE4_USER_1_PASSWORD: ${{ secrets.PHASE2_USER_1_PASSWORD }}
+      CHINVERSE_PHASE4_USER_2_PASSWORD: ${{ secrets.PHASE2_USER_2_PASSWORD }}
+      CHINVERSE_PHASE4_MODERATOR_PASSWORD: ${{ secrets.PHASE2_MODERATOR_PASSWORD }}
+      CHINVERSE_PHASE4_ADMIN_PASSWORD: ${{ secrets.PHASE2_ADMIN_PASSWORD }}
+      PHASE4_LIVE_VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      PHASE4_LIVE_PREVIEW_URL: ${{ needs.readonly-preflight.outputs.frontend_origin }}
+      PHASE4_LIVE_API_URL: https://moamin9-chinverse-api.hf.space/api/v1
+      PHASE4_LIVE_EXPECTED_API_HOST: moamin9-chinverse-api.hf.space
+      PHASE4_LIVE_REFRESH_COOKIE_NAME: __Host-chinverse_refresh
+      RUN_PHASE4_LIVE: "1"
+      RUN_PHASE2_LIVE: "1"
+    steps:
+      - name: Checkout immutable release
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+
+      - name: Validate stateful secrets without printing them
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE"
+          for name in DATABASE_URL CHINVERSE_PHASE4_USER_1_PASSWORD CHINVERSE_PHASE4_USER_2_PASSWORD CHINVERSE_PHASE4_MODERATOR_PASSWORD CHINVERSE_PHASE4_ADMIN_PASSWORD PHASE4_LIVE_VERCEL_BYPASS_SECRET; do
+            test -n "${!name:-}" || { echo "Required staging secret ${name} is missing" >&2; exit 1; }
+          done
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install poetry==2.4.1
+          poetry sync --with dev --no-root --no-interaction
+
+      - name: Create fail-closed staging fixtures
+        working-directory: backend
+        run: |
+          poetry run python scripts/phase4_staging_fixtures.py create
+          poetry run python scripts/phase4_staging_fixtures.py create --apply --confirm-run-id "$CHINVERSE_PHASE4_RUN_ID"
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Run serial live user journeys
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e -- phase4-live-staging.spec.ts --project=desktop-chromium --retries=0 --workers=1
+
+      - name: Verify closed feedback and education empty/published state
+        shell: bash
+        run: |
+          set -euo pipefail
+          user_email="phase4-${CHINVERSE_PHASE4_RUN_ID}-user-1@example.com"
+          token="$(curl --fail-with-body --silent --show-error \
+            --data-urlencode "username=${user_email}" \
+            --data-urlencode "password=${CHINVERSE_PHASE4_USER_1_PASSWORD}" \
+            "${BACKEND_ORIGIN}/api/v1/login/access-token" | jq -r '.access_token')"
+          test -n "$token" && test "$token" != null
+          curl --fail-with-body --silent --show-error \
+            -H "Authorization: Bearer ${token}" \
+            "${BACKEND_ORIGIN}/api/v1/beta/status" \
+            | jq -e '.enabled == false and .eligible == false and .reason == "disabled" and .feedback_enabled == false and .consent_required == false' >/dev/null
+          unset token
+          curl --fail-with-body --silent --show-error \
+            "${BACKEND_ORIGIN}/api/v1/courses/?limit=100" \
+            | jq -e 'type == "array"' >/dev/null
+
+      - name: Cleanup synthetic staging fixtures
+        if: always()
+        working-directory: backend
+        run: |
+          poetry run python scripts/phase4_staging_fixtures.py cleanup
+          poetry run python scripts/phase4_staging_fixtures.py cleanup --apply --confirm-run-id "$CHINVERSE_PHASE4_RUN_ID"
+          poetry run python scripts/phase4_staging_fixtures.py cleanup

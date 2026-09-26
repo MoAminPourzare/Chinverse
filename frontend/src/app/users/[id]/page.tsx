@@ -1,6 +1,6 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -26,6 +26,7 @@ import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { BackButton } from "@/components/ui/IconButton";
+import UserTrustActions from "@/components/trust/UserTrustActions";
 
 interface Tab {
     id: string;
@@ -419,6 +420,7 @@ export default function PublicProfilePage() {
                                     src={getMediaUrl(item.image_url)}
                                     alt={item.caption || "Gallery image"}
                                     fill
+                                    sizes="(max-width: 430px) 50vw, 215px"
                                     className="object-cover"
                                     unoptimized
                                 />
@@ -474,6 +476,9 @@ export default function PublicProfilePage() {
                     <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-white/16 blur-3xl" />
                     <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-[#ffb74d]/20 blur-3xl" />
                     <div className="relative flex flex-col items-center">
+                    <div className="absolute left-0 top-0">
+                        <UserTrustActions userId={userId} tone="light" onBlocked={() => router.replace("/showcase")} />
+                    </div>
                     <div className="relative mb-4">
                         <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gray-100 shadow-2xl ring-4 ring-white/25">
                             {user.profile?.avatar_url ? (

@@ -9,7 +9,7 @@ from app.api.errors import bad_request, forbidden, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
 from app.models.social import ForumQuestion, ForumAnswer, Article, ArticleComment, SupportTicket
-from app.models.user import User
+from app.models.user import User, UserStatus
 from app.schemas import community as schemas
 from app.services.notifications import notify_followers
 
@@ -79,14 +79,18 @@ async def get_forum_questions(
             ForumAnswer.question_id,
             func.count(ForumAnswer.id).label("answers_count"),
         )
+        .join(User, User.id == ForumAnswer.author_user_id)
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .group_by(ForumAnswer.question_id)
         .subquery()
     )
 
     query = (
         select(ForumQuestion, func.coalesce(answer_counts.c.answers_count, 0))
+        .join(User, User.id == ForumQuestion.author_user_id)
         .outerjoin(answer_counts, ForumQuestion.id == answer_counts.c.question_id)
         .options(selectinload(ForumQuestion.author).selectinload(User.profile))
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .order_by(ForumQuestion.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -166,8 +170,13 @@ async def get_forum_question_detail(
 ):
     result = await db.execute(
         select(ForumQuestion)
+        .join(User, User.id == ForumQuestion.author_user_id)
         .options(selectinload(ForumQuestion.author).selectinload(User.profile))
-        .where(ForumQuestion.id == question_id)
+        .where(
+            ForumQuestion.id == question_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
     )
     question = result.scalar_one_or_none()
     if not question:
@@ -175,8 +184,13 @@ async def get_forum_question_detail(
 
     answers_result = await db.execute(
         select(ForumAnswer)
+        .join(User, User.id == ForumAnswer.author_user_id)
         .options(selectinload(ForumAnswer.author).selectinload(User.profile))
-        .where(ForumAnswer.question_id == question_id)
+        .where(
+            ForumAnswer.question_id == question_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
         .order_by(ForumAnswer.created_at.asc(), ForumAnswer.id.asc())
     )
     answers = answers_result.scalars().all()
@@ -323,14 +337,18 @@ async def get_articles(
             ArticleComment.article_id,
             func.count(ArticleComment.id).label("comments_count"),
         )
+        .join(User, User.id == ArticleComment.author_user_id)
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .group_by(ArticleComment.article_id)
         .subquery()
     )
 
     query = (
         select(Article, func.coalesce(comment_counts.c.comments_count, 0))
+        .join(User, User.id == Article.author_user_id)
         .outerjoin(comment_counts, Article.id == comment_counts.c.article_id)
         .options(selectinload(Article.author).selectinload(User.profile))
+        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
         .order_by(Article.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -379,8 +397,13 @@ async def get_article_detail(
 ):
     result = await db.execute(
         select(Article)
+        .join(User, User.id == Article.author_user_id)
         .options(selectinload(Article.author).selectinload(User.profile))
-        .where(Article.id == article_id)
+        .where(
+            Article.id == article_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
     )
     article = result.scalar_one_or_none()
     if not article:
@@ -388,8 +411,13 @@ async def get_article_detail(
 
     comments_result = await db.execute(
         select(ArticleComment)
+        .join(User, User.id == ArticleComment.author_user_id)
         .options(selectinload(ArticleComment.author).selectinload(User.profile))
-        .where(ArticleComment.article_id == article_id)
+        .where(
+            ArticleComment.article_id == article_id,
+            User.status == UserStatus.ACTIVE,
+            User.is_verified.is_(True),
+        )
         .order_by(ArticleComment.created_at.asc(), ArticleComment.id.asc())
     )
     comments = comments_result.scalars().all()
@@ -442,6 +470,22 @@ async def create_article_comment(
 
 
 # ===== SUPPORT =====
+
+@router.get("/support", response_model=List[schemas.SupportTicketRead])
+async def get_support_tickets(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
+):
+    """Return only the authenticated user's support tickets, newest first."""
+    result = await db.execute(
+        select(SupportTicket)
+        .where(SupportTicket.user_id == current_user.id)
+        .order_by(SupportTicket.created_at.desc(), SupportTicket.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
+    )
+    return result.scalars().all()
 
 @router.post("/support", response_model=schemas.SupportTicketResponse)
 async def submit_support_ticket(

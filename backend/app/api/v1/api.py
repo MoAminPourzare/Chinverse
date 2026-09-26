@@ -1,11 +1,12 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements
+from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust, beta
 from app.core.config import settings
 
 api_router = APIRouter()
 
 # ===== AUTHENTICATION =====
 api_router.include_router(auth.router, tags=["auth"])
+api_router.include_router(trust.router)
 
 # ===== ADMIN =====
 api_router.include_router(admin.router, tags=["admin"])
@@ -25,6 +26,7 @@ api_router.include_router(users.router, prefix="/users", tags=["users"])
 # ===== COURSES =====
 api_router.include_router(courses.router, prefix="/courses", tags=["courses"])
 api_router.include_router(course_admin.router, prefix="/courses", tags=["course-admin"])
+api_router.include_router(media.router)
 
 # ===== COMMUNITY =====
 api_router.include_router(community.router, prefix="/community", tags=["community"])
@@ -44,6 +46,12 @@ api_router.include_router(daily_activity.router, prefix="/daily-activity", tags=
 # ===== REFERRALS =====
 if settings.FEATURE_REFERRALS_ENABLED:
     api_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+
+# ===== CLOSED BETA =====
+# Keep the status endpoint discoverable for the client while it is disabled;
+# all write paths fail closed in the dependency/service layer.
+api_router.include_router(beta.router)
+api_router.include_router(beta.admin_router)
 
 # ===== SUBSCRIPTIONS =====
 if settings.FEATURE_SUBSCRIPTIONS_ENABLED:

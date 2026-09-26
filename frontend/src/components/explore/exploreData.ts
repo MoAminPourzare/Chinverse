@@ -46,7 +46,7 @@ export const entertainmentItems: ExploreItem[] = [
 ];
 
 export const artSkillItems: ExploreItem[] = [
-    { title: "آشپزی", id: "arts-cooking", href: "/explore/arts-cooking", icon: Flame, color: gold },
+    { title: "آشپزی", id: "cooking", href: "/explore/cooking", icon: Flame, color: gold },
     { title: "هنرهای رزمی", id: "martial-arts", href: "/explore/martial-arts", icon: Sparkles, color: blue },
     { title: "تمرینات انرژی و سلامت", id: "energy-health", href: "/explore/energy-health", icon: Headphones, color: jade },
     { title: "خطاطی", id: "calligraphy", href: "/explore/calligraphy", icon: PencilLine, color: slate },
@@ -55,7 +55,7 @@ export const artSkillItems: ExploreItem[] = [
 
 export const cultureThoughtItems: ExploreItem[] = [
     { title: "متون کلاسیک آموزشی", id: "culture-texts", href: "/explore/culture-texts", icon: BookOpen, color: slate },
-    { title: "داستان‌های تاریخی", id: "historical-stories", href: "/explore/historical-stories", icon: Sparkles, color: gold },
+    { title: "داستان‌های کهن", id: "historical-stories", href: "/explore/historical-stories", icon: Sparkles, color: gold },
     { title: "شعر و ادبیات کلاسیک", id: "classical-poetry", href: "/explore/classical-poetry", icon: PencilLine, color: blue },
     { title: "آیین‌ها و جشن‌ها", id: "festivals-customs", href: "/explore/festivals-customs", icon: Flame, color: jade },
 ];

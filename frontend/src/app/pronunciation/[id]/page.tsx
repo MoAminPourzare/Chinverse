@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { PRONUNCIATION_CATALOG } from "@/lib/pronunciationCatalog";
 
 export default function PronunciationDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="pronunciation"
-            explorePath="/explore/pronunciation"
-            eyebrow="تلفظ"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-blue-600"
-        />
-    );
+    return <PlannedCourseDetailPage domain="pronunciation" title="تلفظ" basePath="/pronunciation" catalog={PRONUNCIATION_CATALOG} />;
 }

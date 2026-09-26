@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { BookOpen, Star } from "lucide-react";
 import {
     Course,
@@ -49,7 +49,7 @@ const labelsBySlug: Record<string, string> = {
     calligraphy: "خطاطی",
     "tea-culture": "فرهنگ چای",
     "culture-texts": "متون کلاسیک آموزشی",
-    "historical-stories": "داستان‌های تاریخی",
+    "historical-stories": "داستان‌های کهن",
     "classical-poetry": "شعر و ادبیات کلاسیک",
     "festivals-customs": "آیین‌ها و جشن‌ها",
 };

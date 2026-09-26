@@ -105,3 +105,19 @@ Multiple CSV rows for the same `word_id` / `chinese_word` become one
 
 This lets the app render meaning 1, meaning 2, and their matching examples or
 collocations together.
+
+## Phase 5 data and provenance audit
+
+Before importing or publishing a dictionary snapshot, run the deterministic
+audit from the repository root:
+
+```powershell
+python backend/scripts/audit_phase5_content.py --repo-root .
+```
+
+The command validates the HSK1–HSK3 CSV shape, duplicate sense keys, level
+label consistency, and SHA-256 entries in `source_registry.csv`. It also
+checks the repository media registry. Missing source/owner/license evidence is
+kept as `review_required` and reported as a baseline blocker; it must not be
+silently treated as approved content. Use `--strict-licenses` for a release
+readiness gate after human provenance review.

@@ -31,9 +31,13 @@ env.bak/
 venv.bak/
 .pytest_cache/
 .ruff_cache/
+.pip-audit*/
+.pytest-temp-*/
+.test-cache-*/
 .coverage
 .coverage.*
 htmlcov/
+coverage.xml
 
 # Node.js
 node_modules/
@@ -47,7 +51,12 @@ build/
 coverage/
 playwright-report/
 test-results/
+.playwright-browsers/
 .tmp/
+.backups/
+.migration-state/
+# Owner reference originals; runtime copies are tracked under frontend/public/assets.
+/پروفایل دوره ها/
 .DS_Store
 *.local
 *.log

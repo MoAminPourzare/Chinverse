@@ -10,6 +10,8 @@ import {
     Database,
     Download,
     FileText,
+    Flag,
+    Headphones,
     Layers3,
     Loader2,
     Plus,
@@ -23,8 +25,12 @@ import {
     Video,
 } from "lucide-react";
 import { adminService, type AdminDictionaryImportResult, type AdminDictionaryWord, type AdminOverview, type AdminUserSummary } from "@/lib/admin";
-import { contentAdminService } from "@/lib/content-admin";
-import { fetchAllCourses, fetchCourseTaxonomy, type CategorySummary, type Course } from "@/lib/courses";
+import {
+    contentAdminService,
+    type AdminMediaAsset,
+    type AdminSubtitleTrack,
+} from "@/lib/content-admin";
+import { fetchCourseTaxonomy, type CategorySummary, type Course } from "@/lib/courses";
 import { isHttpStatus } from "@/lib/http";
 import Surface from "@/components/ui/Surface";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -35,7 +41,6 @@ import {
     validateJsonObject,
     validateNonNegativeNumber,
     validateTextLength,
-    validateUrl,
     validationMessage,
 } from "@/validation";
 import { cn } from "@/lib/cn";
@@ -54,6 +59,56 @@ const emptyJson = "{}";
 const fieldClass = "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12";
 const textAreaClass = `${fieldClass} min-h-24 resize-y leading-7`;
 const panelClass = "border-white/80 bg-white/90 shadow-[0_18px_48px_rgba(15,23,42,0.08)]";
+
+type MediaWorkflowForm = {
+    media_type: "image" | "video" | "audio";
+    playback_type: "hls" | "progressive";
+    storage_provider: "local" | "mounted" | "s3";
+    file_url: string;
+    storage_key: string;
+    mime_type: string;
+    duration_seconds: string;
+    checksum_sha256: string;
+    source_name: string;
+    source_url: string;
+    rights_holder: string;
+    license_type: string;
+    license_url: string;
+    license_notes: string;
+};
+
+type SubtitleWorkflowForm = {
+    lesson_id: string;
+    language: string;
+    format: "srt" | "vtt";
+    source_name: string;
+    content: string;
+};
+
+const emptyMediaWorkflowForm: MediaWorkflowForm = {
+    media_type: "video",
+    playback_type: "hls",
+    storage_provider: "s3",
+    file_url: "",
+    storage_key: "",
+    mime_type: "application/vnd.apple.mpegurl",
+    duration_seconds: "",
+    checksum_sha256: "",
+    source_name: "",
+    source_url: "",
+    rights_holder: "",
+    license_type: "",
+    license_url: "",
+    license_notes: "",
+};
+
+const emptySubtitleWorkflowForm: SubtitleWorkflowForm = {
+    lesson_id: "",
+    language: "fa",
+    format: "srt",
+    source_name: "",
+    content: "",
+};
 
 const emptyWordForm = {
     id: 0,
@@ -100,6 +155,13 @@ function formatDate(value?: string) {
 function toPersianDigits(value: string | number) {
     const digits = "۰۱۲۳۴۵۶۷۸۹";
     return String(value).replace(/\d/g, (digit) => digits[Number(digit)]);
+}
+
+function latestLessonId(course: Course) {
+    return course.sections?.reduce(
+        (latest, section) => section.lessons?.reduce((current, lesson) => Math.max(current, lesson.id), latest) ?? latest,
+        0,
+    ) ?? 0;
 }
 
 type DictionaryMissingKey = "pinyin" | "audio" | "persian" | "chinese" | "composition" | "definitions" | "examples" | "collocations" | "notes";
@@ -156,6 +218,7 @@ export default function AdminPanelPage() {
     const [saving, setSaving] = useState("");
     const [message, setMessage] = useState("");
     const [accessError, setAccessError] = useState("");
+    const [needsMfaEnrollment, setNeedsMfaEnrollment] = useState(false);
     const [dictionarySearch, setDictionarySearch] = useState("");
     const [userSearch, setUserSearch] = useState("");
     const [importResult, setImportResult] = useState<AdminDictionaryImportResult | null>(null);
@@ -165,7 +228,7 @@ export default function AdminPanelPage() {
         title: "",
         slug: "",
         description: "",
-        cover_image_url: "",
+        cover_media_id: "",
         level: "beginner",
         metadata_json: emptyJson,
     });
@@ -182,34 +245,17 @@ export default function AdminPanelPage() {
         section_id: "",
         title: "",
         duration_minutes: "0",
-        video_url: "",
-        thumbnail_url: "",
+        media_id: "",
+        poster_media_id: "",
         is_free: false,
-        metadata_json: JSON.stringify(
-            {
-                transcript: [
-                    {
-                        id: 1,
-                        start: 0,
-                        end: 3.5,
-                        chinese: "示例字幕",
-                        persian: "نمونه زیرنویس",
-                        highlightedWords: ["示例"],
-                    },
-                    {
-                        id: 2,
-                        start: 3.5,
-                        end: 7,
-                        chinese: "视频播放时，字幕会自动滚动。",
-                        persian: "وقتی ویدیو پخش می‌شود، زیرنویس خودکار اسکرول می‌کند.",
-                        highlightedWords: ["字幕", "自动"],
-                    },
-                ],
-            },
-            null,
-            2,
-        ),
+        metadata_json: emptyJson,
     });
+    const [mediaWorkflowForm, setMediaWorkflowForm] = useState<MediaWorkflowForm>(emptyMediaWorkflowForm);
+    const [mediaWorkflowAsset, setMediaWorkflowAsset] = useState<AdminMediaAsset | null>(null);
+    const [subtitleWorkflowForm, setSubtitleWorkflowForm] = useState<SubtitleWorkflowForm>(emptySubtitleWorkflowForm);
+    const [subtitleWorkflowTrack, setSubtitleWorkflowTrack] = useState<AdminSubtitleTrack | null>(null);
+    const [publicationCourseId, setPublicationCourseId] = useState("");
+    const [publicationLessonId, setPublicationLessonId] = useState("");
 
     const [wordForm, setWordForm] = useState(emptyWordForm);
 
@@ -224,14 +270,29 @@ export default function AdminPanelPage() {
     const loadAdminData = async () => {
         setLoading(true);
         setAccessError("");
+        setNeedsMfaEnrollment(false);
         setMessage("");
         try {
+            const access = await adminService.getAdminAccess();
+            if (!access.is_admin) {
+                setAccessError("این حساب نقش مدیر ندارد.");
+                return;
+            }
+            if (!access.mfa_enabled || !access.mfa_verified) {
+                setNeedsMfaEnrollment(!access.mfa_enabled);
+                setAccessError(
+                    access.mfa_enabled
+                        ? "برای ورود به پنل، دوباره با کد احراز هویت دومرحله‌ای وارد شو."
+                        : "پیش از ورود به پنل، احراز هویت دومرحله‌ای مدیر را فعال کن.",
+                );
+                return;
+            }
             const overviewData = await adminService.getOverview();
             const [userResult, wordResult, taxonomyResult, courseResult] = await Promise.allSettled([
                 adminService.listUsers(userSearch),
                 adminService.listDictionary(dictionarySearch),
                 fetchCourseTaxonomy(),
-                fetchAllCourses(),
+                contentAdminService.listCourses(),
             ]);
             setOverview(overviewData);
             setUsers(userResult.status === "fulfilled" ? userResult.value : []);
@@ -246,7 +307,7 @@ export default function AdminPanelPage() {
             }
         } catch (error) {
             console.error("Failed to load admin panel:", error);
-            setAccessError(isHttpStatus(error, 401) || isHttpStatus(error, 403) ? "برای ورود به پنل ادمین باید با ایمیلی وارد شوی که در ADMIN_EMAILS تنظیم شده است." : "پنل ادمین باز نشد. اتصال یا سرور را بررسی کن.");
+            setAccessError(isHttpStatus(error, 401) || isHttpStatus(error, 403) ? "برای ورود به پنل مدیریت، وارد حساب مدیر تاییدشده شو." : "پنل ادمین باز نشد. اتصال یا سرور را بررسی کن.");
         } finally {
             setLoading(false);
         }
@@ -290,6 +351,37 @@ export default function AdminPanelPage() {
         setUsers(await adminService.listUsers(userSearch));
     };
 
+    const updateUserRole = async (userId: number, role: AdminUserSummary["role"]) => {
+        setSaving(`user-role:${userId}`);
+        setMessage("");
+        try {
+            const updated = await adminService.updateUserRole(userId, role);
+            setUsers((current) => current.map((user) => user.id === userId ? updated : user));
+            setMessage("نقش کاربر تغییر کرد و نشست‌های قبلی او بسته شد.");
+        } catch (error) {
+            console.error("Failed to update user role", error);
+            setMessage("تغییر نقش انجام نشد؛ نقش خود مدیر از داخل پنل قابل تغییر نیست.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const updateUserStatus = async (userId: number, status: "active" | "suspended") => {
+        if (status === "suspended" && !window.confirm("این حساب تعلیق و همه نشست‌هایش بسته شود؟")) return;
+        setSaving(`user-status:${userId}`);
+        setMessage("");
+        try {
+            const updated = await adminService.updateUserStatus(userId, status);
+            setUsers((current) => current.map((user) => user.id === userId ? updated : user));
+            setMessage(status === "active" ? "حساب دوباره فعال شد." : "حساب تعلیق و نشست‌های آن بسته شد.");
+        } catch (error) {
+            console.error("Failed to update user status", error);
+            setMessage("تغییر وضعیت انجام نشد؛ وضعیت حساب خود مدیر از داخل پنل قابل تغییر نیست.");
+        } finally {
+            setSaving("");
+        }
+    };
+
     useEffect(() => {
         if (activeTab !== "dictionary") return;
         void refreshDictionary();
@@ -310,7 +402,8 @@ export default function AdminPanelPage() {
             validationMessage(validateTextLength(courseForm.title, "عنوان دوره", { required: true, min: 2, max: 180 })) ||
             validateSlug(courseForm.slug) ||
             validationMessage(validateTextLength(courseForm.description, "توضیحات دوره", { required: true, min: 10, max: 8000 })) ||
-            validationMessage(validateUrl(courseForm.cover_image_url, "آدرس تصویر کاور", { required: true, allowRelative: true })) ||
+            validationMessage(validateNonNegativeNumber(courseForm.cover_media_id, "شناسه رسانه کاور", { max: Number.MAX_SAFE_INTEGER })) ||
+            (Number(normalizeDigits(courseForm.cover_media_id)) <= 0 ? "شناسه رسانه کاور باید بزرگ‌تر از صفر باشد." : "") ||
             validationMessage(validateJsonObject(courseForm.metadata_json, "اطلاعات تکمیلی دوره"));
         if (validationError) return setMessage(validationError);
 
@@ -321,17 +414,43 @@ export default function AdminPanelPage() {
                 title: courseForm.title.trim(),
                 slug: courseForm.slug.trim(),
                 description: courseForm.description.trim(),
-                cover_image_url: courseForm.cover_image_url.trim(),
+                cover_media_id: Number(normalizeDigits(courseForm.cover_media_id)),
                 level: courseForm.level,
                 metadata_json: parseJsonObject(courseForm.metadata_json),
             });
             updateCourse(created);
-            setCourseForm((current) => ({ ...current, title: "", slug: "", description: "", cover_image_url: "", metadata_json: emptyJson }));
+            setCourseForm((current) => ({ ...current, title: "", slug: "", description: "", cover_media_id: "", metadata_json: emptyJson }));
             setSectionForm((current) => ({ ...current, course_id: String(created.id) }));
             setLessonForm((current) => ({ ...current, course_id: String(created.id) }));
+            setPublicationCourseId(String(created.id));
             setMessage("دوره ساخته شد.");
         } catch (error) {
             console.error("Failed to create course", error);
+            if (isHttpStatus(error, 409)) {
+                try {
+                    const existing = await contentAdminService.getCourseBySlug(courseForm.slug.trim());
+                    updateCourse(existing);
+                    setSectionForm((current) => ({ ...current, course_id: String(existing.id) }));
+                    setLessonForm((current) => ({ ...current, course_id: String(existing.id) }));
+                    setPublicationCourseId(String(existing.id));
+                    const existingLessonId = latestLessonId(existing);
+                    if (existingLessonId) {
+                        setSubtitleWorkflowForm((current) => ({ ...current, lesson_id: String(existingLessonId) }));
+                        setPublicationLessonId(String(existingLessonId));
+                    }
+                    if (existing.cover_media_id) {
+                        try {
+                            setMediaWorkflowAsset(await contentAdminService.getMedia(existing.cover_media_id));
+                        } catch (mediaRecoveryError) {
+                            console.error("Failed to recover existing cover media", mediaRecoveryError);
+                        }
+                    }
+                    setMessage(`این دوره از قبل ساخته شده بود و با شناسهٔ ${toPersianDigits(existing.id)} بازیابی شد.`);
+                    return;
+                } catch (recoveryError) {
+                    console.error("Failed to recover existing course", recoveryError);
+                }
+            }
             setMessage("ساخت دوره انجام نشد.");
         } finally {
             setSaving("");
@@ -373,9 +492,10 @@ export default function AdminPanelPage() {
             (!sectionId ? "اول یک بخش انتخاب کن." : "") ||
             validationMessage(validateTextLength(lessonForm.title, "عنوان درس", { required: true, min: 1, max: 180 })) ||
             validationMessage(validateNonNegativeNumber(lessonForm.duration_minutes, "مدت زمان درس", { max: 1000 })) ||
-            validationMessage(validateUrl(lessonForm.video_url, "آدرس ویدیو", { required: true, allowRelative: true })) ||
-            (lessonForm.thumbnail_url ? validationMessage(validateUrl(lessonForm.thumbnail_url, "تصویر ویدیو", { allowRelative: true })) : "") ||
-            validationMessage(validateJsonObject(lessonForm.metadata_json, "اطلاعات و transcript درس"));
+            validationMessage(validateNonNegativeNumber(lessonForm.media_id, "شناسه رسانه", { max: Number.MAX_SAFE_INTEGER })) ||
+            (Number(normalizeDigits(lessonForm.media_id)) <= 0 ? "شناسه رسانه باید بزرگ‌تر از صفر باشد." : "") ||
+            (lessonForm.poster_media_id && Number(normalizeDigits(lessonForm.poster_media_id)) <= 0 ? "شناسه پوستر باید بزرگ‌تر از صفر باشد." : "") ||
+            validationMessage(validateJsonObject(lessonForm.metadata_json, "اطلاعات درس"));
         if (validationError) return setMessage(validationError);
 
         setSaving("lesson");
@@ -383,17 +503,244 @@ export default function AdminPanelPage() {
             const updated = await contentAdminService.createLesson(sectionId, {
                 title: lessonForm.title.trim(),
                 duration_minutes: Number(normalizeDigits(lessonForm.duration_minutes || "0")),
-                video_url: lessonForm.video_url.trim(),
-                thumbnail_url: lessonForm.thumbnail_url.trim() || null,
+                media_id: Number(normalizeDigits(lessonForm.media_id)),
+                poster_media_id: lessonForm.poster_media_id.trim() ? Number(normalizeDigits(lessonForm.poster_media_id)) : null,
                 is_free: lessonForm.is_free,
                 metadata_json: parseJsonObject(lessonForm.metadata_json),
             });
             updateCourse(updated);
-            setLessonForm((current) => ({ ...current, title: "", duration_minutes: "0", video_url: "", thumbnail_url: "" }));
-            setMessage("درس و ویدیو ساخته شد.");
+            const createdLessonId = latestLessonId(updated);
+            if (createdLessonId) {
+                setSubtitleWorkflowForm((current) => ({ ...current, lesson_id: String(createdLessonId) }));
+                setPublicationLessonId(String(createdLessonId));
+            }
+            setPublicationCourseId(String(updated.id));
+            setLessonForm((current) => ({ ...current, title: "", duration_minutes: "0", media_id: "", poster_media_id: "" }));
+            setMessage(createdLessonId
+                ? `درس و ویدیو با شناسهٔ ${toPersianDigits(createdLessonId)} ساخته شد.`
+                : "درس و ویدیو ساخته شد.");
         } catch (error) {
             console.error("Failed to create lesson", error);
             setMessage("ساخت درس انجام نشد.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handleRegisterMedia = async () => {
+        const duration = mediaWorkflowForm.duration_seconds.trim()
+            ? Number(normalizeDigits(mediaWorkflowForm.duration_seconds))
+            : null;
+        const internalFile = mediaWorkflowForm.file_url.trim();
+        const validationError =
+            (!internalFile ? "مسیر داخلی رسانه را وارد کن." : "") ||
+            (/^https?:\/\//i.test(internalFile) ? "مسیر پخش نباید URL عمومی ارائه‌دهنده باشد." : "") ||
+            (!mediaWorkflowForm.storage_key.trim() ? "کلید ذخیره‌سازی را وارد کن." : "") ||
+            (!mediaWorkflowForm.mime_type.trim() ? "نوع MIME را وارد کن." : "") ||
+            (duration !== null && (!Number.isFinite(duration) || duration < 0) ? "مدت رسانه معتبر نیست." : "") ||
+            (!/^[0-9a-fA-F]{64}$/.test(mediaWorkflowForm.checksum_sha256.trim()) ? "SHA-256 باید دقیقاً ۶۴ کاراکتر هگز باشد." : "") ||
+            (!mediaWorkflowForm.source_name.trim() ? "نام منبع را وارد کن." : "") ||
+            (!mediaWorkflowForm.rights_holder.trim() ? "دارندهٔ حقوق را وارد کن." : "") ||
+            (!mediaWorkflowForm.license_type.trim() ? "نوع مجوز را وارد کن." : "");
+        if (validationError) return setMessage(validationError);
+
+        setSaving("media-register");
+        try {
+            const asset = await contentAdminService.registerMedia({
+                media_type: mediaWorkflowForm.media_type,
+                playback_type: mediaWorkflowForm.playback_type,
+                storage_provider: mediaWorkflowForm.storage_provider,
+                file_url: internalFile,
+                storage_key: mediaWorkflowForm.storage_key.trim(),
+                mime_type: mediaWorkflowForm.mime_type.trim(),
+                duration_seconds: duration,
+                checksum_sha256: mediaWorkflowForm.checksum_sha256.trim().toLowerCase(),
+                source_name: mediaWorkflowForm.source_name.trim(),
+                source_url: mediaWorkflowForm.source_url.trim() || null,
+                rights_holder: mediaWorkflowForm.rights_holder.trim(),
+                license_type: mediaWorkflowForm.license_type.trim(),
+                license_url: mediaWorkflowForm.license_url.trim() || null,
+                metadata_json: {},
+            });
+            setMediaWorkflowAsset(asset);
+            setMessage(`رسانه با شناسهٔ ${asset.id} به‌صورت پیش‌نویس ثبت شد؛ اکنون مجوز را بازبینی کن.`);
+        } catch (error) {
+            console.error("Failed to register media", error);
+            setMessage("ثبت رسانه انجام نشد؛ مسیر ذخیره‌سازی و اطلاعات provenance را بررسی کن.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handleUploadMedia = async (file: File) => {
+        const mediaType = mediaWorkflowForm.media_type;
+        if (mediaType === "audio") return setMessage("آپلود مستقیم فعلاً فقط برای تصویر و ویدیو فعال است.");
+        const duration = mediaWorkflowForm.duration_seconds.trim()
+            ? Number(normalizeDigits(mediaWorkflowForm.duration_seconds))
+            : null;
+        const validationError =
+            (!mediaWorkflowForm.source_name.trim() ? "نام منبع را وارد کن." : "") ||
+            (!mediaWorkflowForm.rights_holder.trim() ? "دارندهٔ حقوق را وارد کن." : "") ||
+            (!mediaWorkflowForm.license_type.trim() ? "نوع مجوز را وارد کن." : "") ||
+            (duration !== null && (!Number.isFinite(duration) || duration < 0) ? "مدت رسانه معتبر نیست." : "");
+        if (validationError) return setMessage(validationError);
+
+        setSaving("media-upload");
+        try {
+            const asset = await contentAdminService.uploadMedia({
+                file,
+                media_type: mediaType,
+                source_name: mediaWorkflowForm.source_name.trim(),
+                rights_holder: mediaWorkflowForm.rights_holder.trim(),
+                license_type: mediaWorkflowForm.license_type.trim(),
+                duration_seconds: mediaType === "video" ? duration : null,
+                source_url: mediaWorkflowForm.source_url.trim() || null,
+                license_url: mediaWorkflowForm.license_url.trim() || null,
+            });
+            setMediaWorkflowAsset(asset);
+            setMediaWorkflowForm((current) => ({
+                ...current,
+                playback_type: "progressive",
+                storage_provider: asset.storage_provider,
+                file_url: asset.file_url,
+                storage_key: asset.storage_key,
+                mime_type: asset.mime_type || "",
+                checksum_sha256: asset.checksum_sha256 || "",
+            }));
+            setMessage(`فایل با شناسهٔ ${asset.id} به‌صورت پیش‌نویس خصوصی ذخیره شد؛ اکنون مجوز را بازبینی کن.`);
+        } catch (error) {
+            console.error("Failed to upload media", error);
+            setMessage("آپلود رسانه انجام نشد؛ نوع فایل، حجم و اتصال را بررسی کن.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handleReviewMedia = async (status: "approved" | "rejected") => {
+        if (!mediaWorkflowAsset) return setMessage("ابتدا رسانه را ثبت کن.");
+        setSaving(`media-review-${status}`);
+        try {
+            const asset = await contentAdminService.reviewMediaLicense(
+                mediaWorkflowAsset.id,
+                status,
+                mediaWorkflowForm.license_notes,
+            );
+            setMediaWorkflowAsset(asset);
+            setMessage(status === "approved" ? "ممیزی مجوز تأیید شد؛ رسانه آمادهٔ انتشار است." : "مجوز رد شد و رسانه در پیش‌نویس ماند.");
+        } catch (error) {
+            console.error("Failed to review media license", error);
+            setMessage("ممیزی مجوز انجام نشد؛ همهٔ شواهد منبع، حقوق و checksum باید کامل باشند.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handlePublishMedia = async () => {
+        if (!mediaWorkflowAsset) return setMessage("ابتدا رسانه را ثبت و مجوزش را تأیید کن.");
+        setSaving("media-publish");
+        try {
+            const asset = await contentAdminService.publishMedia(mediaWorkflowAsset.id);
+            setMediaWorkflowAsset(asset);
+            if (asset.media_type === "image") {
+                setCourseForm((current) => ({ ...current, cover_media_id: String(asset.id) }));
+                setMessage(`تصویر ${asset.id} منتشر شد و در فرم جلد دوره انتخاب شد.`);
+            } else if (asset.media_type === "video") {
+                setLessonForm((current) => ({ ...current, media_id: String(asset.id) }));
+                setMessage(`ویدیوی ${asset.id} منتشر شد و در فرم درس انتخاب شد.`);
+            } else {
+                setMessage(`رسانهٔ ${asset.id} منتشر شد.`);
+            }
+        } catch (error) {
+            console.error("Failed to publish media", error);
+            setMessage("انتشار رسانه رد شد؛ وضعیت مجوز و کنترل‌های فنی را بررسی کن.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handleIngestSubtitle = async () => {
+        const lessonId = Number(normalizeDigits(subtitleWorkflowForm.lesson_id));
+        const validationError =
+            (!Number.isSafeInteger(lessonId) || lessonId <= 0 ? "شناسهٔ درس زیرنویس معتبر نیست." : "") ||
+            (!/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i.test(subtitleWorkflowForm.language.trim()) ? "کد زبان معتبر نیست." : "") ||
+            (!subtitleWorkflowForm.source_name.trim() ? "نام منبع زیرنویس را وارد کن." : "") ||
+            (!subtitleWorkflowForm.content.trim() ? "محتوای SRT/VTT را وارد کن." : "");
+        if (validationError) return setMessage(validationError);
+        setSaving("subtitle-ingest");
+        try {
+            const track = await contentAdminService.ingestSubtitle({
+                lessonId,
+                language: subtitleWorkflowForm.language.trim().toLowerCase(),
+                format: subtitleWorkflowForm.format,
+                sourceName: subtitleWorkflowForm.source_name.trim(),
+                content: subtitleWorkflowForm.content,
+            });
+            setSubtitleWorkflowTrack(track);
+            setPublicationLessonId(String(lessonId));
+            setMessage(`نسخهٔ ${track.version} زیرنویس در DB ثبت شد؛ نتیجهٔ sync را بررسی کن.`);
+        } catch (error) {
+            console.error("Failed to ingest subtitle", error);
+            setMessage("ذخیرهٔ زیرنویس انجام نشد؛ قالب و timestampها را بررسی کن.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handleValidateSubtitle = async () => {
+        if (!subtitleWorkflowTrack) return setMessage("ابتدا یک زیرنویس ثبت کن.");
+        setSaving("subtitle-validate");
+        try {
+            const track = await contentAdminService.validateSubtitle(subtitleWorkflowTrack.id);
+            setSubtitleWorkflowTrack(track);
+            setMessage(track.quality_status === "valid" ? "کنترل sync و کیفیت زیرنویس موفق بود." : "زیرنویس خطای مسدودکننده دارد و قابل انتشار نیست.");
+        } catch (error) {
+            console.error("Failed to validate subtitle", error);
+            setMessage("اعتبارسنجی زیرنویس انجام نشد.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handlePublishSubtitle = async () => {
+        if (!subtitleWorkflowTrack) return setMessage("ابتدا زیرنویس را ثبت و اعتبارسنجی کن.");
+        setSaving("subtitle-publish");
+        try {
+            const track = await contentAdminService.publishSubtitle(subtitleWorkflowTrack.id);
+            setSubtitleWorkflowTrack(track);
+            setMessage("زیرنویس معتبر منتشر شد؛ نسخهٔ منتشرشدهٔ قبلی همان زبان آرشیو شد.");
+        } catch (error) {
+            console.error("Failed to publish subtitle", error);
+            setMessage("انتشار زیرنویس رد شد؛ ابتدا درس و سپس زیرنویس معتبر را منتشر کن.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handlePublishLesson = async () => {
+        const lessonId = Number(normalizeDigits(publicationLessonId));
+        if (!Number.isSafeInteger(lessonId) || lessonId <= 0) return setMessage("شناسهٔ درس معتبر نیست.");
+        setSaving("lesson-publish");
+        try {
+            await contentAdminService.publishLesson(lessonId);
+            setMessage("درس منتشر شد؛ اکنون می‌توانی زیرنویس معتبر آن را منتشر کنی.");
+        } catch (error) {
+            console.error("Failed to publish lesson", error);
+            setMessage("انتشار درس رد شد؛ رسانهٔ متصل باید مجاز و منتشرشده باشد.");
+        } finally {
+            setSaving("");
+        }
+    };
+
+    const handlePublishCourse = async () => {
+        const courseId = Number(normalizeDigits(publicationCourseId));
+        if (!Number.isSafeInteger(courseId) || courseId <= 0) return setMessage("شناسهٔ دوره معتبر نیست.");
+        setSaving("course-publish");
+        try {
+            updateCourse(await contentAdminService.publishCourse(courseId));
+            setMessage("دوره منتشر شد و فقط محتوای منتشرشده در مسیر عمومی دیده می‌شود.");
+        } catch (error) {
+            console.error("Failed to publish course", error);
+            setMessage("انتشار دوره رد شد؛ کاور باید مجاز و منتشرشده باشد.");
         } finally {
             setSaving("");
         }
@@ -511,10 +858,10 @@ export default function AdminPanelPage() {
             <div className="min-h-full bg-[#f7f8fb] px-4 py-6" dir="rtl">
                 <div className="mx-auto max-w-[520px] rounded-[28px] bg-white p-6 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
                     <ShieldCheck className="mx-auto h-10 w-10 text-[#155aa6]" />
-                    <h1 className="mt-4 text-xl font-black text-slate-950">دسترسی ادمین لازم است</h1>
+                    <h1 className="mt-4 text-xl font-black text-slate-950">دسترسی امن مدیر لازم است</h1>
                     <p className="mt-3 text-sm leading-7 text-slate-500">{accessError}</p>
-                    <Link href="/login?next=/admin" className="mt-5 inline-flex rounded-2xl bg-[#155aa6] px-5 py-3 text-sm font-black text-white">
-                        ورود ادمین
+                    <Link href={needsMfaEnrollment ? "/account/security" : "/login?next=/admin"} className="mt-5 inline-flex rounded-2xl bg-[#155aa6] px-5 py-3 text-sm font-black text-white">
+                        {needsMfaEnrollment ? "تنظیم امنیت حساب" : "ورود مدیر"}
                     </Link>
                 </div>
             </div>
@@ -524,27 +871,40 @@ export default function AdminPanelPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] pb-10" dir="rtl">
             <header className="sticky top-0 z-30 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                <div className="mx-auto flex max-w-6xl flex-col gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                         <BackButton href="/" />
-                        <div>
-                            <h1 className="text-lg font-black text-slate-950">پنل ادمین چین‌ورس</h1>
-                            <p className="text-xs font-bold text-slate-400">محتوا، ویدیو، دیکشنری و کاربران</p>
+                        <div className="min-w-0">
+                            <h1 className="text-lg font-black leading-7 text-slate-950">پنل ادمین چین‌ورس</h1>
+                            <p className="text-xs font-bold leading-5 text-slate-500">محتوا، ویدیو، دیکشنری و کاربران</p>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={loadAdminData}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
-                    >
-                        <RefreshCw size={15} />
-                        تازه‌سازی
-                    </button>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Link href="/admin/beta" title="عملیات بتای بسته" aria-label="مدیریت cohort و بازخورد بتا" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
+                                <Users size={17} />
+                            </Link>
+                            <Link href="/admin/support" title="تیکت‌های پشتیبانی" aria-label="مدیریت تیکت‌های پشتیبانی" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[#155aa6] hover:bg-blue-100">
+                                <Headphones size={17} />
+                            </Link>
+                            <Link href="/moderation" title="گزارش‌ها" aria-label="مدیریت گزارش‌ها" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
+                                <Flag size={17} />
+                            </Link>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={loadAdminData}
+                            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
+                        >
+                            <RefreshCw size={15} />
+                            تازه‌سازی
+                        </button>
+                    </div>
                 </div>
             </header>
 
             <main className="mx-auto max-w-6xl px-4 py-5">
-                <nav className="no-scrollbar mb-5 flex gap-2 overflow-x-auto">
+                <nav aria-label="بخش‌های پنل ادمین" className="mb-5 flex flex-wrap gap-2">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const active = activeTab === tab.id;
@@ -553,6 +913,7 @@ export default function AdminPanelPage() {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
+                                aria-pressed={active}
                                 className={cn(
                                     "inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition",
                                     active ? "bg-[#155aa6] text-white shadow-[0_12px_28px_rgba(21,90,166,0.24)]" : "bg-white text-slate-600 hover:bg-[#eef6ff] hover:text-[#155aa6]",
@@ -584,13 +945,32 @@ export default function AdminPanelPage() {
                             courseForm={courseForm}
                             sectionForm={sectionForm}
                             lessonForm={lessonForm}
+                            mediaWorkflowForm={mediaWorkflowForm}
+                            mediaWorkflowAsset={mediaWorkflowAsset}
+                            subtitleWorkflowForm={subtitleWorkflowForm}
+                            subtitleWorkflowTrack={subtitleWorkflowTrack}
+                            publicationCourseId={publicationCourseId}
+                            publicationLessonId={publicationLessonId}
                             saving={saving}
                             setCourseForm={setCourseForm}
                             setSectionForm={setSectionForm}
                             setLessonForm={setLessonForm}
+                            setMediaWorkflowForm={setMediaWorkflowForm}
+                            setSubtitleWorkflowForm={setSubtitleWorkflowForm}
+                            setPublicationCourseId={setPublicationCourseId}
+                            setPublicationLessonId={setPublicationLessonId}
                             onCreateCourse={handleCreateCourse}
                             onCreateSection={handleCreateSection}
                             onCreateLesson={handleCreateLesson}
+                            onRegisterMedia={handleRegisterMedia}
+                            onUploadMedia={handleUploadMedia}
+                            onReviewMedia={handleReviewMedia}
+                            onPublishMedia={handlePublishMedia}
+                            onIngestSubtitle={handleIngestSubtitle}
+                            onValidateSubtitle={handleValidateSubtitle}
+                            onPublishSubtitle={handlePublishSubtitle}
+                            onPublishLesson={handlePublishLesson}
+                            onPublishCourse={handlePublishCourse}
                         />
                     )}
 
@@ -618,7 +998,15 @@ export default function AdminPanelPage() {
                     )}
 
                     {activeTab === "users" && (
-                        <UsersTab users={users} search={userSearch} setSearch={setUserSearch} onRefresh={refreshUsers} />
+                        <UsersTab
+                            users={users}
+                            search={userSearch}
+                            setSearch={setUserSearch}
+                            onRefresh={refreshUsers}
+                            saving={saving}
+                            onRoleChange={updateUserRole}
+                            onStatusChange={updateUserStatus}
+                        />
                     )}
                 </div>
             </main>
@@ -701,18 +1089,24 @@ function ContentTab(props: {
         section_id: string;
         title: string;
         duration_minutes: string;
-        video_url: string;
-        thumbnail_url: string;
+        media_id: string;
+        poster_media_id: string;
         is_free: boolean;
         metadata_json: string;
     };
+    mediaWorkflowForm: MediaWorkflowForm;
+    mediaWorkflowAsset: AdminMediaAsset | null;
+    subtitleWorkflowForm: SubtitleWorkflowForm;
+    subtitleWorkflowTrack: AdminSubtitleTrack | null;
+    publicationCourseId: string;
+    publicationLessonId: string;
     saving: string;
     setCourseForm: React.Dispatch<React.SetStateAction<{
         subcategory_id: string;
         title: string;
         slug: string;
         description: string;
-        cover_image_url: string;
+        cover_media_id: string;
         level: string;
         metadata_json: string;
     }>>;
@@ -727,40 +1121,101 @@ function ContentTab(props: {
         section_id: string;
         title: string;
         duration_minutes: string;
-        video_url: string;
-        thumbnail_url: string;
+        media_id: string;
+        poster_media_id: string;
         is_free: boolean;
         metadata_json: string;
     }>>;
+    setMediaWorkflowForm: React.Dispatch<React.SetStateAction<MediaWorkflowForm>>;
+    setSubtitleWorkflowForm: React.Dispatch<React.SetStateAction<SubtitleWorkflowForm>>;
+    setPublicationCourseId: React.Dispatch<React.SetStateAction<string>>;
+    setPublicationLessonId: React.Dispatch<React.SetStateAction<string>>;
     onCreateCourse: () => void;
     onCreateSection: () => void;
     onCreateLesson: () => void;
+    onRegisterMedia: () => void;
+    onUploadMedia: (file: File) => void;
+    onReviewMedia: (status: "approved" | "rejected") => void;
+    onPublishMedia: () => void;
+    onIngestSubtitle: () => void;
+    onValidateSubtitle: () => void;
+    onPublishSubtitle: () => void;
+    onPublishLesson: () => void;
+    onPublishCourse: () => void;
 }) {
-    const { categories, courses, selectedSections, courseForm, sectionForm, lessonForm, saving, setCourseForm, setSectionForm, setLessonForm, onCreateCourse, onCreateSection, onCreateLesson } = props;
+    const {
+        categories,
+        courses,
+        selectedSections,
+        courseForm,
+        sectionForm,
+        lessonForm,
+        mediaWorkflowForm,
+        mediaWorkflowAsset,
+        subtitleWorkflowForm,
+        subtitleWorkflowTrack,
+        publicationCourseId,
+        publicationLessonId,
+        saving,
+        setCourseForm,
+        setSectionForm,
+        setLessonForm,
+        setMediaWorkflowForm,
+        setSubtitleWorkflowForm,
+        setPublicationCourseId,
+        setPublicationLessonId,
+        onCreateCourse,
+        onCreateSection,
+        onCreateLesson,
+        onRegisterMedia,
+        onUploadMedia,
+        onReviewMedia,
+        onPublishMedia,
+        onIngestSubtitle,
+        onValidateSubtitle,
+        onPublishSubtitle,
+        onPublishLesson,
+        onPublishCourse,
+    } = props;
+    const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null);
+    const isWorkflowSaving = Boolean(saving);
     return (
         <div className="motion-list grid gap-4 xl:grid-cols-3">
             <Surface className={cn(panelClass, "p-4")}>
                 <PanelTitle icon={<BookOpen size={18} />} title="ساخت دوره" subtitle="اول دوره را به یک زیرمجموعه وصل کن." />
                 <div className="mt-4 space-y-3">
-                    <select value={courseForm.subcategory_id} onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))} className={fieldClass}>
-                        <option value="">زیرمجموعه</option>
-                        {categories.map((category) => (
-                            <optgroup key={category.id} label={category.name}>
-                                {category.subcategories.map((subcategory) => (
-                                    <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
-                                ))}
-                            </optgroup>
-                        ))}
-                    </select>
+                    {categories.some((category) => category.subcategories.length > 0) ? (
+                        <select value={courseForm.subcategory_id} onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))} className={fieldClass}>
+                            <option value="">زیرمجموعه</option>
+                            {categories.map((category) => (
+                                <optgroup key={category.id} label={category.name}>
+                                    {category.subcategories.map((subcategory) => (
+                                        <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                                    ))}
+                                </optgroup>
+                            ))}
+                        </select>
+                    ) : (
+                        <input
+                            value={courseForm.subcategory_id}
+                            onChange={(e) => setCourseForm((current) => ({ ...current, subcategory_id: e.target.value }))}
+                            className={fieldClass}
+                            placeholder="شناسهٔ زیرمجموعه"
+                            aria-label="شناسهٔ زیرمجموعه"
+                            inputMode="numeric"
+                            dir="ltr"
+                        />
+                    )}
                     <input value={courseForm.title} onChange={(e) => setCourseForm((current) => ({ ...current, title: e.target.value }))} className={fieldClass} placeholder="عنوان دوره" />
                     <input value={courseForm.slug} onChange={(e) => setCourseForm((current) => ({ ...current, slug: e.target.value }))} className={fieldClass} placeholder="slug-example" dir="ltr" />
+                    <p className="text-xs leading-5 text-slate-500">برای اتصال دوره به فهرست‌های برنامه‌ریزی‌شده، زیرمجموعه و slug را دقیقاً مثل مسیر آن وارد کن؛ مثلاً <span dir="ltr">hsk-4-xia</span>، <span dir="ltr">grace-mandarin-character</span> یا <span dir="ltr">chinese-zero-to-hero-grammar</span>.</p>
                     <select value={courseForm.level} onChange={(e) => setCourseForm((current) => ({ ...current, level: e.target.value }))} className={fieldClass}>
                         <option value="beginner">مقدماتی</option>
                         <option value="intermediate">متوسط</option>
                         <option value="advanced">پیشرفته</option>
                     </select>
                     <textarea value={courseForm.description} onChange={(e) => setCourseForm((current) => ({ ...current, description: e.target.value }))} className={textAreaClass} placeholder="توضیحات" />
-                    <input value={courseForm.cover_image_url} onChange={(e) => setCourseForm((current) => ({ ...current, cover_image_url: e.target.value }))} className={fieldClass} placeholder="آدرس تصویر کاور" dir="ltr" />
+                    <input value={courseForm.cover_media_id} onChange={(e) => setCourseForm((current) => ({ ...current, cover_media_id: e.target.value }))} className={fieldClass} placeholder="شناسه رسانهٔ کاور مجاز" dir="ltr" inputMode="numeric" />
                     <textarea value={courseForm.metadata_json} onChange={(e) => setCourseForm((current) => ({ ...current, metadata_json: e.target.value }))} className={`${textAreaClass} font-mono`} dir="ltr" />
                     <PrimaryButton onClick={onCreateCourse} disabled={saving === "course"} className="w-full" leadingIcon={saving === "course" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}>ساخت دوره</PrimaryButton>
                 </div>
@@ -778,7 +1233,7 @@ function ContentTab(props: {
             </Surface>
 
             <Surface className={cn(panelClass, "p-4")}>
-                <PanelTitle icon={<Video size={18} />} title="افزودن ویدیو/درس" subtitle="ویدیو فعلا می‌تواند URL خارجی یا مسیر آپلود باشد." />
+                <PanelTitle icon={<Video size={18} />} title="افزودن رسانه/درس" subtitle="درس فقط به رسانهٔ ثبت‌شده و دارای مجوز وصل می‌شود؛ URL خام پذیرفته نیست." />
                 <div className="mt-4 space-y-3">
                     <CourseSelect
                         courses={courses}
@@ -799,15 +1254,193 @@ function ContentTab(props: {
                         ))}
                     </select>
                     <input value={lessonForm.title} onChange={(e) => setLessonForm((current) => ({ ...current, title: e.target.value }))} className={fieldClass} placeholder="عنوان درس" />
-                    <input value={lessonForm.video_url} onChange={(e) => setLessonForm((current) => ({ ...current, video_url: e.target.value }))} className={fieldClass} placeholder="آدرس ویدیو" dir="ltr" />
-                    <input value={lessonForm.thumbnail_url} onChange={(e) => setLessonForm((current) => ({ ...current, thumbnail_url: e.target.value }))} className={fieldClass} placeholder="تصویر ویدیو، اختیاری" dir="ltr" />
+                    <input value={lessonForm.media_id} onChange={(e) => setLessonForm((current) => ({ ...current, media_id: e.target.value }))} className={fieldClass} placeholder="شناسه رسانهٔ مجاز" dir="ltr" inputMode="numeric" />
+                    <input value={lessonForm.poster_media_id} onChange={(e) => setLessonForm((current) => ({ ...current, poster_media_id: e.target.value }))} className={fieldClass} placeholder="شناسه پوستر مجاز، اختیاری" dir="ltr" inputMode="numeric" />
                     <input value={lessonForm.duration_minutes} onChange={(e) => setLessonForm((current) => ({ ...current, duration_minutes: e.target.value }))} className={fieldClass} placeholder="مدت به دقیقه" type="number" />
+                    <label className="block space-y-1 text-xs font-bold text-slate-500">
+                        اطلاعات تکمیلی درس (JSON)
+                        <textarea value={lessonForm.metadata_json} onChange={(e) => setLessonForm((current) => ({ ...current, metadata_json: e.target.value }))} className={`${textAreaClass} font-mono`} dir="ltr" aria-label="اطلاعات تکمیلی درس" />
+                    </label>
+                    <p className="text-xs leading-5 text-slate-500">برای اتصال درس به فهرست برنامه‌ریزی‌شدهٔ همان زیرمجموعه، اینجا مثلاً <span dir="ltr">{"{\"lesson_index\":1}"}</span> وارد کن. این عدد جایگاه درس در همان دوره است؛ برای درس ۱۱ کتاب HSK 4 پایین، جایگاه ۱ است.</p>
                     <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">
                         <input type="checkbox" checked={lessonForm.is_free} onChange={(e) => setLessonForm((current) => ({ ...current, is_free: e.target.checked }))} />
                         درس رایگان
                     </label>
-                    <textarea value={lessonForm.metadata_json} onChange={(e) => setLessonForm((current) => ({ ...current, metadata_json: e.target.value }))} className={`${textAreaClass} min-h-44 font-mono`} dir="ltr" />
+                    <p className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-bold leading-6 text-slate-500">زیرنویس‌ها از بخش مدیریت زیرنویس و با وضعیت انتشار جداگانه ثبت می‌شوند؛ داخل metadata متن زیرنویس نگذار.</p>
                     <PrimaryButton onClick={onCreateLesson} disabled={saving === "lesson"} className="w-full" leadingIcon={saving === "lesson" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}>افزودن درس</PrimaryButton>
+                </div>
+            </Surface>
+
+            <Surface className={cn(panelClass, "p-4 xl:col-span-3")}>
+                <PanelTitle icon={<ShieldCheck size={18} />} title="ثبت و ممیزی رسانه" subtitle="رسانه ابتدا پیش‌نویس می‌شود؛ فقط پس از ثبت منبع، checksum و تأیید مجوز قابل انتشار است." />
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نوع رسانه
+                        <select value={mediaWorkflowForm.media_type} onChange={(e) => {
+                            setSelectedMediaFile(null);
+                            setMediaWorkflowForm((current) => ({ ...current, media_type: e.target.value as MediaWorkflowForm["media_type"] }));
+                        }} className={fieldClass} disabled={isWorkflowSaving}>
+                            <option value="video">ویدیو</option>
+                            <option value="image">تصویر</option>
+                            <option value="audio">صدا</option>
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نوع پخش
+                        <select value={mediaWorkflowForm.playback_type} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, playback_type: e.target.value as MediaWorkflowForm["playback_type"] }))} className={fieldClass} disabled={isWorkflowSaving}>
+                            <option value="hls">HLS</option>
+                            <option value="progressive">Progressive</option>
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        محل ذخیره‌سازی
+                        <select value={mediaWorkflowForm.storage_provider} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, storage_provider: e.target.value as MediaWorkflowForm["storage_provider"] }))} className={fieldClass} disabled={isWorkflowSaving}>
+                            <option value="s3">S3 خصوصی</option>
+                            <option value="mounted">فضای mounted</option>
+                            <option value="local">محلی</option>
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        مسیر داخلی فایل
+                        <input value={mediaWorkflowForm.file_url} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, file_url: e.target.value }))} className={fieldClass} placeholder="مسیر داخلی رسانه در فضای خصوصی" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        کلید ذخیره‌سازی
+                        <input value={mediaWorkflowForm.storage_key} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, storage_key: e.target.value }))} className={fieldClass} placeholder="کلید ذخیره‌سازی خصوصی" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نوع MIME
+                        <input value={mediaWorkflowForm.mime_type} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, mime_type: e.target.value }))} className={fieldClass} dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        مدت به ثانیه
+                        <input value={mediaWorkflowForm.duration_seconds} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, duration_seconds: e.target.value }))} className={fieldClass} type="number" min="0" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500 md:col-span-2">
+                        SHA-256 فایل اصلی
+                        <input value={mediaWorkflowForm.checksum_sha256} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, checksum_sha256: e.target.value }))} className={`${fieldClass} font-mono`} maxLength={64} dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نام منبع
+                        <input value={mediaWorkflowForm.source_name} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, source_name: e.target.value }))} className={fieldClass} disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        دارندهٔ حقوق
+                        <input value={mediaWorkflowForm.rights_holder} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, rights_holder: e.target.value }))} className={fieldClass} disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نوع مجوز
+                        <input value={mediaWorkflowForm.license_type} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, license_type: e.target.value }))} className={fieldClass} placeholder="owned / licensed" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نشانی مدرک منبع، اختیاری
+                        <input value={mediaWorkflowForm.source_url} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, source_url: e.target.value }))} className={fieldClass} type="url" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        نشانی مجوز، اختیاری
+                        <input value={mediaWorkflowForm.license_url} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, license_url: e.target.value }))} className={fieldClass} type="url" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        یادداشت بازبینی
+                        <input value={mediaWorkflowForm.license_notes} onChange={(e) => setMediaWorkflowForm((current) => ({ ...current, license_notes: e.target.value }))} className={fieldClass} disabled={isWorkflowSaving} />
+                    </label>
+                </div>
+                <div className="mt-4 rounded-2xl border border-[#cfe0f8] bg-[#f4f8ff] p-3">
+                    <p className="text-xs font-black text-[#155aa6]">آپلود مستقیم فایل خصوصی</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-600">ابتدا نوع رسانه و اطلاعات منبع و حقوق را در فرم بالا وارد کن. سرور اثرانگشت فایل را خودش ثبت می‌کند؛ پس از آپلود، مجوز را تأیید و رسانه را منتشر کن.</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <label className={cn(
+                            "flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-white bg-white px-3 py-2 text-xs shadow-sm",
+                            (isWorkflowSaving || mediaWorkflowForm.media_type === "audio") && "cursor-not-allowed opacity-55",
+                        )}>
+                            <input
+                                key={mediaWorkflowForm.media_type}
+                                aria-label="فایل تصویر یا ویدیو"
+                                type="file"
+                                accept={mediaWorkflowForm.media_type === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm"}
+                                onChange={(event) => setSelectedMediaFile(event.target.files?.[0] || null)}
+                                disabled={isWorkflowSaving || mediaWorkflowForm.media_type === "audio"}
+                                className="sr-only"
+                            />
+                            <span className="shrink-0 font-black text-[#155aa6]">انتخاب فایل</span>
+                            <span className="min-w-0 truncate text-slate-500" dir={selectedMediaFile ? "ltr" : "rtl"}>
+                                {selectedMediaFile?.name || "فایلی انتخاب نشده"}
+                            </span>
+                        </label>
+                        <PrimaryButton
+                            onClick={() => selectedMediaFile && onUploadMedia(selectedMediaFile)}
+                            disabled={isWorkflowSaving || !selectedMediaFile || mediaWorkflowForm.media_type === "audio"}
+                            leadingIcon={saving === "media-upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        >آپلود فایل</PrimaryButton>
+                    </div>
+                </div>
+                {mediaWorkflowAsset && (
+                    <div role="status" className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold leading-6 text-slate-600">
+                        شناسهٔ رسانه: <b dir="ltr">{toPersianDigits(mediaWorkflowAsset.id)}</b> · وضعیت: <b>{mediaWorkflowAsset.status}</b> · مجوز: <b>{mediaWorkflowAsset.license_status}</b> · بازبینی: <b>{toPersianDigits(mediaWorkflowAsset.revision)}</b>
+                    </div>
+                )}
+                <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                    <PrimaryButton onClick={onRegisterMedia} disabled={isWorkflowSaving} leadingIcon={saving === "media-register" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}>ثبت دستی پیش‌نویس</PrimaryButton>
+                    <button type="button" onClick={() => onReviewMedia("approved")} disabled={isWorkflowSaving || !mediaWorkflowAsset || mediaWorkflowAsset.license_status === "approved"} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">تأیید مجوز</button>
+                    <button type="button" onClick={() => onReviewMedia("rejected")} disabled={isWorkflowSaving || !mediaWorkflowAsset || mediaWorkflowAsset.license_status === "rejected"} className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 disabled:cursor-not-allowed disabled:opacity-45">رد مجوز</button>
+                    <PrimaryButton onClick={onPublishMedia} disabled={isWorkflowSaving || !mediaWorkflowAsset || mediaWorkflowAsset.license_status !== "approved" || mediaWorkflowAsset.status === "published"} leadingIcon={saving === "media-publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}>انتشار رسانه</PrimaryButton>
+                </div>
+            </Surface>
+
+            <Surface className={cn(panelClass, "p-4 xl:col-span-2")}>
+                <PanelTitle icon={<FileText size={18} />} title="زیرنویس نسخه‌بندی‌شده" subtitle="SRT/VTT در دیتابیس ثبت، از نظر هم‌زمانی اعتبارسنجی و سپس منتشر می‌شود." />
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        شناسهٔ درس
+                        <input value={subtitleWorkflowForm.lesson_id} onChange={(e) => setSubtitleWorkflowForm((current) => ({ ...current, lesson_id: e.target.value }))} className={fieldClass} inputMode="numeric" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        زبان
+                        <input value={subtitleWorkflowForm.language} onChange={(e) => setSubtitleWorkflowForm((current) => ({ ...current, language: e.target.value }))} className={fieldClass} placeholder="fa" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        قالب
+                        <select value={subtitleWorkflowForm.format} onChange={(e) => setSubtitleWorkflowForm((current) => ({ ...current, format: e.target.value as SubtitleWorkflowForm["format"] }))} className={fieldClass} disabled={isWorkflowSaving}>
+                            <option value="srt">SRT</option>
+                            <option value="vtt">VTT</option>
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500 sm:col-span-3">
+                        نام منبع زیرنویس
+                        <input value={subtitleWorkflowForm.source_name} onChange={(e) => setSubtitleWorkflowForm((current) => ({ ...current, source_name: e.target.value }))} className={fieldClass} disabled={isWorkflowSaving} />
+                    </label>
+                    <label className="space-y-1 text-xs font-black text-slate-500 sm:col-span-3">
+                        متن زیرنویس
+                        <textarea value={subtitleWorkflowForm.content} onChange={(e) => setSubtitleWorkflowForm((current) => ({ ...current, content: e.target.value }))} className={`${textAreaClass} min-h-44 font-mono text-xs`} dir="ltr" spellCheck={false} disabled={isWorkflowSaving} />
+                    </label>
+                </div>
+                {subtitleWorkflowTrack && (
+                    <div role="status" className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold leading-6 text-slate-600">
+                        ترک {toPersianDigits(subtitleWorkflowTrack.id)} · نسخه {toPersianDigits(subtitleWorkflowTrack.version)} · وضعیت <b>{subtitleWorkflowTrack.status}</b> · کیفیت <b>{subtitleWorkflowTrack.quality_status}</b>{subtitleWorkflowTrack.quality_score !== null ? ` (${toPersianDigits(subtitleWorkflowTrack.quality_score)})` : ""}
+                        {!!subtitleWorkflowTrack.quality_report.errors?.length && <p className="mt-1 text-rose-700">خطاها: {subtitleWorkflowTrack.quality_report.errors.join("، ")}</p>}
+                        {!!subtitleWorkflowTrack.quality_report.warnings?.length && <p className="mt-1 text-amber-700">هشدارها: {subtitleWorkflowTrack.quality_report.warnings.join("، ")}</p>}
+                    </div>
+                )}
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    <PrimaryButton onClick={onIngestSubtitle} disabled={isWorkflowSaving} leadingIcon={saving === "subtitle-ingest" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}>ثبت نسخه</PrimaryButton>
+                    <button type="button" onClick={onValidateSubtitle} disabled={isWorkflowSaving || !subtitleWorkflowTrack || subtitleWorkflowTrack.status === "published"} className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-800 disabled:cursor-not-allowed disabled:opacity-45">کنترل کیفیت</button>
+                    <PrimaryButton onClick={onPublishSubtitle} disabled={isWorkflowSaving || !subtitleWorkflowTrack || subtitleWorkflowTrack.quality_status !== "valid" || subtitleWorkflowTrack.status === "published"} leadingIcon={saving === "subtitle-publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}>انتشار زیرنویس</PrimaryButton>
+                </div>
+            </Surface>
+
+            <Surface className={cn(panelClass, "p-4")}>
+                <PanelTitle icon={<CheckCircle2 size={18} />} title="انتشار درس و دوره" subtitle="ابتدا رسانه، سپس درس و در پایان دوره را منتشر کن." />
+                <div className="mt-4 space-y-3">
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        شناسهٔ درس
+                        <input value={publicationLessonId} onChange={(e) => setPublicationLessonId(e.target.value)} className={fieldClass} inputMode="numeric" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <PrimaryButton onClick={onPublishLesson} disabled={isWorkflowSaving || !publicationLessonId.trim()} className="w-full" leadingIcon={saving === "lesson-publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}>انتشار درس</PrimaryButton>
+                    <label className="space-y-1 text-xs font-black text-slate-500">
+                        شناسهٔ دوره
+                        <input value={publicationCourseId} onChange={(e) => setPublicationCourseId(e.target.value)} className={fieldClass} inputMode="numeric" dir="ltr" disabled={isWorkflowSaving} />
+                    </label>
+                    <PrimaryButton onClick={onPublishCourse} disabled={isWorkflowSaving || !publicationCourseId.trim()} className="w-full" leadingIcon={saving === "course-publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}>انتشار دوره</PrimaryButton>
                 </div>
             </Surface>
         </div>
@@ -1220,15 +1853,21 @@ function UsersTab({
     search,
     setSearch,
     onRefresh,
+    saving,
+    onRoleChange,
+    onStatusChange,
 }: {
     users: AdminUserSummary[];
     search: string;
     setSearch: (value: string) => void;
     onRefresh: () => void;
+    saving: string;
+    onRoleChange: (userId: number, role: AdminUserSummary["role"]) => Promise<void>;
+    onStatusChange: (userId: number, status: "active" | "suspended") => Promise<void>;
 }) {
     return (
         <Surface className={cn(panelClass, "motion-list p-4")}>
-            <PanelTitle icon={<Users size={18} />} title="کاربران" subtitle="فعلاً نقش جداگانه نداریم؛ فقط وضعیت کاربران دیده می‌شود." />
+            <PanelTitle icon={<Users size={18} />} title="کاربران" subtitle="نقش‌ها از دیتابیس اعمال می‌شوند و تغییر نقش، نشست‌های قبلی کاربر را می‌بندد." />
             <div className="mt-4 flex gap-2">
                 <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="ایمیل یا موبایل" />
                 <button type="button" onClick={onRefresh} className="rounded-2xl bg-[#155aa6] px-4 text-sm font-black text-white">جست‌وجو</button>
@@ -1241,6 +1880,27 @@ function UsersTab({
                             <p className="truncate text-xs font-bold text-slate-400">{user.email} · {user.phone}</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-black text-slate-500">
+                            <select
+                                value={user.role}
+                                onChange={(event) => void onRoleChange(user.id, event.target.value as AdminUserSummary["role"])}
+                                disabled={saving === `user-role:${user.id}`}
+                                aria-label={`نقش ${user.display_name || user.email}`}
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none focus:border-[#155aa6] disabled:opacity-50"
+                            >
+                                <option value="user">کاربر</option>
+                                <option value="moderator">ناظر</option>
+                                <option value="admin">مدیر</option>
+                            </select>
+                            <select
+                                value={user.status === "deleted" ? "suspended" : user.status}
+                                onChange={(event) => void onStatusChange(user.id, event.target.value as "active" | "suspended")}
+                                disabled={saving === `user-status:${user.id}` || user.status === "deleted"}
+                                aria-label={`وضعیت ${user.display_name || user.email}`}
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none focus:border-[#155aa6] disabled:opacity-50"
+                            >
+                                <option value="active">فعال</option>
+                                <option value="suspended">تعلیق</option>
+                            </select>
                             <span className={cn("rounded-full px-2.5 py-1", user.is_verified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")}>
                                 {user.is_verified ? "تأیید شده" : "تأیید نشده"}
                             </span>

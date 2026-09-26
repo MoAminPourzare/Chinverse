@@ -1,21 +1,23 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     BellRing,
     CheckCircle2,
     MessageCircle,
     RefreshCw,
+    ShieldAlert,
     Sparkles,
     UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
+import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
 
 type NotificationGroup = {
     key: string;
@@ -31,6 +33,7 @@ const iconByType: Record<NotificationType, typeof BellRing> = {
     post: Sparkles,
     forum: MessageCircle,
     service: CheckCircle2,
+    moderation: ShieldAlert,
     system: BellRing,
 };
 
@@ -40,6 +43,7 @@ const colorByType: Record<NotificationType, string> = {
     post: "bg-amber-50 text-amber-700",
     forum: "bg-[#eef6ff] text-[#155aa6]",
     service: "bg-sky-50 text-sky-700",
+    moderation: "bg-rose-50 text-rose-700",
     system: "bg-slate-100 text-slate-700",
 };
 
@@ -48,26 +52,36 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const fingerprintRef = useRef("");
+    const hasLoadedRef = useRef(false);
 
-    const loadNotifications = useCallback(async () => {
+    const loadNotifications = useCallback(async (signal?: AbortSignal) => {
         try {
             setError(null);
-            const data = await notificationService.getNotifications(false);
+            const data = await notificationService.getNotifications(false, 0, 40, signal);
+            const fingerprint = data.map((item) => `${item.id}:${item.is_read ? 1 : 0}`).join("|");
+            const changed = fingerprint !== fingerprintRef.current;
+            fingerprintRef.current = fingerprint;
             setNotifications(data);
+            hasLoadedRef.current = true;
+            return changed;
         } catch (requestError) {
+            if (signal?.aborted) return false;
             console.error("Failed to fetch notifications", requestError);
-            setError("ارتباط با اعلان‌ها برقرار نشد. چند لحظه بعد دوباره امتحان کن.");
+            if (!hasLoadedRef.current) {
+                setError("ارتباط با اعلان‌ها برقرار نشد. چند لحظه بعد دوباره امتحان کن.");
+            }
+            throw requestError;
         } finally {
-            setIsLoading(false);
+            if (!signal?.aborted) setIsLoading(false);
         }
     }, []);
 
-    useEffect(() => {
-        setIsLoading(true);
-        loadNotifications();
-        const interval = window.setInterval(loadNotifications, 15_000);
-        return () => window.clearInterval(interval);
-    }, [loadNotifications]);
+    useAdaptivePolling({
+        task: loadNotifications,
+        baseIntervalMs: 15_000,
+        maxIntervalMs: 60_000,
+    });
 
     const groupedNotifications = useMemo(() => groupNotifications(notifications), [notifications]);
 
@@ -88,7 +102,7 @@ export default function NotificationsPage() {
     return (
         <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
             <header className="relative flex h-12 items-center justify-center">
-                <BackButton onClick={() => router.back()} className="absolute right-0" />
+                <SafeBackButton fallback="/" className="absolute right-0" />
                 <h1 className="text-[18px] font-black text-[#2f3238]">اعلان‌ها</h1>
             </header>
 
@@ -105,7 +119,7 @@ export default function NotificationsPage() {
                         action={
                             <button
                                 type="button"
-                                onClick={loadNotifications}
+                                onClick={() => void loadNotifications()}
                                 className="mt-6 rounded-full bg-[#155aa6] px-5 py-3 text-sm font-black text-white"
                             >
                                 تلاش دوباره
@@ -299,6 +313,7 @@ function typeLabel(type: NotificationType) {
         post: "فعالیت",
         forum: "گفتگو",
         service: "خدمات",
+        moderation: "مدیریت محتوا",
         system: "سیستم",
     };
     return labels[type] || labels.system;

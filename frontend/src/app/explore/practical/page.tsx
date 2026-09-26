@@ -1,14 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { PRACTICAL_CATALOG } from "@/lib/practicalCatalog";
 
 export default function PracticalExplorePage() {
-    return (
-        <CourseExplorePage
-            title="چینی کاربردی"
-            subcategorySlug="practical"
-            detailPath="/practical"
-            layout="list"
-            countLabel="درس"
-            accentClass="bg-blue-700"
-        />
-    );
+    return <PlannedCourseExplorePage title="چینی کاربردی" basePath="/practical" catalog={PRACTICAL_CATALOG} />;
 }

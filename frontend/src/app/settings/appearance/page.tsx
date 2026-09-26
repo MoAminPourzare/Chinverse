@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { Dialog } from "@headlessui/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { RotateCcw, X } from "lucide-react";
@@ -183,12 +184,11 @@ function VisualScaleSheet({
     children: ReactNode;
 }) {
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[130] flex items-center justify-center overflow-hidden bg-slate-950/45 px-4 py-4 backdrop-blur-sm" onClick={onClose}>
-            <div
-                className="modal-panel-motion flex h-[min(760px,calc(100dvh-16px))] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]"
-                onClick={(event) => event.stopPropagation()}
-                dir="rtl"
-            >
+        <Dialog open onClose={onClose} className="relative z-[130]" dir="rtl" aria-label="تنظیم نمایش متن">
+            <div className="modal-backdrop-motion fixed inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
+            <div className="fixed inset-0 overflow-y-auto px-4 py-4">
+              <div className="flex min-h-full items-center justify-center">
+                <Dialog.Panel className="modal-panel-motion flex h-[min(760px,calc(100dvh-16px))] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26] dark:shadow-[0_-18px_60px_rgba(0,0,0,0.5)]">
                 <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-slate-200 dark:bg-[#344050]" />
                 <div className="flex justify-start px-4 pt-3">
                     <button
@@ -203,8 +203,10 @@ function VisualScaleSheet({
                 <div className="min-h-0 overflow-y-auto pb-5">
                     {children}
                 </div>
+                </Dialog.Panel>
+              </div>
             </div>
-        </div>
+        </Dialog>
     );
 }
 
