@@ -1,4 +1,5 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { TEA_CULTURE_LESSONS } from "@/lib/teaCultureLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
 
@@ -10,7 +11,9 @@ export const TEA_CULTURE_CATALOG: PlannedCatalogCourse[] = [
         subtitle: "（中國茶文化）",
         cardSubtitle: "（中國茶文化）",
         coverPath: `${assetRoot}/yinsong8_com.jpeg`,
-        lessonCount: 43,
+        lessonCount: TEA_CULTURE_LESSONS.length,
+        chapterCount: 43,
+        countSummary: "۴۳ درس · ۵۸ بخش",
         fallbackLessonTitle: "درس",
         description: [
             "این دوره مجموعه‌ای آموزشی، جدی و دانشگاهی است که به‌طور کامل وارد دنیای فرهنگ چای چین می‌شود. آموزش از تاریخ و فلسفهٔ چای آغاز می‌شود و مناطق مهم کشت، روش‌های پرورش و برداشت، فرایند تولید، شیوه‌های دم‌آوری، ابزار نوشیدن چای و آداب پذیرایی را پوشش می‌دهد.",
@@ -22,7 +25,8 @@ export const TEA_CULTURE_CATALOG: PlannedCatalogCourse[] = [
             "علاقه‌مند به چای، تاریخ و سبک زندگی چینی",
             "دانشجو یا پژوهشگر فرهنگ چین و شنیدار آکادمیک",
         ],
-        knownLessonSubtitles: {},
+        knownLessonTitles: Object.fromEntries(TEA_CULTURE_LESSONS.map((lesson, index) => [index + 1, `第${lesson.chapter}课`])),
+        knownLessonSubtitles: Object.fromEntries(TEA_CULTURE_LESSONS.map((lesson, index) => [index + 1, lesson.topic])),
     },
 ];
 

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { getMovie, getPublishedMovieLesson, MOVIE_CATALOG } from "@/lib/movieCatalog";
 
 describe("movie catalog", () => {
@@ -15,9 +17,14 @@ describe("movie catalog", () => {
         ]);
     });
 
-    it("keeps detail metadata complete without inventing ratings or duration", () => {
+    it("keeps detail metadata and both reference images complete without inventing ratings or duration", () => {
         for (const movie of MOVIE_CATALOG) {
             expect(movie.pinyin).toBeTruthy();
+            expect(movie.englishTitle).toBeTruthy();
+            expect(movie.previewImagePath).toBeTruthy();
+            for (const imagePath of [movie.posterPath, movie.previewImagePath!]) {
+                expect(existsSync(resolve(process.cwd(), "public", decodeURIComponent(imagePath).slice(1)))).toBe(true);
+            }
             expect(movie.synopsis.length).toBeGreaterThan(0);
             expect(movie.genres.length).toBeGreaterThan(0);
             expect(movie.directors.length).toBeGreaterThan(0);

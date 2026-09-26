@@ -8,8 +8,9 @@ export default function HistoricalStoriesLessonPage() {
             title="داستان‌های کهن"
             basePath="/historical-stories"
             catalog={HISTORICAL_STORIES_CATALOG}
-            unitLabel="درس"
-            unitPlural="درس‌ها"
+            unitLabel="قسمت"
+            unitPlural="قسمت‌ها"
+            requirePublishedMedia
         />
     );
 }

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { CARTOON_CATALOG, getCartoon } from "@/lib/cartoonCatalog";
 import { getPublishedSeriesEpisode } from "@/lib/screenMediaCatalog";
 
@@ -47,5 +49,34 @@ describe("cartoon catalog", () => {
         expect(getPublishedSeriesEpisode(course, 2)?.id).toBe(31);
         expect(getPublishedSeriesEpisode(course, 3)?.id).toBe(32);
         expect(getPublishedSeriesEpisode(course, 4)).toBeUndefined();
+    });
+
+    it("covers every reference episode through both finales", () => {
+        const bears = getCartoon("boonie-bears-adventure-diary")!;
+        const pupil = getCartoon("standards-for-being-a-good-pupil-season-1")!;
+        for (const item of [bears, pupil]) {
+            expect(item.episodeTitles).toHaveLength(item.episodeCount!);
+            expect(item.episodeTitles?.every((title) => title.trim().length > 0)).toBe(true);
+            expect(item.episodeLabelStyle).toBe("padded");
+        }
+        expect(bears.episodeTitles?.[0]).toBe("导游光头强");
+        expect(bears.episodeTitles?.[51]).toBe("再见，珍重");
+        expect(bears.episodeImagePaths).toHaveLength(52);
+        expect(new Set(bears.episodeImagePaths?.slice(0, 14)).size).toBe(14);
+        expect(new Set(bears.episodeImagePaths?.slice(14)).size).toBe(1);
+        expect(pupil.episodeTitles?.[0]).toBe("祥云宝宝");
+        expect(pupil.episodeTitles?.[59]).toBe("竞赛的真谛");
+        expect(pupil.episodeImagePaths).toBeUndefined();
+        expect(pupil.posterAspect).toBe("landscape");
+    });
+
+    it("uses existing local artwork for posters, film previews and episode cards", () => {
+        for (const item of CARTOON_CATALOG) {
+            if (!item.episodeCount) expect(item.englishTitle).toBeTruthy();
+            const paths = [item.posterPath, item.previewImagePath, ...(item.episodeImagePaths || [])];
+            for (const asset of paths.filter((path): path is string => Boolean(path))) {
+                expect(existsSync(join(process.cwd(), "public", decodeURIComponent(asset))), asset).toBe(true);
+            }
+        }
     });
 });

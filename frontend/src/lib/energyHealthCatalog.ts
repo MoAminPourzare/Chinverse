@@ -1,13 +1,22 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { ENERGY_HEALTH_LESSON_TOPICS } from "@/lib/energyHealthLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
 
+export interface EnergyHealthCourse extends PlannedCatalogCourse {
+    detailCoverPosition?: "right";
+    contentLanguage: "en" | "zh";
+}
+
 /** Owner-reference page plan; the public courses API confirms published exercises. */
-export const ENERGY_HEALTH_CATALOG: PlannedCatalogCourse[] = [
+export const ENERGY_HEALTH_CATALOG: EnergyHealthCourse[] = [
     {
         slug: "shi-heng-yi-what-is-qi-gong",
         title: "Shi Heng Yi Online（What is Qi Gong?）",
-        coverPath: `${assetRoot}/Shi Heng Yi Online.jpeg`,
+        cardTitle: "Shi Heng Yi Online",
+        cardSubtitle: "(What is Qi Gong? )",
+        contentLanguage: "en" as const,
+        coverPath: `${assetRoot}/${encodeURIComponent("Shi Heng Yi Online.jpeg")}`,
         lessonCount: 11,
         fallbackLessonTitle: "تمرین",
         description: [
@@ -25,8 +34,12 @@ export const ENERGY_HEALTH_CATALOG: PlannedCatalogCourse[] = [
     {
         slug: "xue-guoxue-wang-baduanjin",
         title: "学国学网《八段锦》",
+        cardTitle: "学国学网",
+        cardSubtitle: "《八段锦》",
+        contentLanguage: "zh" as const,
         coverPath: `${assetRoot}/学国学网.jpeg`,
         detailCoverPath: `${assetRoot}/《八段锦》.jpeg`,
+        detailCoverPosition: "right" as const,
         lessonCount: 20,
         fallbackLessonTitle: "تمرین",
         description: [
@@ -41,7 +54,16 @@ export const ENERGY_HEALTH_CATALOG: PlannedCatalogCourse[] = [
         ],
         knownLessonSubtitles: {},
     },
-];
+].map((course) => {
+    const topics = ENERGY_HEALTH_LESSON_TOPICS[course.slug];
+    const unit = course.slug === "xue-guoxue-wang-baduanjin" ? "节" : "集";
+    return {
+        ...course,
+        lessonCount: topics.length,
+        knownLessonTitles: Object.fromEntries(topics.map((_, index) => [index + 1, `第${index + 1}${unit}`])),
+        knownLessonSubtitles: Object.fromEntries(topics.map((topic, index) => [index + 1, topic])),
+    };
+});
 
-export const getEnergyHealthCourse = (slug: string | undefined): PlannedCatalogCourse | undefined =>
+export const getEnergyHealthCourse = (slug: string | undefined): EnergyHealthCourse | undefined =>
     getPlannedCourse(ENERGY_HEALTH_CATALOG, slug);

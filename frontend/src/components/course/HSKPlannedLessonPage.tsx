@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Clock3, Play } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
-import { getHskCourse, getHskLessonTitle } from "@/lib/hskCatalog";
+import { getHskCourse, getHskLessonTitle, getHskLessonTopic } from "@/lib/hskCatalog";
 import { findPublishedHskLesson, getPublishedHskLessonHref } from "@/lib/hskPublished";
 import { useHskPublishedCourse } from "@/lib/useHskPublishedCourse";
 
@@ -28,6 +28,7 @@ export default function HSKPlannedLessonPage() {
     }
 
     const title = getHskLessonTitle(course, lessonIndex);
+    const topic = getHskLessonTopic(course, lessonIndex);
     const previousIndex = lessonIndex > 0 ? lessonIndex : null;
     const nextIndex = lessonIndex + 1 < course.lessonCount ? lessonIndex + 2 : null;
 
@@ -59,13 +60,14 @@ export default function HSKPlannedLessonPage() {
                         <div>
                             <p className="text-[11px] font-black text-[#155aa6]" dir="ltr">{course.title}</p>
                             <h2 className="mt-1 font-serif text-xl text-[#2f343b] dark:text-white" dir="ltr">{title}</h2>
+                            {topic && <p className="mt-1 font-serif text-sm text-[#4b535e] dark:text-slate-200" lang="zh-Hans" dir="ltr">{topic}</p>}
                         </div>
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#fff6df] px-2.5 py-1 text-[10px] font-black text-[#9a6a00]">
                             <Clock3 size={12} />
                             {publishedLesson ? "آمادهٔ پخش" : hasError ? "نامشخص" : isLoading ? "در حال بررسی" : "به‌زودی"}
                         </span>
                     </div>
-                    <p className="mt-3 text-xs leading-6 text-[#646d79] dark:text-slate-300">{publishedLesson ? "ویدیو و اطلاعات منتشرشدهٔ این درس در پلیر اصلی نمایش داده می‌شوند." : "عنوان، ترتیب و مسیر این درس آماده شده است. پس از انتشار ویدیو، مدت و زیرنویس از دادهٔ واقعی نمایش داده می‌شوند."}</p>
+                    <p className="mt-3 text-xs leading-6 text-[#646d79] dark:text-slate-300">{publishedLesson ? "ویدیو و اطلاعات منتشرشدهٔ این درس در پلیر اصلی نمایش داده می‌شوند." : "عنوان و ترتیب این بخش ثبت شده است. پس از انتشار ویدیو، مدت و زیرنویس از دادهٔ واقعی نمایش داده می‌شوند."}</p>
                 </section>
 
                 <nav className="mt-4 grid grid-cols-2 gap-2" aria-label="جابجایی بین درس‌ها">

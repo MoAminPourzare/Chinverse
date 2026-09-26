@@ -7,7 +7,7 @@ export default function FestivalsCustomsExplorePage() {
             title="آیین‌ها و جشن‌ها"
             basePath="/festivals-customs"
             catalog={FESTIVALS_CUSTOMS_CATALOG}
-            countLabel="درس"
+            countLabel="قسمت"
         />
     );
 }

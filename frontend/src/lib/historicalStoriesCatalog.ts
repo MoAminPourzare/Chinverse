@@ -1,4 +1,5 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { HISTORICAL_STORIES_LESSON_TOPICS } from "@/lib/historicalStoriesLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
 
@@ -20,7 +21,8 @@ export const HISTORICAL_STORIES_CATALOG: PlannedCatalogCourse[] = [
             "زبان‌آموز علاقه‌مند به یادگیری با داستان و تصویر",
             "کسی که می‌خواهد شنیدار و درک کلی زبان چینی را تقویت کند",
         ],
-        knownLessonSubtitles: {},
+        knownLessonTitles: Object.fromEntries(HISTORICAL_STORIES_LESSON_TOPICS.map((_, index) => [index + 1, `第${index + 1}集`])),
+        knownLessonSubtitles: Object.fromEntries(HISTORICAL_STORIES_LESSON_TOPICS.map((topic, index) => [index + 1, topic])),
     },
 ];
 

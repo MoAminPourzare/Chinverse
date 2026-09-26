@@ -8,8 +8,9 @@ export default function CultureTextsLessonPage() {
             title="متون کلاسیک آموزشی"
             basePath="/culture-texts"
             catalog={CULTURE_TEXTS_CATALOG}
-            unitLabel="درس"
-            unitPlural="درس‌ها"
+            unitLabel="بخش"
+            unitPlural="بخش‌ها"
+            requirePublishedMedia
         />
     );
 }

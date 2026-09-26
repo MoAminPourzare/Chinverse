@@ -10,6 +10,7 @@ export default function TopicTalkLessonPage() {
             catalog={TOPIC_TALKS_CATALOG}
             unitLabel="گفتار"
             unitPlural="گفتارها"
+            requirePublishedMedia
         />
     );
 }

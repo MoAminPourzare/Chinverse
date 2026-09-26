@@ -10,6 +10,7 @@ export default function MartialArtsLessonPage() {
             catalog={MARTIAL_ARTS_CATALOG}
             unitLabel="قسمت"
             unitPlural="قسمت‌ها"
+            requirePublishedMedia
         />
     );
 }

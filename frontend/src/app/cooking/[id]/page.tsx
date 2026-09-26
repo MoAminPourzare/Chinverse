@@ -1,18 +1,5 @@
-import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
-import { COOKING_CATALOG } from "@/lib/cookingCatalog";
+import CookingDetailPage from "@/components/course/CookingDetailPage";
 
-export default function CookingDetailPage() {
-    return (
-        <PlannedCourseDetailPage
-            domain="cooking"
-            title="آشپزی"
-            basePath="/cooking"
-            catalog={COOKING_CATALOG}
-            countLabel="قسمت"
-            unitPlural="قسمت‌های"
-            descriptionHeading="معرفی برنامه:"
-            listHeading="قسمت‌های برنامه"
-            eyebrow="هنر و مهارت‌های چینی"
-        />
-    );
+export default function CookingPage() {
+    return <CookingDetailPage />;
 }

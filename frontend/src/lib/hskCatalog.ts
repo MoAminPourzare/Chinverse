@@ -1,7 +1,10 @@
+import { HSK_LESSON_TOPICS } from "@/lib/hskLessonTopics";
+
 export type HskPart = "上" | "下";
 
 export interface HskCatalogCourse {
     slug: string;
+    level: 1 | 2 | 3 | 4 | 5 | 6;
     title: string;
     coverPath: string;
     lessonCount: number;
@@ -28,6 +31,7 @@ const advancedDescription =
 export const HSK_CATALOG: HskCatalogCourse[] = [
     {
         slug: "hsk-1",
+        level: 1,
         title: "HSK 1",
         coverPath: "/assets/chinverse/course-profiles/HSK/HSK-1-boek.jpg",
         lessonCount: 15,
@@ -43,6 +47,7 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-2",
+        level: 2,
         title: "HSK 2",
         coverPath: "/assets/chinverse/course-profiles/HSK/MicrosoftTeams-image-16.png",
         lessonCount: 15,
@@ -58,6 +63,7 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-3",
+        level: 3,
         title: "HSK 3",
         coverPath: "/assets/chinverse/course-profiles/HSK/81sR2V8UC9L._AC_UF1000,1000_QL80_.jpg",
         lessonCount: 20,
@@ -73,9 +79,10 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-4-shang",
+        level: 4,
         title: "HSK 4上",
         coverPath: "/assets/chinverse/course-profiles/HSK/MicrosoftTeams-image-11-e1699895486612.jpg",
-        lessonCount: 10,
+        lessonCount: 20,
         lessonStart: 1,
         lessonPart: "上",
         order: 4,
@@ -89,9 +96,10 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-4-xia",
+        level: 4,
         title: "HSK 4下",
         coverPath: "/assets/chinverse/course-profiles/HSK/HSK-4下-boek-2.0.jpg",
-        lessonCount: 10,
+        lessonCount: 20,
         lessonStart: 11,
         lessonPart: "下",
         order: 5,
@@ -105,9 +113,10 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-5-shang",
+        level: 5,
         title: "HSK 5上",
         coverPath: "/assets/chinverse/course-profiles/HSK/HSK-5上-boek.jpg",
-        lessonCount: 18,
+        lessonCount: 36,
         lessonStart: 1,
         lessonPart: "上",
         order: 6,
@@ -121,9 +130,10 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-5-xia",
+        level: 5,
         title: "HSK 5下",
         coverPath: "/assets/chinverse/course-profiles/HSK/HSK-5下-boek.png",
-        lessonCount: 18,
+        lessonCount: 36,
         lessonStart: 19,
         lessonPart: "下",
         order: 7,
@@ -137,9 +147,10 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-6-shang",
+        level: 6,
         title: "HSK 6上",
         coverPath: "/assets/chinverse/course-profiles/HSK/HSK-6上-boek.png",
-        lessonCount: 20,
+        lessonCount: 40,
         lessonStart: 1,
         lessonPart: "上",
         order: 8,
@@ -153,9 +164,10 @@ export const HSK_CATALOG: HskCatalogCourse[] = [
     },
     {
         slug: "hsk-6-xia",
+        level: 6,
         title: "HSK 6下",
         coverPath: "/assets/chinverse/course-profiles/HSK/2dd81a34-40b2-40a1-a28d-cf7c7c9f64ad.png",
-        lessonCount: 20,
+        lessonCount: 40,
         lessonStart: 21,
         lessonPart: "下",
         order: 9,
@@ -173,10 +185,13 @@ export const getHskCourse = (slug: string | undefined): HskCatalogCourse | undef
     HSK_CATALOG.find((course) => course.slug === slug);
 
 export const getHskLessonNumber = (course: HskCatalogCourse, lessonIndex: number): number =>
-    course.lessonStart + lessonIndex;
+    course.lessonStart + (course.lessonPart ? Math.floor(lessonIndex / 2) : lessonIndex);
 
 export const getHskLessonTitle = (course: HskCatalogCourse, lessonIndex: number): string => {
     const lessonNumber = getHskLessonNumber(course, lessonIndex);
-    const part = course.lessonPart ? `（${course.lessonPart}）` : "";
+    const part = course.lessonPart ? `（${lessonIndex % 2 === 0 ? "上" : "下"}）` : "";
     return `第${lessonNumber}课${part}`;
 };
+
+export const getHskLessonTopic = (course: HskCatalogCourse, lessonIndex: number): string =>
+    HSK_LESSON_TOPICS[course.level]?.[getHskLessonNumber(course, lessonIndex) - 1] || "";

@@ -1,4 +1,5 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { CULTURE_TEXT_LESSONS } from "@/lib/cultureTextsLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
 
@@ -14,9 +15,11 @@ export const CULTURE_TEXTS_CATALOG: PlannedCatalogCourse[] = [
         detailCoverPath: `${assetRoot}/三字经.jpeg`,
         detailImageAspect: "video",
         lessonCount: 62,
+        chapterCount: 62,
+        countSummary: "۶۲ درس · ۶۳ بخش",
         fallbackLessonTitle: "درس",
         description: [
-            "این مجموعهٔ ۶۲ قسمتی یکی از معروف‌ترین متون کلاسیک آموزشی چین، یعنی «کلاسیک سه‌حرفی» یا 三字经 را معرفی می‌کند. متن کتاب از قدیم برای آموزش کودکان به کار می‌رفته و جمله‌های کوتاه و آهنگین آن، خواندن و به‌خاطر سپردن را آسان‌تر می‌کنند.",
+            "این مجموعه در ۶۲ درس و ۶۳ بخش یکی از معروف‌ترین متون کلاسیک آموزشی چین، یعنی «کلاسیک سه‌حرفی» یا 三字经 را معرفی می‌کند. متن کتاب از قدیم برای آموزش کودکان به کار می‌رفته و جمله‌های کوتاه و آهنگین آن، خواندن و به‌خاطر سپردن را آسان‌تر می‌کنند.",
             "در هر درس بخشی از متن با شماره و تلفظ درست خوانده می‌شود و سپس معنی آن با زبانی ساده توضیح داده می‌شود. فضای تصویری و کودکانه، مفاهیم تاریخی، خانوادگی و رفتاری متن را روشن و یادگیری واژه‌ها و کاراکترها را دلنشین‌تر می‌کند.",
         ],
         audience: [
@@ -119,8 +122,10 @@ export const CULTURE_TEXTS_CATALOG: PlannedCatalogCourse[] = [
         cardSubtitle: "《道德经》讲析",
         coverPath: `${assetRoot}/百家Talk.jpg`,
         detailCoverPath: `${assetRoot}/道德经.jpeg`,
-        detailImageAspect: "video",
+        detailImageAspect: "square",
         lessonCount: 11,
+        chapterCount: 11,
+        countSummary: "۱۱ درس · ۵۲ بخش",
         fallbackLessonTitle: "درس",
         introductionHeading: "معرفی دوره:",
         description: [
@@ -134,7 +139,16 @@ export const CULTURE_TEXTS_CATALOG: PlannedCatalogCourse[] = [
         ],
         knownLessonSubtitles: {},
     },
-];
+].map((course) => {
+    const lessons = CULTURE_TEXT_LESSONS[course.slug];
+    return {
+        ...course,
+        detailImageAspect: course.detailImageAspect as "square" | "video",
+        lessonCount: lessons.length,
+        knownLessonTitles: Object.fromEntries(lessons.map((lesson, index) => [index + 1, lesson.title])),
+        knownLessonSubtitles: Object.fromEntries(lessons.map((lesson, index) => [index + 1, lesson.topic])),
+    };
+});
 
 export const getCultureTextsCourse = (slug: string | undefined): PlannedCatalogCourse | undefined =>
     getPlannedCourse(CULTURE_TEXTS_CATALOG, slug);

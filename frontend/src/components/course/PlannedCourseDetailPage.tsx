@@ -9,7 +9,7 @@ import { BackButton } from "@/components/ui/IconButton";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import { checkCourseSaved, saveCourse, unsaveCourse } from "@/lib/courses";
 import { getReturnToHref } from "@/lib/returnTo";
-import { getPlannedCourse, getPlannedLessonTitle, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { getPlannedCourse, getPlannedItemCount, getPlannedLessonTitle, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
 import { findPublishedPlannedLesson, getPublishedPlannedLessonHref } from "@/lib/plannedCoursePublished";
 import { usePublishedPlannedCourse } from "@/lib/usePublishedPlannedCourse";
 
@@ -143,18 +143,20 @@ export default function PlannedCourseDetailPage({
                 <section className="mt-5" aria-labelledby="planned-lessons-heading">
                     <div className="mb-3 flex items-end justify-between gap-3">
                         <div>
-                            <h2 id="planned-lessons-heading" className="text-base font-black text-[#343941] dark:text-white">{listHeading}</h2>
+                            <h2 id="planned-lessons-heading" className="text-base font-black text-[#343941] dark:text-white">{course.practiceCount ? "درس‌ها و تمرین‌های دوره" : listHeading}</h2>
                             <p className="mt-1 text-[11px] leading-5 text-[#737b87] dark:text-slate-400">
-                                {hasError ? "وضعیت ویدیوها دریافت نشد؛ دوباره صفحه را باز کن." : isLoading ? `در حال بررسی ${unitPlural} منتشرشده…` : `${unitPlural} آماده به پلیر وصل‌اند؛ بقیه در دست آماده‌سازی‌اند.`}
+                                {course.lessonGroupCounts ? "تعداد درس‌های هر سطح ثبت شده است؛ جزئیات درس‌ها در انتظار تکمیل‌اند." : hasError ? "وضعیت ویدیوها دریافت نشد؛ دوباره صفحه را باز کن." : isLoading ? `در حال بررسی ${unitPlural} منتشرشده…` : `${unitPlural} آماده به پلیر وصل‌اند؛ بقیه در دست آماده‌سازی‌اند.`}
                             </p>
                         </div>
-                        <span className="shrink-0 rounded-full bg-[#e8f2fd] px-2.5 py-1 text-[10px] font-black text-[#155aa6]">{course.lessonCount} {countLabel} در برنامه</span>
+                        <span className="shrink-0 rounded-full bg-[#e8f2fd] px-2.5 py-1 text-[10px] font-black text-[#155aa6]">{course.countSummary || (course.chapterCount ? `${course.chapterCount} درس · ${course.lessonCount} بخش` : `${course.lessonCount} ${countLabel}${course.practiceCount ? ` · ${course.practiceCount} تمرین` : ""}`)}</span>
                     </div>
 
                     <div className="motion-list space-y-2.5">
-                        {Array.from({ length: course.lessonCount }, (_, index) => {
+                        {Array.from({ length: getPlannedItemCount(course) }, (_, index) => {
                             const position = index + 1;
-                            const publishedLesson = findPublishedPlannedLesson(publishedCourse, position);
+                            const itemLabel = position > course.lessonCount ? "تمرین" : countLabel;
+                            const groupLessonCount = course.lessonGroupCounts?.[position];
+                            const publishedLesson = groupLessonCount ? undefined : findPublishedPlannedLesson(publishedCourse, position);
                             const href = publishedCourse && publishedLesson
                                 ? getPublishedPlannedLessonHref(domain, publishedCourse, publishedLesson)
                                 : `${basePath}/${course.slug}/lesson/${position}`;
@@ -167,7 +169,7 @@ export default function PlannedCourseDetailPage({
                                             <h3 className="font-serif text-[18px] leading-7 text-[#2f343b] dark:text-white">{getPlannedLessonTitle(course, position)}</h3>
                                             {subtitle && <p className="mt-1 line-clamp-2 text-[10px] font-bold leading-4 text-[#40464f] dark:text-slate-200">{subtitle}</p>}
                                             <p className="mt-3 text-[10px] font-medium text-[#717985] dark:text-slate-300" dir="rtl">
-                                                {publishedLesson ? "ویدیو آمادهٔ پخش است" : hasError ? "وضعیت ویدیو نامشخص است" : isLoading ? "در حال بررسی ویدیو…" : `ویدیوی این ${countLabel} هنوز منتشر نشده است`}
+                                                {groupLessonCount ? `${groupLessonCount} درس در این سطح` : publishedLesson ? "ویدیو آمادهٔ پخش است" : hasError ? "وضعیت ویدیو نامشخص است" : isLoading ? "در حال بررسی ویدیو…" : `ویدیوی این ${itemLabel} هنوز منتشر نشده است`}
                                             </p>
                                         </div>
                                         <div className="relative min-h-[86px] overflow-hidden rounded-[10px] bg-[#f3f5f8] dark:bg-slate-700">
@@ -180,12 +182,6 @@ export default function PlannedCourseDetailPage({
                     </div>
                 </section>
 
-                {course.practiceCount && (
-                    <section className="mt-6 rounded-[16px] border border-[#dfe6f0] bg-white p-4 dark:border-slate-700 dark:bg-[#18212b]">
-                        <h2 className="text-sm font-black text-[#343941] dark:text-white">تمرین‌ها</h2>
-                        <p className="mt-1 text-xs leading-6 text-[#646d79] dark:text-slate-300">{course.practiceCount} تمرین برای این دوره در برنامه است؛ محتوای آن‌ها هنوز آمادهٔ نمایش نیست.</p>
-                    </section>
-                )}
             </main>
         </div>
     );

@@ -9,6 +9,7 @@ export default function CartoonDetailPage() {
             itemNoun="انیمیشن"
             catalog={CARTOON_CATALOG}
             showEpisodes
+            showAnimationCards
         />
     );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Loader2, MoreVertical, Play } from "lucide-react";
+import { Bookmark, BookmarkCheck, Loader2, MoreVertical, Play, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import { BackButton } from "@/components/ui/IconButton";
 import { checkCourseSaved, saveCourse, unsaveCourse } from "@/lib/courses";
@@ -23,6 +23,9 @@ interface ScreenMediaDetailPageProps {
     itemNoun: string;
     catalog: ScreenMediaCatalogItem[];
     showEpisodes?: boolean;
+    showMovieCard?: boolean;
+    showSeriesCards?: boolean;
+    showAnimationCards?: boolean;
 }
 
 function DetailList({ items }: { items: string[] }) {
@@ -39,6 +42,9 @@ export default function ScreenMediaDetailPage({
     itemNoun,
     catalog,
     showEpisodes = false,
+    showMovieCard = false,
+    showSeriesCards = false,
+    showAnimationCards = false,
 }: ScreenMediaDetailPageProps) {
     const params = useParams<{ id: string }>();
     const router = useRouter();
@@ -105,6 +111,173 @@ export default function ScreenMediaDetailPage({
             setSavingBookmark(false);
         }
     };
+
+    if (showMovieCard || (showAnimationCards && !item.episodeCount)) {
+        const previewStatus = hasError
+            ? "وضعیت پخش دریافت نشد؛ دوباره تلاش کن."
+            : isLoading
+                ? "در حال بررسی نسخهٔ ویدیویی…"
+                : playbackHref
+                    ? publishedLesson?.duration_minutes
+                        ? `${publishedLesson.duration_minutes} دقیقه · آمادهٔ تماشا`
+                        : "آمادهٔ تماشا"
+                    : "نسخهٔ ویدیویی هنوز منتشر نشده است.";
+        const previewContent = (
+            <>
+                <div className="flex min-w-0 flex-1 flex-col px-2.5 py-3" dir="ltr">
+                    <span className="font-cjk text-[17px] font-semibold leading-6 text-[#353941] dark:text-white">{item.title}</span>
+                    <span className="mt-0.5 text-[10px] font-semibold text-[#69717c] dark:text-slate-300">{item.englishTitle || item.pinyin}</span>
+                    <div className="mt-auto" dir="rtl">
+                        <div className="h-[3px] rounded-full bg-[#a8d6ff]" aria-hidden="true" />
+                        <p className="mt-1 text-[10px] leading-4 text-[#58616d] dark:text-slate-300">{previewStatus}</p>
+                    </div>
+                </div>
+                <div className="relative my-1.5 mr-1.5 w-[40%] shrink-0 overflow-hidden rounded-[8px] bg-slate-200">
+                    <Image src={item.previewImagePath || item.posterPath} alt={`نمایی از ${itemNoun} ${item.title}`} fill sizes="130px" className="object-cover" />
+                </div>
+            </>
+        );
+
+        return (
+            <div className="min-h-full bg-white pb-28 dark:bg-[#10151c]" dir="rtl">
+                <main className="mx-auto w-full max-w-[430px] px-6 py-4">
+                    <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                        <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
+                        <div className="flex items-center gap-1">
+                            <button type="button" onClick={handleToggleSaved} disabled={!publishedCourse || savingBookmark} aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"} className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] disabled:cursor-not-allowed dark:text-slate-100">
+                                {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
+                            </button>
+                            <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] dark:text-slate-100">
+                                <MoreVertical size={22} />
+                            </button>
+                        </div>
+                    </header>
+
+                    <section className={`mt-4 grid items-center gap-4 ${showAnimationCards ? "grid-cols-2" : "grid-cols-[1fr_40%]"}`} dir="ltr">
+                        <div className="min-w-0 text-center">
+                            <h1 className={`font-cjk font-bold leading-7 text-[#343941] dark:text-white ${showAnimationCards ? "text-[17px]" : "text-[19px]"}`}>{item.title}</h1>
+                            <p className="mt-1 text-[12px] text-[#454b55] dark:text-slate-300">{item.pinyin}</p>
+                            <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                            <div className="mt-3 flex justify-center gap-1" aria-hidden="true">
+                                {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
+                            </div>
+                            <button type="button" disabled aria-label="ثبت نظر پس از انتشار فعال می‌شود" className="mt-1.5 text-[10px] font-medium text-[#1768d4] disabled:cursor-not-allowed">ثبت نظر</button>
+                        </div>
+                        <div className={`relative aspect-[2/3] overflow-hidden rounded-[8px] bg-slate-100 ${showAnimationCards ? "w-full max-w-[110px]" : ""}`}>
+                            <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-cover" priority />
+                        </div>
+                    </section>
+
+                    {showAnimationCards && (
+                        <section className="mt-6 space-y-2" aria-label="خلاصهٔ داستان">
+                            {item.synopsis.map((paragraph) => <p key={paragraph} className="text-right text-[12px] leading-6 text-[#40464f] dark:text-slate-300">{paragraph}</p>)}
+                        </section>
+                    )}
+
+                    <dl className="mt-6 space-y-4 text-right">
+                        {(showAnimationCards || item.showGenresInDetail) && <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">ژانر:</dt><dd className="mt-1 text-[12px] text-[#40464f] dark:text-slate-300">{item.genres.join("، ")}</dd></div>}
+                        {item.showYearInDetail !== false && <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">سال انتشار:</dt><dd className="mt-1 text-[12px] text-[#40464f] dark:text-slate-300">{item.year} – {item.country}</dd></div>}
+                        {showAnimationCards && item.credits ? item.credits.map((credit) => (
+                            <div key={credit.label}><dt className="text-[12px] font-bold text-[#343941] dark:text-white">{credit.label}</dt><dd><DetailList items={credit.items} /></dd></div>
+                        )) : <>
+                            <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">کارگردان:</dt><dd><DetailList items={item.directors} /></dd></div>
+                            <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">بازیگران اصلی:</dt><dd><DetailList items={item.cast} /></dd></div>
+                        </>}
+                    </dl>
+
+                    {playbackHref ? (
+                        <Link href={playbackHref} className="mt-7 flex min-h-32 overflow-hidden rounded-[10px] bg-[#e9edf5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`تماشای ${itemNoun} ${item.title}`}>
+                            {previewContent}
+                        </Link>
+                    ) : (
+                        <div className="mt-7 flex min-h-32 overflow-hidden rounded-[10px] bg-[#e9edf5] dark:bg-[#202b3a]" dir="ltr" aria-label={`وضعیت پخش ${itemNoun} ${item.title}`}>
+                            {previewContent}
+                        </div>
+                    )}
+                </main>
+            </div>
+        );
+    }
+
+    if ((showSeriesCards || showAnimationCards) && item.episodeCount) {
+        return (
+            <div className="min-h-full bg-white pb-28 dark:bg-[#10151c]" dir="rtl">
+                <main className="mx-auto w-full max-w-[430px] px-6 py-4">
+                    <div className={showAnimationCards ? "sticky top-0 z-10 -mx-6 bg-white px-6 pb-5 dark:bg-[#10151c]" : undefined}>
+                        <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                            <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
+                            <div className="flex items-center gap-1">
+                                <button type="button" onClick={handleToggleSaved} disabled={!publishedCourse || savingBookmark} aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"} className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] disabled:cursor-not-allowed dark:text-slate-100">
+                                    {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
+                                </button>
+                                <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] dark:text-slate-100">
+                                    <MoreVertical size={22} />
+                                </button>
+                            </div>
+                        </header>
+
+                        <section className={`mt-4 grid items-center gap-4 ${showAnimationCards ? "grid-cols-2" : "grid-cols-[1fr_40%]"}`} dir="ltr">
+                            <div className="min-w-0 text-center">
+                                <h1 className={`font-cjk font-bold leading-7 text-[#343941] dark:text-white ${showAnimationCards ? "text-[17px]" : "text-[19px]"}`}>{item.detailTitleLines ? item.detailTitleLines.map((line) => <span key={line} className="block">{line}</span>) : item.title}</h1>
+                                <p className="mt-1 text-[12px] text-[#454b55] dark:text-slate-300">{item.pinyin}</p>
+                                <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                                <div className="mt-3 flex justify-center gap-1" aria-hidden="true">
+                                    {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
+                                </div>
+                                <button type="button" disabled aria-label="ثبت نظر پس از انتشار فعال می‌شود" className="mt-1.5 text-[10px] font-medium text-[#1768d4] disabled:cursor-not-allowed">ثبت نظر</button>
+                            </div>
+                            <div className={`relative overflow-hidden rounded-[8px] bg-slate-100 ${item.posterAspect === "landscape" ? "aspect-video" : `aspect-[2/3] ${showAnimationCards ? "w-full max-w-[110px]" : ""}`}`}>
+                                <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-cover" priority />
+                            </div>
+                        </section>
+                    </div>
+
+                    <section className="mt-5 space-y-2" aria-label={`قسمت‌های ${itemNoun} ${item.title}`}>
+                        {Array.from({ length: item.episodeCount }, (_, index) => {
+                            const position = index + 1;
+                            const publishedEpisode = getPublishedSeriesEpisode(publishedCourse, position);
+                            const href = publishedCourse && publishedEpisode
+                                ? `/watch/${domain}/${publishedCourse.id}?lesson=${publishedEpisode.id}`
+                                : undefined;
+                            const label = item.episodeLabelStyle === "padded"
+                                ? `${String(position).padStart(2, "0")}集`
+                                : `第${position}集`;
+                            const status = hasError ? "وضعیت پخش نامشخص است"
+                                : isLoading ? "در حال بررسی ویدیو…"
+                                    : href ? "آمادهٔ پخش" : "هنوز منتشر نشده";
+                            const thumbnail = item.episodeImagePaths?.[index];
+                            const content = (
+                                <article className="grid min-h-32 grid-cols-[1fr_40%] gap-2">
+                                    <div className="flex min-w-0 flex-col px-2.5 py-3 text-left">
+                                        <h2 className="font-cjk text-[18px] leading-7 text-[#353941] dark:text-white">{label}</h2>
+                                        {item.episodeTitles?.[index] && <p className="mt-1 font-cjk text-[15px] leading-6 text-[#747b84] dark:text-slate-300" lang="zh">{item.episodeTitles[index]}</p>}
+                                        <div className="mt-auto" dir="rtl">
+                                            <div className="h-[3px] rounded-full bg-[#a8d6ff]" aria-hidden="true" />
+                                            <p className="mt-1 text-[10px] leading-4 text-[#58616d] dark:text-slate-300">{status}</p>
+                                        </div>
+                                    </div>
+                                    <div className="relative my-1.5 mr-1.5 overflow-hidden rounded-[8px] bg-[#f3f5f8] dark:bg-slate-700">
+                                        {thumbnail
+                                            ? <Image src={thumbnail} alt={`تصویر قسمت ${position} ${itemNoun} ${item.title}`} fill sizes="130px" className="object-cover" />
+                                            : <span className="absolute inset-0 bg-[linear-gradient(45deg,#fff_25%,transparent_25%),linear-gradient(-45deg,#fff_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#fff_75%),linear-gradient(-45deg,transparent_75%,#fff_75%)] bg-[length:14px_14px] bg-[position:0_0,0_7px,7px_-7px,-7px_0px] opacity-80 dark:opacity-10" aria-hidden="true" />}
+                                    </div>
+                                </article>
+                            );
+                            return href ? (
+                                <Link key={position} href={href} className="block overflow-hidden rounded-[10px] bg-[#e9edf5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`تماشای قسمت ${position} ${itemNoun} ${item.title}`}>
+                                    {content}
+                                </Link>
+                            ) : (
+                                <div key={position} className="overflow-hidden rounded-[10px] bg-[#e9edf5] dark:bg-[#202b3a]" dir="ltr">
+                                    {content}
+                                </div>
+                            );
+                        })}
+                    </section>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">

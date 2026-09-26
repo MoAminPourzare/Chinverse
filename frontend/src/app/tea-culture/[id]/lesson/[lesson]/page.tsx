@@ -8,8 +8,9 @@ export default function TeaCultureLessonPage() {
             title="فرهنگ چای"
             basePath="/tea-culture"
             catalog={TEA_CULTURE_CATALOG}
-            unitLabel="درس"
-            unitPlural="درس‌ها"
+            unitLabel="بخش"
+            unitPlural="بخش‌ها"
+            requirePublishedMedia
         />
     );
 }

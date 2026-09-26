@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { getPublishedSeriesEpisode } from "@/lib/screenMediaCatalog";
 import { getSeries, SERIES_CATALOG } from "@/lib/seriesCatalog";
 
@@ -25,6 +27,16 @@ describe("series catalog", () => {
         }
         expect(getSeries("reset")?.year).toBe(2022);
         expect(getSeries("missing")).toBeUndefined();
+    });
+
+    it("maps all fifteen Reset episode images in episode order", () => {
+        const reset = getSeries("reset");
+        expect(reset?.episodeImagePaths).toHaveLength(15);
+        expect(reset?.episodeLabelStyle).toBe("padded");
+        reset?.episodeImagePaths?.forEach((imagePath, index) => {
+            expect(imagePath.endsWith(`/${index + 1}.jpg`)).toBe(true);
+            expect(existsSync(resolve(process.cwd(), "public", imagePath.slice(1)))).toBe(true);
+        });
     });
 
     it("maps a unique media-backed lesson by episode_index or lesson_index", () => {

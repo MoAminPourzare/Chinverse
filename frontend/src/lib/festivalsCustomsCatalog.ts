@@ -1,16 +1,18 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
 
 const assetRoot = "/assets/chinverse/course-profiles";
+const festivalTopics = ["春龙节", "清明节", "端午节", "七夕节", "中秋节", "重阳节", "腊八节", "祭灶节", "除夕节", "元宵节"];
 
 /** Owner-reference page plan; published lessons are attached only after the public API confirms them. */
 export const FESTIVALS_CUSTOMS_CATALOG: PlannedCatalogCourse[] = [
     {
         slug: "sanmiao-wonderful-traditional-festivals",
         title: "三淼儿童官方频道",
-        subtitle: "【精彩的传统节日】",
-        cardSubtitle: "【精彩的传统节日】",
+        subtitle: "[精彩的传统节日]",
+        cardSubtitle: "[精彩的传统节日]",
         coverPath: `${assetRoot}/三淼儿童官方频道.jpeg`,
         detailCoverPath: `${assetRoot}/精彩的传统节日.jpeg`,
+        detailImageAspect: "square",
         lessonCount: 10,
         fallbackLessonTitle: "درس",
         description: [
@@ -23,7 +25,8 @@ export const FESTIVALS_CUSTOMS_CATALOG: PlannedCatalogCourse[] = [
             "علاقه‌مند به جشن‌ها، آیین‌ها و فرهنگ سنتی چین",
             "زبان‌آموزی که با روایت تصویری و کودکانه بهتر یاد می‌گیرد",
         ],
-        knownLessonSubtitles: {},
+        knownLessonTitles: Object.fromEntries(festivalTopics.map((_, index) => [index + 1, `第${index + 1}集`])),
+        knownLessonSubtitles: Object.fromEntries(festivalTopics.map((topic, index) => [index + 1, topic])),
     },
 ];
 

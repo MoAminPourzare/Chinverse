@@ -1,9 +1,20 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { CALLIGRAPHY_LESSON_TOPICS } from "@/lib/calligraphyLessonTopics";
 
 const portraitPath = "/assets/chinverse/course-profiles/陳忠建.jpeg";
 
+export interface CalligraphyLevel {
+    slug: string;
+    title: string;
+    lessonCount: number;
+}
+
+export interface CalligraphyCourse extends PlannedCatalogCourse {
+    levels?: CalligraphyLevel[];
+}
+
 /** Owner-reference page plan; published lessons are attached only after the public API confirms them. */
-export const CALLIGRAPHY_CATALOG: PlannedCatalogCourse[] = [
+export const CALLIGRAPHY_CATALOG: CalligraphyCourse[] = [
     {
         slug: "chen-zhongjian-calligraphy-beginners",
         title: "陳忠建",
@@ -30,6 +41,11 @@ export const CALLIGRAPHY_CATALOG: PlannedCatalogCourse[] = [
         cardSubtitle: "欧阳询(结构)",
         coverPath: portraitPath,
         lessonCount: 36,
+        countSummary: "۲ سطح · ۳۶ درس",
+        levels: [
+            { slug: "beginner", title: "入门 欧阳询结构", lessonCount: 18 },
+            { slug: "advanced", title: "进阶 欧体结构", lessonCount: 18 },
+        ],
         fallbackLessonTitle: "درس",
         description: [
             "این دوره بر ساختار کاراکترهای چینی در سبک اویانگ شون تمرکز دارد. جای‌گیری اجزای کاراکتر، تعادل میان بخش‌ها، فاصله‌ها و فرم کلی هر حرف بررسی می‌شود تا روشن شود چرا یک نویسه درست، منظم و استاندارد به نظر می‌رسد.",
@@ -61,7 +77,14 @@ export const CALLIGRAPHY_CATALOG: PlannedCatalogCourse[] = [
         ],
         knownLessonSubtitles: {},
     },
-];
+].map((course) => {
+    const topics = CALLIGRAPHY_LESSON_TOPICS[course.slug] || [];
+    return {
+        ...course,
+        knownLessonTitles: Object.fromEntries(Array.from({ length: course.lessonCount }, (_, index) => [index + 1, `第${index + 1}课`])),
+        knownLessonSubtitles: Object.fromEntries(topics.map((topic, index) => [index + 1, topic])),
+    };
+});
 
-export const getCalligraphyCourse = (slug: string | undefined): PlannedCatalogCourse | undefined =>
+export const getCalligraphyCourse = (slug: string | undefined): CalligraphyCourse | undefined =>
     getPlannedCourse(CALLIGRAPHY_CATALOG, slug);

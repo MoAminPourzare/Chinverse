@@ -15,6 +15,8 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "我不是药神",
         pinyin: "Wǒ Bù Shì Yào Shén",
         posterPath: `${assetRoot}/OIP%20(6).jpg`,
+        englishTitle: "Dying to Survive",
+        previewImagePath: `${assetRoot}/2fc22437ed.jpg`,
         year: 2018,
         country: "چین",
         synopsis: [
@@ -35,6 +37,8 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "流浪地球1",
         pinyin: "Liúlàng Dìqiú",
         posterPath: `${assetRoot}/v2-42e7666cefabd3b6a08d95b1ae6b2058_r.webp`,
+        englishTitle: "The Wandering Earth 1",
+        previewImagePath: `${assetRoot}/流浪地球1.jpeg`,
         year: 2019,
         country: "چین",
         synopsis: [
@@ -56,6 +60,8 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "流浪地球2",
         pinyin: "Liúlàng Dìqiú",
         posterPath: `${assetRoot}/流浪地球2.jpg`,
+        englishTitle: "The Wandering Earth 2",
+        previewImagePath: `${assetRoot}/7a2c5d6682af4fead82a6586118b953663ae929f.jpg`,
         year: 2023,
         country: "چین",
         synopsis: [
@@ -77,6 +83,9 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "一秒钟",
         pinyin: "Yī Miǎo Zhōng",
         posterPath: `${assetRoot}/one-second-poster.webp`,
+        englishTitle: "One Second",
+        previewImagePath: `${assetRoot}/v2-954f1ef78b8bace39d28734f656076dc_r.jpg`,
+        showGenresInDetail: true,
         year: 2020,
         country: "چین",
         synopsis: [
@@ -96,6 +105,8 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "你好，李焕英",
         pinyin: "Nǐ Hǎo, Lǐ Huànyīng",
         posterPath: `${assetRoot}/你好，李焕英.jpeg`,
+        englishTitle: "Hi, Mom",
+        previewImagePath: `${assetRoot}/你好，李焕英2.jpeg`,
         year: 2021,
         country: "چین",
         synopsis: [
@@ -115,6 +126,8 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "西虹市首富",
         pinyin: "Xī Hóng Shì Shǒu Fù",
         posterPath: `${assetRoot}/西虹市首富.jpeg`,
+        englishTitle: "Hello Mr. Billionaire",
+        previewImagePath: `${assetRoot}/西虹市首富2.jpeg`,
         year: 2018,
         country: "چین",
         synopsis: [
@@ -138,6 +151,9 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "红海行动",
         pinyin: "Hóng Hǎi Xíng Dòng",
         posterPath: `${assetRoot}/红海行动.jpeg`,
+        englishTitle: "Operation Red Sea",
+        previewImagePath: `${assetRoot}/红海行动2.jpeg`,
+        showYearInDetail: false,
         year: 2018,
         country: "چین",
         synopsis: [
@@ -158,6 +174,9 @@ export const MOVIE_CATALOG: MovieCatalogItem[] = [
         title: "我的少女时代",
         pinyin: "Wǒ De Shàonǚ Shídài",
         posterPath: `${assetRoot}/我的少女时代.jpeg`,
+        englishTitle: "Our Times",
+        previewImagePath: `${assetRoot}/我的少女时代2.jpeg`,
+        showYearInDetail: false,
         year: 2015,
         country: "تایوان",
         synopsis: [

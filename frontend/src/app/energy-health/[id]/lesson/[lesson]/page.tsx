@@ -10,6 +10,7 @@ export default function EnergyHealthLessonPage() {
             catalog={ENERGY_HEALTH_CATALOG}
             unitLabel="تمرین"
             unitPlural="تمرین‌ها"
+            requirePublishedMedia
         />
     );
 }

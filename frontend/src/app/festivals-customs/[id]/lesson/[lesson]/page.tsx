@@ -8,8 +8,9 @@ export default function FestivalsCustomsLessonPage() {
             title="آیین‌ها و جشن‌ها"
             basePath="/festivals-customs"
             catalog={FESTIVALS_CUSTOMS_CATALOG}
-            unitLabel="درس"
-            unitPlural="درس‌ها"
+            unitLabel="قسمت"
+            unitPlural="قسمت‌ها"
+            requirePublishedMedia
         />
     );
 }

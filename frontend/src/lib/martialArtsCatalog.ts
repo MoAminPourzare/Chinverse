@@ -1,14 +1,22 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { MARTIAL_ARTS_LESSON_TOPICS } from "@/lib/martialArtsLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
 
+export interface MartialArtsCourse extends PlannedCatalogCourse {
+    portraitCover?: boolean;
+}
+
 /** Owner-reference page plan; the public courses API confirms published episodes. */
-export const MARTIAL_ARTS_CATALOG: PlannedCatalogCourse[] = [
+export const MARTIAL_ARTS_CATALOG: MartialArtsCourse[] = [
     {
         slug: "xue-guoxue-wang-eight-form-taijiquan",
         title: "学国学网（八式太极拳）",
+        cardTitle: "学国学网",
+        subtitle: "(八式太极拳)",
         coverPath: `${assetRoot}/学国学网.jpeg`,
         detailCoverPath: `${assetRoot}/八式太极拳.jpeg`,
+        portraitCover: true,
         lessonCount: 13,
         fallbackLessonTitle: "قسمت",
         description: [
@@ -26,6 +34,8 @@ export const MARTIAL_ARTS_CATALOG: PlannedCatalogCourse[] = [
     {
         slug: "lee-wushu-basic-staff",
         title: "Lee Wushu 武者劲松（基础棍术 教学）",
+        cardTitle: "Lee Wushu 武者劲松",
+        subtitle: "(基础棍术 教学)",
         coverPath: `${assetRoot}/channels4_profile.png`,
         lessonCount: 10,
         fallbackLessonTitle: "قسمت",
@@ -44,6 +54,9 @@ export const MARTIAL_ARTS_CATALOG: PlannedCatalogCourse[] = [
     {
         slug: "taichi-wei-kung-fu-fan",
         title: "立新舞太极 Taichi Wei（太极功夫扇）",
+        cardTitle: "立新舞太极",
+        cardSubtitle: "Taichi Wei",
+        subtitle: "(太极功夫扇)",
         coverPath: `${assetRoot}/fR3W0dty9.jpeg`,
         lessonCount: 13,
         fallbackLessonTitle: "قسمت",
@@ -59,7 +72,16 @@ export const MARTIAL_ARTS_CATALOG: PlannedCatalogCourse[] = [
         ],
         knownLessonSubtitles: {},
     },
-];
+].map((course) => {
+    const topics = MARTIAL_ARTS_LESSON_TOPICS[course.slug];
+    const unit = course.slug === "xue-guoxue-wang-eight-form-taijiquan" ? "节" : "集";
+    return {
+        ...course,
+        lessonCount: topics.length,
+        knownLessonTitles: Object.fromEntries(topics.map((_, index) => [index + 1, `第${index + 1}${unit}`])),
+        knownLessonSubtitles: Object.fromEntries(topics.map((topic, index) => [index + 1, topic])),
+    };
+});
 
-export const getMartialArtsCourse = (slug: string | undefined): PlannedCatalogCourse | undefined =>
+export const getMartialArtsCourse = (slug: string | undefined): MartialArtsCourse | undefined =>
     getPlannedCourse(MARTIAL_ARTS_CATALOG, slug);

@@ -1,13 +1,19 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { COOKING_LESSON_TOPICS, WANG_GANG_THUMBNAIL_FILES } from "@/lib/cookingLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
 
+export interface CookingCourse extends PlannedCatalogCourse {
+    portraitCover?: boolean;
+    chineseTopics?: boolean;
+}
+
 /** Owner-reference page plan; the public courses API confirms published episodes. */
-export const COOKING_CATALOG: PlannedCatalogCourse[] = [
+export const COOKING_CATALOG: CookingCourse[] = [
     {
         slug: "wanneng-gongjuren-a-wei",
         title: "万能工具人阿伟",
-        subtitle: "Wànnéng gōngjù rén ā Wěi",
+        subtitle: "Wànnéng gōngjù rén a Wěi",
         coverPath: `${assetRoot}/万能工具人阿伟.jpeg`,
         lessonCount: 46,
         fallbackLessonTitle: "قسمت",
@@ -28,6 +34,10 @@ export const COOKING_CATALOG: PlannedCatalogCourse[] = [
         title: "美食作家王刚",
         subtitle: "Měishí Zuòjiā Wáng Gāng",
         coverPath: `${assetRoot}/آشپزی/美食作家王刚.png`,
+        portraitCover: true,
+        knownLessonThumbnails: Object.fromEntries(WANG_GANG_THUMBNAIL_FILES.map((file, index) => [
+            index + 1, `${assetRoot}/آشپزی/${encodeURIComponent("wang gang")}/${encodeURIComponent(file)}`,
+        ])),
         lessonCount: 16,
         fallbackLessonTitle: "قسمت",
         description: [
@@ -66,6 +76,7 @@ export const COOKING_CATALOG: PlannedCatalogCourse[] = [
         title: "中国美食频道",
         subtitle: "Zhōngguó Měishí Píndào",
         coverPath: `${assetRoot}/آشپزی/中国美食频道.png`,
+        chineseTopics: true,
         lessonCount: 34,
         fallbackLessonTitle: "قسمت",
         description: [
@@ -80,7 +91,15 @@ export const COOKING_CATALOG: PlannedCatalogCourse[] = [
         ],
         knownLessonSubtitles: {},
     },
-];
+].map((course) => {
+    const topics = COOKING_LESSON_TOPICS[course.slug];
+    return {
+        ...course,
+        lessonCount: topics.length,
+        knownLessonTitles: Object.fromEntries(topics.map((_, index) => [index + 1, `第${index + 1}集`])),
+        knownLessonSubtitles: Object.fromEntries(topics.map((topic, index) => [index + 1, topic])),
+    };
+});
 
-export const getCookingCourse = (slug: string | undefined): PlannedCatalogCourse | undefined =>
+export const getCookingCourse = (slug: string | undefined): CookingCourse | undefined =>
     getPlannedCourse(COOKING_CATALOG, slug);

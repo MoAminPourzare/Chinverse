@@ -1,14 +1,22 @@
 import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+import { TOPIC_TALK_TOPICS } from "@/lib/topicTalkLessonTopics";
 
 const assetRoot = "/assets/chinverse/course-profiles";
+const talkLabels = (slug: string): Record<number, string> =>
+    Object.fromEntries(TOPIC_TALK_TOPICS[slug].map((_, index) => [index + 1, `第${index + 1}集`]));
+const talkSubtitles = (slug: string): Record<number, string> =>
+    Object.fromEntries(TOPIC_TALK_TOPICS[slug].map((topic, index) => [index + 1, topic]));
 
 /** Owner-reference page plan; the public courses API confirms published talks. */
 export const TOPIC_TALKS_CATALOG: PlannedCatalogCourse[] = [
     {
         slug: "dr-yuni-xia",
         title: "两娃妈夏博士 Dr. Yuni Xia",
-        coverPath: `${assetRoot}/两娃妈夏博士Dr. Yuni Xia.jpeg`,
-        lessonCount: 106,
+        cardTitle: "两娃妈夏博士",
+        cardSubtitle: "Dr. Yuni Xia",
+        subtitle: "Dr. Yuni Xia",
+        coverPath: `${assetRoot}/${encodeURIComponent("两娃妈夏博士Dr. Yuni Xia.jpeg")}`,
+        lessonCount: TOPIC_TALK_TOPICS["dr-yuni-xia"].length,
         fallbackLessonTitle: "گفتار",
         description: [
             "این مجموعه شامل گفتارهای کوتاه و موضوعی Dr. Yuni Xia است. او دربارهٔ موضوع‌های گوناگون، از تجربه‌های روزمره و تربیت کودک تا هوش مصنوعی و زندگی اجتماعی، با زبانی روشن و صمیمی صحبت می‌کند.",
@@ -20,13 +28,14 @@ export const TOPIC_TALKS_CATALOG: PlannedCatalogCourse[] = [
             "کسی که می‌خواهد شنیدار و درک گفتار طبیعی را تقویت کند",
             "علاقه‌مندان به موضوع‌های روزمره، فناوری و سبک زندگی",
         ],
-        knownLessonSubtitles: {},
+        knownLessonTitles: talkLabels("dr-yuni-xia"),
+        knownLessonSubtitles: talkSubtitles("dr-yuni-xia"),
     },
     {
         slug: "jishi-shuo",
         title: "纪实说",
         coverPath: `${assetRoot}/纪实说.jpeg`,
-        lessonCount: 44,
+        lessonCount: TOPIC_TALK_TOPICS["jishi-shuo"].length,
         fallbackLessonTitle: "گفتار",
         description: [
             "این پادکست بر پایهٔ گفت‌وگو، مصاحبه و روایت‌های واقعی ساخته شده است. هر قسمت موضوعی مشخص را پی می‌گیرد؛ از جامعه و تاریخ چین تا اقتصاد، فلسفه و چالش‌های زندگی امروز.",
@@ -38,13 +47,14 @@ export const TOPIC_TALKS_CATALOG: PlannedCatalogCourse[] = [
             "کسی که می‌خواهد بحث‌ها و گفت‌وگوهای واقعی را بهتر بفهمد",
             "علاقه‌مندان به موضوع‌های فکری، اجتماعی و چالشی",
         ],
-        knownLessonSubtitles: {},
+        knownLessonTitles: talkLabels("jishi-shuo"),
+        knownLessonSubtitles: talkSubtitles("jishi-shuo"),
     },
     {
         slug: "documentary-literature-hall",
         title: "纪实文学馆",
         coverPath: `${assetRoot}/纪实文学馆.jpeg`,
-        lessonCount: 21,
+        lessonCount: TOPIC_TALK_TOPICS["documentary-literature-hall"].length,
         fallbackLessonTitle: "گفتار",
         description: [
             "این مجموعه سراغ موضوع‌های فرهنگی، تاریخی و اجتماعی می‌رود و آن‌ها را با روایت و گفت‌وگویی مستندگونه پیش می‌برد. هر گفتار فضایی برای آشنایی با زمینهٔ موضوع و دیدگاه‌های مختلف فراهم می‌کند.",
@@ -56,7 +66,8 @@ export const TOPIC_TALKS_CATALOG: PlannedCatalogCourse[] = [
             "کسی که می‌خواهد بحث‌ها و گفت‌وگوهای واقعی را یاد بگیرد",
             "علاقه‌مندان به موضوع‌های فرهنگی و چالشی",
         ],
-        knownLessonSubtitles: {},
+        knownLessonTitles: talkLabels("documentary-literature-hall"),
+        knownLessonSubtitles: talkSubtitles("documentary-literature-hall"),
     },
 ];
 

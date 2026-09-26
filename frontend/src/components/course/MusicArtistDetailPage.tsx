@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Loader2, MoreVertical, Play } from "lucide-react";
+import { Bookmark, BookmarkCheck, Loader2, MoreVertical, Music2, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import { BackButton } from "@/components/ui/IconButton";
 import { checkCourseSaved, saveCourse, unsaveCourse } from "@/lib/courses";
 import { getMusicArtist } from "@/lib/musicArtistCatalog";
 import { getReturnToHref } from "@/lib/returnTo";
-import { getFirstPublishedScreenMediaLesson } from "@/lib/screenMediaCatalog";
+import { getPublishedMusicReleaseLesson } from "@/lib/musicPublished";
 import { usePublishedPlannedCourse } from "@/lib/usePublishedPlannedCourse";
 
 export default function MusicArtistDetailPage() {
@@ -18,7 +18,6 @@ export default function MusicArtistDetailPage() {
     const router = useRouter();
     const artist = getMusicArtist(params?.id);
     const { publishedCourse, isLoading, hasError } = usePublishedPlannedCourse("music", artist);
-    const publishedTrack = getFirstPublishedScreenMediaLesson(publishedCourse);
     const [isSaved, setIsSaved] = useState(false);
     const [savingBookmark, setSavingBookmark] = useState(false);
 
@@ -58,10 +57,6 @@ export default function MusicArtistDetailPage() {
         );
     }
 
-    const playbackHref = publishedCourse && publishedTrack
-        ? `/watch/music/${publishedCourse.id}?lesson=${publishedTrack.id}`
-        : undefined;
-
     const handleToggleSaved = async () => {
         if (!publishedCourse || savingBookmark) return;
         setSavingBookmark(true);
@@ -82,67 +77,88 @@ export default function MusicArtistDetailPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
-                    <BackButton href="/explore/music" label="بازگشت به فهرست موسیقی" />
-                    <div className="flex items-center gap-1">
-                        <button
-                            type="button"
-                            onClick={handleToggleSaved}
-                            disabled={!publishedCourse || savingBookmark}
-                            aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"}
-                            className={`flex h-10 w-10 items-center justify-center rounded-full transition ${isSaved ? "bg-[#155aa6] text-white" : "text-[#333941] hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"} disabled:cursor-not-allowed disabled:opacity-70`}
-                        >
-                            {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => router.push(getReturnToHref("/settings/appearance"))}
-                            aria-label="تنظیمات نمایش"
-                            className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] transition hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"
-                        >
-                            <MoreVertical size={22} />
-                        </button>
-                    </div>
-                </header>
+            <main className="mx-auto w-full max-w-[430px] px-6 py-4">
+                <div className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
+                    <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                        <BackButton href="/explore/music" label="بازگشت به فهرست موسیقی" />
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={handleToggleSaved}
+                                disabled={!publishedCourse || savingBookmark}
+                                aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"}
+                                className={`flex h-10 w-10 items-center justify-center rounded-full transition ${isSaved ? "bg-[#155aa6] text-white" : "text-[#333941] hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"} disabled:cursor-not-allowed disabled:opacity-70`}
+                            >
+                                {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push(getReturnToHref("/settings/appearance"))}
+                                aria-label="تنظیمات نمایش"
+                                className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] transition hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"
+                            >
+                                <MoreVertical size={22} />
+                            </button>
+                        </div>
+                    </header>
 
-                <section className="mt-3 grid grid-cols-[1fr_46%] items-center gap-4" dir="ltr">
-                    <div className="min-w-0 text-center" dir="ltr">
-                        <h1 className="text-[20px] font-black leading-8 text-[#343941] dark:text-white">{artist.title}</h1>
-                        <p className="mt-1 text-[13px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{artist.pinyin}</p>
-                        <p className="mt-3 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
-                        <p className="mt-1 text-[10px] font-bold text-[#667587] dark:text-slate-300" dir="rtl">امتیازدهی پس از انتشار فعال می‌شود</p>
-                    </div>
-                    <div className="relative aspect-square overflow-hidden rounded-[12px] bg-slate-200 shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
-                        <Image src={artist.portraitPath} alt={`تصویر ${artist.displayName}`} fill sizes="185px" className="object-cover" priority />
-                    </div>
-                </section>
+                    <section className="mt-4 grid grid-cols-2 items-center gap-4" dir="ltr">
+                        <div className="min-w-0 text-center" dir="ltr">
+                            <h1 className="font-cjk text-[20px] leading-8 text-[#343941] dark:text-white">{artist.title}</h1>
+                            <p className="mt-1 text-[13px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{artist.pinyin}</p>
+                            <p className="mt-3 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                            <div className="mt-3 flex justify-center gap-1" aria-hidden="true">
+                                {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
+                            </div>
+                            <button type="button" disabled aria-label="ثبت نظر پس از انتشار فعال می‌شود" className="mt-1.5 text-[10px] font-medium text-[#1768d4] disabled:cursor-not-allowed">ثبت نظر</button>
+                        </div>
+                        <div className={`relative w-full overflow-hidden bg-slate-200 ${artist.portraitAspect === "portrait" ? "aspect-[3/4] max-w-[116px]" : "aspect-square rounded-[10px]"}`}>
+                            <Image src={artist.detailPortraitPath || artist.portraitPath} alt={`تصویر ${artist.displayName}`} fill sizes="155px" className="object-cover" priority />
+                        </div>
+                    </section>
+                </div>
 
-                <section className="mt-6" aria-labelledby="artist-biography-heading">
-                    <h2 id="artist-biography-heading" className="text-sm font-black text-[#343941] dark:text-white">بیوگرافی:</h2>
-                    {artist.biography.map((paragraph) => (
-                        <p key={paragraph} className="mt-2 text-right text-[12px] font-medium leading-7 text-[#40464f] dark:text-slate-300">{paragraph}</p>
-                    ))}
-                </section>
-
-                <section className="mt-5" aria-labelledby="artist-styles-heading">
-                    <h2 id="artist-styles-heading" className="text-sm font-black text-[#343941] dark:text-white">سبک:</h2>
-                    <ul className="mt-1 space-y-1 text-[12px] font-medium leading-6 text-[#40464f] dark:text-slate-300">
-                        {artist.styles.map((style) => <li key={style}>• {style}</li>)}
-                    </ul>
-                </section>
-
-                <section className="mt-6 rounded-[16px] border border-[#dfe6f0] bg-white p-4 dark:border-slate-700 dark:bg-[#18212b]" aria-label="وضعیت پخش آثار">
-                    {playbackHref ? (
-                        <Link href={playbackHref} className="flex min-h-11 items-center justify-center gap-2 rounded-[12px] bg-[#155aa6] px-4 py-3 text-sm font-black text-white transition hover:bg-[#104a89] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/40">
-                            <Play size={18} fill="currentColor" aria-hidden />
-                            شنیدن آثار {artist.displayName}
-                        </Link>
-                    ) : (
-                        <p className="text-center text-xs font-medium leading-6 text-[#646d79] dark:text-slate-300">
-                            {hasError ? "وضعیت آثار منتشرشده دریافت نشد؛ دوباره صفحه را باز کن." : isLoading ? "در حال بررسی آثار منتشرشده…" : "هنوز اثری برای پخش منتشر نشده است."}
-                        </p>
-                    )}
+                <section className="mt-5 space-y-2" aria-label={`آثار ${artist.displayName}`}>
+                    {artist.releases.map((release) => {
+                        const publishedTrack = getPublishedMusicReleaseLesson(publishedCourse, release);
+                        const href = publishedCourse && publishedTrack
+                            ? `/watch/music/${publishedCourse.id}?lesson=${publishedTrack.id}`
+                            : undefined;
+                        const status = hasError ? "وضعیت پخش نامشخص است"
+                            : isLoading ? "در حال بررسی اثر…"
+                                : href ? "آمادهٔ پخش" : "هنوز منتشر نشده";
+                        const content = (
+                            <article className="grid min-h-32 grid-cols-[1fr_40%] gap-2">
+                                <div className="flex min-w-0 flex-col px-2.5 py-3 text-left">
+                                    <h2 className="text-[18px] leading-7 text-[#353941] dark:text-white">
+                                        <span className="font-cjk" lang="zh">{release.kind === "song" ? `《${release.title}》` : release.title}</span>
+                                        {release.kind === "album" && <span className="ml-1 text-[10px]">({release.year})</span>}
+                                    </h2>
+                                    {release.kind === "album" && <p className="mt-0.5 text-[12px] text-[#828994] dark:text-slate-400" aria-label={`${release.trackCount} آهنگ`}><span lang="zh">{release.trackCount}首</span></p>}
+                                    <div className="mt-auto pt-3" dir="rtl">
+                                        <div className="h-[3px] rounded-full bg-[#a8d6ff]" aria-hidden="true" />
+                                        <p className="mt-1 text-[10px] leading-4 text-[#58616d] dark:text-slate-300">{status}</p>
+                                    </div>
+                                </div>
+                                <div className={`relative mr-1.5 flex overflow-hidden bg-slate-100 dark:bg-slate-700 ${release.kind === "song" ? "my-auto aspect-video" : "my-1.5 rounded-[8px]"}`}>
+                                    {release.coverPaths?.length ? release.coverPaths.map((cover, index) => (
+                                        <div key={cover} className="relative min-w-0 flex-1 overflow-hidden">
+                                            <Image src={cover} alt={`کاور ${release.title}${release.coverPaths!.length > 1 ? ` – بخش ${index + 1}` : ""}`} fill sizes="130px" className="object-cover" style={{ objectPosition: release.coverPositions?.[index] }} />
+                                        </div>
+                                    )) : <div className="flex w-full items-center justify-center text-[#9aa5b3]" role="img" aria-label={`تصویر آهنگ ${release.title} هنوز اضافه نشده`}><Music2 size={28} aria-hidden="true" /></div>}
+                                </div>
+                            </article>
+                        );
+                        return href ? (
+                            <Link key={release.slug} href={href} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`پخش ${release.title}`}>
+                                {content}
+                            </Link>
+                        ) : (
+                            <div key={release.slug} className="overflow-hidden rounded-[10px] bg-[#e2e5eb] dark:bg-[#202b3a]" dir="ltr">
+                                {content}
+                            </div>
+                        );
+                    })}
                 </section>
             </main>
         </div>

@@ -46,7 +46,7 @@ export default function PlannedCourseExplorePage({ title, basePath, catalog, com
                                 <h2 className={`${course.cardSubtitle ? "line-clamp-1 min-h-4" : "line-clamp-2 min-h-8"} text-[9px] font-bold leading-4 text-[#343941] dark:text-white`}>{course.cardTitle || course.title}</h2>
                                 {course.cardSubtitle && <p className="line-clamp-2 min-h-8 text-[8px] font-bold leading-4 text-[#343941] dark:text-slate-100">{course.cardSubtitle}</p>}
                                 <p className="mt-1 text-[9px] font-medium text-[#737b87] dark:text-slate-400" dir="rtl">
-                                    {course.lessonCount} {countLabel}{course.practiceCount ? ` + ${course.practiceCount} تمرین` : ""} در برنامه
+                                    {course.countSummary || (course.chapterCount ? `${course.chapterCount} درس · ${course.lessonCount} بخش` : `${course.lessonCount} ${countLabel}${course.practiceCount ? ` + ${course.practiceCount} تمرین` : ""} در برنامه`)}
                                 </p>
                             </div>
                         </Link>

@@ -1,6 +1,7 @@
 import { getScreenMediaItem, type ScreenMediaCatalogItem } from "@/lib/screenMediaCatalog";
 
 const assetRoot = "/assets/chinverse/course-profiles/سریال";
+const resetEpisodeAssetRoot = "/assets/chinverse/course-profiles/开端";
 
 export interface SeriesCatalogItem extends ScreenMediaCatalogItem {
     episodeCount: number;
@@ -74,6 +75,8 @@ export const SERIES_CATALOG: SeriesCatalogItem[] = [
         pinyin: "Kāi Duān",
         posterPath: `${assetRoot}/Reset-Chinese-drama-review-poster-576x1024.jpg`,
         episodeCount: 15,
+        episodeImagePaths: Array.from({ length: 15 }, (_, index) => `${resetEpisodeAssetRoot}/${index + 1}.jpg`),
+        episodeLabelStyle: "padded",
         year: 2022,
         country: "چین",
         synopsis: [
