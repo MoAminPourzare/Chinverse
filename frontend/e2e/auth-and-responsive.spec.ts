@@ -140,6 +140,42 @@ test.describe("authentication forms", () => {
 });
 
 test.describe("responsive shell", () => {
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 1280, height: 720 },
+    { width: 1280, height: 1100 },
+    { width: 844, height: 390 },
+  ]) {
+    test(`signup legal dialog fits the app frame at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/signup?legal=community-guidelines");
+      const dialog = page.getByRole("dialog", { name: "قوانین جامعه", exact: true });
+      const panel = dialog.locator("[id^=headlessui-dialog-panel]");
+      const back = dialog.getByRole("button", { name: "بازگشت به ثبت‌نام" });
+      await expect(dialog).toBeVisible();
+
+      const frameBox = await page.locator(".app-frame").boundingBox();
+      const panelBox = await panel.boundingBox();
+      expect(frameBox).not.toBeNull();
+      expect(panelBox).not.toBeNull();
+      expect(panelBox!.y).toBeGreaterThanOrEqual(frameBox!.y);
+      expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(frameBox!.y + frameBox!.height);
+      expect(panelBox!.x).toBeGreaterThanOrEqual(frameBox!.x);
+      expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width);
+
+      const initialBackBox = await back.boundingBox();
+      const lastSection = dialog.getByRole("heading", { name: "به‌روزرسانی قواعد", exact: true });
+      await lastSection.scrollIntoViewIfNeeded();
+      await expect(lastSection).toBeInViewport();
+      await expect(back).toBeInViewport();
+      const scrolledBackBox = await back.boundingBox();
+      expect(scrolledBackBox!.y).toBeCloseTo(initialBackBox!.y, 0);
+      await back.click();
+      await expect(dialog).not.toBeVisible();
+      await expect(page).toHaveURL(/\/signup$/);
+    });
+  }
+
   for (const route of ["/login", "/signup", "/settings/appearance", "/settings/daily"]) {
     test(`${route} has no horizontal page overflow`, async ({ page }) => {
       await page.goto(route);

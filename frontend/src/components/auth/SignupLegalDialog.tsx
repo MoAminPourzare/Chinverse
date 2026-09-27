@@ -38,7 +38,7 @@ export default function SignupLegalDialog() {
         <Dialog open onClose={close} className="fixed inset-0 z-[180]" dir="rtl">
             <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
             <div className="fixed inset-0 flex items-center justify-center p-4">
-                <Dialog.Panel className="flex max-h-[calc(100dvh-32px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] bg-white text-right shadow-2xl">
+                <Dialog.Panel className="flex min-h-0 max-h-full w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] bg-white text-right shadow-2xl">
                     <div className="shrink-0 border-b border-slate-100 px-5 py-3">
                         <button type="button" onClick={close} className="inline-flex items-center gap-2 rounded-xl px-2 text-sm font-bold text-[#155aa6] hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#155aa6]">
                             <ArrowRight size={18} />
@@ -46,7 +46,7 @@ export default function SignupLegalDialog() {
                         </button>
                         <Dialog.Title className="mt-2 text-lg font-black text-slate-950">{document.title}</Dialog.Title>
                     </div>
-                    <div className="min-h-0 overflow-y-auto px-5 pb-6">
+                    <div className="min-h-0 overflow-y-auto overscroll-contain px-5 pb-6">
                         <nav aria-label="اسناد حقوقی ثبت‌نام" className="mt-4 flex flex-wrap gap-2">
                             {(Object.keys(LEGAL_DOCUMENTS) as LegalDocumentKind[]).map((key) => (
                                 <button key={key} type="button" onClick={() => openSignupLegalDocument(key)} aria-pressed={key === kind} className="rounded-xl px-3 text-xs font-bold text-[#155aa6] hover:bg-blue-50 aria-pressed:bg-blue-50 focus-visible:outline-2 focus-visible:outline-[#155aa6]">
