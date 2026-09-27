@@ -107,8 +107,8 @@ export default function LoginPage() {
                 </p>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                <label htmlFor="login-email" className="block space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                <label htmlFor="login-email" className="flex flex-col gap-2.5">
                     <span className="text-sm font-semibold text-slate-700">ایمیل</span>
                     <div className="relative">
                         <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -136,7 +136,7 @@ export default function LoginPage() {
                     <FieldError id="login-email-error" message={fieldErrors.email} />
                 </label>
 
-                <label htmlFor="login-password" className="block space-y-2">
+                <label htmlFor="login-password" className="flex flex-col gap-2.5">
                     <span className="text-sm font-semibold text-slate-700">رمز عبور</span>
                     <div className="relative">
                         <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -157,17 +157,17 @@ export default function LoginPage() {
                             aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
                             placeholder="••••••••"
                             className={cn(
-                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "w-full rounded-2xl border border-slate-200 bg-white pl-14 pr-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
                                 "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
                             )}
                         />
                         <button
                             type="button"
                             onClick={togglePasswordVisibility}
-                            className="absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                            className="absolute left-1 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-[#155aa6]"
                             aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
                         >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            {showPassword ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
                         </button>
                     </div>
                     <FieldError id="login-password-error" message={fieldErrors.password} />
@@ -176,7 +176,7 @@ export default function LoginPage() {
                     </Link>
                 </label>
 
-                <label htmlFor="login-mfa-code" className="block space-y-2">
+                <label htmlFor="login-mfa-code" className="flex flex-col gap-2.5">
                     <span className="text-sm font-semibold text-slate-700">کد احراز هویت دومرحله‌ای <span className="font-normal text-slate-400">(در صورت فعال بودن)</span></span>
                     <div className="relative">
                         <KeyRound className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

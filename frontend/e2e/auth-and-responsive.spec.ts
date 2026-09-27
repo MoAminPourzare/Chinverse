@@ -82,6 +82,61 @@ test.describe("authentication forms", () => {
     await acceptance.check();
     await expect(acceptance).toBeChecked();
   });
+
+  test("signup legal documents preserve the draft through close, back and forward", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto("/signup?ref=CH12AB");
+    await page.locator("#signup-display-name").fill("کاربر آزمایشی");
+    await page.locator("#signup-email").fill("draft@example.invalid");
+    await page.locator("#signup-phone").fill("09121234567");
+    await page.locator("#signup-password").fill("A long test-only passphrase");
+
+    for (const [title, slug, action] of [
+      ["شرایط استفاده", "terms", "close"],
+      ["حریم خصوصی", "privacy", "escape"],
+      ["قوانین جامعه", "community-guidelines", "back"],
+    ] as const) {
+      const link = page.getByRole("link", { name: title, exact: true });
+      await link.click();
+      const dialog = page.getByRole("dialog", { name: title, exact: true });
+      await expect(dialog).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`legal=${slug}`));
+      await expect(dialog.getByText(/لازم‌الاجرا از/)).toBeVisible();
+
+      if (action === "close") {
+        await dialog.getByRole("button", { name: "بازگشت به ثبت‌نام" }).click();
+      } else if (action === "escape") {
+        await dialog.press("Escape");
+      } else {
+        await page.goBack();
+        await expect(dialog).not.toBeVisible();
+        await page.goForward();
+        await expect(dialog).toBeVisible();
+        await page.goBack();
+      }
+
+      await expect(page.getByRole("dialog")).not.toBeVisible();
+      await expect(page).toHaveURL(/\/signup\?ref=CH12AB$/);
+      await expect(page.locator("#signup-display-name")).toHaveValue("کاربر آزمایشی");
+      await expect(page.locator("#signup-email")).toHaveValue("draft@example.invalid");
+      await expect(page.locator("#signup-phone")).toHaveValue("09121234567");
+      await expect(page.locator("#signup-password")).toHaveValue("A long test-only passphrase");
+      await expect(page.getByRole("checkbox")).not.toBeChecked();
+    }
+  });
+
+  test("a directly opened signup legal document closes onto the signup form", async ({ page }) => {
+    await page.goto("/settings/about");
+    await page.goto("/signup?legal=terms");
+    const dialog = page.getByRole("dialog", { name: "شرایط استفاده", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "حریم خصوصی", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "حریم خصوصی", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "بازگشت به ثبت‌نام" }).click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+    await expect(page).toHaveURL(/\/signup$/);
+    await expect(page.locator("#signup-display-name")).toBeVisible();
+  });
 });
 
 test.describe("responsive shell", () => {

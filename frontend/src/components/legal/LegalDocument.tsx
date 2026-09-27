@@ -1,24 +1,14 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { LEGAL_EFFECTIVE_DATE_FA } from "@/lib/legal";
-
-type LegalSection = {
-    title: string;
-    paragraphs: string[];
-    items?: string[];
-};
+import { LegalDocumentBody } from "@/components/legal/LegalDocumentBody";
+import type { LegalDocumentData } from "@/lib/legalDocuments";
 
 export function LegalDocument({
     title,
     intro,
     sections,
     version,
-}: {
-    title: string;
-    intro: string;
-    sections: LegalSection[];
-    version: string;
-}) {
+}: LegalDocumentData) {
     return (
         <main className="min-h-full bg-[#f7f8fb] px-5 pb-12 pt-5 text-right text-slate-800" dir="rtl">
             <div className="mx-auto w-full max-w-[680px]">
@@ -30,26 +20,7 @@ export function LegalDocument({
                     بازگشت
                 </Link>
                 <h1 className="mt-6 text-2xl font-black text-slate-950">{title}</h1>
-                <p className="mt-4 text-sm leading-8 text-slate-600">{intro}</p>
-                <p className="mt-3 text-xs font-medium text-slate-500">
-                    لازم‌الاجرا از {LEGAL_EFFECTIVE_DATE_FA} | نسخه <span dir="ltr">{version}</span>
-                </p>
-
-                <div className="mt-9 space-y-8">
-                    {sections.map((section) => (
-                        <section key={section.title}>
-                            <h2 className="text-base font-black text-slate-900">{section.title}</h2>
-                            <div className="mt-3 space-y-3 text-sm leading-8 text-slate-600">
-                                {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                                {section.items && (
-                                    <ul className="list-disc space-y-1 pr-5 marker:text-[#155aa6]">
-                                        {section.items.map((item) => <li key={item}>{item}</li>)}
-                                    </ul>
-                                )}
-                            </div>
-                        </section>
-                    ))}
-                </div>
+                <LegalDocumentBody intro={intro} sections={sections} version={version} />
 
                 <nav aria-label="اسناد حقوقی" className="mt-10 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200 pt-5 text-xs font-bold text-[#155aa6]">
                     <Link href="/legal/terms">شرایط استفاده</Link>

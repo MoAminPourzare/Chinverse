@@ -1,0 +1,393 @@
+"use client";
+
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User, Eye, EyeOff } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
+import { openSignupLegalDocument } from "@/components/auth/SignupLegalDialog";
+import TurnstileWidget from "@/components/auth/TurnstileWidget";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import { authService } from "@/services/auth.service";
+import { referralService } from "@/services/referral.service";
+import { releaseConfig } from "@/config/release";
+import { cn } from "@/lib/cn";
+import {
+    cleanApiValidationMessage,
+    hasOnlyPersianNameCharacters,
+    normalizeIranMobile,
+    normalizePersianName,
+    validateEmail,
+    validateIranMobile,
+    validatePassword,
+    validatePersianName,
+    validateReferralCode,
+    validationMessage,
+} from "@/validation";
+
+export default function SignupForm({ children }: { children: ReactNode }) {
+    const router = useRouter();
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+        phone: "",
+        display_name: "",
+        referral_code: "",
+    });
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+    const [legalAccepted, setLegalAccepted] = useState(false);
+
+    const togglePasswordVisibility = () => {
+        const livePassword = passwordInputRef.current?.value;
+        if (livePassword !== undefined && livePassword !== formData.password) {
+            setFormData((current) => ({ ...current, password: livePassword }));
+        }
+        setShowPassword((visible) => !visible);
+    };
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (!releaseConfig.features.referrals) return;
+        const referralCode = params.get("ref") || params.get("invite") || params.get("code") || "";
+        if (!referralCode) return;
+
+        setFormData((current) => ({
+            ...current,
+            referral_code: referralCode.toUpperCase().replace(/[-\s]/g, ""),
+        }));
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name } = e.target;
+        const value = name === "referral_code"
+            ? e.target.value.toUpperCase().replace(/[-\s]/g, "")
+            : e.target.value;
+
+        setFormData((current) => ({ ...current, [name]: value }));
+        setFieldErrors((current) => ({
+            ...current,
+            [name]: name === "display_name" && value && !hasOnlyPersianNameCharacters(value)
+                ? "نام را فقط با حروف فارسی بنویس؛ زبان صفحه‌کلید را روی فارسی بگذار."
+                : "",
+        }));
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const { name } = e.currentTarget;
+        const value = name === "referral_code"
+            ? e.currentTarget.value.toUpperCase().replace(/[-\s]/g, "")
+            : e.currentTarget.value;
+        const validators: Record<string, (currentValue: string) => string> = {
+            display_name: (currentValue) => validationMessage(validatePersianName(currentValue)),
+            email: (currentValue) => validationMessage(validateEmail(currentValue)),
+            phone: (currentValue) => validationMessage(validateIranMobile(currentValue)),
+            password: (currentValue) => validationMessage(validatePassword(currentValue)),
+            referral_code: (currentValue) => validationMessage(validateReferralCode(currentValue)),
+        };
+        const validate = validators[name];
+        if (validate) {
+            setFormData((current) => ({ ...current, [name]: value }));
+            setFieldErrors((current) => ({ ...current, [name]: validate(value) }));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+
+        const nextErrors = {
+            display_name: validationMessage(validatePersianName(formData.display_name)),
+            email: validationMessage(validateEmail(formData.email)),
+            phone: validationMessage(validateIranMobile(formData.phone)),
+            password: validationMessage(validatePassword(formData.password)),
+            referral_code: releaseConfig.features.referrals
+                ? validationMessage(validateReferralCode(formData.referral_code))
+                : "",
+            legal: legalAccepted ? "" : "برای ساخت حساب، شرایط استفاده و سیاست حریم خصوصی را بپذیر.",
+        };
+        const hasErrors = Object.values(nextErrors).some(Boolean);
+        setFieldErrors(nextErrors);
+        if (hasErrors) return;
+
+        setLoading(true);
+
+        try {
+            const referralCode = releaseConfig.features.referrals ? formData.referral_code.trim() : "";
+            if (referralCode) {
+                const referral = await referralService.validateCode(referralCode);
+                if (!referral.valid) {
+                    setFieldErrors((current) => ({ ...current, referral_code: "کد دعوت معتبر نیست." }));
+                    return;
+                }
+            }
+
+            await authService.signup({
+                ...formData,
+                email: formData.email.trim().toLowerCase(),
+                phone: normalizeIranMobile(formData.phone),
+                display_name: normalizePersianName(formData.display_name),
+                referral_code: referralCode || undefined,
+                turnstile_token: turnstileToken || undefined,
+                accept_terms: true,
+                accept_privacy: true,
+                accept_community_guidelines: true,
+            });
+            router.push("/login");
+        } catch (err: unknown) {
+            setTurnstileResetKey((value) => value + 1);
+            const apiError = err as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };
+            const detail = apiError.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                const issue = detail[0];
+                const field = issue?.loc?.at(-1);
+                if (typeof field === "string" && ["display_name", "email", "phone", "password", "referral_code"].includes(field)) {
+                    setFieldErrors((current) => ({ ...current, [field]: cleanApiValidationMessage(issue.msg) }));
+                } else {
+                    setError(cleanApiValidationMessage(issue?.msg || "اطلاعات واردشده را بررسی کن."));
+                }
+            } else if (typeof detail === "string") {
+                if (detail.includes("ایمیل")) {
+                    setFieldErrors((current) => ({ ...current, email: detail }));
+                } else if (detail.includes("موبایل")) {
+                    setFieldErrors((current) => ({ ...current, phone: detail }));
+                } else if (detail.includes("دعوت")) {
+                    setFieldErrors((current) => ({ ...current, referral_code: detail }));
+                } else {
+                    setError(detail);
+                }
+            } else {
+                setError("ثبت نام ناموفق بود. لطفا دوباره تلاش کن.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <AuthShell
+            backHref="/settings"
+            title="ثبت نام"
+            icon={<Image src="/assets/chinverse/icons/2 people.svg" alt="" width={30} height={30} className="h-8 w-8 object-contain" priority />}
+            iconClassName="bg-transparent shadow-none ring-0"
+            footer={
+                <p className="text-center text-sm leading-6 text-slate-600">
+                    قبلا حساب ساخته‌ای؟{" "}
+                    <Link href="/login" className="font-bold text-[#155aa6] transition-colors hover:text-[#0f4e92]">
+                        وارد شو
+                    </Link>
+                </p>
+            }
+        >
+            <div className="mb-6">
+                <h2 className="text-xl font-black text-slate-950">شروع مسیر چین‌ورس</h2>
+            </div>
+
+            {error && (
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700" role="alert" aria-live="assertive">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    <p className="text-sm leading-6">{error}</p>
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                <label htmlFor="signup-display-name" className="flex flex-col gap-2.5">
+                    <span className="text-sm font-semibold text-slate-700">نام و نام خانوادگی</span>
+                    <div className="relative">
+                        <User className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            id="signup-display-name"
+                            type="text"
+                            name="display_name"
+                            value={formData.display_name}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            dir="rtl"
+                            autoComplete="name"
+                            maxLength={120}
+                            aria-invalid={Boolean(fieldErrors.display_name)}
+                            aria-describedby={fieldErrors.display_name ? "signup-display-name-error" : undefined}
+                            placeholder="نام خودت را وارد کن"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.display_name && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
+                            )}
+                        />
+                    </div>
+                    <FieldError id="signup-display-name-error" message={fieldErrors.display_name} />
+                </label>
+
+                <label htmlFor="signup-email" className="flex flex-col gap-2.5">
+                    <span className="text-sm font-semibold text-slate-700">ایمیل</span>
+                    <div className="relative">
+                        <Mail className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            id="signup-email"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            dir="ltr"
+                            autoComplete="email"
+                            inputMode="email"
+                            aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
+                            placeholder="example@mail.com"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.email && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
+                            )}
+                        />
+                    </div>
+                    <FieldError id="signup-email-error" message={fieldErrors.email} />
+                </label>
+
+                <label htmlFor="signup-phone" className="flex flex-col gap-2.5">
+                    <span className="text-sm font-semibold text-slate-700">شماره موبایل</span>
+                    <div className="relative">
+                        <Phone className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            id="signup-phone"
+                            type="text"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            dir="ltr"
+                            inputMode="numeric"
+                            autoComplete="tel"
+                            aria-invalid={Boolean(fieldErrors.phone)}
+                            aria-describedby={fieldErrors.phone ? "signup-phone-error" : undefined}
+                            placeholder="09121234567"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.phone && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
+                            )}
+                        />
+                    </div>
+                    <FieldError id="signup-phone-error" message={fieldErrors.phone} />
+                </label>
+
+                <label htmlFor="signup-password" className="flex flex-col gap-2.5">
+                    <span className="text-sm font-semibold text-slate-700">رمز عبور</span>
+                    <div className="relative">
+                        <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            ref={passwordInputRef}
+                            id="signup-password"
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            dir="ltr"
+                            autoComplete="new-password"
+                            maxLength={128}
+                            aria-invalid={Boolean(fieldErrors.password)}
+                            aria-describedby={fieldErrors.password ? "signup-password-error" : "signup-password-hint"}
+                            placeholder="••••••••"
+                            className={cn(
+                                "w-full rounded-2xl border border-slate-200 bg-white pl-14 pr-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
+                                "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                fieldErrors.password && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
+                            )}
+                        />
+                        <button
+                            type="button"
+                            onClick={togglePasswordVisibility}
+                            className="absolute left-1 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-[#155aa6]"
+                            aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
+                        >
+                            {showPassword ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
+                        </button>
+                    </div>
+                    <FieldError id="signup-password-error" message={fieldErrors.password} />
+                    {!fieldErrors.password && (
+                        <p id="signup-password-hint" className="text-xs leading-5 text-slate-500">حداقل ۱۵ کاراکتر؛ استفاده از عبارت طولانی و به‌یادماندنی بهتر است.</p>
+                    )}
+                </label>
+
+                {releaseConfig.features.referrals && (
+                    <label htmlFor="signup-referral-code" className="flex flex-col gap-2.5">
+                        <span className="text-sm font-semibold text-slate-700">کد دعوت دوستان</span>
+                        <div className="relative">
+                            <Gift className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                id="signup-referral-code"
+                                type="text"
+                                name="referral_code"
+                                value={formData.referral_code}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                dir="ltr"
+                                autoComplete="off"
+                                aria-invalid={Boolean(fieldErrors.referral_code)}
+                                aria-describedby={fieldErrors.referral_code ? "signup-referral-error" : undefined}
+                                placeholder="اختیاری، مثلا CH12AB"
+                                maxLength={32}
+                                className={cn(
+                                    "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-left font-latin text-sm font-black uppercase tracking-[0.10em] text-slate-900 outline-none transition-all placeholder:text-right placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400",
+                                    "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
+                                    fieldErrors.referral_code && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
+                                )}
+                            />
+                        </div>
+                        <FieldError id="signup-referral-error" message={fieldErrors.referral_code} />
+                    </label>
+                )}
+
+                <div className={cn(
+                    "rounded-lg border bg-slate-50 px-4 py-3",
+                    fieldErrors.legal ? "border-rose-300" : "border-slate-200",
+                )}>
+                    <div className="flex items-start gap-3">
+                        <input
+                            id="legal-acceptance"
+                            type="checkbox"
+                            checked={legalAccepted}
+                            onChange={(event) => {
+                                setLegalAccepted(event.target.checked);
+                                setFieldErrors((current) => ({ ...current, legal: "" }));
+                            }}
+                            aria-invalid={Boolean(fieldErrors.legal)}
+                            aria-describedby={fieldErrors.legal ? "signup-legal-error" : undefined}
+                            className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
+                        />
+                        <label htmlFor="legal-acceptance" className="text-xs leading-6 text-slate-600">
+                            با ساخت حساب، نسخه فعلی{" "}
+                            <Link href="/legal/terms" onNavigate={(event) => { event.preventDefault(); openSignupLegalDocument("terms"); }} className="font-black text-[#155aa6]">شرایط استفاده</Link>
+                            ،{" "}
+                            <Link href="/legal/privacy" onNavigate={(event) => { event.preventDefault(); openSignupLegalDocument("privacy"); }} className="font-black text-[#155aa6]">حریم خصوصی</Link>
+                            {" "}و{" "}
+                            <Link href="/legal/community-guidelines" onNavigate={(event) => { event.preventDefault(); openSignupLegalDocument("community-guidelines"); }} className="font-black text-[#155aa6]">قوانین جامعه</Link>
+                            {" "}را خوانده‌ام و می‌پذیرم.
+                        </label>
+                    </div>
+                    <FieldError id="signup-legal-error" message={fieldErrors.legal} />
+                </div>
+
+                <TurnstileWidget action="signup" onTokenChange={setTurnstileToken} resetKey={turnstileResetKey} />
+
+                <PrimaryButton type="submit" className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
+                    {loading ? "در حال ثبت…" : "ثبت نام"}
+                </PrimaryButton>
+            </form>
+            {children}
+        </AuthShell>
+    );
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+    if (!message) return null;
+    return <p id={id} className="text-xs font-bold leading-5 text-rose-600" role="alert">{message}</p>;
+}
