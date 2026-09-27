@@ -124,11 +124,11 @@ export default function PodcastDetailPage() {
                                 <div className="my-1.5 mr-1.5 rounded-[8px] bg-[conic-gradient(#eee_25%,#fff_0_50%,#eee_0_75%,#fff_0)] bg-[length:14px_14px] dark:bg-[conic-gradient(#334155_25%,#273344_0_50%,#334155_0_75%,#273344_0)]" role="img" aria-label="تصویر قسمت هنوز اضافه نشده" />
                             </article>
                         );
-                        return href ? (
-                            <Link key={card.key} href={href} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`پخش ${card.label}${card.title ? `: ${card.title}` : ""}`}>
+                        return (
+                            <Link key={card.key} href={href || (podcast.groups ? `/podcasts/${podcast.slug}/level/${card.key}` : `/podcasts/${podcast.slug}/lesson/${card.key}`)} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`باز کردن ${card.label}${card.title ? `: ${card.title}` : ""}`}>
                                 {content}
                             </Link>
-                        ) : <div key={card.key} className="overflow-hidden rounded-[10px] bg-[#e2e5eb] dark:bg-[#202b3a]" dir="ltr">{content}</div>;
+                        );
                     })}
                 </section>
             </main>

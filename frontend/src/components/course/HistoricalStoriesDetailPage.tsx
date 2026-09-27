@@ -120,8 +120,7 @@ export default function HistoricalStoriesDetailPage() {
                                 <div className="my-1.5 mr-1.5 rounded-[8px] bg-[conic-gradient(#eee_25%,#fff_0_50%,#eee_0_75%,#fff_0)] bg-[length:14px_14px] dark:bg-[conic-gradient(#334155_25%,#273344_0_50%,#334155_0_75%,#273344_0)]" role="img" aria-label="تصویر قسمت هنوز اضافه نشده" />
                             </article>
                         );
-                        return href ? <Link key={position} href={href} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`پخش ${label}: ${topic}`}>{content}</Link>
-                            : <div key={position} className="overflow-hidden rounded-[10px] bg-[#e2e5eb] dark:bg-[#202b3a]" dir="ltr">{content}</div>;
+                        return <Link key={position} href={href || (`/historical-stories/${course.slug}/lesson/${position}`)} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`باز کردن ${label}: ${topic}`}>{content}</Link>;
                     })}
                 </section>
 

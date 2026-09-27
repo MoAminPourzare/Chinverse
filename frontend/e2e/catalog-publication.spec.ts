@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const collections = [
+    { domain: "energy-health", slug: "xue-guoxue-wang-baduanjin", count: 20 },
     { domain: "historical-stories", slug: "chinese-tales-with-xiao-lin", count: 18 },
     { domain: "classical-poetry", slug: "rabbit-classical-poetry", count: 65 },
     { domain: "festivals-customs", slug: "sanmiao-wonderful-traditional-festivals", count: 10 },
@@ -32,9 +33,16 @@ for (const collection of collections) {
         await expect(playback.nth(0)).toHaveAttribute("href", `/watch/${collection.domain}/121?lesson=501`);
         await expect(playback.nth(1)).toHaveAttribute("href", `/watch/${collection.domain}/121?lesson=${500 + collection.count}`);
         for (const position of [2, 3, 4, 5]) {
-            await expect(page.locator("main article").nth(position - 1)).toContainText("هنوز منتشر نشده");
+            const card = page.locator("main article").nth(position - 1);
+            await expect(card).toContainText("هنوز منتشر نشده");
+            await expect(card.locator("..")).toHaveAttribute("href", `/${collection.domain}/${collection.slug}/lesson/${position}`);
         }
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow).toBeLessThanOrEqual(1);
+        await page.locator(`main a[href="/${collection.domain}/${collection.slug}/lesson/2"]`).click();
+        await expect(page).toHaveURL(new RegExp(`/${collection.slug}/lesson/2$`));
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await expect(page.locator("main").getByText(/فایل اصلی این .* هنوز منتشر نشده است\./)).toBeVisible();
+        await expect(page.locator("main a[href^='/watch/']")).toHaveCount(0);
     });
 }

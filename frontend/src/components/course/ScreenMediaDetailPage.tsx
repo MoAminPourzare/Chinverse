@@ -190,9 +190,9 @@ export default function ScreenMediaDetailPage({
                             {previewContent}
                         </Link>
                     ) : (
-                        <div className="mt-7 flex min-h-32 overflow-hidden rounded-[10px] bg-[#e9edf5] dark:bg-[#202b3a]" dir="ltr" aria-label={`وضعیت پخش ${itemNoun} ${item.title}`}>
+                        <Link href={`/${domain}/${item.slug}/lesson/1`} className="mt-7 flex min-h-32 overflow-hidden rounded-[10px] bg-[#e9edf5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`باز کردن ${itemNoun} ${item.title}`}>
                             {previewContent}
-                        </div>
+                        </Link>
                     )}
                 </main>
             </div>
@@ -263,14 +263,10 @@ export default function ScreenMediaDetailPage({
                                     </div>
                                 </article>
                             );
-                            return href ? (
-                                <Link key={position} href={href} className="block overflow-hidden rounded-[10px] bg-[#e9edf5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`تماشای قسمت ${position} ${itemNoun} ${item.title}`}>
+                            return (
+                                <Link key={position} href={href || `/${domain}/${item.slug}/lesson/${position}`} className="block overflow-hidden rounded-[10px] bg-[#e9edf5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`باز کردن قسمت ${position} ${itemNoun} ${item.title}`}>
                                     {content}
                                 </Link>
-                            ) : (
-                                <div key={position} className="overflow-hidden rounded-[10px] bg-[#e9edf5] dark:bg-[#202b3a]" dir="ltr">
-                                    {content}
-                                </div>
                             );
                         })}
                     </section>
@@ -379,10 +375,10 @@ export default function ScreenMediaDetailPage({
                                     );
                                 }
                                 return (
-                                    <div key={position} className={`${className} border-[#dfe6f0] bg-white text-[#59616c] dark:border-slate-700 dark:bg-[#18212b] dark:text-slate-300`}>
+                                    <Link key={position} href={`/${domain}/${item.slug}/lesson/${position}`} className={`${className} border-[#dfe6f0] bg-white text-[#59616c] dark:border-slate-700 dark:bg-[#18212b] dark:text-slate-300`}>
                                         <span className="text-[11px] font-black">قسمت {position}</span>
                                         <span className="mt-0.5 text-[9px] font-medium">منتشر نشده</span>
-                                    </div>
+                                    </Link>
                                 );
                             })}
                         </div>

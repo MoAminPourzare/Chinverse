@@ -149,14 +149,10 @@ export default function MusicArtistDetailPage() {
                                 </div>
                             </article>
                         );
-                        return href ? (
-                            <Link key={release.slug} href={href} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`پخش ${release.title}`}>
+                        return (
+                            <Link key={release.slug} href={href || `/music/${artist.slug}/release/${release.slug}`} className="block overflow-hidden rounded-[10px] bg-[#e2e5eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`باز کردن ${release.title}`}>
                                 {content}
                             </Link>
-                        ) : (
-                            <div key={release.slug} className="overflow-hidden rounded-[10px] bg-[#e2e5eb] dark:bg-[#202b3a]" dir="ltr">
-                                {content}
-                            </div>
                         );
                     })}
                 </section>
