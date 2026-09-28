@@ -158,7 +158,7 @@ export default function LeitnerDashboard() {
                 </header>
 
                 <section aria-label="جعبه‌های لایتنر">
-                    <div className="grid grid-cols-6 gap-x-1 gap-y-1">
+                    <div className="grid grid-cols-6 gap-2">
                         {[1, 2, 3, 4, 5].map((boxNumber) => (
                             <BoxStageCard key={boxNumber} boxNumber={boxNumber} stats={stats} />
                         ))}
@@ -287,6 +287,7 @@ function BoxStageCard({ boxNumber, stats }: { boxNumber: number; stats: LeitnerS
                         width={64}
                         height={64}
                         className="h-full w-full object-contain"
+                        loading="eager"
                         unoptimized
                     />
                 </div>
