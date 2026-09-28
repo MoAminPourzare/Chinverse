@@ -42,68 +42,44 @@ interface LeitnerReviewResponse {
 const BOX_INFO: Record<number, {
     title: string;
     subtitle: string;
-    shortLabel: string;
     image: string;
-    soft: string;
     border: string;
     header: string;
-    body: string;
-    accent: string;
 }> = {
     1: {
         title: "بذر",
         subtitle: "نیازمند یادآوری",
-        shortLabel: "شروع مسیر",
         image: "/assets/chinverse/leitner/stage-seed.svg",
-        soft: "bg-[#ffe9ec] text-[#be123c]",
         border: "border-[#e51f35]",
         header: "bg-[#e51f35]",
-        body: "bg-[#f1f3f7]",
-        accent: "text-[#e51f35]",
     },
     2: {
         title: "جوانه",
         subtitle: "حافظه کوتاه مدت",
-        shortLabel: "تثبیت اولیه",
         image: "/assets/chinverse/leitner/stage-sprout.svg",
-        soft: "bg-[#fff3ce] text-[#a16207]",
         border: "border-[#f4aa16]",
-        header: "bg-[#f4aa16]",
-        body: "bg-[#f1f3f7]",
-        accent: "text-[#c47a00]",
+        header: "bg-[#f7bd28]",
     },
     3: {
         title: "نهال",
         subtitle: "حافظه میان مدت",
-        shortLabel: "رو به رشد",
         image: "/assets/chinverse/leitner/stage-branch.svg",
-        soft: "bg-emerald-50 text-emerald-700",
         border: "border-[#39aa20]",
-        header: "bg-[#39aa20]",
-        body: "bg-[#f1f3f7]",
-        accent: "text-[#238316]",
+        header: "bg-[#50b008]",
     },
     4: {
         title: "درخت جوان",
         subtitle: "حافظه بلند مدت",
-        shortLabel: "قوی تر",
         image: "/assets/chinverse/leitner/stage-tree.svg",
-        soft: "bg-[#eef6ff] text-[#155aa6]",
         border: "border-[#88c7ee]",
-        header: "bg-[#88c7ee]",
-        body: "bg-[#edf7ff]",
-        accent: "text-[#0f4e92]",
+        header: "bg-[#a2cef0]",
     },
     5: {
         title: "درخت تنومند",
         subtitle: "آموخته شده",
-        shortLabel: "تقریبا قطعی",
         image: "/assets/chinverse/leitner/stage-mastered.svg",
-        soft: "bg-[#e9f2ff] text-[#0f4e92]",
         border: "border-[#155aa6]",
-        header: "bg-[#155aa6]",
-        body: "bg-[#e7eef8]",
-        accent: "text-[#155aa6]",
+        header: "bg-[#20518f]",
     },
 };
 
@@ -181,14 +157,9 @@ export default function LeitnerDashboard() {
                     <h1 className="text-xl font-black text-slate-950">لایتنر</h1>
                 </header>
 
-                <section className="px-1">
-                    <div className="grid grid-cols-3 gap-1.5">
-                        {[1, 2, 3].map((boxNumber) => (
-                            <BoxStageCard key={boxNumber} boxNumber={boxNumber} stats={stats} compact />
-                        ))}
-                    </div>
-                    <div className="mx-auto mt-1.5 grid w-[68%] grid-cols-2 gap-1.5">
-                        {[4, 5].map((boxNumber) => (
+                <section aria-label="جعبه‌های لایتنر">
+                    <div className="grid grid-cols-6 gap-x-1 gap-y-1">
+                        {[1, 2, 3, 4, 5].map((boxNumber) => (
                             <BoxStageCard key={boxNumber} boxNumber={boxNumber} stats={stats} />
                         ))}
                     </div>
@@ -228,20 +199,22 @@ export default function LeitnerDashboard() {
 
 function EmptyLeitnerState() {
     return (
-        <section className="flex min-h-[360px] flex-col items-center justify-center px-6 pb-8 pt-10 text-center">
+        <section className="flex flex-col items-center px-1 pb-6 pt-2 text-center">
             <Image
-                src="/assets/chinverse/icons/Hub Connection.svg"
+                src="/assets/chinverse/leitner/empty-connections.svg"
                 alt=""
                 width={88}
                 height={88}
-                className="h-20 w-20 object-contain"
+                className="h-[88px] w-[88px] object-contain"
                 unoptimized
             />
-            <h2 className="mt-7 text-[18px] font-black leading-8 text-[#25272d]">
+            <h2 className="mt-5 text-[16px] font-black leading-7 text-[#434343]">
                 هنوز هیچ واژه‌ای به لایتنرت اضافه نکردی!
             </h2>
-            <p className="mt-3 max-w-[310px] text-[12px] font-medium leading-7 text-[#888e99]">
-                با دیدن درس‌ها، هر واژه‌ای که برایت تازه یا مهم بود به لایتنر بفرست. اینجا همان واژه‌ها برای مرور منظم و ماندگار آماده می‌شوند.
+            <p className="mt-2 max-w-[310px] text-[12px] font-medium leading-[22px] text-[#888888]">
+                با لایتنر، هر بار که مرور می‌کنی، اتصال‌های مغزت قوی‌تر می‌شن.
+                این یعنی کمتر فراموش می‌کنی، بیشتر توی حافظه‌ات موندگار می‌شن.
+                هر وقت واژه‌ای برات چالش‌برانگیز بود، بیارش اینجا تا دیگه هیچ‌وقت فراموشش نکنی!
             </p>
         </section>
     );
@@ -292,36 +265,34 @@ function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (u
     );
 }
 
-function BoxStageCard({ boxNumber, stats, compact = false }: { boxNumber: number; stats: LeitnerStats; compact?: boolean }) {
+function BoxStageCard({ boxNumber, stats }: { boxNumber: number; stats: LeitnerStats }) {
     const box = BOX_INFO[boxNumber];
     const count = stats.box_counts[String(boxNumber)] || 0;
-    const interval = stats.box_intervals[String(boxNumber)] || 1;
 
     return (
-        <article className="overflow-hidden rounded-[9px] bg-[#d5d6da] shadow-sm">
-            <div className={cn("flex h-[34px] flex-col items-center justify-center px-1 text-center text-white", box.header)}>
-                <h3 className="line-clamp-1 text-[11px] font-black leading-4">{box.title}</h3>
-                <p className="line-clamp-1 text-[8px] font-bold leading-3 text-white/95">{box.subtitle}</p>
+        <article className={cn(
+            "col-span-2 overflow-hidden rounded-[11px] bg-[#d9d9d9]",
+            boxNumber === 4 && "col-start-2 row-start-2",
+            boxNumber === 5 && "col-start-4 row-start-2",
+        )}>
+            <div className={cn("flex h-11 flex-col items-center justify-center px-1 text-center text-white", box.header)}>
+                <h3 className="text-[12px] font-black leading-[18px]">{box.title}</h3>
+                <p className="whitespace-nowrap text-[10px] font-bold leading-[15px]">({box.subtitle})</p>
             </div>
-            <div className={cn("flex flex-col items-center px-2 pb-2 pt-1.5 text-center", compact ? "min-h-[96px]" : "min-h-[106px]", box.body)}>
-                <div className={cn("relative flex items-center justify-center", compact ? "h-12 w-12" : "h-14 w-14")}>
+            <div className="relative h-[68px]">
+                <div className="absolute bottom-1 right-1 flex h-16 w-16 items-center justify-center">
                     <Image
                         src={box.image}
                         alt=""
-                        width={compact ? 58 : 68}
-                        height={compact ? 58 : 68}
-                        className="h-full w-full object-contain drop-shadow-sm"
+                        width={64}
+                        height={64}
+                        className="h-full w-full object-contain"
                         unoptimized
                     />
                 </div>
-                <div className="mt-auto w-full">
-                    <p className={cn("line-clamp-1 text-[8.5px] font-black", box.accent)}>{box.shortLabel}</p>
-                    <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[10px] font-black text-slate-700">
-                        <span>{toPersianDigits(count)} لغت</span>
-                        <span className={cn("h-1.5 w-1.5 rounded-full", box.header)} />
-                    </div>
-                    <p className="mt-0.5 text-[8.5px] font-bold text-slate-500">{toPersianDigits(interval)} روز</p>
-                </div>
+                <p className="absolute bottom-1.5 left-2 text-[11px] font-bold leading-4 text-[#434343]">
+                    {toPersianDigits(count)} لغت
+                </p>
             </div>
         </article>
     );
