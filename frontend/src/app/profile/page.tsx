@@ -17,7 +17,9 @@ import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
-import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount } from "@/lib/courses";
+import { fetchSavedCourses } from "@/lib/courses";
+import { fetchSavedCollectionKeys } from "@/lib/savedCollections";
+import { mergeSavedCollections, type SavedCollectionCard } from "@/lib/collectionCatalog";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
 import { IMAGE_FILE_ACCEPT, isAdjustableImageFile, validateImageFile } from "@/validation";
 
@@ -801,7 +803,7 @@ function ProfileLoadingState() {
 }
 
 function SavedCoursesTab() {
-    const [courses, setCourses] = useState<Course[]>([]);
+    const [courses, setCourses] = useState<SavedCollectionCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -813,7 +815,8 @@ function SavedCoursesTab() {
             setError(false);
 
             try {
-                const data = await fetchSavedCourses();
+                const [savedCourses, savedKeys] = await Promise.all([fetchSavedCourses(), fetchSavedCollectionKeys()]);
+                const data = mergeSavedCollections(savedCourses, savedKeys);
                 if (!cancelled) {
                     setCourses(data);
                 }
@@ -895,22 +898,19 @@ function SavedCoursesTab() {
         <div className="p-4 sm:p-5">
             <div className="grid grid-cols-3 gap-2.5">
                 {courses.map((course) => {
-                    const href = getCourseDetailHref(course);
-                    const lessonsCount = getLessonCount(course);
-                    const countText = lessonsCount > 0
-                        ? `${lessonsCount} درس`
-                        : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "بخش");
+                    const href = course.href;
+                    const countText = course.countText;
 
                     return (
                         <article
-                            key={course.id}
+                            key={course.key}
                             className="group relative overflow-hidden rounded-[16px] border border-[#cfd3da] bg-[#e1e4ea] p-1.5 shadow-[0_6px_14px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]"
                         >
                             <Link href={href} className="block">
                                 <div className="relative aspect-square overflow-hidden rounded-[12px] bg-slate-200 shadow-sm">
-                                {course.cover_image_url ? (
+                                {course.cover ? (
                                     <Image
-                                        src={getMediaUrl(course.cover_image_url)}
+                                        src={course.cover.startsWith("/assets/") ? course.cover : getMediaUrl(course.cover)}
                                         alt={course.title}
                                         fill
                                         sizes="130px"

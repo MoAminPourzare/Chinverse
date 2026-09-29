@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Loader2, MoreVertical, Music2, Star } from "lucide-react";
+import { MoreVertical, Music2, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import { BackButton } from "@/components/ui/IconButton";
-import { checkCourseSaved, saveCourse, unsaveCourse } from "@/lib/courses";
+import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getMusicArtist } from "@/lib/musicArtistCatalog";
 import { getReturnToHref } from "@/lib/returnTo";
 import { getPublishedMusicReleaseLesson } from "@/lib/musicPublished";
@@ -18,20 +17,7 @@ export default function MusicArtistDetailPage() {
     const router = useRouter();
     const artist = getMusicArtist(params?.id);
     const { publishedCourse, isLoading, hasError } = usePublishedPlannedCourse("music", artist);
-    const [isSaved, setIsSaved] = useState(false);
-    const [savingBookmark, setSavingBookmark] = useState(false);
 
-    useEffect(() => {
-        let cancelled = false;
-        if (!publishedCourse?.id) {
-            setIsSaved(false);
-            return;
-        }
-        checkCourseSaved(publishedCourse.id)
-            .then((saved) => { if (!cancelled) setIsSaved(saved); })
-            .catch(() => { if (!cancelled) setIsSaved(false); });
-        return () => { cancelled = true; };
-    }, [publishedCourse?.id]);
 
     if (!artist && /^\d+$/.test(params?.id || "")) {
         return (
@@ -57,23 +43,6 @@ export default function MusicArtistDetailPage() {
         );
     }
 
-    const handleToggleSaved = async () => {
-        if (!publishedCourse || savingBookmark) return;
-        setSavingBookmark(true);
-        try {
-            if (isSaved) {
-                await unsaveCourse(publishedCourse.id);
-                setIsSaved(false);
-            } else {
-                await saveCourse(publishedCourse.id);
-                setIsSaved(true);
-            }
-        } catch {
-            alert("برای ذخیره کردن این هنرمند باید وارد حساب کاربری شوی.");
-        } finally {
-            setSavingBookmark(false);
-        }
-    };
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
@@ -82,15 +51,7 @@ export default function MusicArtistDetailPage() {
                     <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                         <BackButton href="/explore/music" label="بازگشت به فهرست موسیقی" />
                         <div className="flex items-center gap-1">
-                            <button
-                                type="button"
-                                onClick={handleToggleSaved}
-                                disabled={!publishedCourse || savingBookmark}
-                                aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"}
-                                className={`flex h-10 w-10 items-center justify-center rounded-full transition ${isSaved ? "bg-[#155aa6] text-white" : "text-[#333941] hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"} disabled:cursor-not-allowed disabled:opacity-70`}
-                            >
-                                {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
-                            </button>
+                            <CollectionBookmarkButton domain={"music"} slug={artist.slug} courseId={publishedCourse?.id} />
                             <button
                                 type="button"
                                 onClick={() => router.push(getReturnToHref("/settings/appearance"))}

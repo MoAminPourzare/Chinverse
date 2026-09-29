@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
+import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getReturnToHref } from "@/lib/returnTo";
 import { getHskCourse, getHskLessonTitle, getHskLessonTopic } from "@/lib/hskCatalog";
 import { findPublishedHskLesson, getPublishedHskLessonHref } from "@/lib/hskPublished";
@@ -50,6 +51,7 @@ export default function HSKCourseDetailPage() {
                 <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
                     <BackButton href="/explore/hsk" label="بازگشت به فهرست HSK" />
                     <div className="flex items-center gap-1.5">
+                        <CollectionBookmarkButton domain="hsk" slug={course.slug} courseId={publishedCourse?.id} />
                         <button
                             type="button"
                             onClick={() => router.push(getReturnToHref("/settings/appearance"))}

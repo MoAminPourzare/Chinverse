@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Loader2, MoreVertical, Star } from "lucide-react";
+import { MoreVertical, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import { BackButton } from "@/components/ui/IconButton";
-import { checkCourseSaved, saveCourse, unsaveCourse } from "@/lib/courses";
+import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getPodcast } from "@/lib/podcastCatalog";
 import { getPublishedPodcastGroupLesson } from "@/lib/podcastPublished";
 import { getPublishedSeriesEpisode } from "@/lib/screenMediaCatalog";
@@ -19,20 +18,7 @@ export default function PodcastDetailPage() {
     const router = useRouter();
     const podcast = getPodcast(params?.id);
     const { publishedCourse, isLoading, hasError } = usePublishedPlannedCourse("podcasts", podcast);
-    const [isSaved, setIsSaved] = useState(false);
-    const [savingBookmark, setSavingBookmark] = useState(false);
 
-    useEffect(() => {
-        let cancelled = false;
-        if (!publishedCourse?.id) {
-            setIsSaved(false);
-            return;
-        }
-        checkCourseSaved(publishedCourse.id)
-            .then((saved) => { if (!cancelled) setIsSaved(saved); })
-            .catch(() => { if (!cancelled) setIsSaved(false); });
-        return () => { cancelled = true; };
-    }, [publishedCourse?.id]);
 
     if (!podcast && /^\d+$/.test(params?.id || "")) {
         return <CourseDetailPage domain="podcasts" explorePath="/explore/podcasts" eyebrow="پادکست" countKeys={["episodes_count"]} countLabel="اپیزود" accentClass="bg-indigo-600" />;
@@ -49,23 +35,6 @@ export default function PodcastDetailPage() {
         );
     }
 
-    const handleToggleSaved = async () => {
-        if (!publishedCourse || savingBookmark) return;
-        setSavingBookmark(true);
-        try {
-            if (isSaved) {
-                await unsaveCourse(publishedCourse.id);
-                setIsSaved(false);
-            } else {
-                await saveCourse(publishedCourse.id);
-                setIsSaved(true);
-            }
-        } catch {
-            alert("برای ذخیره کردن این پادکست باید وارد حساب کاربری شوی.");
-        } finally {
-            setSavingBookmark(false);
-        }
-    };
 
     const cards = podcast.groups
         ? podcast.groups.map((group) => ({ key: group.slug, label: group.title, count: group.episodeCount, title: undefined, lesson: getPublishedPodcastGroupLesson(publishedCourse, group) }))
@@ -78,11 +47,7 @@ export default function PodcastDetailPage() {
                     <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                         <BackButton href="/explore/podcasts" label="بازگشت به فهرست پادکست‌ها" />
                         <div className="flex items-center gap-1">
-                            <button type="button" onClick={handleToggleSaved} disabled={!publishedCourse || savingBookmark}
-                                aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"}
-                                className={`flex h-10 w-10 items-center justify-center rounded-full transition ${isSaved ? "bg-[#155aa6] text-white" : "text-[#333941] hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"} disabled:cursor-not-allowed disabled:opacity-70`}>
-                                {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
-                            </button>
+                            <CollectionBookmarkButton domain={"podcasts"} slug={podcast.slug} courseId={publishedCourse?.id} />
                             <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] transition hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800">
                                 <MoreVertical size={22} />
                             </button>

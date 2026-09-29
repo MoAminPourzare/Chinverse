@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust, beta
 from app.core.config import settings
+from app.api.v1.endpoints import collections
 
 api_router = APIRouter()
 
@@ -26,6 +27,7 @@ api_router.include_router(users.router, prefix="/users", tags=["users"])
 # ===== COURSES =====
 api_router.include_router(courses.router, prefix="/courses", tags=["courses"])
 api_router.include_router(course_admin.router, prefix="/courses", tags=["course-admin"])
+api_router.include_router(collections.router, prefix="/collections", tags=["collections"])
 api_router.include_router(media.router)
 
 # ===== COMMUNITY =====

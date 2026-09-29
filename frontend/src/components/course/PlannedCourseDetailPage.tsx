@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Loader2, MoreVertical } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
-import { checkCourseSaved, saveCourse, unsaveCourse } from "@/lib/courses";
+import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getReturnToHref } from "@/lib/returnTo";
 import { getPlannedCourse, getPlannedItemCount, getPlannedLessonTitle, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
 import { findPublishedPlannedLesson, getPublishedPlannedLessonHref } from "@/lib/plannedCoursePublished";
@@ -40,20 +39,7 @@ export default function PlannedCourseDetailPage({
     const router = useRouter();
     const course = getPlannedCourse(catalog, params?.id);
     const { publishedCourse, isLoading, hasError } = usePublishedPlannedCourse(domain, course);
-    const [isSaved, setIsSaved] = useState(false);
-    const [savingBookmark, setSavingBookmark] = useState(false);
 
-    useEffect(() => {
-        let cancelled = false;
-        if (!publishedCourse?.id) {
-            setIsSaved(false);
-            return;
-        }
-        checkCourseSaved(publishedCourse.id)
-            .then((saved) => { if (!cancelled) setIsSaved(saved); })
-            .catch(() => { if (!cancelled) setIsSaved(false); });
-        return () => { cancelled = true; };
-    }, [publishedCourse?.id]);
 
     if (!course && /^\d+$/.test(params?.id || "")) {
         return <CourseDetailPage domain={domain} explorePath={`/explore/${domain}`} eyebrow={title} countKeys={["lesson_count"]} countLabel={countLabel} />;
@@ -70,23 +56,6 @@ export default function PlannedCourseDetailPage({
         );
     }
 
-    const handleToggleSaved = async () => {
-        if (!publishedCourse || savingBookmark) return;
-        setSavingBookmark(true);
-        try {
-            if (isSaved) {
-                await unsaveCourse(publishedCourse.id);
-                setIsSaved(false);
-            } else {
-                await saveCourse(publishedCourse.id);
-                setIsSaved(true);
-            }
-        } catch {
-            alert("برای ذخیره کردن این مجموعه باید وارد حساب کاربری شوی.");
-        } finally {
-            setSavingBookmark(false);
-        }
-    };
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
@@ -94,15 +63,7 @@ export default function PlannedCourseDetailPage({
                 <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
                     <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                     <div className="flex items-center gap-1">
-                        <button
-                            type="button"
-                            onClick={handleToggleSaved}
-                            disabled={!publishedCourse || savingBookmark}
-                            aria-label={publishedCourse ? (isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها") : "ذخیره‌سازی پس از انتشار فعال می‌شود"}
-                            className={`flex h-10 w-10 items-center justify-center rounded-full transition ${isSaved ? "bg-[#155aa6] text-white" : "text-[#333941] hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800"} disabled:cursor-not-allowed disabled:opacity-70`}
-                        >
-                            {savingBookmark ? <Loader2 size={21} className="animate-spin" /> : isSaved ? <BookmarkCheck size={21} /> : <Bookmark size={21} />}
-                        </button>
+                        <CollectionBookmarkButton domain={domain} slug={course.slug} courseId={publishedCourse?.id} />
                         <button
                             type="button"
                             onClick={() => router.push(getReturnToHref("/settings/appearance"))}

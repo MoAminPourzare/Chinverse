@@ -612,3 +612,30 @@ async def word_value(word_id: int) -> str:
     async with SessionLocal() as db:
         word = await db.get(DictionaryWord, word_id)
         return word.chinese
+
+
+@pytest.mark.asyncio
+async def test_catalog_bookmarks_without_published_media_are_private_and_idempotent() -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+        path = "/api/v1/collections/festivals-customs/sanmiao-wonderful-traditional-festivals"
+        assert (await client.get(path + "/saved")).status_code == 401
+        assert (await client.post(path + "/save")).status_code == 401
+        _, owner = await create_verified_user(client, "catalog-owner")
+        _, other = await create_verified_user(client, "catalog-other")
+        assert (await client.get(path + "/saved", headers=owner)).json() == {"saved": False}
+        writes = await asyncio.gather(*[client.post(path + "/save", headers=owner) for _ in range(2)])
+        assert all(response.status_code == 201 for response in writes)
+        assert (await client.get(path + "/saved", headers=owner)).json() == {"saved": True}
+        assert (await client.get(path + "/saved", headers=other)).json() == {"saved": False}
+        saved = await client.get("/api/v1/collections/saved?limit=1000", headers=owner)
+        assert saved.status_code == 200, saved.text
+        assert saved.json() == [{"domain": "festivals-customs", "slug": "sanmiao-wonderful-traditional-festivals"}]
+        assert (await client.get("/api/v1/collections/saved", headers=other)).json() == []
+        assert (await client.delete(path + "/save", headers=other)).json() == {"saved": False}
+        assert (await client.get(path + "/saved", headers=owner)).json() == {"saved": True}
+        assert (await client.post("/api/v1/collections/not-a-domain/sample/save", headers=owner)).status_code == 422
+        assert (await client.post("/api/v1/collections/hsk/bad_slug/save", headers=owner)).status_code == 422
+        assert (await client.get("/api/v1/collections/saved?limit=1001", headers=owner)).status_code == 422
+        for _ in range(2):
+            assert (await client.delete(path + "/save", headers=owner)).json() == {"saved": False}
+        assert (await client.get("/api/v1/collections/saved", headers=owner)).json() == []

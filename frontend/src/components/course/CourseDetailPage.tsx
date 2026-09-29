@@ -4,25 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "@/components/ui/PublicMediaImage";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Bookmark,
-    BookmarkCheck,
     BookOpen,
-    Loader2,
     MoreVertical,
     Play,
     Star,
 } from "lucide-react";
 import api from "@/lib/api";
+import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
+import { getCatalogCollection } from "@/lib/collectionCatalog";
 import { isHttpStatus } from "@/lib/http";
 import {
     Course,
-    checkCourseSaved,
     getCourseMetaNumber,
     getCourseMetaString,
     getDisplayCount,
     mergeCourseMetadata,
-    saveCourse,
-    unsaveCourse,
 } from "@/lib/courses";
 import { getMediaUrl } from "@/lib/media";
 import { getReturnToHref } from "@/lib/returnTo";
@@ -91,8 +87,6 @@ export default function CourseDetailPage({
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
-    const [savingBookmark, setSavingBookmark] = useState(false);
 
     const label = domainLabels[domain] || (isBrokenText(eyebrow) ? "دوره" : eyebrow);
     const cleanCountLabel = isBrokenText(countLabel) ? "درس" : countLabel;
@@ -136,33 +130,6 @@ export default function CourseDetailPage({
         };
     }, [domain, id]);
 
-    useEffect(() => {
-        let cancelled = false;
-
-        const fetchSavedState = async () => {
-            if (!course?.id) {
-                setIsSaved(false);
-                return;
-            }
-
-            try {
-                const saved = await checkCourseSaved(course.id);
-                if (!cancelled) {
-                    setIsSaved(saved);
-                }
-            } catch {
-                if (!cancelled) {
-                    setIsSaved(false);
-                }
-            }
-        };
-
-        fetchSavedState();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [course?.id]);
 
     const lessons = useMemo(() => {
         return course?.sections?.flatMap((section) => section.lessons || []) || [];
@@ -209,25 +176,6 @@ export default function CourseDetailPage({
     const courseDescriptionProps = getDirectionalTextProps(course.description);
     const synopsisProps = getDirectionalTextProps(synopsis);
 
-    const handleToggleSaved = async () => {
-        if (!course || savingBookmark) return;
-
-        setSavingBookmark(true);
-        try {
-            if (isSaved) {
-                await unsaveCourse(course.id);
-                setIsSaved(false);
-            } else {
-                await saveCourse(course.id);
-                setIsSaved(true);
-            }
-        } catch (error) {
-            console.error("Failed to update saved course:", error);
-            alert("برای ذخیره کردن دوره باید وارد حساب کاربری شوی.");
-        } finally {
-            setSavingBookmark(false);
-        }
-    };
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
@@ -240,19 +188,7 @@ export default function CourseDetailPage({
                             <h1 className="truncate text-sm font-black text-slate-900" {...courseTitleProps}>{course.title}</h1>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={handleToggleSaved}
-                                disabled={savingBookmark}
-                                aria-label={isSaved ? "حذف از منتخب‌ها" : "ذخیره در منتخب‌ها"}
-                                className={`flex h-10 w-10 items-center justify-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                                    isSaved
-                                        ? "bg-[#155aa6] text-white"
-                                        : "bg-white text-[#155aa6] shadow-sm ring-1 ring-[#dfe6f0] hover:bg-[#eef6ff]"
-                                }`}
-                            >
-                                {savingBookmark ? <Loader2 size={19} className="animate-spin" /> : isSaved ? <BookmarkCheck size={19} /> : <Bookmark size={19} />}
-                            </button>
+                            <CollectionBookmarkButton domain={domain} courseId={course.id} slug={course.slug && getCatalogCollection({ domain, slug: course.slug }) ? course.slug : undefined} />
                             <button
                                 type="button"
                                 onClick={openAppearanceSettings}
