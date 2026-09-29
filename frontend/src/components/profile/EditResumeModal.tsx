@@ -153,7 +153,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             onAdd={() => work.append({ company: "", job_title: "", start_date: "", end_date: "" })}
                                         >
                                             {work.fields.map((field, index) => (
-                                                <ResumeCard key={field.id} onRemove={() => work.remove(index)}>
+                                                <ResumeCard key={field.id} label={`سابقهٔ کاری ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => work.remove(index)}>
                                                     <input {...register(`work_experiences.${index}.company`)} aria-label={`نام شرکت، سابقه ${index + 1}`} placeholder="نام شرکت" dir="auto" className={inputClass} />
                                                     <input {...register(`work_experiences.${index}.job_title`)} aria-label={`عنوان شغلی، سابقه ${index + 1}`} placeholder="عنوان شغلی" dir="auto" className={inputClass} />
                                                     <div className="grid grid-cols-2 gap-2">
@@ -173,7 +173,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             onAdd={() => education.append({ university: "", degree: "", field: "", start_date: "", end_date: "" })}
                                         >
                                             {education.fields.map((field, index) => (
-                                                <ResumeCard key={field.id} onRemove={() => education.remove(index)}>
+                                                <ResumeCard key={field.id} label={`تحصیلات ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => education.remove(index)}>
                                                     <OptionSelect registration={register(`educations.${index}.university`)} placeholder="دانشگاه محل تحصیل" options={UNIVERSITY_OPTIONS} />
                                                     <OptionSelect registration={register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" options={EDUCATION_DEGREE_OPTIONS} />
                                                     <input {...register(`educations.${index}.field`)} aria-label={`رشته تحصیلی، مورد ${index + 1}`} placeholder="رشته تحصیلی" dir="auto" className={inputClass} />
@@ -194,7 +194,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             onAdd={() => certificate.append({ title: "", issuer: "", date: "" })}
                                         >
                                             {certificate.fields.map((field, index) => (
-                                                <ResumeCard key={field.id} onRemove={() => certificate.remove(index)}>
+                                                <ResumeCard key={field.id} label={`گواهینامهٔ ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => certificate.remove(index)}>
                                                     <input {...register(`certificates.${index}.title`)} aria-label={`عنوان گواهی، مورد ${index + 1}`} placeholder="عنوان گواهی" dir="auto" className={inputClass} />
                                                     <input {...register(`certificates.${index}.issuer`)} aria-label={`صادرکننده گواهی، مورد ${index + 1}`} placeholder="صادر کننده" dir="auto" className={inputClass} />
                                                     <YearSelect registration={register(`certificates.${index}.date`)} placeholder="سال صدور" />
@@ -211,7 +211,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             onAdd={() => award.append({ title: "", issuer: "", date: "" })}
                                         >
                                             {award.fields.map((field, index) => (
-                                                <ResumeCard key={field.id} onRemove={() => award.remove(index)}>
+                                                <ResumeCard key={field.id} label={`جایزهٔ ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => award.remove(index)}>
                                                     <input {...register(`awards.${index}.title`)} aria-label={`عنوان جایزه، مورد ${index + 1}`} placeholder="عنوان جایزه" dir="auto" className={inputClass} />
                                                     <input {...register(`awards.${index}.issuer`)} aria-label={`اهداکننده جایزه، مورد ${index + 1}`} placeholder="اهدا کننده" dir="auto" className={inputClass} />
                                                     <YearSelect registration={register(`awards.${index}.date`)} placeholder="سال دریافت" />
@@ -228,7 +228,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             onAdd={() => skill.append({ name: "", level: "" })}
                                         >
                                             {skill.fields.map((field, index) => (
-                                                <ResumeCard key={field.id} onRemove={() => skill.remove(index)}>
+                                                <ResumeCard key={field.id} label={`مهارت ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => skill.remove(index)}>
                                                     <input {...register(`skills.${index}.name`)} aria-label={`نام مهارت، مورد ${index + 1}`} placeholder="نام مهارت" dir="auto" className={inputClass} />
                                                     <OptionSelect registration={register(`skills.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
@@ -244,7 +244,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             onAdd={() => language.append({ name: "", level: "" })}
                                         >
                                             {language.fields.map((field, index) => (
-                                                <ResumeCard key={field.id} onRemove={() => language.remove(index)}>
+                                                <ResumeCard key={field.id} label={`زبان ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => language.remove(index)}>
                                                     <input {...register(`languages.${index}.name`)} aria-label={`نام زبان، مورد ${index + 1}`} placeholder="نام زبان" dir="auto" className={inputClass} />
                                                     <OptionSelect registration={register(`languages.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
@@ -369,18 +369,22 @@ function ResumeSection({
     );
 }
 
-function ResumeCard({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
+function ResumeCard({ children, label, onRemove }: { children: ReactNode; label: string; onRemove: () => void }) {
     return (
-        <div className="relative space-y-2 rounded-2xl border border-[#d6e1ee] bg-white p-3 shadow-sm">
-            <button
-                type="button"
-                onClick={onRemove}
-                className="absolute left-2 top-2 rounded-xl p-2 text-red-500 transition hover:bg-red-50"
-                aria-label="حذف مورد"
-            >
-                <Trash2 className="h-4 w-4" />
-            </button>
-            <div className="space-y-2 pt-8">{children}</div>
+        <div className="space-y-3 rounded-2xl border border-[#d6e1ee] bg-white p-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <span className="text-xs font-bold text-slate-500">{label}</span>
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-3 text-xs font-bold text-rose-600 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
+                    aria-label={`حذف ${label}`}
+                >
+                    <Trash2 className="h-4 w-4" />
+                    حذف
+                </button>
+            </div>
+            <div className="space-y-2">{children}</div>
         </div>
     );
 }

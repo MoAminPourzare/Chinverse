@@ -18,7 +18,8 @@ from app.services.notifications import notify_followers
 
 router = APIRouter()
 
-@router.get("/", response_model=List[GalleryItem])
+@router.get("/", response_model=List[GalleryItem], include_in_schema=False)
+@router.get("", response_model=List[GalleryItem])
 async def get_user_gallery(
     *,
     db: AsyncSession = Depends(get_db),
@@ -37,7 +38,8 @@ async def get_user_gallery(
     
     return gallery_items
 
-@router.post("/", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=GalleryItem, status_code=status.HTTP_201_CREATED, include_in_schema=False)
+@router.post("", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
 async def upload_gallery_image(
     *,
     db: AsyncSession = Depends(get_db),

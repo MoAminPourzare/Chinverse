@@ -532,9 +532,9 @@ function ServiceCard({ service, userId, isOwner, onEdit, onDelete }: ServiceCard
     const descriptionProps = getDirectionalTextProps(service.description);
 
     return (
-        <article className="overflow-hidden rounded-[18px] border border-[#cfd3da] bg-[#e7ebf1] p-2.5 text-right shadow-[0_8px_18px_rgba(15,23,42,0.12)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
-            <Link href={`/services/${service.id}`} className="block">
-                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[14px] bg-gradient-to-br from-slate-100 to-[#eef6ff] shadow-sm">
+        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white text-right shadow-[0_6px_20px_rgba(15,23,42,0.06)] transition hover:shadow-[0_10px_28px_rgba(15,23,42,0.10)]">
+            <Link href={`/services/${service.id}`} className="block p-2.5 pb-0">
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-50">
                     {service.banner_url ? (
                         <Image
                             src={getMediaUrl(service.banner_url)}
@@ -552,44 +552,44 @@ function ServiceCard({ service, userId, isOwner, onEdit, onDelete }: ServiceCard
                 </div>
             </Link>
 
-            <div className="px-2 pb-2 pt-3">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                    <Link href={`/services/${service.id}`} className="min-w-0 flex-1">
-                        <h3 className={cn("line-clamp-2 text-base font-black leading-7 text-[#25272d]", getTextAlign(service.title))} {...titleProps}>{service.title}</h3>
+            <div className="space-y-3 p-4">
+                <Link href={`/services/${service.id}`} className="block">
+                    <h3 className={cn("line-clamp-2 text-base font-black leading-7 text-[#25272d]", getTextAlign(service.title))} {...titleProps}>{service.title}</h3>
+                </Link>
+
+                <p className={cn("line-clamp-3 text-[13px] leading-7 text-slate-500", getTextAlign(service.description))} {...descriptionProps}>{service.description}</p>
+
+                <div className="flex items-center justify-between gap-3">
+                    <Link href={`/services/${service.id}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#eef6ff] px-3 text-sm font-bold text-[#155aa6] transition hover:bg-[#e1efff]">
+                        جزئیات
+                        <ArrowLeft className="h-4 w-4" />
                     </Link>
+                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
                     {isOwner && (
-                        <div className="flex shrink-0 items-center gap-1.5">
+                        <>
                             <button
                                 type="button"
                                 onClick={onEdit}
-                                className="rounded-2xl bg-white/80 p-2 text-[#155aa6] shadow-sm transition hover:bg-[#eef6ff]"
+                                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-50 px-3 text-xs font-bold text-[#155aa6] transition hover:bg-[#eef6ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#155aa6]"
                                 aria-label="ویرایش خدمت"
                             >
                                 <PenLine className="h-4 w-4" />
+                                ویرایش
                             </button>
                             <button
                                 type="button"
                                 onClick={onDelete}
-                                className="rounded-2xl bg-white/80 p-2 text-red-500 shadow-sm transition hover:bg-red-50 hover:text-red-700"
+                                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-3 text-xs font-bold text-rose-600 transition hover:bg-rose-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
                                 aria-label="حذف خدمت"
                             >
                                 <Trash2 className="h-4 w-4" />
+                                حذف
                             </button>
-                        </div>
+                        </>
                     )}
-                </div>
-
-                <p className={cn("line-clamp-3 text-sm leading-7 text-[#555c68]", getTextAlign(service.description))} {...descriptionProps}>{service.description}</p>
-
-                <div className="mt-3 flex justify-start">
-                    <Link href={`/services/${service.id}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white/85 px-3 py-2 text-sm font-bold text-[#155aa6] shadow-sm transition hover:bg-white">
-                        <ArrowLeft className="h-4 w-4" />
-                        جزئیات
-                    </Link>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                    <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
                     {!isOwner && chatUserId && (
                         <Link href={`/chat/${chatUserId}`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-3 py-2 text-sm font-bold text-white shadow-[0_8px_18px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]">
                             <MessageCircle className="h-4 w-4" />

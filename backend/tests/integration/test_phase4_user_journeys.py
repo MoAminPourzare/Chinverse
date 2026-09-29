@@ -160,6 +160,7 @@ async def test_profile_gallery_services_feed_engagement_and_ownership():
         owner_id, owner = await create_verified_user(client, "owner")
         viewer_id, viewer = await create_verified_user(client, "viewer")
 
+        assert (await client.get("/api/v1/users/me/gallery", headers=owner)).json() == []
         assert (await client.get("/api/v1/users/me/gallery/", headers=owner)).json() == []
         assert (await client.get("/api/v1/users/me/services", headers=owner)).json() == []
 
@@ -177,13 +178,16 @@ async def test_profile_gallery_services_feed_engagement_and_ownership():
         assert profile.status_code == 200, profile.text
 
         gallery = await client.post(
-            "/api/v1/users/me/gallery/",
+            "/api/v1/users/me/gallery",
             headers=owner,
             data={"caption": "تصویر تست گالری"},
             files={"file": ("phase4.png", png_bytes(), "image/png")},
         )
         assert gallery.status_code == 201, gallery.text
         gallery_id = gallery.json()["id"]
+        legacy_gallery = await client.get("/api/v1/users/me/gallery/", headers=owner)
+        assert legacy_gallery.status_code == 200
+        assert legacy_gallery.json()[0]["id"] == gallery_id
 
         service = await client.post(
             "/api/v1/users/me/services",
