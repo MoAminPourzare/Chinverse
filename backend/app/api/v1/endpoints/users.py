@@ -18,6 +18,7 @@ from app.models.user import User, UserGalleryItem, UserProfile, UserStatus
 from app.schemas import user as schemas
 from app.schemas.showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic, EducationSummary
 from app.services.auth_security import add_audit_event, clear_refresh_cookie
+from app.services.showcase_visibility import is_showcase_user, showcase_user_filters
 
 router = APIRouter()
 
@@ -311,7 +312,7 @@ async def get_showcase_users(
             selectinload(User.profile),
             selectinload(User.gallery_items)
         )
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
+        .where(*showcase_user_filters())
         .order_by(User.id.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -394,8 +395,7 @@ async def get_public_user_profile(
         )
         .where(
             User.id == user_id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *showcase_user_filters(),
         )
     )
     user = result.scalar_one_or_none()
@@ -453,7 +453,7 @@ async def get_user_services(
     from app.models.service import UserService
 
     target_user = await db.get(User, user_id)
-    if not target_user or target_user.status != UserStatus.ACTIVE or not target_user.is_verified:
+    if not is_showcase_user(target_user):
         raise not_found("User")
     
     result = await db.execute(

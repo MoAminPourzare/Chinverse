@@ -10,11 +10,12 @@ from app.api.rate_limit import upload_rate_limit, write_rate_limit
 from app.core.paths import SERVICE_UPLOAD_DIR
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
-from app.models.user import User, UserStatus
+from app.models.user import User
 from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
 from app.schemas.service import Service, ServiceWithProvider
 from app.services.notifications import notify_followers
+from app.services.showcase_visibility import showcase_user_filters
 
 router = APIRouter()
 
@@ -251,7 +252,7 @@ async def get_public_services(
         select(UserService)
         .join(User, User.id == UserService.user_id)
         .options(selectinload(UserService.user).selectinload(User.profile))
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
+        .where(*showcase_user_filters())
         .order_by(UserService.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -307,8 +308,7 @@ async def get_public_service(
         .options(selectinload(UserService.user).selectinload(User.profile))
         .where(
             UserService.id == service_id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *showcase_user_filters(),
         )
     )
     service = result.scalar_one_or_none()

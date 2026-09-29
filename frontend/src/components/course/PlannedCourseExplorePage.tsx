@@ -25,9 +25,10 @@ export default function PlannedCourseExplorePage({ title, basePath, catalog, com
                     <span aria-hidden />
                 </header>
 
-                <div className="motion-list grid grid-cols-3 gap-2.5" dir="ltr">
+                <div className="motion-list grid grid-cols-3 gap-2.5" dir="rtl">
                     {catalog.map((course) => (
                         <Link
+                            dir="ltr"
                             key={course.slug}
                             href={`${basePath}/${course.slug}`}
                             className="group min-w-0 overflow-hidden rounded-[14px] bg-[#e3e7ed] pb-2.5 transition hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#222c38]"

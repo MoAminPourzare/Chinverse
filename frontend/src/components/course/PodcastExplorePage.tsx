@@ -12,9 +12,9 @@ export default function PodcastExplorePage() {
                     <h1 className="text-center text-[22px] font-black text-[#343941] dark:text-white">پادکست آموزشی</h1>
                     <span aria-hidden />
                 </header>
-                <div className="motion-list grid grid-cols-3 gap-2.5" dir="ltr">
+                <div className="motion-list grid grid-cols-3 gap-2.5" dir="rtl">
                     {PODCAST_CATALOG.map((podcast) => (
-                        <Link key={podcast.slug} href={`/podcasts/${podcast.slug}`} className="group min-w-0 overflow-hidden rounded-[14px] bg-[#e3e7ed] pb-2.5 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#222c38]">
+                        <Link dir="ltr" key={podcast.slug} href={`/podcasts/${podcast.slug}`} className="group min-w-0 overflow-hidden rounded-[14px] bg-[#e3e7ed] pb-2.5 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#222c38]">
                             <div className="relative aspect-square overflow-hidden rounded-[13px] bg-slate-200">
                                 <Image src={podcast.coverPath} alt={`کاور ${podcast.title}`} fill sizes="(max-width: 430px) 31vw, 125px" className="object-cover transition duration-300 group-hover:scale-[1.03]" />
                             </div>
