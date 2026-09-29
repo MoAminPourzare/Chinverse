@@ -254,15 +254,6 @@ export default function LeitnerReviewPage() {
                     </div>
                 </header>
 
-                <section className="mt-4 rounded-[10px] bg-[#eef6ff] px-4 py-3 text-center">
-                    <p className="text-xs font-black text-[#155aa6]">
-                        {boxStyle.label} · اگر بلد باشی: {BOX_STYLES[rememberedBox].label}، مرور {toPersianDigits(rememberedInterval)} روز بعد
-                    </p>
-                    <p className="mt-1 text-[11px] font-medium leading-5 text-slate-500">
-                        اول معنی را از حافظه بگو، بعد پشت کارت را ببین.
-                    </p>
-                </section>
-
                 <section className={cn("mt-4 overflow-hidden rounded-[18px] border-2 bg-white shadow-[0_12px_26px_rgba(15,23,42,0.10)]", boxStyle.border)}>
                     {!isFlipped ? (
                         <div className="flex min-h-[340px] flex-col items-center justify-center px-6 py-8 text-center">
