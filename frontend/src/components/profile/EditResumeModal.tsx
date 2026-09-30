@@ -1,9 +1,9 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { Award, Briefcase, FileText, GraduationCap, Languages, Plus, Trash2, Wrench, X } from "lucide-react";
-import { SubmitHandler, useFieldArray, useForm, type UseFormRegisterReturn } from "react-hook-form";
+import { Dialog, Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from "@headlessui/react";
+import { Award, Briefcase, Check, ChevronDown, FileText, GraduationCap, Languages, Plus, Trash2, Wrench, X } from "lucide-react";
+import { Controller, SubmitHandler, useFieldArray, useForm, type Control, type FieldPath } from "react-hook-form";
 import { ResumeData, User, userService } from "@/services/user.service";
 import { EDUCATION_DEGREE_OPTIONS, UNIVERSITY_OPTIONS } from "@/profileOptions";
 import { cleanResumeData } from "@/lib/profileContent";
@@ -17,7 +17,6 @@ interface EditResumeModalProps {
 }
 
 const inputClass = "min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-sm text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10";
-const yearSelectClass = `${inputClass} cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#155aa6_50%),linear-gradient(135deg,#155aa6_50%,transparent_50%)] bg-[length:6px_6px,6px_6px] bg-[position:left_14px_center,left_8px_center] bg-no-repeat pl-8`;
 const yearOptions = buildYearOptions();
 const resumeLevelOptions = ["مقدماتی", "متوسط", "پیشرفته"];
 const sectionTitles: Record<string, string> = {
@@ -157,8 +156,8 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                                     <input {...register(`work_experiences.${index}.company`)} aria-label={`نام شرکت، سابقه ${index + 1}`} placeholder="نام شرکت" dir="auto" className={inputClass} />
                                                     <input {...register(`work_experiences.${index}.job_title`)} aria-label={`عنوان شغلی، سابقه ${index + 1}`} placeholder="عنوان شغلی" dir="auto" className={inputClass} />
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        <YearSelect registration={register(`work_experiences.${index}.start_date`)} placeholder="سال شروع" />
-                                                        <YearSelect registration={register(`work_experiences.${index}.end_date`)} placeholder="سال پایان" />
+                                                        <ResumeSelect control={control} name={`work_experiences.${index}.start_date`} placeholder="سال شروع" options={yearOptions} placement="top end" />
+                                                        <ResumeSelect control={control} name={`work_experiences.${index}.end_date`} placeholder="سال پایان" options={yearOptions} placement="top end" />
                                                     </div>
                                                 </ResumeCard>
                                             ))}
@@ -174,12 +173,12 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                         >
                                             {education.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} label={`تحصیلات ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => education.remove(index)}>
-                                                    <OptionSelect registration={register(`educations.${index}.university`)} placeholder="دانشگاه محل تحصیل" options={UNIVERSITY_OPTIONS} />
-                                                    <OptionSelect registration={register(`educations.${index}.degree`)} placeholder="مقطع تحصیلی" options={EDUCATION_DEGREE_OPTIONS} />
+                                                    <ResumeSelect control={control} name={`educations.${index}.university`} placeholder="دانشگاه محل تحصیل" options={UNIVERSITY_OPTIONS} />
+                                                    <ResumeSelect control={control} name={`educations.${index}.degree`} placeholder="مقطع تحصیلی" options={EDUCATION_DEGREE_OPTIONS} />
                                                     <input {...register(`educations.${index}.field`)} aria-label={`رشته تحصیلی، مورد ${index + 1}`} placeholder="رشته تحصیلی" dir="auto" className={inputClass} />
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        <YearSelect registration={register(`educations.${index}.start_date`)} placeholder="سال شروع" />
-                                                        <YearSelect registration={register(`educations.${index}.end_date`)} placeholder="سال پایان" />
+                                                        <ResumeSelect control={control} name={`educations.${index}.start_date`} placeholder="سال شروع" options={yearOptions} placement="top end" />
+                                                        <ResumeSelect control={control} name={`educations.${index}.end_date`} placeholder="سال پایان" options={yearOptions} placement="top end" />
                                                     </div>
                                                 </ResumeCard>
                                             ))}
@@ -197,7 +196,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                                 <ResumeCard key={field.id} label={`گواهینامهٔ ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => certificate.remove(index)}>
                                                     <input {...register(`certificates.${index}.title`)} aria-label={`عنوان گواهی، مورد ${index + 1}`} placeholder="عنوان گواهی" dir="auto" className={inputClass} />
                                                     <input {...register(`certificates.${index}.issuer`)} aria-label={`صادرکننده گواهی، مورد ${index + 1}`} placeholder="صادر کننده" dir="auto" className={inputClass} />
-                                                    <YearSelect registration={register(`certificates.${index}.date`)} placeholder="سال صدور" />
+                                                    <ResumeSelect control={control} name={`certificates.${index}.date`} placeholder="سال صدور" options={yearOptions} placement="top end" />
                                                 </ResumeCard>
                                             ))}
                                         </ResumeSection>
@@ -214,7 +213,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                                 <ResumeCard key={field.id} label={`جایزهٔ ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => award.remove(index)}>
                                                     <input {...register(`awards.${index}.title`)} aria-label={`عنوان جایزه، مورد ${index + 1}`} placeholder="عنوان جایزه" dir="auto" className={inputClass} />
                                                     <input {...register(`awards.${index}.issuer`)} aria-label={`اهداکننده جایزه، مورد ${index + 1}`} placeholder="اهدا کننده" dir="auto" className={inputClass} />
-                                                    <YearSelect registration={register(`awards.${index}.date`)} placeholder="سال دریافت" />
+                                                    <ResumeSelect control={control} name={`awards.${index}.date`} placeholder="سال دریافت" options={yearOptions} placement="top end" />
                                                 </ResumeCard>
                                             ))}
                                         </ResumeSection>
@@ -230,7 +229,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             {skill.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} label={`مهارت ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => skill.remove(index)}>
                                                     <input {...register(`skills.${index}.name`)} aria-label={`نام مهارت، مورد ${index + 1}`} placeholder="نام مهارت" dir="auto" className={inputClass} />
-                                                    <OptionSelect registration={register(`skills.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
+                                                    <ResumeSelect control={control} name={`skills.${index}.level`} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
                                             ))}
                                         </ResumeSection>
@@ -246,7 +245,7 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
                                             {language.fields.map((field, index) => (
                                                 <ResumeCard key={field.id} label={`زبان ${(index + 1).toLocaleString("fa-IR")}`} onRemove={() => language.remove(index)}>
                                                     <input {...register(`languages.${index}.name`)} aria-label={`نام زبان، مورد ${index + 1}`} placeholder="نام زبان" dir="auto" className={inputClass} />
-                                                    <OptionSelect registration={register(`languages.${index}.level`)} placeholder="سطح" options={resumeLevelOptions} />
+                                                    <ResumeSelect control={control} name={`languages.${index}.level`} placeholder="سطح" options={resumeLevelOptions} />
                                                 </ResumeCard>
                                             ))}
                                         </ResumeSection>
@@ -278,30 +277,90 @@ export default function EditResumeModal({ isOpen, onClose, user, onUpdate, initi
     );
 }
 
-function YearSelect({ registration, placeholder }: { registration: UseFormRegisterReturn; placeholder: string }) {
+function ResumeSelect({ control, name, placeholder, options, placement = "bottom end" }: {
+    control: Control<ResumeData>;
+    name: FieldPath<ResumeData>;
+    placeholder: string;
+    options: readonly string[];
+    placement?: "top end" | "bottom end";
+}) {
     return (
-        <select {...registration} aria-label={placeholder} dir="rtl" className={yearSelectClass}>
-            <option value="">{placeholder}</option>
-            {yearOptions.map((year) => (
-                <option key={year} value={year}>
-                    {year}
-                </option>
-            ))}
-        </select>
+        <Controller
+            control={control}
+            name={name}
+            render={({ field }) => {
+                const value = typeof field.value === "string" ? field.value : "";
+                return (
+                    <Listbox value={value} onChange={field.onChange}>
+                        <ListboxButton
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            aria-label={`${placeholder}، ${value || "انتخاب نشده"}`}
+                            className="group flex min-h-[46px] w-full items-center justify-between gap-2 rounded-xl border border-[#d8e3ef] bg-white px-3 text-right text-[13px] shadow-[0_2px_6px_rgba(15,23,42,0.04)] outline-none transition hover:border-[#99bde5] hover:bg-[#f8fbff] focus-visible:border-[#155aa6] focus-visible:ring-4 focus-visible:ring-[#155aa6]/10 data-open:border-[#155aa6] data-open:bg-[#f5f9ff] data-open:ring-4 data-open:ring-[#155aa6]/10"
+                        >
+                            <span className={`min-w-0 truncate ${value ? "font-semibold text-slate-800" : "text-slate-400"}`}>{value || placeholder}</span>
+                            <ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-[#155aa6] transition-transform group-data-open:rotate-180" />
+                        </ListboxButton>
+                        <ListboxOptions
+                            anchor={{ to: placement, gap: 8, padding: 12 }}
+                            ref={(element) => {
+                                if (element && value) scrollSelectedOptionIntoView(element, value);
+                            }}
+                            dir="rtl"
+                            className="z-[80] max-h-[min(248px,42vh)]! w-(--button-width) overscroll-contain overflow-y-auto rounded-2xl border border-[#d8e3ef] bg-white p-1.5 text-right shadow-[0_16px_44px_rgba(15,23,42,0.2)] outline-none transition duration-150 ease-out data-closed:scale-95 data-closed:opacity-0"
+                            transition
+                        >
+                            <ListboxOption value="" className="flex min-h-10 cursor-pointer items-center rounded-xl px-3 text-[13px] text-slate-500 outline-none data-focus:bg-[#edf5ff]">
+                                انتخاب نشده
+                            </ListboxOption>
+                            {options.map((option) => (
+                                <ListboxOption
+                                    key={option}
+                                    value={option}
+                                    className="flex min-h-10 cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2 text-[13px] text-slate-700 outline-none transition data-focus:bg-[#edf5ff] data-focus:text-[#155aa6] data-selected:bg-[#e9f2fe] data-selected:font-bold data-selected:text-[#155aa6]"
+                                >
+                                    {({ selected }) => (
+                                        <>
+                                            <span className="min-w-0 break-words">{option}</span>
+                                            {selected && <Check aria-hidden className="h-4 w-4 shrink-0" />}
+                                        </>
+                                    )}
+                                </ListboxOption>
+                            ))}
+                        </ListboxOptions>
+                    </Listbox>
+                );
+            }}
+        />
     );
 }
 
-function OptionSelect({ registration, placeholder, options }: { registration: UseFormRegisterReturn; placeholder: string; options: string[] }) {
-    return (
-        <select {...registration} aria-label={placeholder} dir="rtl" className={yearSelectClass}>
-            <option value="">{placeholder}</option>
-            {options.map((option) => (
-                <option key={option} value={option}>
-                    {option}
-                </option>
-            ))}
-        </select>
-    );
+function scrollSelectedOptionIntoView(menu: HTMLElement, value: string) {
+    if (menu.dataset.resumeScrollValue === value) return;
+    let previousBounds: DOMRect | null = null;
+    let attempts = 0;
+    const centerSelected = () => {
+        if (menu.dataset.resumeScrollValue === value) return;
+        if (!menu.isConnected) return;
+        const bounds = menu.getBoundingClientRect();
+        const buttonWidth = Number.parseFloat(getComputedStyle(menu).getPropertyValue("--button-width"));
+        const isPositioned = buttonWidth > 0 && bounds.width >= buttonWidth * 0.9;
+        const isStable = previousBounds
+            && Math.abs(bounds.top - previousBounds.top) < 1
+            && Math.abs(bounds.height - previousBounds.height) < 1;
+        if ((!isPositioned || !isStable) && attempts++ < 12) {
+            previousBounds = bounds;
+            requestAnimationFrame(centerSelected);
+            return;
+        }
+        if (!isPositioned) return;
+        const selected = menu.querySelector<HTMLElement>('[aria-selected="true"]');
+        if (!selected) return;
+        menu.dataset.resumeScrollValue = value;
+        const optionRect = selected.getBoundingClientRect();
+        menu.scrollTop += optionRect.top - bounds.top - (bounds.height - optionRect.height) / 2;
+    };
+    requestAnimationFrame(centerSelected);
 }
 
 function buildYearOptions() {
