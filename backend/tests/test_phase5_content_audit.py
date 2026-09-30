@@ -170,9 +170,9 @@ def test_source_scan_flags_remote_media_and_numeric_route_ids(tmp_path: Path) ->
 def test_repository_media_registry_covers_every_audited_asset() -> None:
     assets = discover_media_assets(REPO_ROOT)
     result = run_audit(REPO_ROOT, scan_source=False)
-    assert len(assets) == 350
-    assert result.media["asset_count"] == 350
-    assert result.media["image_count"] == 334
+    assert len(assets) == 351
+    assert result.media["asset_count"] == 351
+    assert result.media["image_count"] == 335
     assert result.media["video_count"] == 16
     assert result.media["registered_file_count"] == len(assets)
     assert not any(finding.gate == "structural" for finding in result.findings)

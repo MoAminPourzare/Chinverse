@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select, func, update
+from sqlalchemy import and_, delete, select, func, or_, update
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
@@ -56,6 +56,8 @@ def build_article_read(article: Article, comments_count: int = 0) -> schemas.Art
         title=article.title,
         summary=article.summary,
         content=article.content,
+        slug=article.slug,
+        document=article.document_json,
         cover_image=article.cover_image,
         author_user_id=article.author_user_id,
         author=build_user_summary(article.author),
@@ -65,6 +67,14 @@ def build_article_read(article: Article, comments_count: int = 0) -> schemas.Art
 
 
 # ===== FORUM QUESTIONS =====
+
+def visible_article_author():
+    # Editorial records are published from the reviewed repository catalog,
+    # never through the user article-creation API.
+    return or_(
+        and_(Article.author_user_id.is_(None), Article.slug.is_not(None), Article.document_json.is_not(None)),
+        and_(User.status == UserStatus.ACTIVE, User.is_verified.is_(True)),
+    )
 
 @router.get("/forum/questions", response_model=List[schemas.ForumQuestionRead])
 async def get_forum_questions(
@@ -345,10 +355,10 @@ async def get_articles(
 
     query = (
         select(Article, func.coalesce(comment_counts.c.comments_count, 0))
-        .join(User, User.id == Article.author_user_id)
+        .outerjoin(User, User.id == Article.author_user_id)
         .outerjoin(comment_counts, Article.id == comment_counts.c.article_id)
         .options(selectinload(Article.author).selectinload(User.profile))
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
+        .where(visible_article_author())
         .order_by(Article.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -395,14 +405,22 @@ async def get_article_detail(
     article_id: int,
     db: AsyncSession = Depends(deps.get_db),
 ):
+    return await load_article_detail(db, Article.id == article_id)
+
+
+@router.get("/forum/articles/by-slug/{slug}", response_model=schemas.ArticleDetailRead)
+async def get_article_by_slug(slug: str, db: AsyncSession = Depends(deps.get_db)):
+    return await load_article_detail(db, Article.slug == slug)
+
+
+async def load_article_detail(db: AsyncSession, identifier):
     result = await db.execute(
         select(Article)
-        .join(User, User.id == Article.author_user_id)
+        .outerjoin(User, User.id == Article.author_user_id)
         .options(selectinload(Article.author).selectinload(User.profile))
         .where(
-            Article.id == article_id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            identifier,
+            visible_article_author(),
         )
     )
     article = result.scalar_one_or_none()
@@ -414,7 +432,7 @@ async def get_article_detail(
         .join(User, User.id == ArticleComment.author_user_id)
         .options(selectinload(ArticleComment.author).selectinload(User.profile))
         .where(
-            ArticleComment.article_id == article_id,
+            ArticleComment.article_id == article.id,
             User.status == UserStatus.ACTIVE,
             User.is_verified.is_(True),
         )
@@ -441,7 +459,10 @@ async def create_article_comment(
     if not content:
         raise bad_request("Comment cannot be empty")
 
-    article_result = await db.execute(select(Article).where(Article.id == article_id))
+    article_result = await db.execute(
+        select(Article).outerjoin(User, User.id == Article.author_user_id)
+        .where(Article.id == article_id, visible_article_author())
+    )
     if not article_result.scalar_one_or_none():
         raise not_found("Article")
 

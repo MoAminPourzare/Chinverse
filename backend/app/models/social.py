@@ -173,6 +173,8 @@ class Article(Base, TimestampMixin):
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     cover_image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    slug: Mapped[Optional[str]] = mapped_column(String(160), nullable=True, unique=True)
+    document_json: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     author: Mapped[Optional["User"]] = relationship()
     comments: Mapped[List["ArticleComment"]] = relationship(back_populates="article", cascade="all, delete-orphan")

@@ -89,7 +89,7 @@ test.describe("phase four authenticated journeys", () => {
   });
 
   test("focused pages do not place the floating support shortcut over their controls", async ({ page }) => {
-    for (const route of ["/chat/2", "/notifications", "/settings", "/account/security"]) {
+    for (const route of ["/notifications", "/settings", "/account/security", "/support"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.getByRole("link", { name: "پشتیبانی" })).toHaveCount(0);
     }

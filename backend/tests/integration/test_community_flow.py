@@ -206,3 +206,77 @@ async def test_block_prevents_messages_and_reports_are_deduplicated():
             json={"action": "suspend_user", "notes": "must be rejected"},
         )
         assert forbidden_suspension.status_code == 403, forbidden_suspension.text
+
+
+@pytest.mark.asyncio
+async def test_editorial_article_publication_is_idempotent_and_preserves_comments():
+    from sqlalchemy import select
+    from app.models.social import Article
+    from scripts.sync_articles import publish_articles, read_catalog
+
+    item = read_catalog()[0].model_copy(update={"slug": f"editorial-test-{uuid4().hex}"})
+    async with SessionLocal.begin() as db:
+        await publish_articles(db, [item])
+    async with SessionLocal() as db:
+        saved = await db.scalar(select(Article).where(Article.slug == item.slug))
+        identifier, created_at, updated_at = saved.id, saved.created_at, saved.updated_at
+    async with SessionLocal.begin() as db:
+        await publish_articles(db, [item])
+    async with SessionLocal() as db:
+        saved = await db.get(Article, identifier)
+        assert saved.updated_at == updated_at
+        assert saved.created_at == created_at
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        public = await client.get(f"/api/v1/community/forum/articles/by-slug/{item.slug}")
+        assert public.status_code == 200, public.text
+        assert public.json()["document"] == item.document.model_dump()
+        assert public.json()["author"] is None
+        assert public.json()["id"] == identifier
+        listing = await client.get("/api/v1/community/forum/articles", params={"limit": 100})
+        assert identifier in [article["id"] for article in listing.json()]
+        _, headers = await authenticated_user(client)
+        comment = await client.post(f"/api/v1/community/forum/articles/{identifier}/comments", headers=headers, json={"content": "A persistent comment on the editorial article"})
+        assert comment.status_code == 200, comment.text
+        revised = item.model_copy(update={"title": "Revised editorial article title"})
+        async with SessionLocal.begin() as db:
+            await publish_articles(db, [revised])
+        detail = await client.get(f"/api/v1/community/forum/articles/{identifier}")
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["title"] == revised.title
+        assert detail.json()["comments_count"] == 1
+        assert detail.json()["comments"][0]["id"] == comment.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_structured_articles_do_not_bypass_user_visibility_or_overwrite_authored_articles():
+    from app.models.social import Article
+    from scripts.sync_articles import publish_articles, read_catalog
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        user_id, headers = await authenticated_user(client)
+        legacy = await client.post("/api/v1/community/forum/articles", headers=headers, json={"title": "An authored article", "content": "Original user-written content"})
+        assert legacy.status_code == 200, legacy.text
+        identifier = legacy.json()["id"]
+        assert legacy.json()["document"] is None
+        assert (await client.get(f"/api/v1/community/forum/articles/{identifier}")).status_code == 200
+        slug = f"owned-test-{uuid4().hex}"
+        async with SessionLocal.begin() as db:
+            article = await db.get(Article, identifier)
+            article.slug = slug
+            article.document_json = read_catalog()[0].document.model_dump()
+            user = await db.get(User, user_id)
+            user.is_verified = False
+        for path in [str(identifier), f"by-slug/{slug}"]:
+            assert (await client.get(f"/api/v1/community/forum/articles/{path}")).status_code == 404
+        listing = await client.get("/api/v1/community/forum/articles", params={"limit": 100})
+        assert identifier not in [article["id"] for article in listing.json()]
+        hidden_comment = await client.post(f"/api/v1/community/forum/articles/{identifier}/comments", headers=headers, json={"content": "must remain hidden"})
+        assert hidden_comment.status_code in {403, 404}
+        with pytest.raises(ValueError, match="owned by a user"):
+            async with SessionLocal.begin() as db:
+                await publish_articles(db, [read_catalog()[0].model_copy(update={"slug": slug})])
+        async with SessionLocal() as db:
+            saved = await db.get(Article, identifier)
+            assert saved.content == "Original user-written content"
+            assert saved.author_user_id == user_id

@@ -18,19 +18,13 @@ test.describe("phase four public journey shell", () => {
     });
   }
 
-  test("support affordance keeps one position across primary pages", async ({ page }) => {
-    const positions: Array<{ x: number; y: number }> = [];
-
-    for (const route of ["/", "/showcase", "/community"]) {
+  test("support is available in messages and absent on other primary pages", async ({ page }) => {
+    for (const route of ["/", "/showcase", "/community", "/explore", "/leitner"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
-      const support = page.getByRole("link", { name: "پشتیبانی" });
-      await expect(support).toBeVisible();
-      const box = await support.boundingBox();
-      expect(box).not.toBeNull();
-      positions.push({ x: Math.round(box!.x), y: Math.round(box!.y) });
+      await expect(page.getByRole("link", { name: "پشتیبانی", exact: true })).toHaveCount(0);
     }
-
-    expect(new Set(positions.map((position) => `${position.x}:${position.y}`)).size).toBe(1);
+    await page.goto("/chat", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("link", { name: "پشتیبانی", exact: true })).toBeVisible();
   });
 
   test("chat exposes a retryable network error instead of an empty inbox", async ({ page }) => {

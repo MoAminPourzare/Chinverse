@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { ArticleDocument } from '@/lib/articles';
 
 // ===== TYPES =====
 
@@ -49,6 +50,8 @@ export interface ForumQuestionDetail extends ForumQuestion {
 
 export interface Article {
     id: number;
+    slug?: string | null;
+    document?: ArticleDocument | null;
     title: string;
     summary: string | null;
     content: string;
@@ -155,6 +158,11 @@ export const communityService = {
 
     async getArticle(articleId: number): Promise<ArticleDetail> {
         const response = await api.get<ArticleDetail>(`/community/forum/articles/${articleId}`);
+        return response.data;
+    },
+
+    async getArticleBySlug(slug: string): Promise<ArticleDetail> {
+        const response = await api.get<ArticleDetail>(`/community/forum/articles/by-slug/${encodeURIComponent(slug)}`);
         return response.data;
     },
 

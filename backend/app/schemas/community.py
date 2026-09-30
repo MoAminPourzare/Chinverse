@@ -1,5 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.schemas.article_document import ArticleDocument
 from datetime import datetime
 
 # ===== FORUM QUESTION SCHEMAS =====
@@ -104,6 +105,8 @@ class ArticleCreate(ArticleBase):
 
 class ArticleRead(ArticleBase):
     id: int
+    slug: Optional[str] = None
+    document: Optional[ArticleDocument] = None
     author_user_id: Optional[int] = None
     author: Optional[UserSummary] = None
     created_at: datetime
