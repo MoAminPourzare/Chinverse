@@ -153,7 +153,7 @@ export default function SettingsPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] px-6 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
             <header className="relative flex h-11 items-center justify-center">
-                <BackButton href="/profile" className="absolute right-0 top-0" />
+                <BackButton href="/profile" className="absolute left-0 top-0" />
                 <h1 className="text-[18px] font-black text-[#2f3238] dark:text-[#f4f7fb]">تنظیمات</h1>
             </header>
 

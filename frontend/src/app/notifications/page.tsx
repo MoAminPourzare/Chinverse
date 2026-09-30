@@ -102,7 +102,7 @@ export default function NotificationsPage() {
     return (
         <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
             <header className="relative flex h-12 items-center justify-center">
-                <SafeBackButton fallback="/" className="absolute right-0" />
+                <SafeBackButton fallback="/" className="absolute left-0" />
                 <h1 className="text-[18px] font-black text-[#2f3238]">اعلان‌ها</h1>
             </header>
 

@@ -872,9 +872,9 @@ export default function AdminPanelPage() {
         <div className="min-h-full bg-[#f7f8fb] pb-10" dir="rtl">
             <header className="sticky top-0 z-30 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
                 <div className="mx-auto flex max-w-6xl flex-col gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3" dir="ltr">
                         <BackButton href="/" />
-                        <div className="min-w-0">
+                        <div className="min-w-0" dir="rtl">
                             <h1 className="text-lg font-black leading-7 text-slate-950">پنل ادمین چین‌ورس</h1>
                             <p className="text-xs font-bold leading-5 text-slate-500">محتوا، ویدیو، دیکشنری و کاربران</p>
                         </div>

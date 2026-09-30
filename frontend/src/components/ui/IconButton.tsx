@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const baseIconButtonClass =
@@ -26,14 +26,14 @@ export function BackButton({
     if (href) {
         return (
             <Link href={href} className={classes} aria-label={label}>
-                <ArrowRight size={iconSize} />
+                <ArrowLeft size={iconSize} />
             </Link>
         );
     }
 
     return (
         <button type="button" onClick={onClick} className={classes} aria-label={label}>
-            <ArrowRight size={iconSize} />
+            <ArrowLeft size={iconSize} />
         </button>
     );
 }
@@ -119,7 +119,7 @@ export function AppHeader({
                     <BackButton
                         href={backHref}
                         onClick={onBack}
-                        className="absolute right-0 top-1/2 -translate-y-1/2"
+                        className="absolute left-0 top-1/2 -translate-y-1/2"
                     />
                 )}
                 <div className={cn("min-w-0 px-14 text-center", titleClassName)}>
@@ -129,7 +129,7 @@ export function AppHeader({
                         title
                     )}
                 </div>
-                <HeaderIcon className={cn("absolute left-0 top-1/2 -translate-y-1/2", iconClassName)}>
+                <HeaderIcon className={cn("absolute right-0 top-1/2 -translate-y-1/2", iconClassName)}>
                     {icon}
                 </HeaderIcon>
             </div>

@@ -117,9 +117,9 @@ export default function CourseExplorePage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
-                <header className="grid grid-cols-[40px_1fr_40px] items-center gap-3">
+                <header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
                     <BackButton href="/explore" label="بازگشت به کاوش" className="justify-self-end" />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1" dir="rtl">
                         <h1 className="truncate text-center text-[20px] font-black text-[#25272d]">{displayTitle}</h1>
                     </div>
                     <span aria-hidden />

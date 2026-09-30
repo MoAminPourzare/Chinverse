@@ -10,7 +10,6 @@ import SafeBackButton from "@/components/ui/SafeBackButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
-import ReportContentButton from "@/components/trust/ReportContentButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getProfileHref } from "@/utils/profileHref";
@@ -72,7 +71,7 @@ export default function ServiceDetailPage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-                <header className="flex items-center justify-between">
+                <header className="flex items-center justify-between" dir="ltr">
                     <SafeBackButton fallback="/showcase" />
                     <Link href="/showcase" className="text-xs font-bold text-[#155aa6]">
                         ویترین خدمات
@@ -132,7 +131,6 @@ export default function ServiceDetailPage() {
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <h2 className="text-base font-black text-slate-900">توضیحات خدمت</h2>
                         <div className="flex items-center gap-2">
-                            <ReportContentButton targetType="service" targetId={service.id} />
                             <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
                         </div>
                     </div>

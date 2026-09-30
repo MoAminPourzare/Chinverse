@@ -246,9 +246,9 @@ export default function LeitnerReviewPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header className="grid grid-cols-[72px_1fr_40px] items-center gap-3">
+                <header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="ltr">
                     <BackButton onClick={() => router.push("/leitner")} className="justify-self-end" />
-                    <h1 className="text-center text-lg font-black text-slate-950">مرور لغات</h1>
+                    <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
                     <div className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#155aa6] shadow-sm">
                         {toPersianDigits(currentIndex + 1)} / {toPersianDigits(cards.length)}
                     </div>

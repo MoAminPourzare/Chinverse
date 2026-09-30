@@ -365,10 +365,10 @@ export default function ChatRoomPage() {
     return (
         <div className="flex h-full min-h-full flex-col bg-[#f7f8fa]" dir="rtl">
             <header className="shrink-0 border-b border-[#dfe3ea] bg-[#f0f2f5] px-5 pb-3 pt-5">
-                <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3">
+                <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3" dir="ltr">
                     <SafeBackButton fallback="/chat" className="justify-self-end" />
 
-                    <div className="flex min-w-0 items-center justify-center gap-3">
+                    <div className="flex min-w-0 items-center justify-center gap-3" dir="rtl">
                         <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
                         <div className="min-w-0 text-right">
                             <h1 className={cn("truncate text-base font-black text-slate-900", getTextAlign(otherUser?.display_name))} {...getDirectionalTextProps(otherUser?.display_name)}>{otherUser?.display_name || 'گفت‌وگو'}</h1>

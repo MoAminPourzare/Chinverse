@@ -62,21 +62,6 @@ export const trustService = {
         await api.delete(`/trust/blocks/${userId}`);
     },
 
-    async report(
-        targetType: ReportTargetType,
-        targetId: number,
-        reason: ReportReason,
-        details?: string,
-    ): Promise<ReportInfo> {
-        const response = await api.post<ReportInfo>("/trust/reports", {
-            target_type: targetType,
-            target_id: targetId,
-            reason,
-            details: details?.trim() || null,
-        });
-        return response.data;
-    },
-
     async moderationQueue(status = "open"): Promise<ReportInfo[]> {
         const response = await api.get<ReportInfo[]>("/trust/moderation/reports", {
             params: { report_status: status },

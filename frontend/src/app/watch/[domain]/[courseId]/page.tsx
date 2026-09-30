@@ -700,9 +700,9 @@ export default function SharedWatchPage() {
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
                 <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
-                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2" dir="ltr">
                         <BackButton href={`/${encodeURIComponent(domain)}/${course.id}`} className="justify-self-end" />
-                        <div className="min-w-0 text-center">
+                        <div className="min-w-0 text-center" dir="rtl">
                             <p className="truncate text-[11px] font-black text-[#155aa6]" {...getDirectionalTextProps(course.title)}>{course.title}</p>
                             <h1 className="truncate text-sm font-black text-slate-900" {...getDirectionalTextProps(currentLesson.title)}>{currentLesson.title}</h1>
                         </div>

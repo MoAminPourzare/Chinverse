@@ -18,7 +18,6 @@ import {
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
-import ReportContentButton from "@/components/trust/ReportContentButton";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { validateTextLength, validationMessage } from "@/validation";
@@ -104,7 +103,7 @@ export default function CommunityPage() {
     return (
         <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
             <header className="relative flex h-12 items-center justify-center">
-                <BackButton href="/profile" className="absolute right-0" />
+                <BackButton href="/profile" className="absolute left-0" />
             </header>
 
             <nav className="mt-6 grid grid-cols-2 gap-1.5 rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
@@ -682,7 +681,6 @@ function QuestionCard({
                             </button>
                         </div>
                     )}
-                    {!isOwner && <ReportContentButton targetType="question" targetId={question.id} />}
                 </div>
             </div>
 
@@ -791,7 +789,6 @@ function ArticleCard({
                     </div>
                 </div>
             </button>
-            <ReportContentButton targetType="article" targetId={article.id} className="absolute left-3 top-3" />
             </div>
 
             {isOpen && (
@@ -834,11 +831,6 @@ function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
                         <p className={cn("truncate text-xs font-black text-slate-900", getTextAlign(item.author?.display_name))} {...getDirectionalTextProps(item.author?.display_name)}>{item.author?.display_name || "کاربر چین‌ورس"}</p>
                         <div className="flex shrink-0 items-center gap-1">
                             <span className="text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
-                            <ReportContentButton
-                                targetType={"question_id" in item ? "answer" : "article_comment"}
-                                targetId={item.id}
-                                className="h-7 w-7 border-0 bg-transparent"
-                            />
                         </div>
                     </div>
                     <p className={cn("mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600", getTextAlign(item.content))} {...getDirectionalTextProps(item.content)}>{item.content}</p>

@@ -6,7 +6,6 @@ import { Loader2, MessageCircle, Send, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
-import ReportContentButton from "@/components/trust/ReportContentButton";
 import { engagementService, EngagementComment } from "@/services/engagement.service";
 import { validateTextLength, validationMessage } from "@/validation";
 
@@ -187,7 +186,6 @@ function CommentItem({ comment }: { comment: EngagementComment }) {
                         <span className="text-[10px] font-semibold text-slate-400">
                             {new Date(comment.created_at).toLocaleDateString("fa-IR")}
                         </span>
-                        <ReportContentButton targetType="comment" targetId={comment.id} className="h-7 w-7 border-0 bg-transparent" />
                     </div>
                 </div>
                 <p className={cn("mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600", getTextAlign(comment.content))} {...getDirectionalTextProps(comment.content)}>{comment.content}</p>
