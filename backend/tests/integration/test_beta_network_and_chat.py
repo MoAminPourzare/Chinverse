@@ -16,7 +16,7 @@ pytestmark = pytest.mark.integration
 
 
 async def account(client):
-    email = f"beta-social-{uuid4().hex}@example.test"
+    email = f"beta-social-{uuid4().hex}@example.com"
     password = "A secure social integration passphrase 123!"
     signup = await client.post('/api/v1/signup', json={
         'email': email, 'phone': f"09{uuid4().int % 10**9:09d}",
