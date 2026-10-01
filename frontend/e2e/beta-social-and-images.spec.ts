@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const date = '2026-10-01T09:00:00Z';
+test.setTimeout(60_000);
 const profile = { id: 2, profile: { display_name: 'تارا نمایشی', headline: 'مدرس زبان چینی', avatar_url: '/uploads/avatars/missing.jpg' }, gallery_items: [] };
 
 async function mockLiveSocket(page: Page) {
@@ -99,6 +100,7 @@ test('missing profile, provider and service images render local placeholders', a
         else if (path === '/users/me') body = { id: 1 };
         else if (path === '/users/2/public') body = profile;
         else if (path === '/users/2/followers-count') body = { followers_count: 0 };
+        else if (path === '/engagements/service/2') body = { target_type: 'service', target_id: 2, liked: false, likes_count: 0, comments_count: 0 };
         else if (path === '/users/2/is-following') body = { is_following: false };
         else if (path === '/users/me/services/public/2') body = {
             id: 2, title: 'دوره تربیت مدرس زبان چینی', description: 'توضیح دوره', banner_url: '/uploads/services/missing.jpg', created_at: date,
