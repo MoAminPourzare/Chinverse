@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,8 +13,12 @@ from app.models.social import ForumQuestion, ForumAnswer, Article, ArticleCommen
 from app.models.user import User, UserStatus
 from app.schemas import community as schemas
 from app.services.notifications import notify_followers
+# Forum authors follow the directory's existing optional-verification beta
+# policy; production and inactive-account restrictions remain the same.
+from app.services.showcase_visibility import showcase_user_filters as forum_user_filters
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def build_user_summary(user: Optional[User]) -> Optional[schemas.UserSummary]:
@@ -90,7 +95,7 @@ async def get_forum_questions(
             func.count(ForumAnswer.id).label("answers_count"),
         )
         .join(User, User.id == ForumAnswer.author_user_id)
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
+        .where(*forum_user_filters())
         .group_by(ForumAnswer.question_id)
         .subquery()
     )
@@ -100,7 +105,7 @@ async def get_forum_questions(
         .join(User, User.id == ForumQuestion.author_user_id)
         .outerjoin(answer_counts, ForumQuestion.id == answer_counts.c.question_id)
         .options(selectinload(ForumQuestion.author).selectinload(User.profile))
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
+        .where(*forum_user_filters())
         .order_by(ForumQuestion.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -147,30 +152,34 @@ async def create_forum_question(
     db.add(question)
     await db.commit()
     await db.refresh(question)
-    try:
-        display_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
-        await notify_followers(
-            db,
-            actor_user_id=current_user.id,
-            type="forum",
-            title="بحث جدید در تالار",
-            body=f"{display_name} یک سؤال جدید پرسید: {question.title}",
-            target_url="/community",
-            metadata={"question_id": question.id},
-        )
-    except Exception:
-        await db.rollback()
-
-    # Get author info
-    return schemas.ForumQuestionRead(
+    # Keep the saved response outside the optional notification transaction:
+    # rollback expires ORM attributes even with expire_on_commit=False.
+    response = schemas.ForumQuestionRead(
         id=question.id,
         title=question.title,
         content=question.body,
         author_user_id=question.author_user_id,
         created_at=question.created_at,
         author=build_user_summary(current_user),
-        answers_count=0
+        answers_count=0,
     )
+    actor_user_id = current_user.id
+    display_name = response.author.display_name if response.author else "Chinverse user"
+    try:
+        await notify_followers(
+            db,
+            actor_user_id=actor_user_id,
+            type="forum",
+            title="بحث جدید در تالار",
+            body=f"{display_name} یک سؤال جدید پرسید: {response.title}",
+            target_url="/community",
+            metadata={"question_id": response.id},
+        )
+    except Exception:
+        await db.rollback()
+        logger.warning("Follower notifications failed for saved question %s", response.id)
+
+    return response
 
 
 @router.get("/forum/questions/{question_id}", response_model=schemas.ForumQuestionDetailRead)
@@ -184,8 +193,7 @@ async def get_forum_question_detail(
         .options(selectinload(ForumQuestion.author).selectinload(User.profile))
         .where(
             ForumQuestion.id == question_id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *forum_user_filters(),
         )
     )
     question = result.scalar_one_or_none()
@@ -198,8 +206,7 @@ async def get_forum_question_detail(
         .options(selectinload(ForumAnswer.author).selectinload(User.profile))
         .where(
             ForumAnswer.question_id == question_id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *forum_user_filters(),
         )
         .order_by(ForumAnswer.created_at.asc(), ForumAnswer.id.asc())
     )
@@ -303,7 +310,11 @@ async def create_forum_answer(
     if not content:
         raise bad_request("Answer cannot be empty")
 
-    question_result = await db.execute(select(ForumQuestion).where(ForumQuestion.id == question_id))
+    question_result = await db.execute(
+        select(ForumQuestion)
+        .join(User, User.id == ForumQuestion.author_user_id)
+        .where(ForumQuestion.id == question_id, *forum_user_filters())
+    )
     question = question_result.scalar_one_or_none()
     if not question:
         raise not_found("Forum question")

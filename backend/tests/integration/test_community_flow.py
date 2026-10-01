@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from app.db.session import SessionLocal
 from app.main import app
 from app.models.user import User, UserRole
+from app.core.config import settings
 
 
 pytestmark = pytest.mark.integration
@@ -51,6 +52,75 @@ async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
 async def authenticated_headers(client: AsyncClient) -> dict[str, str]:
     _, headers = await authenticated_user(client)
     return headers
+
+
+@pytest.mark.asyncio
+async def test_optional_beta_questions_and_answers_survive_reloading(monkeypatch):
+    from app.models.user import UserStatus
+
+    monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "staging")
+    monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", False)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        user_id, headers = await authenticated_user(client)
+        async with SessionLocal.begin() as db:
+            user = await db.get(User, user_id)
+            user.is_verified = False
+        content = "چطور تلفظ این کلمه چینی را تمرین کنم؟ " * 4
+        created = await client.post("/api/v1/community/forum/questions", headers=headers,
+            json={"title": content[:55].strip(), "content": content.strip()})
+        assert created.status_code == 200, created.text
+        identifier = created.json()["id"]
+        answer = await client.post(f"/api/v1/community/forum/questions/{identifier}/answers",
+            headers=headers, json={"content": "تلفظ را چند بار گوش بده و بعد تکرار کن."})
+        assert answer.status_code == 200, answer.text
+
+        for tier, required, visible in (
+            ("staging", False, True), ("staging", True, False),
+            ("production", False, False), ("local", False, False),
+        ):
+            monkeypatch.setattr(settings, "DEPLOYMENT_TIER", tier)
+            monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", required)
+            listing = await client.get("/api/v1/community/forum/questions?limit=100")
+            assert listing.status_code == 200, listing.text
+            assert (identifier in {question["id"] for question in listing.json()}) is visible
+            detail = await client.get(f"/api/v1/community/forum/questions/{identifier}")
+            assert detail.status_code == (200 if visible else 404), detail.text
+            if visible:
+                saved = next(question for question in listing.json() if question["id"] == identifier)
+                assert saved["content"] == content.strip()
+                assert saved["answers_count"] == detail.json()["answers_count"] == 1
+                assert detail.json()["answers"][0]["id"] == answer.json()["id"]
+
+        monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "staging")
+        monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", False)
+        for status in (UserStatus.SUSPENDED, UserStatus.DELETED):
+            async with SessionLocal.begin() as db:
+                user = await db.get(User, user_id)
+                user.status = status
+            listing = await client.get("/api/v1/community/forum/questions?limit=100")
+            assert identifier not in {question["id"] for question in listing.json()}
+            assert (await client.get(f"/api/v1/community/forum/questions/{identifier}")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_notification_failure_does_not_fail_an_already_saved_question(monkeypatch):
+    from sqlalchemy import text
+    from app.api.v1.endpoints import community
+
+    async def broken_notifications(db, **kwargs):
+        # A failed PostgreSQL transaction expires ORM objects on rollback.
+        await db.execute(text("SELECT 1 / 0"))
+
+    monkeypatch.setattr(community, "notify_followers", broken_notifications)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        _, headers = await authenticated_user(client)
+        created = await client.post("/api/v1/community/forum/questions", headers=headers,
+            json={"title": "سوال کوتاه", "content": "این سوال حتی بدون اعلان هم باید ذخیره شود."})
+        assert created.status_code == 200, created.text
+        identifier = created.json()["id"]
+        detail = await client.get(f"/api/v1/community/forum/questions/{identifier}")
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["content"] == created.json()["content"]
 
 
 @pytest.mark.asyncio

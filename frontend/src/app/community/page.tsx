@@ -94,13 +94,15 @@ function QuestionsSection({
     const [details, setDetails] = useState<Record<number, ForumQuestionDetail>>({});
     const [answerInputs, setAnswerInputs] = useState<Record<number, string>>({});
     const [draftError, setDraftError] = useState("");
+    const [submittedMessage, setSubmittedMessage] = useState("");
     const [answerErrors, setAnswerErrors] = useState<Record<number, string>>({});
     const [submittingAnswerId, setSubmittingAnswerId] = useState<number | null>(null);
 
     const submitQuestion = async () => {
         const content = draft.trim();
-        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 8, max: 8000 }));
+        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 3, max: 8000 }));
         setDraftError(validationError);
+        setSubmittedMessage("");
         if (validationError || isSubmitting) return;
 
         setIsSubmitting(true);
@@ -111,9 +113,10 @@ function QuestionsSection({
             setDraft("");
             setOpenQuestionId(created.id);
             setDetails((current) => ({ ...current, [created.id]: { ...created, answers: [] } }));
+            setSubmittedMessage("سوالت ثبت شد.");
         } catch (error) {
             console.error("Failed to create question:", error);
-            alert("ثبت سوال انجام نشد. لطفا دوباره تلاش کن.");
+            setDraftError(getCommunityErrorMessage(error, "ثبت سوال انجام نشد. لطفا دوباره تلاش کن.", "create"));
         } finally {
             setIsSubmitting(false);
         }
@@ -147,7 +150,7 @@ function QuestionsSection({
 
     const submitQuestionEdit = async (questionId: number) => {
         const content = editDraft.trim();
-        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 8, max: 8000 }));
+        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 3, max: 8000 }));
         setEditError(validationError);
         if (validationError || savingQuestionId) return;
 
@@ -229,7 +232,7 @@ function QuestionsSection({
             setAnswerErrors((current) => ({ ...current, [questionId]: "" }));
         } catch (error) {
             console.error("Failed to submit answer:", error);
-            alert("ارسال پاسخ انجام نشد. لطفا دوباره تلاش کن.");
+            setAnswerErrors((current) => ({ ...current, [questionId]: getCommunityErrorMessage(error, "ارسال پاسخ انجام نشد. لطفا دوباره تلاش کن.", "create") }));
         } finally {
             setSubmittingAnswerId(null);
         }
@@ -244,15 +247,22 @@ function QuestionsSection({
 
             <div className="mt-4 flex items-stretch gap-2">
                 <textarea
+                    id="question-draft"
+                    aria-label="متن سوال"
+                    aria-invalid={Boolean(draftError)}
+                    aria-describedby={draftError ? "question-draft-error" : undefined}
                     value={draft}
                     onChange={(event) => {
                         setDraft(event.target.value);
                         if (draftError) setDraftError("");
+                        setSubmittedMessage("");
                     }}
                     rows={2}
                     dir={draft.trim() ? "auto" : "rtl"}
                     placeholder="سوالت رو اینجا بنویس"
-                    className="min-h-[56px] flex-1 resize-none rounded-[10px] border border-[#ef7f66] bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                    disabled={isSubmitting}
+                    maxLength={8000}
+                    className={cn("min-h-[56px] min-w-0 flex-1 resize-none rounded-[10px] border bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 disabled:opacity-70", draftError ? "border-rose-500" : "border-[#d6e1ee]")}
                 />
                 <button
                     type="button"
@@ -264,7 +274,8 @@ function QuestionsSection({
                     {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-6 w-6" />}
                 </button>
             </div>
-            {draftError && <p className="mt-2 text-xs font-bold leading-5 text-rose-600">{draftError}</p>}
+            {draftError && <p id="question-draft-error" role="alert" className="mt-2 text-xs font-bold leading-5 text-rose-600">{draftError}</p>}
+            {submittedMessage && <p role="status" className="mt-2 text-xs font-bold leading-5 text-emerald-700">{submittedMessage}</p>}
 
             <div className="motion-list mt-4 space-y-3">
                 {isLoading ? (
@@ -333,9 +344,9 @@ function SectionHeader({
     );
 }
 
-function getCommunityErrorMessage(error: unknown, fallback: string) {
+function getCommunityErrorMessage(error: unknown, fallback: string, action: "create" | "manage" = "manage") {
     const axiosError = error as {
-        response?: { status?: number; data?: { detail?: string } };
+        response?: { status?: number; data?: { detail?: unknown; error?: { message?: string } } };
     };
 
     if (!axiosError.response) {
@@ -345,13 +356,17 @@ function getCommunityErrorMessage(error: unknown, fallback: string) {
         return "برای انجام این کار باید وارد حساب شوی.";
     }
     if (axiosError.response.status === 403) {
+        if (action === "create") return "برای ثبت سوال یا پاسخ، تأیید حساب کاربری‌ات را کامل کن.";
         return "فقط نویسنده سوال می‌تواند آن را ویرایش یا حذف کند.";
     }
     if (axiosError.response.status === 429) {
         return "درخواست‌ها زیاد شده؛ کمی صبر کن و دوباره امتحان کن.";
     }
 
-    return axiosError.response.data?.detail || fallback;
+    if (axiosError.response.status === 422) return "متن سوال یا پاسخ معتبر نیست. متن را بررسی کن و دوباره بفرست.";
+    if ((axiosError.response.status || 0) >= 500) return fallback;
+    const detail = axiosError.response.data?.detail;
+    return typeof detail === "string" && /[\u0600-\u06FF]/.test(detail) ? detail : fallback;
 }
 
 function QuestionCard({
@@ -444,6 +459,7 @@ function QuestionCard({
 
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
+                    <p className={cn("whitespace-pre-wrap break-words text-sm leading-7 text-slate-700", getTextAlign(question.content))} {...getDirectionalTextProps(question.content)}>{question.content}</p>
                     {isEditing && (
                         <div className="mb-4 rounded-[18px] border border-[#d6e1ee] bg-white p-3 shadow-sm">
                             <textarea
@@ -541,19 +557,21 @@ function ReplyComposer({
                     onChange={(event) => onChange(event.target.value)}
                     placeholder={placeholder}
                     rows={2}
+                    disabled={disabled}
                     dir={value.trim() ? "auto" : "rtl"}
                     className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
                 />
                 <button
                     type="button"
                     onClick={onSubmit}
+                    aria-label="ارسال پاسخ"
                     disabled={!value.trim() || disabled}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#155aa6] text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                     {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-5 w-5" />}
                 </button>
             </div>
-            {error && <p className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
+            {error && <p role="alert" className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
         </>
     );
 }

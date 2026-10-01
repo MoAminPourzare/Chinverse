@@ -120,6 +120,9 @@ export const communityService = {
     },
 
     async createForumQuestion(data: ForumQuestionCreate): Promise<ForumQuestion> {
+        // A safe read renews an expired session before the write. Never replay
+        // the POST automatically: an ambiguous response could create duplicates.
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ForumQuestion>('/community/forum/questions', data);
         return response.data;
     },
@@ -139,6 +142,7 @@ export const communityService = {
     },
 
     async createForumAnswer(questionId: number, data: ForumAnswerCreate): Promise<ForumAnswer> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ForumAnswer>(`/community/forum/questions/${questionId}/answers`, data);
         return response.data;
     },
