@@ -3,10 +3,11 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.api.errors import bad_request, conflict, not_found, unauthorized
+from app.api.errors import bad_request, not_found, unauthorized
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import upload_rate_limit, write_rate_limit
 from app.core.paths import AVATARS_DIR
@@ -14,7 +15,7 @@ from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.core import security
 from app.models.moderation import UserBlock
-from app.models.user import User, UserGalleryItem, UserProfile, UserStatus
+from app.models.user import User, UserGalleryItem, UserProfile
 from app.schemas import user as schemas
 from app.schemas.showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic, EducationSummary
 from app.services.auth_security import add_audit_event, clear_refresh_cookie
@@ -498,8 +499,7 @@ async def get_my_network(
         .where(
             UserFollow.follower_id == current_user.id,
             UserFollow.followee_id != current_user.id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *showcase_user_filters(),
         )
         .options(selectinload(User.profile))
         .order_by(User.id.desc())
@@ -534,7 +534,9 @@ async def get_my_followers_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
+        .join(User, User.id == UserFollow.follower_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.followee_id == current_user.id,
             UserFollow.follower_id != current_user.id,
         )
@@ -562,7 +564,7 @@ async def follow_user(
     
     # Check if user exists
     target_user = await db.get(User, user_id)
-    if not target_user or target_user.status != UserStatus.ACTIVE or not target_user.is_verified:
+    if not is_showcase_user(target_user):
         raise not_found("User")
 
     blocked = await db.scalar(
@@ -582,24 +584,15 @@ async def follow_user(
     if blocked:
         raise bad_request("Following is unavailable for blocked users")
     
-    # Check if already following
-    existing = await db.execute(
-        select(UserFollow)
-        .where(
-            UserFollow.follower_id == current_user.id,
-            UserFollow.followee_id == user_id
-        )
+    # Two tabs or a manual retry must not create duplicate relationships/notifications.
+    created_id = await db.scalar(
+        pg_insert(UserFollow).values(
+            follower_id=current_user.id, followee_id=user_id,
+        ).on_conflict_do_nothing(constraint="uq_follower_followee").returning(UserFollow.id)
     )
-    if existing.scalar_one_or_none():
-        raise conflict("Already following this user")
-    
-    # Create follow
-    follow = UserFollow(
-        follower_id=current_user.id,
-        followee_id=user_id
-    )
-    db.add(follow)
     await db.commit()
+    if created_id is None:
+        return {"message": "Successfully followed user"}
     from app.services.notifications import create_notification
 
     try:
@@ -643,7 +636,7 @@ async def unfollow_user(
     follow = result.scalar_one_or_none()
     
     if not follow:
-        raise bad_request("Not following this user")
+        return {"message": "Successfully unfollowed user"}
     
     # Remove follow
     await db.delete(follow)
@@ -692,7 +685,9 @@ async def get_user_followers_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
+        .join(User, User.id == UserFollow.follower_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.followee_id == user_id,
             UserFollow.follower_id != user_id,
         )
@@ -716,7 +711,9 @@ async def get_my_following_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
+        .join(User, User.id == UserFollow.followee_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.follower_id == current_user.id,
             UserFollow.followee_id != current_user.id,
         )
@@ -742,6 +739,7 @@ async def get_my_followers(
         select(User)
         .join(UserFollow, User.id == UserFollow.follower_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.followee_id == current_user.id,
             UserFollow.follower_id != current_user.id,
         )
@@ -780,6 +778,7 @@ async def get_my_following(
         select(User)
         .join(UserFollow, User.id == UserFollow.followee_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.follower_id == current_user.id,
             UserFollow.followee_id != current_user.id,
         )
@@ -817,6 +816,7 @@ async def get_user_followers(
         select(User)
         .join(UserFollow, User.id == UserFollow.follower_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.followee_id == user_id,
             UserFollow.follower_id != user_id,
         )
@@ -854,6 +854,7 @@ async def get_user_following(
         select(User)
         .join(UserFollow, User.id == UserFollow.followee_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.follower_id == user_id,
             UserFollow.followee_id != user_id,
         )
@@ -890,7 +891,9 @@ async def get_user_following_count(
     result = await db.execute(
         select(func.count())
         .select_from(UserFollow)
+        .join(User, User.id == UserFollow.followee_id)
         .where(
+            *showcase_user_filters(),
             UserFollow.follower_id == user_id,
             UserFollow.followee_id != user_id,
         )

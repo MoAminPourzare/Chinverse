@@ -20,12 +20,13 @@ from app.core.observability import record_chat_connection
 from app.db.session import SessionLocal
 from app.models.moderation import UserBlock
 from app.models.security import AuthSession
-from app.models.social import Message
+from app.models.social import ChatPresenceLease, Message
 from app.models.user import User, UserStatus
 from app.schemas import chat as schemas
 from app.schemas.token import TokenPayload
 from app.services.notifications import create_notification
 from app.services.chat_realtime import ChatRealtimeRelay
+from app.services.showcase_visibility import is_showcase_user
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -324,7 +325,7 @@ async def send_message(
     receiver_query = select(User).where(User.id == message_in.receiver_id)
     result = await db.execute(receiver_query)
     receiver = result.scalar_one_or_none()
-    if not receiver or receiver.status != UserStatus.ACTIVE or not receiver.is_verified:
+    if not is_showcase_user(receiver):
         raise not_found("User")
 
     blocked = await db.scalar(
@@ -364,6 +365,8 @@ async def send_message(
     _enqueue_message_event(db, message)
     await db.commit()
     chat_realtime.notify_committed()
+    saved_message = _message_read(message)
+    event_payload = {"type": "message:new", "message": saved_message.model_dump(mode="json")}
     try:
         sender_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
         await create_notification(
@@ -382,9 +385,12 @@ async def send_message(
             "Could not create the new-message notification",
             extra={"event": "chat.notification", "outcome": "failed"},
         )
-    await _broadcast_message(message)
+    await asyncio.gather(
+        chat_manager.send_to_user(saved_message.receiver_id, event_payload),
+        chat_manager.send_to_user(saved_message.sender_id, event_payload),
+    )
 
-    return _message_read(message)
+    return saved_message
 
 
 @router.post("/{user_id}/read")
@@ -524,6 +530,37 @@ async def get_conversations(
         )
         for row in rows
     ]
+
+
+@router.get("/{user_id}/presence", response_model=schemas.ChatPresence)
+async def get_user_presence(
+    user_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    target = await db.get(User, user_id)
+    if not is_showcase_user(target):
+        raise not_found("User")
+    blocked = await db.scalar(
+        select(UserBlock.id).where(
+            or_(
+                and_(UserBlock.blocker_id == current_user.id, UserBlock.blocked_id == user_id),
+                and_(UserBlock.blocker_id == user_id, UserBlock.blocked_id == current_user.id),
+            )
+        )
+    )
+    if blocked:
+        raise not_found("User")
+    if settings.CHAT_REALTIME_BACKEND == "memory":
+        online = chat_manager.is_online(user_id)
+    else:
+        online = bool(await db.scalar(
+            select(ChatPresenceLease.user_id).where(
+                ChatPresenceLease.user_id == user_id,
+                ChatPresenceLease.expires_at > datetime.now(UTC),
+            ).limit(1)
+        ))
+    return schemas.ChatPresence(is_online=online)
 
 
 @router.get("/{user_id}/messages", response_model=List[schemas.MessageRead])

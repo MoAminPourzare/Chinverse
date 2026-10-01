@@ -155,6 +155,7 @@ function ConversationRow({ conversation }: { conversation: ConversationPreview }
                 {conversation.user.avatar_url ? (
                     <Image
                         src={getMediaUrl(conversation.user.avatar_url)}
+                        fallbackSrc="/assets/chinverse/icons/profile.svg"
                         alt={displayName}
                         fill
                         className="object-cover"

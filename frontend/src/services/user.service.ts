@@ -204,11 +204,13 @@ export const userService = {
 
     // دنبال کردن کاربر
     async followUser(userId: number): Promise<void> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         await api.post(`/users/${userId}/follow`);
     },
 
     // لغو دنبال کردن کاربر
     async unfollowUser(userId: number): Promise<void> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         await api.delete(`/users/${userId}/follow`);
     },
 

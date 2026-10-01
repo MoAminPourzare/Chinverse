@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ChatRoomPage from "@/app/chat/[userId]/page";
 
 const mocks = vi.hoisted(() => ({
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     getNewMessages: vi.fn(),
     markConversationRead: vi.fn(),
     useAdaptivePolling: vi.fn(),
+    getPresence: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -31,12 +32,14 @@ vi.mock("@/services/chat.service", () => ({
         getMessageHistory: mocks.getMessageHistory,
         getNewMessages: mocks.getNewMessages,
         markConversationRead: mocks.markConversationRead,
+        getPresence: mocks.getPresence,
         getWebSocketUrl: () => null,
     },
 }));
 vi.mock("@/hooks/useAdaptivePolling", () => ({ useAdaptivePolling: mocks.useAdaptivePolling }));
 
 describe("chat room initial polling", () => {
+    afterEach(cleanup);
     beforeEach(() => {
         vi.clearAllMocks();
         Element.prototype.scrollIntoView = vi.fn();
@@ -44,6 +47,7 @@ describe("chat room initial polling", () => {
         mocks.getPublicProfile.mockResolvedValue({ profile: { display_name: "کاربر", avatar_url: null } });
         mocks.getNewMessages.mockResolvedValue([]);
         mocks.markConversationRead.mockResolvedValue({ updated: 0, message_ids: [] });
+        mocks.getPresence.mockResolvedValue({ is_online: false });
     });
 
     it("keeps polling disabled after an initial failure and seeds its cursor after manual retry", async () => {
@@ -64,12 +68,12 @@ describe("chat room initial polling", () => {
         render(<ChatRoomPage />);
 
         const retry = await screen.findByRole("button", { name: /تلاش دوباره/ });
-        expect(mocks.useAdaptivePolling.mock.calls.at(-1)?.[0].enabled).toBe(false);
+        expect(mocks.useAdaptivePolling.mock.calls.findLast(([options]) => options.baseIntervalMs !== 10_000)?.[0].enabled).toBe(false);
 
         fireEvent.click(retry);
-        await waitFor(() => expect(mocks.useAdaptivePolling.mock.calls.at(-1)?.[0].enabled).toBe(true));
+        await waitFor(() => expect(mocks.useAdaptivePolling.mock.calls.findLast(([options]) => options.baseIntervalMs !== 10_000)?.[0].enabled).toBe(true));
 
-        const pollingOptions = mocks.useAdaptivePolling.mock.calls.at(-1)?.[0];
+        const pollingOptions = mocks.useAdaptivePolling.mock.calls.findLast(([options]) => options.baseIntervalMs !== 10_000)?.[0];
         expect(pollingOptions.runImmediately).toBe(true);
         await pollingOptions.task(new AbortController().signal);
         expect(mocks.getNewMessages).toHaveBeenCalledWith(7, 41, expect.any(AbortSignal));
@@ -80,11 +84,25 @@ describe("chat room initial polling", () => {
 
         render(<ChatRoomPage />);
 
-        await waitFor(() => expect(mocks.useAdaptivePolling.mock.calls.at(-1)?.[0].enabled).toBe(true));
+        await waitFor(() => expect(mocks.useAdaptivePolling.mock.calls.findLast(([options]) => options.baseIntervalMs !== 10_000)?.[0].enabled).toBe(true));
 
-        const pollingOptions = mocks.useAdaptivePolling.mock.calls.at(-1)?.[0];
+        const pollingOptions = mocks.useAdaptivePolling.mock.calls.findLast(([options]) => options.baseIntervalMs !== 10_000)?.[0];
         expect(pollingOptions.runImmediately).toBe(true);
         await pollingOptions.task(new AbortController().signal);
         expect(mocks.getNewMessages).toHaveBeenCalledWith(7, 0, expect.any(AbortSignal));
+    });
+
+    it("shows only the recipient's presence and clears stale online status on errors", async () => {
+        mocks.getMessageHistory.mockResolvedValue([]);
+        render(<ChatRoomPage />);
+        await screen.findByText('وضعیت حضور نامشخص');
+        const presencePolling = mocks.useAdaptivePolling.mock.calls.findLast(([options]) => options.baseIntervalMs === 10_000)?.[0];
+        await act(async () => presencePolling.task(new AbortController().signal));
+        expect(screen.getByText('آفلاین')).toBeInTheDocument();
+        mocks.getPresence.mockResolvedValue({ is_online: true });
+        await act(async () => presencePolling.task(new AbortController().signal));
+        expect(screen.getByText('آنلاین')).toBeInTheDocument();
+        act(() => presencePolling.onError(new Error('connection lost')));
+        expect(screen.getByText('وضعیت حضور نامشخص')).toBeInTheDocument();
     });
 });

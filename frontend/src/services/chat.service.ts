@@ -42,7 +42,17 @@ export interface MarkConversationReadResponse {
 
 export const chatService = {
     async sendMessage(data: SendMessageRequest): Promise<ChatMessage> {
+        // Refresh an expired session with a safe read; never replay a message POST.
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ChatMessage>('/chat', data);
+        return response.data;
+    },
+
+    async getPresence(userId: number, signal?: AbortSignal): Promise<{ is_online: boolean }> {
+        const response = await api.get<{ is_online: boolean }>(`/chat/${userId}/presence`, {
+            signal,
+            chinverseCacheTtlMs: 0,
+        });
         return response.data;
     },
 

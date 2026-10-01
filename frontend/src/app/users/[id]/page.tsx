@@ -27,6 +27,7 @@ import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProf
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { BackButton } from "@/components/ui/IconButton";
 import UserTrustActions from "@/components/trust/UserTrustActions";
+import { getSocialActionError } from "@/lib/socialActionError";
 
 interface Tab {
     id: string;
@@ -56,6 +57,7 @@ export default function PublicProfilePage() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followersCount, setFollowersCount] = useState(0);
     const [followLoading, setFollowLoading] = useState(false);
+    const [followError, setFollowError] = useState('');
 
     useEffect(() => {
         if (isOwnProfile) {
@@ -96,14 +98,15 @@ export default function PublicProfilePage() {
     }, [isOwnProfile, userId]);
 
     const handleFollowToggle = async () => {
-        if (isOwnProfile) return;
+        if (isOwnProfile || followLoading) return;
 
+        setFollowError('');
         setFollowLoading(true);
         try {
             if (isFollowing) {
                 await userService.unfollowUser(userId);
                 setIsFollowing(false);
-                setFollowersCount(prev => prev - 1);
+                setFollowersCount(prev => Math.max(0, prev - 1));
             } else {
                 await userService.followUser(userId);
                 setIsFollowing(true);
@@ -111,6 +114,7 @@ export default function PublicProfilePage() {
             }
         } catch (error) {
             console.error("Failed to toggle follow", error);
+            setFollowError(getSocialActionError(error, 'network'));
         } finally {
             setFollowLoading(false);
         }
@@ -484,6 +488,7 @@ export default function PublicProfilePage() {
                             {user.profile?.avatar_url ? (
                                 <Image
                                     src={getMediaUrl(user.profile.avatar_url)}
+                                    fallbackSrc={profileIcon}
                                     alt="Avatar"
                                     fill
                                     className="object-cover"
@@ -542,6 +547,9 @@ export default function PublicProfilePage() {
                 </section>
 
                 {/* Tab Navigation */}
+                {followError && (
+                    <p role="alert" className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">{followError}</p>
+                )}
                 <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/90 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
                     <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar">
                         {tabs.map((tab) => (

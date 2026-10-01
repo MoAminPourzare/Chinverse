@@ -16,6 +16,7 @@ import { useAdaptivePolling } from '@/hooks/useAdaptivePolling';
 import { computeBackoffDelayMs } from '@/lib/requestPolicy';
 import { startChatHeartbeat } from '@/lib/chatHeartbeat';
 import type { ChatHeartbeat } from '@/lib/chatHeartbeat';
+import { getSocialActionError } from '@/lib/socialActionError';
 
 export default function ChatRoomPage() {
     const params = useParams();
@@ -30,6 +31,7 @@ export default function ChatRoomPage() {
     const [sendError, setSendError] = useState('');
     const [historyReady, setHistoryReady] = useState(false);
     const [connectionState, setConnectionState] = useState<'connecting' | 'live' | 'polling'>('connecting');
+    const [otherUserOnline, setOtherUserOnline] = useState<boolean | null>(null);
     const [otherUser, setOtherUser] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
@@ -114,6 +116,7 @@ export default function ChatRoomPage() {
     useEffect(() => {
         lastMessageIdRef.current = 0;
         setMessages([]);
+        setOtherUserOnline(null);
         setHistoryReady(false);
         const controller = new AbortController();
         void fetchData(controller.signal);
@@ -311,6 +314,23 @@ export default function ChatRoomPage() {
         onError: (error) => console.error('Failed to poll chat messages', error),
     });
 
+    useAdaptivePolling({
+        task: async (signal) => {
+            const presence = await chatService.getPresence(userId, signal);
+            if (!signal.aborted) setOtherUserOnline(presence.is_online);
+        },
+        enabled: historyReady && Number.isFinite(userId) && userId > 0,
+        baseIntervalMs: 10_000,
+        maxIntervalMs: 15_000,
+        onError: () => setOtherUserOnline(null),
+    });
+
+    useEffect(() => {
+        const clearPresence = () => setOtherUserOnline(null);
+        window.addEventListener('offline', clearPresence);
+        return () => window.removeEventListener('offline', clearPresence);
+    }, []);
+
     const handleSend = async () => {
         const messageContent = newMessage.trim();
         const validationError = validationMessage(validateTextLength(messageContent, 'پیام', { required: true, max: 2000 }));
@@ -328,7 +348,7 @@ export default function ChatRoomPage() {
             appendMessages([sent]);
         } catch (error) {
             console.error('Failed to send message:', error);
-            setSendError('ارسال پیام انجام نشد. لطفا دوباره تلاش کن.');
+            setSendError(getSocialActionError(error, 'message'));
             setNewMessage(messageContent);
         } finally {
             setIsSending(false);
@@ -360,7 +380,7 @@ export default function ChatRoomPage() {
     });
 
     const statusLabel =
-        isLoading ? 'در حال بارگذاری…' : connectionState === 'live' ? 'آنلاین' : connectionState === 'connecting' ? 'در حال اتصال' : 'همگام‌سازی خودکار';
+        isLoading ? 'در حال بارگذاری…' : otherUserOnline === true ? 'آنلاین' : otherUserOnline === false ? 'آفلاین' : 'وضعیت حضور نامشخص';
 
     return (
         <div className="flex h-full min-h-full flex-col bg-[#f7f8fa]" dir="rtl">
@@ -376,7 +396,7 @@ export default function ChatRoomPage() {
                                 <span
                                     className={cn(
                                         'h-2 w-2 rounded-full',
-                                        connectionState === 'live' ? 'bg-emerald-500' : connectionState === 'connecting' ? 'bg-amber-400' : 'bg-slate-400',
+                                        otherUserOnline === true ? 'bg-emerald-500' : 'bg-slate-400',
                                     )}
                                 />
                                 {statusLabel}
@@ -498,7 +518,7 @@ export default function ChatRoomPage() {
                         )}
                     </button>
                 </div>
-                {sendError && <p className="mt-2 px-2 text-xs font-bold text-rose-600">{sendError}</p>}
+                {sendError && <p role="alert" className="mt-2 px-2 text-xs font-bold text-rose-600">{sendError}</p>}
             </footer>
         </div>
     );
@@ -510,6 +530,7 @@ function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
+                    fallbackSrc="/assets/chinverse/icons/profile.svg"
                     alt={name || 'کاربر'}
                     fill
                     className="object-cover"

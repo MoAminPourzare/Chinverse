@@ -159,6 +159,7 @@ function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
+                    fallbackSrc="/assets/chinverse/icons/profile.svg"
                     alt={name || "کاربر"}
                     fill
                     className="object-cover"

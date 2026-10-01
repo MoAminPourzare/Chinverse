@@ -199,13 +199,13 @@ export default function LeitnerDashboard() {
 
 function EmptyLeitnerState() {
     return (
-        <section className="flex flex-col items-center px-1 pb-6 pt-2 text-center">
+        <section className="flex flex-col items-center px-1 pb-6 pt-8 text-center">
             <Image
                 src="/assets/chinverse/leitner/empty-connections.svg"
                 alt=""
-                width={88}
-                height={88}
-                className="h-[88px] w-[88px] object-contain"
+                width={112}
+                height={112}
+                className="h-28 w-28 object-contain"
                 unoptimized
             />
             <h2 className="mt-5 text-[16px] font-black leading-7 text-[#434343]">

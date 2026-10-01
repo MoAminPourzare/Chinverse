@@ -12,6 +12,10 @@ class ChatUserSummary(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class ChatPresence(BaseModel):
+    is_online: bool
+
 # ===== MESSAGE SCHEMAS =====
 
 class MessageCreate(BaseModel):
