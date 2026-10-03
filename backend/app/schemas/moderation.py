@@ -27,11 +27,6 @@ ALLOWED_REPORT_REASONS = {
 }
 
 
-class BlockRead(BaseModel):
-    blocked_user_id: int
-    created_at: datetime
-
-
 class ReportCreate(BaseModel):
     target_type: str = Field(min_length=1, max_length=40)
     target_id: int = Field(gt=0)

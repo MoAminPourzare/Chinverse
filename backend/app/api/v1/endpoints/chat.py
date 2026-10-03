@@ -18,7 +18,6 @@ from app.core.browser_origin import is_allowed_browser_origin
 from app.core.config import settings
 from app.core.observability import record_chat_connection
 from app.db.session import SessionLocal
-from app.models.moderation import UserBlock
 from app.models.security import AuthSession
 from app.models.social import ChatPresenceLease, Message
 from app.models.user import User, UserStatus
@@ -328,23 +327,6 @@ async def send_message(
     if not is_showcase_user(receiver):
         raise not_found("User")
 
-    blocked = await db.scalar(
-        select(UserBlock.id).where(
-            or_(
-                and_(
-                    UserBlock.blocker_id == current_user.id,
-                    UserBlock.blocked_id == message_in.receiver_id,
-                ),
-                and_(
-                    UserBlock.blocker_id == message_in.receiver_id,
-                    UserBlock.blocked_id == current_user.id,
-                ),
-            )
-        )
-    )
-    if blocked:
-        raise bad_request("Messaging is unavailable for this conversation")
-    
     # Create message
     message = Message(
         sender_id=current_user.id,
@@ -540,16 +522,6 @@ async def get_user_presence(
 ):
     target = await db.get(User, user_id)
     if not is_showcase_user(target):
-        raise not_found("User")
-    blocked = await db.scalar(
-        select(UserBlock.id).where(
-            or_(
-                and_(UserBlock.blocker_id == current_user.id, UserBlock.blocked_id == user_id),
-                and_(UserBlock.blocker_id == user_id, UserBlock.blocked_id == current_user.id),
-            )
-        )
-    )
-    if blocked:
         raise not_found("User")
     if settings.CHAT_REALTIME_BACKEND == "memory":
         online = chat_manager.is_online(user_id)

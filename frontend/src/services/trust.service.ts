@@ -22,11 +22,6 @@ export type ReportReason =
     | "illegal"
     | "other";
 
-export interface BlockInfo {
-    blocked_user_id: number;
-    created_at: string;
-}
-
 export interface ReportInfo {
     id: number;
     reporter_id: number | null;
@@ -48,20 +43,6 @@ export interface ModerationAccess {
 }
 
 export const trustService = {
-    async listBlocks(): Promise<BlockInfo[]> {
-        const response = await api.get<BlockInfo[]>("/trust/blocks");
-        return response.data;
-    },
-
-    async blockUser(userId: number): Promise<BlockInfo> {
-        const response = await api.post<BlockInfo>(`/trust/blocks/${userId}`);
-        return response.data;
-    },
-
-    async unblockUser(userId: number): Promise<void> {
-        await api.delete(`/trust/blocks/${userId}`);
-    },
-
     async moderationQueue(status = "open"): Promise<ReportInfo[]> {
         const response = await api.get<ReportInfo[]>("/trust/moderation/reports", {
             params: { report_status: status },

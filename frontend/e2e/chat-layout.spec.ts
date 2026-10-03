@@ -19,6 +19,7 @@ async function expectContainedLayout(page: Page) {
             outer.scrollTop, outer.scrollHeight - outer.clientHeight);
     })).toBeLessThanOrEqual(2);
     await expect(page.getByRole('link', { name: 'پشتیبانی', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'گزینه‌های ایمنی', exact: true })).toHaveCount(0);
     await expect(page.getByRole('textbox', { name: 'پیام', exact: true })).toBeInViewport();
 }
 

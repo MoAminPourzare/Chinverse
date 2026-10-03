@@ -170,38 +170,13 @@ async def test_question_can_be_edited_and_deleted_with_nested_answers():
 
 
 @pytest.mark.asyncio
-async def test_block_prevents_messages_and_reports_are_deduplicated():
+async def test_message_reports_are_private_and_deduplicated():
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="https://test",
     ) as client:
         first_user_id, first_headers = await authenticated_user(client)
         second_user_id, second_headers = await authenticated_user(client)
-
-        blocked = await client.post(
-            f"/api/v1/trust/blocks/{second_user_id}",
-            headers=first_headers,
-        )
-        assert blocked.status_code == 200, blocked.text
-
-        rejected_follow = await client.post(
-            f"/api/v1/users/{first_user_id}/follow",
-            headers=second_headers,
-        )
-        assert rejected_follow.status_code == 400, rejected_follow.text
-
-        rejected_message = await client.post(
-            "/api/v1/chat",
-            headers=second_headers,
-            json={"receiver_id": first_user_id, "content": "blocked message"},
-        )
-        assert rejected_message.status_code == 400, rejected_message.text
-
-        unblocked = await client.delete(
-            f"/api/v1/trust/blocks/{second_user_id}",
-            headers=first_headers,
-        )
-        assert unblocked.status_code == 204, unblocked.text
 
         message = await client.post(
             "/api/v1/chat",

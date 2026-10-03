@@ -18,6 +18,8 @@ from app.db.base_class import Base, TimestampMixin
 
 
 class UserBlock(Base, TimestampMixin):
+    """Legacy storage retained for schema compatibility; the app no longer uses user blocks."""
+
     __tablename__ = "user_blocks"
     __table_args__ = (
         UniqueConstraint("blocker_id", "blocked_id", name="uq_user_blocks_pair"),

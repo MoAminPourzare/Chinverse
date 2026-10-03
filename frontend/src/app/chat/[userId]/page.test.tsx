@@ -20,7 +20,6 @@ vi.mock("@/components/ui/PublicMediaImage", () => ({
     default: () => <span data-testid="public-media" />,
 }));
 vi.mock("@/components/ui/SafeBackButton", () => ({ default: () => <button type="button">back</button> }));
-vi.mock("@/components/trust/UserTrustActions", () => ({ default: () => <span /> }));
 vi.mock("@/services/user.service", () => ({
     userService: {
         getMe: mocks.getMe,

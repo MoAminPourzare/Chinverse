@@ -855,24 +855,15 @@ test("phase four live staging user journeys", async ({ browser }) => {
     safeInvariant(repliedTicket?.status === "closed", "support ticket did not close");
     safeInvariant(repliedTicket.admin_reply === supportReply, "support reply did not reach the ticket owner");
 
-    console.info("[phase4-live] block, chat and realtime receipts");
+    console.info("[phase4-live] removed blocking API, chat and realtime receipts");
+    await actorRequest(u1, config, "/trust/blocks", { expected: 404 });
     await actorRequest(u1, config, `/trust/blocks/${u2.userId}`, {
       method: "POST",
-      expected: 200,
-    });
-    await actorRequest(u1, config, "/chat", {
-      method: "POST",
-      data: { receiver_id: u2.userId, content: `Blocked outbound ${mutationRunId}` },
-      expected: 400,
-    });
-    await actorRequest(u2, config, "/chat", {
-      method: "POST",
-      data: { receiver_id: u1.userId, content: `Blocked inbound ${mutationRunId}` },
-      expected: 400,
+      expected: 404,
     });
     await actorRequest(u1, config, `/trust/blocks/${u2.userId}`, {
       method: "DELETE",
-      expected: 204,
+      expected: 404,
     });
 
     u1Socket = await openLiveSocket(browser, u1, config);

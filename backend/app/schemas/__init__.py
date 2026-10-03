@@ -15,7 +15,6 @@ from .auth import (
 )
 from .showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic
 from .moderation import (
-    BlockRead,
     ModerationResolve,
     ReportCreate,
     ReportRead,

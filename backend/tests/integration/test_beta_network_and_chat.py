@@ -64,7 +64,7 @@ async def test_optional_beta_network_and_messages_persist_without_duplicate_foll
 
 
 @pytest.mark.asyncio
-async def test_presence_tracks_the_recipient_lease_and_respects_visibility_and_blocks(monkeypatch):
+async def test_presence_tracks_the_recipient_lease_and_respects_visibility(monkeypatch):
     monkeypatch.setattr(settings, 'DEPLOYMENT_TIER', 'staging')
     monkeypatch.setattr(settings, 'REQUIRE_VERIFIED_LOGIN', False)
     monkeypatch.setattr(settings, 'CHAT_REALTIME_BACKEND', 'database')
@@ -102,13 +102,33 @@ async def test_presence_tracks_the_recipient_lease_and_respects_visibility_and_b
         assert (await client.get(presence_url, headers=headers)).status_code == 404
         assert (await client.post(f'/api/v1/users/{target_id}/follow', headers=headers)).status_code == 404
         assert (await client.post('/api/v1/chat', headers=headers, json={'receiver_id': target_id, 'content': 'unavailable'})).status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('blocked_by_recipient', [False, True])
+async def test_legacy_blocks_do_not_restrict_network_messages_or_presence(monkeypatch, blocked_by_recipient):
+    monkeypatch.setattr(settings, 'DEPLOYMENT_TIER', 'staging')
+    monkeypatch.setattr(settings, 'REQUIRE_VERIFIED_LOGIN', False)
+    monkeypatch.setattr(settings, 'CHAT_REALTIME_BACKEND', 'database')
+    async with AsyncClient(transport=ASGITransport(app=app), base_url='https://test') as client:
+        viewer_id, headers = await account(client)
+        target_id, _ = await account(client)
+        blocker_id, blocked_id = (target_id, viewer_id) if blocked_by_recipient else (viewer_id, target_id)
         async with SessionLocal.begin() as db:
-            target = await db.get(User, target_id)
-            target.status = UserStatus.ACTIVE
-            db.add(UserBlock(blocker_id=target_id, blocked_id=viewer_id))
-        assert (await client.get(presence_url, headers=headers)).status_code == 404
-        assert (await client.post(f'/api/v1/users/{target_id}/follow', headers=headers)).status_code == 400
-        assert (await client.post('/api/v1/chat', headers=headers, json={'receiver_id': target_id, 'content': 'unavailable'})).status_code == 400
+            db.add(UserBlock(blocker_id=blocker_id, blocked_id=blocked_id))
+            db.add(ChatPresenceLease(instance_id='legacy-block-presence', user_id=target_id,
+                expires_at=datetime.now(UTC) + timedelta(minutes=1)))
+        presence = await client.get(f'/api/v1/chat/{target_id}/presence', headers=headers)
+        assert presence.status_code == 200, presence.text
+        assert presence.json() == {'is_online': True}
+        followed = await client.post(f'/api/v1/users/{target_id}/follow', headers=headers)
+        assert followed.status_code == 201, followed.text
+        assert (await client.get(f'/api/v1/users/{target_id}/is-following', headers=headers)).json()['is_following']
+        sent = await client.post('/api/v1/chat', headers=headers,
+            json={'receiver_id': target_id, 'content': 'ارتباط بدون مسدودسازی'})
+        assert sent.status_code == 200, sent.text
+        history = await client.get(f'/api/v1/chat/{target_id}/messages', headers=headers)
+        assert history.json()[0]['id'] == sent.json()['id']
 
 
 @pytest.mark.asyncio

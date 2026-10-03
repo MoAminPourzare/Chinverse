@@ -131,7 +131,7 @@ test.describe("phase four authenticated journeys", () => {
       if (path === "/admin/me") {
         return json(route, { is_admin: false, email: "user@example.com", mfa_enabled: false, mfa_verified: false });
       }
-      if (path === "/notifications/latest" || path === "/trust/blocks") return json(route, []);
+      if (path === "/notifications/latest") return json(route, []);
       if (path === "/users/me") return json(route, { id: 1 });
       if (path === "/users/2/public") {
         return json(route, { id: 2, profile: { display_name: "کاربر دوم", avatar_url: null } });
@@ -168,7 +168,7 @@ test.describe("phase four authenticated journeys", () => {
       const path = new URL(route.request().url()).pathname.replace(/^\/api\/backend/, "");
       if (path === "/auth/refresh") return json(route, { access_token: "phase4-access-token" });
       if (path === "/admin/me") return json(route, { is_admin: false });
-      if (path === "/notifications/latest" || path === "/trust/blocks") return json(route, []);
+      if (path === "/notifications/latest") return json(route, []);
       if (path === "/users/me" || path === "/users/2/public" || path === "/chat/2/messages") {
         return json(route, { detail: "network unavailable" }, 503);
       }

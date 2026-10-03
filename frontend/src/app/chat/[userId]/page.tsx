@@ -1,7 +1,7 @@
 'use client';
 
 import Image from '@/components/ui/PublicMediaImage';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCheck, RefreshCw, Send, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -9,7 +9,6 @@ import { getMediaUrl } from '@/lib/media';
 import { getDirectionalTextProps, getTextAlign } from '@/lib/textDirection';
 import { chatService, ChatMessage } from '@/services/chat.service';
 import SafeBackButton from "@/components/ui/SafeBackButton";
-import UserTrustActions from '@/components/trust/UserTrustActions';
 import { userService } from '@/services/user.service';
 import { validateTextLength, validationMessage } from '@/validation';
 import { useAdaptivePolling } from '@/hooks/useAdaptivePolling';
@@ -20,7 +19,6 @@ import { getSocialActionError } from '@/lib/socialActionError';
 
 export default function ChatRoomPage() {
     const params = useParams();
-    const router = useRouter();
     const userId = Number(params.userId);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -426,7 +424,7 @@ export default function ChatRoomPage() {
                         </div>
                     </div>
 
-                    <UserTrustActions userId={userId} onBlocked={() => router.replace('/community')} />
+                    <span aria-hidden="true" />
                 </div>
             </header>
 

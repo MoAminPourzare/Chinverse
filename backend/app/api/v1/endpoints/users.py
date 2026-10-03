@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, List
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
@@ -14,7 +14,6 @@ from app.core.paths import AVATARS_DIR
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.core import security
-from app.models.moderation import UserBlock
 from app.models.user import User, UserGalleryItem, UserProfile
 from app.schemas import user as schemas
 from app.schemas.showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic, EducationSummary
@@ -567,23 +566,6 @@ async def follow_user(
     if not is_showcase_user(target_user):
         raise not_found("User")
 
-    blocked = await db.scalar(
-        select(UserBlock.id).where(
-            or_(
-                and_(
-                    UserBlock.blocker_id == current_user.id,
-                    UserBlock.blocked_id == user_id,
-                ),
-                and_(
-                    UserBlock.blocker_id == user_id,
-                    UserBlock.blocked_id == current_user.id,
-                ),
-            )
-        )
-    )
-    if blocked:
-        raise bad_request("Following is unavailable for blocked users")
-    
     # Two tabs or a manual retry must not create duplicate relationships/notifications.
     created_id = await db.scalar(
         pg_insert(UserFollow).values(

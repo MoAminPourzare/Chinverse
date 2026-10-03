@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request, status
-from sqlalchemy import and_, delete, or_, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,7 @@ from app.api import deps
 from app.api.errors import bad_request, conflict, forbidden, not_found
 from app.api.rate_limit import write_rate_limit
 from app.core.storage import delete_public_file
-from app.models.moderation import ContentReport, ModerationAction, UserBlock
+from app.models.moderation import ContentReport, ModerationAction
 from app.models.service import UserService
 from app.models.social import (
     ArticleComment,
@@ -20,7 +20,6 @@ from app.models.social import (
     ForumQuestion,
     Message,
     Post,
-    UserFollow,
 )
 from app.models.user import User, UserGalleryItem, UserStatus
 from app.services.auth_security import add_audit_event, revoke_user_sessions, utc_now
@@ -75,131 +74,6 @@ async def _load_target(
     if not target:
         raise not_found("Report target")
     return target
-
-
-@router.post(
-    "/blocks/{blocked_user_id}",
-    response_model=schemas.BlockRead,
-    dependencies=[Depends(write_rate_limit)],
-)
-async def block_user(
-    blocked_user_id: int,
-    request: Request,
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
-) -> Any:
-    if blocked_user_id == current_user.id:
-        raise bad_request("You cannot block yourself")
-    if not await db.get(User, blocked_user_id):
-        raise not_found("User")
-
-    existing = await db.scalar(
-        select(UserBlock).where(
-            UserBlock.blocker_id == current_user.id,
-            UserBlock.blocked_id == blocked_user_id,
-        )
-    )
-    if existing:
-        return {
-            "blocked_user_id": existing.blocked_id,
-            "created_at": existing.created_at,
-        }
-
-    block = UserBlock(
-        blocker_id=current_user.id,
-        blocked_id=blocked_user_id,
-    )
-    db.add(block)
-    await db.execute(
-        delete(UserFollow).where(
-            or_(
-                and_(
-                    UserFollow.follower_id == current_user.id,
-                    UserFollow.followee_id == blocked_user_id,
-                ),
-                and_(
-                    UserFollow.follower_id == blocked_user_id,
-                    UserFollow.followee_id == current_user.id,
-                ),
-            )
-        )
-    )
-    await add_audit_event(
-        db,
-        event_type="trust.user_blocked",
-        request=request,
-        actor_user_id=current_user.id,
-        subject=str(blocked_user_id),
-    )
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        existing = await db.scalar(
-            select(UserBlock).where(
-                UserBlock.blocker_id == current_user.id,
-                UserBlock.blocked_id == blocked_user_id,
-            )
-        )
-        if not existing:
-            raise
-        return {
-            "blocked_user_id": existing.blocked_id,
-            "created_at": existing.created_at,
-        }
-    await db.refresh(block)
-    return {
-        "blocked_user_id": block.blocked_id,
-        "created_at": block.created_at,
-    }
-
-
-@router.delete(
-    "/blocks/{blocked_user_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(write_rate_limit)],
-)
-async def unblock_user(
-    blocked_user_id: int,
-    request: Request,
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
-) -> None:
-    result = await db.execute(
-        delete(UserBlock).where(
-            UserBlock.blocker_id == current_user.id,
-            UserBlock.blocked_id == blocked_user_id,
-        )
-    )
-    if not result.rowcount:
-        raise not_found("Block")
-    await add_audit_event(
-        db,
-        event_type="trust.user_unblocked",
-        request=request,
-        actor_user_id=current_user.id,
-        subject=str(blocked_user_id),
-    )
-    await db.commit()
-
-
-@router.get("/blocks", response_model=list[schemas.BlockRead])
-async def list_blocks(
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
-) -> Any:
-    result = await db.execute(
-        select(UserBlock)
-        .where(UserBlock.blocker_id == current_user.id)
-        .order_by(UserBlock.created_at.desc())
-    )
-    return [
-        {
-            "blocked_user_id": item.blocked_id,
-            "created_at": item.created_at,
-        }
-        for item in result.scalars().all()
-    ]
 
 
 @router.post(

@@ -26,7 +26,7 @@ async function mockLiveSocket(page: Page) {
     });
 }
 
-test('network changes survive reload and refresh the session before writing once', async ({ page }) => {
+test('network changes survive reload and refresh the session before writing once', async ({ page }, testInfo) => {
     let following = false;
     let expire = false;
     let refreshes = 0;
@@ -49,14 +49,20 @@ test('network changes survive reload and refresh the session before writing once
     await page.goto('/users/2');
     const followButton = page.getByRole('button', { name: 'شبکه', exact: true });
     await expect(followButton).toBeVisible();
+    await expect(page.getByRole('button', { name: 'گزینه‌های ایمنی', exact: true })).toHaveCount(0);
     const initialRefreshes = refreshes;
     expire = true;
     await followButton.click();
-    await expect(page.getByRole('button', { name: 'لغو', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'لغو شبکه', exact: true })).toBeVisible();
+    const viewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 320, height: viewport.height });
+    expect(await page.getByRole('button', { name: 'لغو شبکه', exact: true }).evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+    await page.setViewportSize(viewport);
+    await page.screenshot({ path: testInfo.outputPath('profile-network.png') });
     expect(writes).toBe(1);
     expect(refreshes).toBe(initialRefreshes + 1);
     await page.reload();
-    await page.getByRole('button', { name: 'لغو', exact: true }).click();
+    await page.getByRole('button', { name: 'لغو شبکه', exact: true }).click();
     await expect(followButton).toBeVisible();
     expect(writes).toBe(2);
 });

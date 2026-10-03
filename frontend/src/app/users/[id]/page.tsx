@@ -26,7 +26,6 @@ import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { BackButton } from "@/components/ui/IconButton";
-import UserTrustActions from "@/components/trust/UserTrustActions";
 import { getSocialActionError } from "@/lib/socialActionError";
 
 interface Tab {
@@ -480,9 +479,6 @@ export default function PublicProfilePage() {
                     <div className="absolute -left-16 top-0 h-44 w-44 rounded-full bg-white/16 blur-3xl" />
                     <div className="absolute -bottom-20 right-16 h-56 w-56 rounded-full bg-[#ffb74d]/20 blur-3xl" />
                     <div className="relative flex flex-col items-center">
-                    <div className="absolute left-0 top-0">
-                        <UserTrustActions userId={userId} tone="light" onBlocked={() => router.replace("/showcase")} />
-                    </div>
                     <div className="relative mb-4">
                         <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gray-100 shadow-2xl ring-4 ring-white/25">
                             {user.profile?.avatar_url ? (
@@ -516,31 +512,31 @@ export default function PublicProfilePage() {
                     />
 
                     {/* Action Buttons */}
-                    <div className="grid w-full max-w-lg grid-cols-3 gap-3">
+                    <div className="grid w-full max-w-lg grid-cols-3 gap-2 sm:gap-3">
                         <button
                             onClick={handleShare}
                             className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
                         >
-                            <Share2 className="w-4 h-4" />
+                            <Share2 className="hidden h-4 w-4 shrink-0 min-[360px]:block" />
                             اشتراک
                         </button>
                         <Link
                             href={`/chat/${userId}`}
                             className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
                         >
-                            <MessageCircle className="w-4 h-4" />
+                            <MessageCircle className="hidden h-4 w-4 shrink-0 min-[360px]:block" />
                             پیام
                         </Link>
                         <button
                             onClick={handleFollowToggle}
                             disabled={followLoading}
-                            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors ${isFollowing
+                            className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl px-2 py-2.5 text-sm font-bold transition-colors ${isFollowing
                                 ? "bg-red-100 text-red-600 hover:bg-red-200"
                                 : "bg-white text-[#155aa6] shadow-[0_12px_28px_rgba(255,255,255,0.22)] hover:bg-[#eef6ff]"
                                 } ${followLoading ? "opacity-50" : ""}`}
                         >
-                            <Users className="w-4 h-4" />
-                            {followLoading ? "…" : isFollowing ? "لغو" : "شبکه"}
+                            <Users className="hidden h-4 w-4 shrink-0 min-[360px]:block" />
+                            {followLoading ? "…" : isFollowing ? "لغو شبکه" : "شبکه"}
                         </button>
                     </div>
                     </div>
