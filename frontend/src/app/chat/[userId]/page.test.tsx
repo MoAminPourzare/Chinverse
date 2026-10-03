@@ -39,10 +39,18 @@ vi.mock("@/services/chat.service", () => ({
 vi.mock("@/hooks/useAdaptivePolling", () => ({ useAdaptivePolling: mocks.useAdaptivePolling }));
 
 describe("chat room initial polling", () => {
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+        vi.unstubAllGlobals();
+    });
     beforeEach(() => {
         vi.clearAllMocks();
-        Element.prototype.scrollIntoView = vi.fn();
+        Element.prototype.scrollTo = vi.fn();
+        vi.stubGlobal('ResizeObserver', class {
+            observe = vi.fn();
+            unobserve = vi.fn();
+            disconnect = vi.fn();
+        });
         mocks.getMe.mockResolvedValue({ id: 2 });
         mocks.getPublicProfile.mockResolvedValue({ profile: { display_name: "کاربر", avatar_url: null } });
         mocks.getNewMessages.mockResolvedValue([]);
