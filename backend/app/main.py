@@ -22,6 +22,7 @@ from app.core.observability import (
 )
 from app.core.paths import (
     AVATARS_DIR,
+    DICTIONARY_AUDIO_DIR,
     GALLERY_UPLOAD_DIR,
     SERVICE_UPLOAD_DIR,
     STATIC_DIR,
@@ -129,12 +130,13 @@ async def add_security_headers(request, call_next):
 
 ensure_upload_dirs()
 
-# Only user-facing image collections are public. Course videos, HLS manifests,
+# User-facing image collections and standalone dictionary pronunciations are public. Course videos, HLS manifests,
 # segments, keys and lesson thumbnails live under the same storage root but must
 # be read exclusively through the entitlement-checked signed media gateway.
 app.mount("/uploads/avatars", StaticFiles(directory=str(AVATARS_DIR)), name="upload-avatars")
 app.mount("/uploads/gallery", StaticFiles(directory=str(GALLERY_UPLOAD_DIR)), name="upload-gallery")
 app.mount("/uploads/services", StaticFiles(directory=str(SERVICE_UPLOAD_DIR)), name="upload-services")
+app.mount("/uploads/dictionary-audio", StaticFiles(directory=str(DICTIONARY_AUDIO_DIR)), name="dictionary-audio")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

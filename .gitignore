@@ -55,6 +55,7 @@ test-results/
 .tmp/
 .backups/
 .migration-state/
+/dictionary-audio-output/
 # Owner reference originals; runtime copies are tracked under frontend/public/assets.
 /پروفایل دوره ها/
 .DS_Store

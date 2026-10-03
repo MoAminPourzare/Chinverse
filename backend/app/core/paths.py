@@ -17,11 +17,12 @@ VIDEOS_DIR = UPLOADS_DIR / "videos"
 THUMBNAILS_DIR = UPLOADS_DIR / "thumbnails"
 GALLERY_UPLOAD_DIR = UPLOADS_DIR / "gallery"
 SERVICE_UPLOAD_DIR = UPLOADS_DIR / "services"
+DICTIONARY_AUDIO_DIR = UPLOADS_DIR / "dictionary-audio"
 
 
 def ensure_upload_dirs() -> None:
     STATIC_DIR.mkdir(parents=True, exist_ok=True)
-    for directory in (AVATARS_DIR, VIDEOS_DIR, THUMBNAILS_DIR, GALLERY_UPLOAD_DIR, SERVICE_UPLOAD_DIR):
+    for directory in (AVATARS_DIR, VIDEOS_DIR, THUMBNAILS_DIR, GALLERY_UPLOAD_DIR, SERVICE_UPLOAD_DIR, DICTIONARY_AUDIO_DIR):
         directory.mkdir(parents=True, exist_ok=True)
 
 
