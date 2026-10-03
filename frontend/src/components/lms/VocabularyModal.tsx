@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Check, Volume2, X } from "lucide-react";
 import api from "@/lib/api";
 import { getMediaUrl } from "@/lib/media";
+import { dictionaryLevelLabel } from "@/lib/dictionaryLevels";
 
 interface VocabularyDefinition {
     id: number;
@@ -245,7 +246,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     </p>
                     {(word.hsk_level || word.level) && (
                         <span className="mt-3 inline-flex rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-bold text-[#155aa6]">
-                            {word.hsk_level ? `HSK ${word.hsk_level}` : word.level}
+                            {dictionaryLevelLabel(word)}
                         </span>
                     )}
                 </div>

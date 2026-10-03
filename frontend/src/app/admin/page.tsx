@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import Link from "next/link";
 import {
@@ -32,6 +32,7 @@ import {
 } from "@/lib/content-admin";
 import { fetchCourseTaxonomy, type CategorySummary, type Course } from "@/lib/courses";
 import { isHttpStatus } from "@/lib/http";
+import { DICTIONARY_LEVELS, dictionaryLevelLabel } from "@/lib/dictionaryLevels";
 import Surface from "@/components/ui/Surface";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { BackButton } from "@/components/ui/IconButton";
@@ -165,6 +166,7 @@ function latestLessonId(course: Course) {
 }
 
 type DictionaryMissingKey = "pinyin" | "audio" | "persian" | "chinese" | "composition" | "definitions" | "examples" | "collocations" | "notes";
+type DictionaryFilters = { level?: string; source?: string; status?: string; missing?: string };
 
 const dictionaryMissingOptions: Array<{ key: DictionaryMissingKey; label: string }> = [
     { key: "pinyin", label: "پین‌یین" },
@@ -220,6 +222,9 @@ export default function AdminPanelPage() {
     const [accessError, setAccessError] = useState("");
     const [needsMfaEnrollment, setNeedsMfaEnrollment] = useState(false);
     const [dictionarySearch, setDictionarySearch] = useState("");
+    const dictionaryRequestSequence = useRef(0);
+    const dictionaryQuery = useRef<{ q: string; filters: DictionaryFilters }>({ q: "", filters: {} });
+    const [dictionaryHasMore, setDictionaryHasMore] = useState(false);
     const [userSearch, setUserSearch] = useState("");
     const [importResult, setImportResult] = useState<AdminDictionaryImportResult | null>(null);
 
@@ -290,13 +295,15 @@ export default function AdminPanelPage() {
             const overviewData = await adminService.getOverview();
             const [userResult, wordResult, taxonomyResult, courseResult] = await Promise.allSettled([
                 adminService.listUsers(userSearch),
-                adminService.listDictionary(dictionarySearch),
+                adminService.listDictionary(dictionarySearch, { limit: 100 }),
                 fetchCourseTaxonomy(),
                 contentAdminService.listCourses(),
             ]);
             setOverview(overviewData);
             setUsers(userResult.status === "fulfilled" ? userResult.value : []);
             setWords(wordResult.status === "fulfilled" ? wordResult.value : []);
+            setDictionaryHasMore(wordResult.status === "fulfilled" && wordResult.value.length === 100);
+            dictionaryQuery.current = { q: dictionarySearch, filters: {} };
             setCategories(taxonomyResult.status === "fulfilled" ? taxonomyResult.value : []);
             setCourses(courseResult.status === "fulfilled" ? courseResult.value : []);
 
@@ -333,22 +340,43 @@ export default function AdminPanelPage() {
         }
     }, [lessonForm.section_id, selectedCourse]);
 
-    const refreshDictionary = async () => {
+    const refreshDictionary = async (filters: DictionaryFilters = {}) => {
+        const requestSequence = ++dictionaryRequestSequence.current;
         setSaving("dictionary-refresh");
         try {
-            const loadedWords = await adminService.listDictionary(dictionarySearch, { limit: 1000 });
+            const loadedWords = await adminService.listDictionary(dictionarySearch, { ...filters, limit: 100 });
+            if (requestSequence !== dictionaryRequestSequence.current) return;
+            dictionaryQuery.current = { q: dictionarySearch, filters };
+            setDictionaryHasMore(loadedWords.length === 100);
             setWords(loadedWords);
             setMessage(`${toPersianDigits(loadedWords.length)} کلمه از دیکشنری بارگذاری شد.`);
         } catch (error) {
             console.error("Failed to refresh dictionary", error);
-            setMessage("بارگذاری کلمات دیکشنری انجام نشد. بک‌اند را ری‌استارت کن و دوباره تلاش کن.");
+            if (requestSequence === dictionaryRequestSequence.current) setMessage("بارگذاری کلمات دیکشنری انجام نشد. لطفاً دوباره تلاش کن.");
         } finally {
-            setSaving("");
+            if (requestSequence === dictionaryRequestSequence.current) setSaving("");
         }
     };
 
     const refreshUsers = async () => {
         setUsers(await adminService.listUsers(userSearch));
+    };
+
+    const loadMoreDictionary = async () => {
+        const requestSequence = ++dictionaryRequestSequence.current;
+        setSaving("dictionary-more");
+        try {
+            const { q, filters } = dictionaryQuery.current;
+            const loadedWords = await adminService.listDictionary(q, { ...filters, skip: words.length, limit: 100 });
+            if (requestSequence !== dictionaryRequestSequence.current) return;
+            setWords((current) => [...new Map([...current, ...loadedWords].map((word) => [word.id, word])).values()]);
+            setDictionaryHasMore(loadedWords.length === 100);
+        } catch (error) {
+            console.error("Failed to load more dictionary words", error);
+            if (requestSequence === dictionaryRequestSequence.current) setMessage("بارگذاری ادامهٔ واژه‌ها انجام نشد. لطفاً دوباره تلاش کن.");
+        } finally {
+            if (requestSequence === dictionaryRequestSequence.current) setSaving("");
+        }
     };
 
     const updateUserRole = async (userId: number, role: AdminUserSummary["role"]) => {
@@ -983,6 +1011,8 @@ export default function AdminPanelPage() {
                             setSearch={setDictionarySearch}
                             setWordForm={setWordForm}
                             onRefresh={refreshDictionary}
+                            onLoadMore={loadMoreDictionary}
+                            hasMore={dictionaryHasMore}
                             onSave={handleSaveWord}
                             onEdit={editWord}
                             onDelete={deleteWord}
@@ -1454,24 +1484,22 @@ function DictionaryTab(props: {
     search: string;
     setSearch: (value: string) => void;
     setWordForm: React.Dispatch<React.SetStateAction<typeof emptyWordForm>>;
-    onRefresh: () => void;
+    onRefresh: (filters?: DictionaryFilters) => void;
+    onLoadMore: () => void;
+    hasMore: boolean;
     onSave: () => void;
     onEdit: (word: AdminDictionaryWord) => void;
     onDelete: (word: AdminDictionaryWord) => void;
 }) {
-    const { words, wordForm, saving, search, setSearch, setWordForm, onRefresh, onSave, onEdit, onDelete } = props;
+    const { words, wordForm, saving, search, setSearch, setWordForm, onRefresh, onLoadMore, hasMore, onSave, onEdit, onDelete } = props;
     const [missingFilter, setMissingFilter] = useState<DictionaryMissingKey | "">("");
     const [hskFilter, setHskFilter] = useState("");
     const [sourceFilter, setSourceFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
 
     const stats = useMemo(() => getDictionaryReviewStats(words), [words]);
-    const hskLevels = useMemo(
-        () => [...new Set(words.map((word) => word.hsk_level).filter((level): level is number => typeof level === "number"))].sort((a, b) => a - b),
-        [words],
-    );
     const sources = useMemo(
-        () => [...new Set(words.map((word) => word.source).filter((source): source is string => Boolean(source)))].sort(),
+        () => [...new Set(["hsk", "manual", ...words.map((word) => word.source).filter((source): source is string => Boolean(source))])].sort(),
         [words],
     );
     const statuses = useMemo(
@@ -1481,7 +1509,7 @@ function DictionaryTab(props: {
     const visibleWords = useMemo(() => {
         return words.filter((word) => {
             if (missingFilter && !getDictionaryMissingFields(word).includes(missingFilter)) return false;
-            if (hskFilter && String(word.hsk_level || "") !== hskFilter) return false;
+            if (hskFilter && word.level !== hskFilter) return false;
             if (sourceFilter && word.source !== sourceFilter) return false;
             if (statusFilter && word.status !== statusFilter) return false;
             return true;
@@ -1495,7 +1523,7 @@ function DictionaryTab(props: {
                 <Surface className={cn(panelClass, "p-4")}>
                     <PanelTitle icon={<FileText size={18} />} title="بازبینی کلمات" subtitle="کلمات دیکشنری را ببین، فیلدهای خالی را پیدا کن و برای اصلاح انتخاب کن." />
                     <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                        <DictionaryReviewStat label="کل کلمات" value={stats.total} tone="blue" />
+                        <DictionaryReviewStat label="واژه‌های بارگذاری‌شده" value={stats.total} tone="blue" />
                         <DictionaryReviewStat label="کامل" value={stats.complete} tone="green" />
                         <DictionaryReviewStat label="نیازمند بررسی" value={stats.withMissing} tone="amber" />
                         <DictionaryReviewStat label="بدون صدا" value={stats.missingAudio} tone="slate" />
@@ -1513,7 +1541,7 @@ function DictionaryTab(props: {
                         </div>
                         <button
                             type="button"
-                            onClick={onRefresh}
+                            onClick={() => onRefresh({ level: hskFilter, source: sourceFilter, status: statusFilter, missing: missingFilter })}
                             disabled={saving === "dictionary-refresh"}
                             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
                         >
@@ -1523,25 +1551,37 @@ function DictionaryTab(props: {
                     </div>
 
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                        <select value={missingFilter} onChange={(e) => setMissingFilter(e.target.value as DictionaryMissingKey | "")} className={fieldClass}>
+                        <select value={missingFilter} onChange={(e) => {
+                            setMissingFilter(e.target.value as DictionaryMissingKey | "");
+                            onRefresh({ level: hskFilter, source: sourceFilter, status: statusFilter, missing: e.target.value });
+                        }} className={fieldClass}>
                             <option value="">همه فیلدها</option>
                             {dictionaryMissingOptions.map((item) => (
                                 <option key={item.key} value={item.key}>خالی: {item.label}</option>
                             ))}
                         </select>
-                        <select value={hskFilter} onChange={(e) => setHskFilter(e.target.value)} className={fieldClass}>
+                        <select aria-label="سطح واژه‌ها" value={hskFilter} onChange={(e) => {
+                            setHskFilter(e.target.value);
+                            onRefresh({ level: e.target.value, source: sourceFilter, status: statusFilter, missing: missingFilter });
+                        }} className={fieldClass}>
                             <option value="">همه HSKها</option>
-                            {hskLevels.map((level) => (
-                                <option key={level} value={String(level)}>HSK {level}</option>
+                            {DICTIONARY_LEVELS.map((level) => (
+                                <option key={level.value} value={level.value}>{level.label}</option>
                             ))}
                         </select>
-                        <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className={fieldClass}>
+                        <select value={sourceFilter} onChange={(e) => {
+                            setSourceFilter(e.target.value);
+                            onRefresh({ level: hskFilter, source: e.target.value, status: statusFilter, missing: missingFilter });
+                        }} className={fieldClass}>
                             <option value="">همه منابع</option>
                             {sources.map((source) => (
                                 <option key={source} value={source}>{source}</option>
                             ))}
                         </select>
-                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={fieldClass}>
+                        <select value={statusFilter} onChange={(e) => {
+                            setStatusFilter(e.target.value);
+                            onRefresh({ level: hskFilter, source: sourceFilter, status: e.target.value, missing: missingFilter });
+                        }} className={fieldClass}>
                             <option value="">همه وضعیت‌ها</option>
                             {statuses.map((status) => (
                                 <option key={status} value={status}>{status}</option>
@@ -1559,6 +1599,7 @@ function DictionaryTab(props: {
                                     setHskFilter("");
                                     setSourceFilter("");
                                     setStatusFilter("");
+                                    onRefresh();
                                 }}
                                 className="text-[#155aa6]"
                             >
@@ -1582,7 +1623,7 @@ function DictionaryTab(props: {
                                                 </div>
                                                 <div className="flex shrink-0 flex-col items-end gap-1">
                                                     <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-[#155aa6]">
-                                                        {word.hsk_level ? `HSK ${word.hsk_level}` : word.level}
+                                                        {dictionaryLevelLabel(word)}
                                                     </span>
                                                     <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-black", missing.length ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700")}>
                                                         {missing.length ? `${toPersianDigits(missing.length)} نقص` : "کامل"}
@@ -1619,6 +1660,12 @@ function DictionaryTab(props: {
                             <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-bold text-slate-400">
                                 کلمه‌ای با این فیلتر پیدا نشد.
                             </div>
+                        )}
+                        {hasMore && (
+                            <button type="button" onClick={onLoadMore} disabled={saving.startsWith("dictionary-")} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#eef6ff] px-4 py-3 text-sm font-bold text-[#155aa6] disabled:opacity-60">
+                                {saving === "dictionary-more" && <Loader2 className="h-4 w-4 animate-spin" />}
+                                نمایش واژه‌های بیشتر
+                            </button>
                         )}
                     </div>
                 </Surface>

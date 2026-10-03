@@ -41,8 +41,9 @@ def _write_dictionary_fixture(root: Path, rows_by_file: dict[str, list[dict[str,
     for index, relative_path in enumerate(DICTIONARY_FILES, start=1):
         path = root / relative_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        default_word = ("好", "大", "小")[index - 1]
-        rows = rows_by_file.get(relative_path.name, [_dictionary_row(1, default_word, 1, level=f"HSK {index}")])
+        default_word = ("好", "大", "小", "爱", "白", "长", "点", "鹅")[index - 1]
+        level = f"HSK {index}" if index <= 6 else ("HSK 7-9" if index == 7 else "NON-HSK")
+        rows = rows_by_file.get(relative_path.name, [_dictionary_row(1, default_word, 1, level=level)])
         with path.open("w", encoding="utf-8", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=REQUIRED_DICTIONARY_COLUMNS, lineterminator="\n")
             writer.writeheader()
@@ -149,7 +150,7 @@ def test_unknown_license_is_baseline_not_default_build_failure(tmp_path: Path) -
     _prepare_fixture(tmp_path)
     result = run_audit(tmp_path, scan_source=False)
     assert not result.structural_blockers()
-    assert len(result.baseline_blockers()) == 5
+    assert len(result.baseline_blockers()) == len(DICTIONARY_FILES) + 2
 
 
 def test_source_scan_flags_remote_media_and_numeric_route_ids(tmp_path: Path) -> None:

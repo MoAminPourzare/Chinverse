@@ -8,6 +8,17 @@ Canonical files currently included:
 - `hsk1_words_dictionary.csv`
 - `hsk2_words_dictionary.csv`
 - `hsk3_words_dictionary.csv`
+- `hsk4_words_dictionary.csv`
+- `hsk5_words_dictionary.csv`
+- `hsk6_words_dictionary.csv`
+- `hsk7-9_words_dictionary.csv`
+- `non_hsk_words_dictionary.csv`
+
+The complete catalog contains **11,630 headwords and 16,888 senses**. The
+2026-10-03 owner-provided expansion adds **10,643 headwords and 14,874 senses**.
+`workbook_import_report.json` records original workbook checksums, exact-row
+deduplication, ID/sense repairs, cross-file merges and six column/content repairs.
+Original owner workbooks are unchanged and are not runtime dependencies.
 
 ## Canonical HSK CSV Format
 
@@ -41,6 +52,8 @@ definitions, examples, and collocations with `sense_order`.
 - `pinyin`
 - `audio_url` (empty until pronunciation files are available)
 - `level` such as `HSK1`
+- Combined advanced vocabulary uses `level=HSK7-9`, `hsk_level=null`.
+- Vocabulary outside HSK uses `level=NON-HSK`, `hsk_level=null`, `source=manual`.
 - `hsk_level` such as `1`
 - `source` such as `hsk` or `manual`
 - `source_word_id`
@@ -58,6 +71,28 @@ Sense-level data is stored separately:
 
 ## Import
 
+Docker startup synchronizes the canonical catalog after migrations and before
+serving requests. It inserts missing headwords in one transaction, preserves
+existing dictionary IDs, edited content, audio/media links, lesson mappings and
+user flashcards, and does nothing to already-existing words. A PostgreSQL
+transaction lock prevents concurrent startup imports from creating duplicates.
+
+Validate all files without accessing the database:
+
+```powershell
+poetry run python import_dictionary.py --all-dictionary --dry-run
+```
+
+Add missing words without replacing existing content or resetting study data:
+
+```powershell
+poetry run python -m scripts.sync_dictionary
+```
+
+The older importer below is for intentionally updating existing dictionary
+content. Its `--reset` flag deletes lesson-word mappings and user flashcards;
+do not use it to publish an expansion or migrate user study history.
+
 Run migrations first:
 
 ```powershell
@@ -70,7 +105,7 @@ Import the default HSK1 file:
 poetry run python import_dictionary.py
 ```
 
-Import HSK1, HSK2, and HSK3 together:
+Import all numbered HSK files, including the combined HSK7–9 band:
 
 ```powershell
 poetry run python import_dictionary.py --all-hsk
@@ -115,7 +150,7 @@ audit from the repository root:
 python backend/scripts/audit_phase5_content.py --repo-root .
 ```
 
-The command validates the HSK1–HSK3 CSV shape, duplicate sense keys, level
+The command validates all eight canonical CSV files, duplicate sense keys, level
 label consistency, and SHA-256 entries in `source_registry.csv`. It also
 checks the repository media registry. Missing source/owner/license evidence is
 kept as `review_required` and reported as a baseline blocker; it must not be

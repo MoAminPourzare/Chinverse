@@ -278,20 +278,25 @@ export const adminService = {
     },
 
     async listDictionary(q = "", filters: {
+        level?: string;
         status?: string;
         source?: string;
         hsk_level?: number | null;
         missing?: string;
         limit?: number;
+        skip?: number;
     } = {}): Promise<AdminDictionaryWord[]> {
         const response = await api.get<AdminDictionaryWord[]>("/admin/dictionary", {
+            chinverseCacheTtlMs: 0,
             params: {
                 q: q || undefined,
                 status: filters.status || undefined,
                 source: filters.source || undefined,
                 hsk_level: filters.hsk_level || undefined,
+                level: filters.level || undefined,
                 missing: filters.missing || undefined,
                 limit: filters.limit || 1000,
+                skip: filters.skip || undefined,
             },
         });
         return Array.isArray(response.data) ? response.data : [];

@@ -446,13 +446,15 @@ def _parse_json_list(value: str) -> list[dict[str, Any]] | None:
 
 
 def _normalize_hsk_level(value: str) -> str:
+    if re.fullmatch(r"HSK\s*7\s*[-–]\s*9", _text(value), re.IGNORECASE):
+        return "HSK7-9"
     match = re.search(r"(\d+)", value or "")
     return f"HSK{match.group(1)}" if match else (_text(value) or "HSK")
 
 
 def _parse_collocation_item(value: str) -> tuple[str, str]:
     item = value.strip()
-    match = re.match(r"^(.*?)\s*\((.*?)\)\s*$", item)
+    match = re.match(r"^(.*?)\s*[（(](.*?)[）)]\s*$", item)
     if not match:
         return item, ""
     return match.group(1).strip(), match.group(2).strip()
@@ -485,10 +487,14 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
             {
                 "chinese": chinese,
                 "pinyin": data.get("pinyin", ""),
+                "pinyin_lines": [],
                 "audio_url": data.get("audio_url", ""),
                 "level": _normalize_hsk_level(data.get("word_hsk_level") or data.get("level")),
-                "hsk_level": _int_or_none(data.get("word_hsk_level") or data.get("level")),
-                "source": "hsk",
+                "hsk_level": (
+                    None if _normalize_hsk_level(data.get("word_hsk_level") or data.get("level")) == "HSK7-9"
+                    else _int_or_none(data.get("word_hsk_level") or data.get("level"))
+                ),
+                "source": "manual" if data.get("word_hsk_level") == "NON-HSK" else "hsk",
                 "source_word_id": source_word_id,
                 "status": "published",
                 "persian_meaning_lines": [],
@@ -501,6 +507,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
             },
         )
 
+        record["pinyin_lines"].append(data.get("pinyin", ""))
         sense_order = _int_or_none(data.get("sense_id")) or len(record["persian_meaning_lines"]) + 1
         chinese_meaning = data.get("chinese_meaning", "")
         persian_meaning = data.get("persian_meaning", "")
@@ -517,6 +524,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                     "part_of_speech": chinese_pos,
                     "sense_order": sense_order,
                     "notes": notes or None,
+                    "source_pinyin": data.get("pinyin", ""),
                 }
             )
         if persian_meaning:
@@ -528,6 +536,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                     "part_of_speech": persian_pos,
                     "sense_order": sense_order,
                     "notes": notes or None,
+                    "source_pinyin": data.get("pinyin", ""),
                 }
             )
 
@@ -545,7 +554,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                 }
             )
 
-        for item in [part for part in data.get("collocations", "").split("|") if part.strip()]:
+        for item in [part for part in re.split(r"[|；;]", data.get("collocations", "")) if part.strip()]:
             phrase_zh, phrase_pinyin = _parse_collocation_item(item)
             if not phrase_zh:
                 continue
@@ -561,10 +570,15 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     normalized_records: list[dict[str, Any]] = []
     for record in grouped.values():
+        pronunciations = list(dict.fromkeys(value for value in record["pinyin_lines"] if value))
+        for definition in record["definitions"]:
+            source_pinyin = definition.pop("source_pinyin")
+            if len(pronunciations) > 1 and source_pinyin:
+                definition["notes"] = _unique_join([f"تلفظ: {source_pinyin}", definition["notes"] or ""])
         normalized_records.append(
             {
                 "chinese": record["chinese"],
-                "pinyin": record["pinyin"],
+                "pinyin": " / ".join(pronunciations),
                 "audio_url": _clean_optional(record["audio_url"]),
                 "level": record["level"],
                 "hsk_level": record["hsk_level"],
@@ -965,6 +979,7 @@ async def admin_dictionary_words(
     status: Optional[str] = Query(default=None, max_length=40),
     source: Optional[str] = Query(default=None, max_length=80),
     hsk_level: Optional[int] = Query(default=None, ge=1, le=9),
+    level: Optional[str] = Query(default=None, max_length=80),
     missing: Optional[str] = Query(default=None, max_length=40),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
@@ -991,6 +1006,8 @@ async def admin_dictionary_words(
         query = query.where(DictionaryWord.source == source.strip())
     if hsk_level:
         query = query.where(DictionaryWord.hsk_level == hsk_level)
+    if level:
+        query = query.where(DictionaryWord.level == level.strip())
     if missing:
         missing_key = missing.strip()
         missing_text_fields = {

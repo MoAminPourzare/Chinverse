@@ -16,6 +16,11 @@ DICTIONARY_FILES = (
     Path("backend/data/dictionary/hsk1_words_dictionary.csv"),
     Path("backend/data/dictionary/hsk2_words_dictionary.csv"),
     Path("backend/data/dictionary/hsk3_words_dictionary.csv"),
+    Path("backend/data/dictionary/hsk4_words_dictionary.csv"),
+    Path("backend/data/dictionary/hsk5_words_dictionary.csv"),
+    Path("backend/data/dictionary/hsk6_words_dictionary.csv"),
+    Path("backend/data/dictionary/hsk7-9_words_dictionary.csv"),
+    Path("backend/data/dictionary/non_hsk_words_dictionary.csv"),
 )
 DICTIONARY_REGISTRY = Path("backend/data/dictionary/source_registry.csv")
 MEDIA_REGISTRY = Path("docs/PHASE_5_MEDIA_LICENSE_REGISTRY.csv")
@@ -251,7 +256,7 @@ def sync_registries(root: Path) -> None:
             {
                 "path": relative_path,
                 "sha256": _sha256(dictionary_path),
-                "dataset_type": "hsk_dictionary_csv",
+                "dataset_type": "dictionary_csv" if relative_path_value.name.startswith("non_hsk") else "hsk_dictionary_csv",
                 "owner": (previous.get("owner") or "").strip(),
                 "license": (previous.get("license") or "").strip(),
                 "source_url": (previous.get("source_url") or "").strip(),
@@ -283,6 +288,10 @@ def audit_dictionary(root: Path) -> tuple[dict[str, object], list[Finding]]:
         display_path = relative_path.as_posix()
         level_match = re.search(r"hsk(\d+)_", relative_path.name, re.IGNORECASE)
         expected_level = f"HSK {level_match.group(1)}" if level_match else ""
+        if relative_path.name.startswith("hsk7-9"):
+            expected_level = "HSK 7-9"
+        elif relative_path.name.startswith("non_hsk"):
+            expected_level = "NON-HSK"
         if not path.is_file():
             findings.append(
                 Finding("DICT_FILE_MISSING", "critical", "structural", display_path, "Canonical dictionary file is missing.")
@@ -338,14 +347,14 @@ def audit_dictionary(root: Path) -> tuple[dict[str, object], list[Finding]]:
                     )
 
             level_label = clean["word_hsk_level"]
-            if level_label and not re.fullmatch(r"HSK [1-9]\d*", level_label):
+            if level_label and not re.fullmatch(r"HSK [1-9]\d*|HSK 7-9|NON-HSK", level_label):
                 findings.append(
                     Finding(
                         "DICT_LEVEL_LABEL_FORMAT",
                         "high",
                         "structural",
                         display_path,
-                        f"word_hsk_level must use the canonical 'HSK N' form; found {level_label!r}.",
+                        f"word_hsk_level must use 'HSK N', 'HSK 7-9', or 'NON-HSK'; found {level_label!r}.",
                         line=line_number,
                     )
                 )
@@ -710,7 +719,10 @@ def audit_registries(root: Path) -> tuple[dict[str, object], list[Finding]]:
     )
 
     dictionary_expected = {
-        path.as_posix(): (_sha256(root / path), "hsk_dictionary_csv")
+        path.as_posix(): (
+            _sha256(root / path),
+            "dictionary_csv" if path.name.startswith("non_hsk") else "hsk_dictionary_csv",
+        )
         for path in DICTIONARY_FILES
         if (root / path).is_file()
     }
