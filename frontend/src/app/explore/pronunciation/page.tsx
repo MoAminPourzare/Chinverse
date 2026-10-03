@@ -1,13 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { PRONUNCIATION_CATALOG } from "@/lib/pronunciationCatalog";
 
 export default function PronunciationPage() {
-    return (
-        <CourseExplorePage
-            title="تلفظ"
-            subcategorySlug="pronunciation"
-            detailPath="/pronunciation"
-            layout="list"
-            accentClass="bg-blue-500"
-        />
-    );
+    return <PlannedCourseExplorePage title="تلفظ" basePath="/pronunciation" catalog={PRONUNCIATION_CATALOG} />;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
@@ -17,7 +17,9 @@ import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
-import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount } from "@/lib/courses";
+import { fetchSavedCourses } from "@/lib/courses";
+import { fetchSavedCollectionKeys } from "@/lib/savedCollections";
+import { mergeSavedCollections, type SavedCollectionCard } from "@/lib/collectionCatalog";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
 import { IMAGE_FILE_ACCEPT, isAdjustableImageFile, validateImageFile } from "@/validation";
 
@@ -119,26 +121,6 @@ export default function ProfilePage() {
 
         const delta = direction === "left" ? -150 : 150;
         container.scrollBy({ left: delta, behavior: "smooth" });
-    };
-
-    const handleDeleteAccount = async () => {
-        const confirmed = window.confirm(
-            'آیا مطمئن هستید؟ با حذف حساب کاربری، تمام اطلاعات شما (رزومه، گالری، چت‌ها) برای همیشه پاک خواهد شد.'
-        );
-
-        if (confirmed) {
-            try {
-                const api = (await import('@/lib/api')).default;
-                await api.delete('/users/me');
-                authService.logout();
-                setUser(null);
-                router.replace('/login');
-                router.refresh();
-            } catch (error) {
-                console.error('Failed to delete account:', error);
-                alert('خطا در حذف حساب کاربری. لطفا دوباره تلاش کنید.');
-            }
-        }
     };
 
     const fetchUser = async () => {
@@ -687,7 +669,10 @@ export default function ProfilePage() {
 
                                 {/* 6. حذف حساب کاربری */}
                                 <button
-                                    onClick={() => { setIsSettingsOpen(false); handleDeleteAccount(); }}
+                                    onClick={() => {
+                                        setIsSettingsOpen(false);
+                                        router.push('/account/security#delete-account');
+                                    }}
                                     className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-red-50"
                                 >
                                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -818,7 +803,7 @@ function ProfileLoadingState() {
 }
 
 function SavedCoursesTab() {
-    const [courses, setCourses] = useState<Course[]>([]);
+    const [courses, setCourses] = useState<SavedCollectionCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -830,7 +815,8 @@ function SavedCoursesTab() {
             setError(false);
 
             try {
-                const data = await fetchSavedCourses();
+                const [savedCourses, savedKeys] = await Promise.all([fetchSavedCourses(), fetchSavedCollectionKeys()]);
+                const data = mergeSavedCollections(savedCourses, savedKeys);
                 if (!cancelled) {
                     setCourses(data);
                 }
@@ -912,22 +898,19 @@ function SavedCoursesTab() {
         <div className="p-4 sm:p-5">
             <div className="grid grid-cols-3 gap-2.5">
                 {courses.map((course) => {
-                    const href = getCourseDetailHref(course);
-                    const lessonsCount = getLessonCount(course);
-                    const countText = lessonsCount > 0
-                        ? `${lessonsCount} درس`
-                        : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "بخش");
+                    const href = course.href;
+                    const countText = course.countText;
 
                     return (
                         <article
-                            key={course.id}
+                            key={course.key}
                             className="group relative overflow-hidden rounded-[16px] border border-[#cfd3da] bg-[#e1e4ea] p-1.5 shadow-[0_6px_14px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]"
                         >
                             <Link href={href} className="block">
                                 <div className="relative aspect-square overflow-hidden rounded-[12px] bg-slate-200 shadow-sm">
-                                {course.cover_image_url ? (
+                                {course.cover ? (
                                     <Image
-                                        src={getMediaUrl(course.cover_image_url)}
+                                        src={course.cover.startsWith("/assets/") ? course.cover : getMediaUrl(course.cover)}
                                         alt={course.title}
                                         fill
                                         sizes="130px"

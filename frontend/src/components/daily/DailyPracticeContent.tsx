@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isAxiosError } from "axios";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -55,15 +56,22 @@ export default function DailyPracticeContent() {
     const [visibleMonth, setVisibleMonth] = useState(() => getTodayJalaliMonth());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [requiresLogin, setRequiresLogin] = useState(false);
 
     const loadSummary = async () => {
+        setIsLoading(true);
+        setError(null);
+        setRequiresLogin(false);
         try {
-            setError(null);
             const data = await dailyActivityService.getSummary(370);
             setSummary(data);
         } catch (loadError) {
-            console.error("Failed to load daily activity", loadError);
-            setError("آمار آموزش روزانه باز نشد. اتصال را بررسی کن و دوباره تلاش کن.");
+            if (isAxiosError(loadError) && loadError.response?.status === 401) {
+                setRequiresLogin(true);
+            } else {
+                console.error("Failed to load daily activity", loadError);
+                setError("آمار آموزش روزانه باز نشد. اتصال را بررسی کن و دوباره تلاش کن.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -125,6 +133,18 @@ export default function DailyPracticeContent() {
         );
     }
 
+    if (requiresLogin) {
+        return (
+            <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
+                <EmptyState
+                    title="برای دیدن روند یادگیری وارد حساب شو"
+                    description="آمار روزانه به حساب تو مربوط است و پس از ورود نمایش داده می‌شود."
+                    action={<PrimaryButton href="/login?next=%2F%3Ftab%3Ddaily">ورود به حساب</PrimaryButton>}
+                />
+            </div>
+        );
+    }
+
     if (error || !summary) {
         return (
             <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
@@ -132,7 +152,7 @@ export default function DailyPracticeContent() {
                     icon={<RefreshCw size={30} />}
                     title="آمار باز نشد"
                     description={error || "داده‌ای برای نمایش پیدا نشد."}
-                    action={<PrimaryButton onClick={loadSummary}>تلاش دوباره</PrimaryButton>}
+                    action={<PrimaryButton onClick={() => void loadSummary()}>تلاش دوباره</PrimaryButton>}
                 />
             </div>
         );

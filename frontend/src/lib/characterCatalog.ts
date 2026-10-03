@@ -1,0 +1,126 @@
+import { getPlannedCourse, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
+
+const assetRoot = "/assets/chinverse/course-profiles";
+
+const baijiaLessons = [
+    { title: "引言", subtitle: "" },
+    { title: "第1课", subtitle: "1.1 汉字的性质" },
+    { title: "第1课", subtitle: "1.2 西方世界对汉字的认识" },
+    { title: "第1课", subtitle: "1.3 树立正确的汉字观" },
+    { title: "第2课", subtitle: "2.1 自源文字和借源文字" },
+    { title: "第2课", subtitle: "2.2 汉字的起源" },
+    { title: "第2课", subtitle: "2.3 中药材里走出的国宝——甲骨文" },
+    { title: "第2课", subtitle: "2.4 汉字形体的演变" },
+    { title: "第2课", subtitle: "2.5 现代汉字的字体" },
+    { title: "第3课", subtitle: "3.1 汉字需要瘦身" },
+    { title: "第3课", subtitle: "3.2 新中国的简化字运动" },
+    { title: "第3课", subtitle: "3.3 繁体字简化字大比拼" },
+    { title: "第3课", subtitle: "3.4 整理异体字" },
+    { title: "第3课", subtitle: "3.5 使用规范汉字，纯洁社会用字" },
+    { title: "第4课", subtitle: "4.1 中国古代的注音方法" },
+    { title: "第4课", subtitle: "4.2 西方传教士的汉语拼音" },
+    { title: "第4课", subtitle: "4.3 中国人的拼音化探索" },
+    { title: "第5课", subtitle: "5.1 “六书”的来源" },
+    { title: "第5课", subtitle: "5.2 《说文解字》介绍" },
+    { title: "第5课", subtitle: "5.3 “六书”之象形" },
+    { title: "第5课", subtitle: "5.4 “六书”之指事" },
+    { title: "第5课", subtitle: "5.5 “六书”之会意" },
+    { title: "第5课", subtitle: "5.6 “六书”之形声" },
+    { title: "第5课", subtitle: "5.7 汉字的文化阐释" },
+    { title: "第5课", subtitle: "5.8 “爱上汉字”之《三十六个字》" },
+    { title: "第6课", subtitle: "6.1 笔画" },
+    { title: "第6课", subtitle: "6.2 部件" },
+    { title: "第6课", subtitle: "6.3 整字" },
+    { title: "第7课", subtitle: "7.1 形声字的声旁" },
+    { title: "第7课", subtitle: "7.2 形声字的形旁" },
+    { title: "第7课", subtitle: "7.3 形声字的结构规律" },
+    { title: "第7课", subtitle: "7.4 两用偏旁的再认识" },
+    { title: "第8课", subtitle: "8.1 古代识字教材" },
+    { title: "第8课", subtitle: "8.2 《文字蒙求》及王筠的识字教育理念" },
+];
+
+/** Reference-based course plan; published lessons still come from the public API. */
+export const CHARACTER_CATALOG: PlannedCatalogCourse[] = [
+    {
+        slug: "yoyo-chinese-character",
+        title: "Yoyo Chinese (Character)",
+        coverPath: `${assetRoot}/Yoyo Chinese.png`,
+        lessonCount: 20,
+        description: [
+            "این بخش برای آشنایی با کاراکترهای چینی از پایه است. به‌جای حفظ‌کردن شکل‌ها به‌تنهایی، ساختار، اجزا و منطق نوشتن آن‌ها قدم‌به‌قدم توضیح داده می‌شود.",
+            "تمرین‌ها به شناخت رادیکال‌ها، ترتیب خط‌ها و به‌خاطر سپردن شکل کاراکتر کمک می‌کنند تا خواندن و نوشتن کم‌کم طبیعی‌تر شود.",
+        ],
+        audience: [
+            "مبتدی‌ای که می‌خواهد پایهٔ کاراکترها را اصولی بسازد",
+            "زبان‌آموزی که حفظ‌کردن شکل کاراکترها برایش دشوار است",
+            "کسی که می‌خواهد اجزا و ترتیب نوشتن کاراکتر را بهتر بفهمد",
+        ],
+        knownLessonSubtitles: {
+            1: "How to Learn Chinese Characters",
+            2: "How Many Chinese Characters Do I Need To Learn?",
+            3: "The Story Behind Chinese Characters",
+            4: "How to Type Chinese Characters Using a Keyboard",
+            5: "Should I Learn Simplified or Traditional Chinese Characters?",
+            6: "Learn Your First Chinese Character in 5 Minutes– Part 1",
+            7: "Learn Chinese Characters in 5 Minutes – Part 2",
+            8: "Learn Chinese Characters in 5 Minutes – Part 3",
+            9: "Learn Chinese Characters in 5 Minutes – Part 4",
+            10: "Learn Chinese Characters in 5 Minutes – Part 5",
+            11: "Review for Lessons 6-10",
+            12: 'The Story of "Man" – Part 1',
+            13: 'The Story of "Man" – Part 2',
+            14: 'The Story of "Man" – Part 3',
+            15: "Chinese Characters 之 (zhī), 万 (wàn), 历 (lì)",
+            16: "Chinese Characters 千 (qiān), 于 (yú), 乎 (hū)",
+            17: "Chinese Characters 卡 (kǎ), 片 (piàn), 止 (zhǐ)",
+            18: "Chinese Characters 无 (wú), 未 (wèi), and 支 (zhī)",
+            19: "Chinese Characters 父 (fù), 交 (jiāo), and 爷 (yé)",
+            20: "Review for Lessons 15-19",
+        },
+    },
+    {
+        slug: "grace-mandarin-character",
+        title: "Grace Mandarin (Character)",
+        coverPath: `${assetRoot}/Grace Mandarin.png`,
+        lessonCount: 7,
+        description: [
+            "این مجموعه خواندن و نوشتن کاراکترهای چینی را با تمرکز بر شکل سنتی کاراکترها (Traditional Chinese) توضیح می‌دهد. درس‌ها به ساختار کاراکتر، ترتیب خط‌ها و تشخیص اجزا می‌پردازند.",
+            "برای زبان‌آموزی که می‌خواهد با متن و کاربرد کاراکترهای سنتی، به‌ویژه در فضای تایوان، آشنا شود نقطهٔ شروع مناسبی است.",
+        ],
+        audience: [
+            "مبتدی‌ای که می‌خواهد از اول درست نوشتن را یاد بگیرد",
+            "زبان‌آموزی که به ساختارهای کاراکتر علاقه دارد",
+            "کسی که می‌خواهد کاراکترهای سنتی را بشناسد",
+        ],
+        knownLessonSubtitles: {
+            1: "How to learn Chinese Characters",
+            2: "Recognize and Write Chinese Characters EASILY! - Part 1",
+            3: "Recognize and Write Chinese Characters EASILY! - Part 2",
+            4: "Recognize and Write Chinese Characters EASILY! - Part 3",
+            5: "Recognize and Write Chinese Characters EASILY! - Part 4",
+            6: "Recognize and Write Chinese Characters EASILY! - Part 5",
+            7: "The ULTIMATE Guide to Learning Chinese Characters",
+        },
+    },
+    {
+        slug: "baijia-talk-hanzi",
+        title: "百家Talk (走进汉字)",
+        coverPath: `${assetRoot}/百家Talk.jpg`,
+        lessonCount: baijiaLessons.length,
+        chapterCount: 8,
+        description: [
+            "این دوره دریچه‌ای به دنیای کاراکترهای چینی است و به‌جای تکیه بر حفظ شکل، به پیشینه و معنای آن‌ها هم توجه می‌کند. روایت‌های فرهنگی کمک می‌کنند ارتباط شکل و معنا روشن‌تر شود.",
+            "اگر در کنار یادگیری نوشتن، به تاریخ و فرهنگ پشت کاراکترها علاقه داری، این مجموعه یک مسیر آشنایی اولیه فراهم می‌کند.",
+        ],
+        audience: [
+            "زبان‌آموز سطح متوسط رو به بالا",
+            "کسی که پایهٔ پین‌یین و کاراکتر را می‌داند",
+            "علاقه‌مند به تاریخ و فرهنگ و ریشه‌شناسی کاراکترهای چینی",
+        ],
+        knownLessonTitles: Object.fromEntries(baijiaLessons.map((lesson, index) => [index + 1, lesson.title])),
+        knownLessonSubtitles: Object.fromEntries(baijiaLessons.map((lesson, index) => [index + 1, lesson.subtitle])),
+    },
+];
+
+export const getCharacterCourse = (slug: string | undefined): PlannedCatalogCourse | undefined =>
+    getPlannedCourse(CHARACTER_CATALOG, slug);

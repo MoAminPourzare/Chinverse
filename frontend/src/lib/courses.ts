@@ -5,7 +5,8 @@ export interface LessonSummary {
     title?: string;
     duration_minutes?: number;
     is_free?: boolean;
-    video_url?: string;
+    /** Media is resolved through the signed lesson playback contract. */
+    media_id?: number | null;
     metadata_json?: Record<string, unknown>;
 }
 
@@ -22,7 +23,11 @@ export interface Course {
     title: string;
     slug?: string;
     description: string;
-    cover_image_url: string;
+    /** App-signed cover URL; absent when the cover is not licensed. */
+    cover_image_url?: string | null;
+    cover_url?: string | null;
+    /** Registered cover asset id, exposed to authenticated admin workflows. */
+    cover_media_id?: number | null;
     level: string;
     subcategory_slug?: string | null;
     metadata_json?: Record<string, unknown>;
@@ -76,7 +81,13 @@ export const unsaveCourse = async (courseId: number): Promise<boolean> => {
 };
 
 export const fetchCourseTaxonomy = async (): Promise<CategorySummary[]> => {
-    const response = await api.get<CategorySummary[]>('/courses/taxonomy');
+    // The admin form must not reuse an earlier empty taxonomy response. This
+    // endpoint is operational data (and the BFF already marks it no-store), so
+    // make the browser request unambiguously fresh as well.
+    const response = await api.get<CategorySummary[]>('/courses/taxonomy', {
+        params: { _fresh: Date.now() },
+        chinverseCacheTtlMs: 0,
+    });
     return Array.isArray(response.data) ? response.data : [];
 };
 

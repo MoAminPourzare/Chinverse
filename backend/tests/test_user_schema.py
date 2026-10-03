@@ -1,16 +1,20 @@
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.community import ArticleCreate
 from app.schemas.user import UserCreate, UserProfileUpdate
 
 
 def test_signup_normalizes_email_phone_name_and_referral_code():
     user = UserCreate(
         email="  USER@Example.COM ",
-        password="Secure123",
+        password="Secure account passphrase 123!",
         phone="+98 912 123 4567",
         display_name="  امین   پورزارع ",
         referral_code="ab-12",
+        accept_terms=True,
+        accept_privacy=True,
+        accept_community_guidelines=True,
     )
 
     assert str(user.email) == "user@example.com"
@@ -31,9 +35,12 @@ def test_signup_normalizes_email_phone_name_and_referral_code():
 def test_signup_rejects_invalid_identity_fields(field, value):
     payload = {
         "email": "person@example.com",
-        "password": "Secure123",
+        "password": "Secure account passphrase 123!",
         "phone": "09121234567",
         "display_name": "کاربر آزمایشی",
+        "accept_terms": True,
+        "accept_privacy": True,
+        "accept_community_guidelines": True,
     }
     payload[field] = value
 
@@ -66,3 +73,19 @@ def test_profile_rejects_unknown_gender_and_credentialed_website():
 
     with pytest.raises(ValidationError):
         UserProfileUpdate(website_url="https://user:pass@example.com")
+
+
+def test_article_create_rejects_external_tracking_image_urls():
+    with pytest.raises(ValidationError, match="sanitized upload URL"):
+        ArticleCreate(
+            title="عنوان مقاله",
+            content="متن معتبر مقاله",
+            cover_image="https://tracker.example/pixel.png",
+        )
+
+    article = ArticleCreate(
+        title="عنوان مقاله",
+        content="متن معتبر مقاله",
+        cover_image="/uploads/gallery/sanitized.webp",
+    )
+    assert article.cover_image == "/uploads/gallery/sanitized.webp"

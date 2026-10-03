@@ -6,6 +6,7 @@ const deploymentTier = process.env.NEXT_PUBLIC_DEPLOYMENT_TIER?.trim().toLowerCa
 export const releaseConfig = {
   deploymentTier,
   isPublicRelease: deploymentTier === "production",
+  betaEnabled: enabled(process.env.NEXT_PUBLIC_BETA_MODE),
   features: {
     subscriptions: enabled(process.env.NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS),
     referrals: enabled(process.env.NEXT_PUBLIC_FEATURE_REFERRALS),

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { galleryService, GalleryItem } from "@/services/gallery.service";
@@ -102,6 +102,7 @@ export default function GalleryTab() {
                                 src={getMediaUrl(item.image_url)}
                                 alt={item.caption || "Gallery image"}
                                 fill
+                                sizes="(max-width: 430px) 50vw, 215px"
                                 className="object-cover"
                                 unoptimized
                             />

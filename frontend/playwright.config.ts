@@ -25,21 +25,43 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
+      testIgnore: /phase6-pwa\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
+        serviceWorkers: "block",
       },
     },
     {
       name: "mobile-chromium",
+      testIgnore: /phase6-pwa\.spec\.ts/,
       use: {
         ...devices["Pixel 5"],
+        serviceWorkers: "block",
       },
     },
     {
       name: "mobile-webkit",
+      testIgnore: /phase6-pwa\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
+        serviceWorkers: "block",
+      },
+    },
+    {
+      name: "pwa-mobile-chromium",
+      testMatch: /phase6-pwa\.spec\.ts/,
+      use: {
+        ...devices["Pixel 5"],
+        serviceWorkers: "allow",
+      },
+    },
+    {
+      name: "pwa-mobile-webkit",
+      testMatch: /phase6-pwa\.spec\.ts/,
+      use: {
+        ...devices["iPhone 13"],
+        serviceWorkers: "allow",
       },
     },
   ],

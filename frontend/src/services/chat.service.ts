@@ -1,4 +1,5 @@
-import api, { API_BASE_URL } from '@/lib/api';
+import api, { resolveWebSocketBaseUrl } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth-session';
 
 // ===== TYPES =====
 
@@ -41,25 +42,42 @@ export interface MarkConversationReadResponse {
 
 export const chatService = {
     async sendMessage(data: SendMessageRequest): Promise<ChatMessage> {
+        // Refresh an expired session with a safe read; never replay a message POST.
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ChatMessage>('/chat', data);
         return response.data;
     },
 
-    async getConversations(): Promise<ConversationPreview[]> {
-        const response = await api.get<ConversationPreview[]>('/chat/conversations');
-        return response.data;
-    },
-
-    async getMessageHistory(userId: number, skip = 0, limit = 50): Promise<ChatMessage[]> {
-        const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
-            params: { skip, limit }
+    async getPresence(userId: number, signal?: AbortSignal): Promise<{ is_online: boolean }> {
+        const response = await api.get<{ is_online: boolean }>(`/chat/${userId}/presence`, {
+            signal,
+            chinverseCacheTtlMs: 0,
         });
         return response.data;
     },
 
-    async getNewMessages(userId: number, afterId: number): Promise<ChatMessage[]> {
+    async getConversations(signal?: AbortSignal): Promise<ConversationPreview[]> {
+        const response = await api.get<ConversationPreview[]>('/chat/conversations', {
+            signal,
+            chinverseCacheTtlMs: 0,
+        });
+        return response.data;
+    },
+
+    async getMessageHistory(userId: number, skip = 0, limit = 50, signal?: AbortSignal): Promise<ChatMessage[]> {
         const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
-            params: { after_id: afterId, limit: 100 }
+            params: { skip, limit },
+            signal,
+            chinverseCacheTtlMs: 0,
+        });
+        return response.data;
+    },
+
+    async getNewMessages(userId: number, afterId?: number, signal?: AbortSignal): Promise<ChatMessage[]> {
+        const response = await api.get<ChatMessage[]>(`/chat/${userId}/messages`, {
+            params: { ...(afterId !== undefined ? { after_id: afterId } : {}), limit: 100 },
+            signal,
+            chinverseCacheTtlMs: 0,
         });
         return response.data;
     },
@@ -71,11 +89,10 @@ export const chatService = {
 
     getWebSocketUrl(): string | null {
         if (typeof window === 'undefined') return null;
+        return `${resolveWebSocketBaseUrl()}/chat/ws`;
+    },
 
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-
-        const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
-        return `${wsBaseUrl}/chat/ws?token=${encodeURIComponent(token)}`;
+    getWebSocketAuthToken(): string | null {
+        return getAccessToken();
     },
 };

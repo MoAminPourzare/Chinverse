@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, List
-from sqlalchemy import String, Boolean, ForeignKey, Text, BigInteger
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 from sqlalchemy.dialects.postgresql import JSON
@@ -14,6 +16,13 @@ class UserStatus(str, Enum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     DELETED = "deleted"
+
+
+class UserRole(str, Enum):
+    USER = "user"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
+
 
 class SocialPlatform(str, Enum):
     INSTAGRAM = "instagram"
@@ -32,6 +41,40 @@ class User(Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[UserStatus] = mapped_column(String, default=UserStatus.ACTIVE)
+    role: Mapped[UserRole] = mapped_column(
+        String(20),
+        default=UserRole.USER,
+        nullable=False,
+        index=True,
+    )
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    phone_verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    password_changed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    failed_login_attempts: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    locked_until: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    mfa_secret_ciphertext: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    mfa_pending_secret_ciphertext: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    mfa_last_used_step: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
 
     # Relationships
     profile: Mapped["UserProfile"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")

@@ -19,7 +19,7 @@ export default function ExploreGroupPage() {
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
                 <header className="rounded-[24px] border border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
-                    <div className="grid grid-cols-[40px_1fr_40px] items-center gap-3">
+                    <div className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
                         <BackButton href="/explore" label="بازگشت به کاوش" className="justify-self-end" />
                         <div className="min-w-0 flex-1">
                             <h1 className="truncate text-center text-[20px] font-black text-[#25272d]">{section.title}</h1>

@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { ArticleDocument } from '@/lib/articles';
 
 // ===== TYPES =====
 
@@ -49,6 +50,8 @@ export interface ForumQuestionDetail extends ForumQuestion {
 
 export interface Article {
     id: number;
+    slug?: string | null;
+    document?: ArticleDocument | null;
     title: string;
     summary: string | null;
     content: string;
@@ -95,6 +98,16 @@ export interface SupportTicketResponse {
     ticket_id: number;
 }
 
+export interface SupportTicket {
+    id: number;
+    user_id: number;
+    message: string;
+    status: "open" | "in_progress" | "closed";
+    admin_reply: string | null;
+    responded_at: string | null;
+    created_at: string;
+}
+
 // ===== SERVICE =====
 
 export const communityService = {
@@ -107,6 +120,9 @@ export const communityService = {
     },
 
     async createForumQuestion(data: ForumQuestionCreate): Promise<ForumQuestion> {
+        // A safe read renews an expired session before the write. Never replay
+        // the POST automatically: an ambiguous response could create duplicates.
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ForumQuestion>('/community/forum/questions', data);
         return response.data;
     },
@@ -126,6 +142,7 @@ export const communityService = {
     },
 
     async createForumAnswer(questionId: number, data: ForumAnswerCreate): Promise<ForumAnswer> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ForumAnswer>(`/community/forum/questions/${questionId}/answers`, data);
         return response.data;
     },
@@ -148,12 +165,24 @@ export const communityService = {
         return response.data;
     },
 
+    async getArticleBySlug(slug: string): Promise<ArticleDetail> {
+        const response = await api.get<ArticleDetail>(`/community/forum/articles/by-slug/${encodeURIComponent(slug)}`);
+        return response.data;
+    },
+
     async createArticleComment(articleId: number, data: ArticleCommentCreate): Promise<ArticleComment> {
         const response = await api.post<ArticleComment>(`/community/forum/articles/${articleId}/comments`, data);
         return response.data;
     },
 
     // Support
+    async getSupportTickets(skip = 0, limit = 20): Promise<SupportTicket[]> {
+        const response = await api.get<SupportTicket[]>('/community/support', {
+            params: { skip, limit }
+        });
+        return Array.isArray(response.data) ? response.data : [];
+    },
+
     async submitSupportTicket(data: SupportTicketCreate): Promise<SupportTicketResponse> {
         const response = await api.post<SupportTicketResponse>('/community/support', data);
         return response.data;

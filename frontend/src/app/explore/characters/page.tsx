@@ -1,13 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { CHARACTER_CATALOG } from "@/lib/characterCatalog";
 
 export default function CharactersPage() {
-    return (
-        <CourseExplorePage
-            title="کاراکتر"
-            subcategorySlug="characters"
-            detailPath="/characters"
-            layout="list"
-            accentClass="bg-blue-700"
-        />
-    );
+    return <PlannedCourseExplorePage title="کاراکتر" basePath="/characters" catalog={CHARACTER_CATALOG} />;
 }

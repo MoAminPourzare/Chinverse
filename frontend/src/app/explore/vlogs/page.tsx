@@ -1,14 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { VLOGS_CATALOG } from "@/lib/vlogsCatalog";
 
 export default function VlogsExplorePage() {
-    return (
-        <CourseExplorePage
-            title="یادگیری با ولاگ"
-            subcategorySlug="vlogs"
-            detailPath="/vlogs"
-            layout="list"
-            countLabel="درس"
-            accentClass="bg-blue-700"
-        />
-    );
+    return <PlannedCourseExplorePage title="یادگیری با ولاگ" basePath="/vlogs" catalog={VLOGS_CATALOG} />;
 }

@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +15,8 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
-from app.models.business import UserSubscription
+from app.core.config import settings
+from app.models.subscription import UserSubscription
 from app.models.course import Course, Lesson, LessonSubtitle, LessonWordMap
 from app.models.dictionary import (
     DictionaryWord,
@@ -24,9 +25,21 @@ from app.models.dictionary import (
     WordExample,
 )
 from app.models.leitner import UserFlashcard
-from app.models.user import User
+from app.models.social import SupportStatus, SupportTicket
+from app.models.user import User, UserRole, UserStatus
+from app.services.auth_security import add_audit_event, revoke_user_sessions, utc_now
+from app.services.notifications import create_notification
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+MAX_DICTIONARY_IMPORT_BYTES = settings.MAX_DICTIONARY_IMPORT_SIZE_BYTES
+DICTIONARY_IMPORT_CONTENT_TYPES = {
+    "application/json",
+    "text/json",
+    "text/csv",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "application/octet-stream",
+}
 
 
 class AdminStat(BaseModel):
@@ -41,6 +54,7 @@ class AdminUserSummary(BaseModel):
     phone: str
     status: str
     is_verified: bool
+    role: str
     display_name: Optional[str] = None
     headline: Optional[str] = None
     created_at: datetime
@@ -73,6 +87,75 @@ class AdminOverview(BaseModel):
 class AdminAccessOut(BaseModel):
     is_admin: bool
     email: str
+    mfa_enabled: bool
+    mfa_verified: bool
+
+
+class AdminRoleUpdate(BaseModel):
+    role: UserRole
+
+
+class AdminStatusUpdate(BaseModel):
+    status: UserStatus
+
+
+class AdminSupportUserSummary(BaseModel):
+    id: int
+    email: str
+    phone: str
+    display_name: Optional[str] = None
+
+
+class AdminSupportTicketOut(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    status: str
+    admin_reply: Optional[str] = None
+    responded_at: Optional[datetime] = None
+    created_at: datetime
+    user: AdminSupportUserSummary
+
+
+class AdminSupportTicketUpdate(BaseModel):
+    status: SupportStatus
+    reply: Optional[str] = Field(default=None, max_length=4000)
+
+
+def _enum_value(value: object) -> str:
+    return getattr(value, "value", str(value))
+
+
+def _admin_user_summary(user: User) -> dict[str, object]:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "phone": user.phone,
+        "status": _enum_value(user.status),
+        "is_verified": user.is_verified,
+        "role": _enum_value(user.role),
+        "display_name": user.profile.display_name if user.profile else None,
+        "headline": user.profile.headline if user.profile else None,
+        "created_at": user.created_at,
+    }
+
+
+def _admin_support_ticket(ticket: SupportTicket) -> dict[str, object]:
+    return {
+        "id": ticket.id,
+        "user_id": ticket.user_id,
+        "message": ticket.message,
+        "status": _enum_value(ticket.status),
+        "admin_reply": ticket.admin_reply,
+        "responded_at": ticket.responded_at,
+        "created_at": ticket.created_at,
+        "user": {
+            "id": ticket.user.id,
+            "email": ticket.user.email,
+            "phone": ticket.user.phone,
+            "display_name": ticket.user.profile.display_name if ticket.user.profile else None,
+        },
+    }
 
 
 class AdminWordDefinitionIn(BaseModel):
@@ -363,13 +446,15 @@ def _parse_json_list(value: str) -> list[dict[str, Any]] | None:
 
 
 def _normalize_hsk_level(value: str) -> str:
+    if re.fullmatch(r"HSK\s*7\s*[-–]\s*9", _text(value), re.IGNORECASE):
+        return "HSK7-9"
     match = re.search(r"(\d+)", value or "")
     return f"HSK{match.group(1)}" if match else (_text(value) or "HSK")
 
 
 def _parse_collocation_item(value: str) -> tuple[str, str]:
     item = value.strip()
-    match = re.match(r"^(.*?)\s*\((.*?)\)\s*$", item)
+    match = re.match(r"^(.*?)\s*[（(](.*?)[）)]\s*$", item)
     if not match:
         return item, ""
     return match.group(1).strip(), match.group(2).strip()
@@ -402,10 +487,14 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
             {
                 "chinese": chinese,
                 "pinyin": data.get("pinyin", ""),
+                "pinyin_lines": [],
                 "audio_url": data.get("audio_url", ""),
                 "level": _normalize_hsk_level(data.get("word_hsk_level") or data.get("level")),
-                "hsk_level": _int_or_none(data.get("word_hsk_level") or data.get("level")),
-                "source": "hsk",
+                "hsk_level": (
+                    None if _normalize_hsk_level(data.get("word_hsk_level") or data.get("level")) == "HSK7-9"
+                    else _int_or_none(data.get("word_hsk_level") or data.get("level"))
+                ),
+                "source": "manual" if data.get("word_hsk_level") == "NON-HSK" else "hsk",
                 "source_word_id": source_word_id,
                 "status": "published",
                 "persian_meaning_lines": [],
@@ -418,6 +507,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
             },
         )
 
+        record["pinyin_lines"].append(data.get("pinyin", ""))
         sense_order = _int_or_none(data.get("sense_id")) or len(record["persian_meaning_lines"]) + 1
         chinese_meaning = data.get("chinese_meaning", "")
         persian_meaning = data.get("persian_meaning", "")
@@ -434,6 +524,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                     "part_of_speech": chinese_pos,
                     "sense_order": sense_order,
                     "notes": notes or None,
+                    "source_pinyin": data.get("pinyin", ""),
                 }
             )
         if persian_meaning:
@@ -445,6 +536,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                     "part_of_speech": persian_pos,
                     "sense_order": sense_order,
                     "notes": notes or None,
+                    "source_pinyin": data.get("pinyin", ""),
                 }
             )
 
@@ -462,7 +554,7 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                 }
             )
 
-        for item in [part for part in data.get("collocations", "").split("|") if part.strip()]:
+        for item in [part for part in re.split(r"[|；;]", data.get("collocations", "")) if part.strip()]:
             phrase_zh, phrase_pinyin = _parse_collocation_item(item)
             if not phrase_zh:
                 continue
@@ -478,10 +570,15 @@ def _hsk_csv_rows_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     normalized_records: list[dict[str, Any]] = []
     for record in grouped.values():
+        pronunciations = list(dict.fromkeys(value for value in record["pinyin_lines"] if value))
+        for definition in record["definitions"]:
+            source_pinyin = definition.pop("source_pinyin")
+            if len(pronunciations) > 1 and source_pinyin:
+                definition["notes"] = _unique_join([f"تلفظ: {source_pinyin}", definition["notes"] or ""])
         normalized_records.append(
             {
                 "chinese": record["chinese"],
-                "pinyin": record["pinyin"],
+                "pinyin": " / ".join(pronunciations),
                 "audio_url": _clean_optional(record["audio_url"]),
                 "level": record["level"],
                 "hsk_level": record["hsk_level"],
@@ -645,16 +742,7 @@ async def admin_overview(
             {"key": "subscriptions", "label": "اشتراک‌ها", "value": active_subscriptions},
         ],
         "recent_users": [
-            {
-                "id": user.id,
-                "email": user.email,
-                "phone": user.phone,
-                "status": str(user.status),
-                "is_verified": user.is_verified,
-                "display_name": user.profile.display_name if user.profile else None,
-                "headline": user.profile.headline if user.profile else None,
-                "created_at": user.created_at,
-            }
+            _admin_user_summary(user)
             for user in users_result.scalars().all()
         ],
         "recent_courses": courses_result.scalars().all(),
@@ -666,7 +754,12 @@ async def admin_overview(
 async def admin_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    return {"is_admin": deps.is_admin_user(current_user), "email": current_user.email}
+    return {
+        "is_admin": deps.is_admin_user(current_user),
+        "email": current_user.email,
+        "mfa_enabled": current_user.mfa_enabled,
+        "mfa_verified": bool(getattr(current_user, "_auth_mfa_verified", False)),
+    }
 
 
 @router.get("/users", response_model=List[AdminUserSummary])
@@ -686,19 +779,198 @@ async def admin_users(
         query.order_by(desc(User.created_at)).offset(pagination.skip).limit(pagination.limit)
     )
     users = result.scalars().all()
-    return [
-        {
-            "id": user.id,
-            "email": user.email,
-            "phone": user.phone,
-            "status": str(user.status),
-            "is_verified": user.is_verified,
-            "display_name": user.profile.display_name if user.profile else None,
-            "headline": user.profile.headline if user.profile else None,
-            "created_at": user.created_at,
-        }
-        for user in users
-    ]
+    return [_admin_user_summary(user) for user in users]
+
+
+@router.get("/support-tickets", response_model=List[AdminSupportTicketOut])
+async def admin_support_tickets(
+    ticket_status: Optional[SupportStatus] = Query(default=None, alias="status"),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=50)),
+) -> Any:
+    _ = current_user
+    query = select(SupportTicket).options(
+        selectinload(SupportTicket.user).selectinload(User.profile)
+    )
+    if ticket_status is not None:
+        query = query.where(SupportTicket.status == ticket_status)
+
+    result = await db.execute(
+        query.order_by(desc(SupportTicket.created_at), desc(SupportTicket.id))
+        .offset(pagination.skip)
+        .limit(pagination.limit)
+    )
+    return [_admin_support_ticket(ticket) for ticket in result.scalars().all()]
+
+
+@router.patch(
+    "/support-tickets/{ticket_id}",
+    response_model=AdminSupportTicketOut,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_support_ticket(
+    ticket_id: int,
+    payload: AdminSupportTicketUpdate,
+    request: Request,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    result = await db.execute(
+        select(SupportTicket)
+        .options(selectinload(SupportTicket.user).selectinload(User.profile))
+        .where(SupportTicket.id == ticket_id)
+        .with_for_update()
+    )
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise not_found("Support ticket")
+
+    reply = payload.reply.strip() if payload.reply else None
+    if payload.status == SupportStatus.CLOSED and not (reply or ticket.admin_reply):
+        raise bad_request("A reply is required before closing a support ticket")
+
+    previous_status = _enum_value(ticket.status)
+    ticket.status = payload.status
+    if reply:
+        ticket.admin_reply = reply
+        ticket.responded_by = current_user.id
+        ticket.responded_at = utc_now()
+        await create_notification(
+            db,
+            user_id=ticket.user_id,
+            type="system",
+            title="پاسخ پشتیبانی",
+            body=reply,
+            target_url="/support",
+            metadata={"ticket_id": ticket.id, "status": payload.status.value},
+            commit=False,
+        )
+
+    await add_audit_event(
+        db,
+        event_type="support.ticket_updated",
+        request=request,
+        actor_user_id=current_user.id,
+        subject=str(ticket.id),
+        details={
+            "previous_status": previous_status,
+            "new_status": payload.status.value,
+            "replied": bool(reply),
+        },
+    )
+    await db.commit()
+
+    refreshed = await db.execute(
+        select(SupportTicket)
+        .options(selectinload(SupportTicket.user).selectinload(User.profile))
+        .where(SupportTicket.id == ticket.id)
+    )
+    return _admin_support_ticket(refreshed.scalar_one())
+
+
+@router.patch(
+    "/users/{user_id}/role",
+    response_model=AdminUserSummary,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_user_role(
+    user_id: int,
+    payload: AdminRoleUpdate,
+    request: Request,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    if user_id == current_user.id:
+        raise bad_request("You cannot change your own administrator role")
+
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.id == user_id)
+        .with_for_update()
+    )
+    target = result.scalar_one_or_none()
+    if not target:
+        raise not_found("User")
+
+    previous_role = _enum_value(target.role)
+    next_role = payload.role.value
+    if previous_role != next_role:
+        target.role = payload.role
+        await revoke_user_sessions(db, user_id=target.id)
+        await add_audit_event(
+            db,
+            event_type="rbac.role_changed",
+            request=request,
+            actor_user_id=current_user.id,
+            subject=str(target.id),
+            details={"previous_role": previous_role, "new_role": next_role},
+        )
+        await db.commit()
+        await db.refresh(target)
+
+    return _admin_user_summary(target)
+
+
+@router.patch(
+    "/users/{user_id}/status",
+    response_model=AdminUserSummary,
+    dependencies=[Depends(write_rate_limit)],
+)
+async def admin_update_user_status(
+    user_id: int,
+    payload: AdminStatusUpdate,
+    request: Request,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+) -> Any:
+    if user_id == current_user.id:
+        raise bad_request("You cannot change your own administrator status")
+    if payload.status == UserStatus.DELETED:
+        raise bad_request("Deleted status is reserved for the account deletion flow")
+
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.id == user_id)
+        .with_for_update()
+    )
+    target = result.scalar_one_or_none()
+    if not target:
+        raise not_found("User")
+
+    previous_status = _enum_value(target.status)
+    next_status = payload.status.value
+    if previous_status != next_status:
+        target.status = payload.status
+        await revoke_user_sessions(db, user_id=target.id)
+        await create_notification(
+            db,
+            user_id=target.id,
+            type="moderation",
+            title=("حساب شما دوباره فعال شد" if payload.status == UserStatus.ACTIVE else "دسترسی حساب محدود شد"),
+            body=(
+                "بازبینی انجام شد و می‌توانی دوباره وارد چین‌ورس شوی."
+                if payload.status == UserStatus.ACTIVE
+                else "حساب شما پس از بررسی تعلیق شد. برای درخواست بازبینی از پشتیبانی کمک بگیر."
+            ),
+            target_url="/support",
+            metadata={"status": next_status},
+            commit=False,
+        )
+        await add_audit_event(
+            db,
+            event_type="rbac.user_status_changed",
+            request=request,
+            actor_user_id=current_user.id,
+            subject=str(target.id),
+            details={"previous_status": previous_status, "new_status": next_status},
+        )
+        await db.commit()
+        await db.refresh(target)
+
+    return _admin_user_summary(target)
 
 
 @router.get("/dictionary", response_model=List[AdminDictionaryWordOut])
@@ -707,6 +979,7 @@ async def admin_dictionary_words(
     status: Optional[str] = Query(default=None, max_length=40),
     source: Optional[str] = Query(default=None, max_length=80),
     hsk_level: Optional[int] = Query(default=None, ge=1, le=9),
+    level: Optional[str] = Query(default=None, max_length=80),
     missing: Optional[str] = Query(default=None, max_length=40),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
@@ -733,6 +1006,8 @@ async def admin_dictionary_words(
         query = query.where(DictionaryWord.source == source.strip())
     if hsk_level:
         query = query.where(DictionaryWord.hsk_level == hsk_level)
+    if level:
+        query = query.where(DictionaryWord.level == level.strip())
     if missing:
         missing_key = missing.strip()
         missing_text_fields = {
@@ -862,11 +1137,23 @@ async def admin_import_dictionary_words(
     current_user: User = Depends(deps.get_current_admin_user),
 ) -> Any:
     _ = current_user
-    raw_content = await file.read()
+    filename = file.filename or ""
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    content_type = (file.content_type or "").lower()
+    if extension not in {"csv", "json"} or content_type not in DICTIONARY_IMPORT_CONTENT_TYPES:
+        await file.close()
+        raise bad_request("Dictionary import must be a CSV or JSON file")
+
+    try:
+        raw_content = await file.read(MAX_DICTIONARY_IMPORT_BYTES + 1)
+    finally:
+        await file.close()
     if not raw_content:
         raise bad_request("Dictionary import file is empty")
+    if len(raw_content) > MAX_DICTIONARY_IMPORT_BYTES:
+        raise bad_request("Dictionary import file is too large")
 
-    rows = _parse_dictionary_import_file(file.filename or "", raw_content)
+    rows = _parse_dictionary_import_file(filename, raw_content)
     if not rows:
         raise bad_request("Dictionary import file did not include any rows")
 
@@ -939,26 +1226,10 @@ async def admin_replace_lesson_subtitles(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ) -> Any:
-    _ = current_user
-    lesson = await db.get(Lesson, lesson_id)
-    if not lesson:
-        raise not_found("Lesson")
-
-    await db.execute(delete(LessonSubtitle).where(LessonSubtitle.lesson_id == lesson_id))
-    for item in payload:
-        if item.timestamp_end < item.timestamp_start:
-            raise bad_request("Subtitle end time must be after start time")
-        db.add(
-            LessonSubtitle(
-                lesson_id=lesson_id,
-                lang_code=item.lang_code.strip() or "zh-fa",
-                text=item.text.strip(),
-                timestamp_start=item.timestamp_start,
-                timestamp_end=item.timestamp_end,
-            )
-        )
-    await db.commit()
-    return await admin_lesson_subtitles(lesson_id, db, current_user)
+    _ = (lesson_id, payload, db, current_user)
+    raise bad_request(
+        "Legacy subtitle replacement is disabled; use the versioned subtitle-track workflow"
+    )
 
 
 @router.put(

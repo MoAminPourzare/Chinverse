@@ -67,10 +67,16 @@ try {
     Assert-NativeSuccess "Backend dependency consistency"
     & $Python -m pip_audit
     Assert-NativeSuccess "Backend dependency audit"
-    & $Python -m ruff check --no-cache app tests
+    & $Python -m ruff check --no-cache app tests scripts
     Assert-NativeSuccess "Backend lint"
-    & $Python -m compileall -q app tests
+    & $Python -m compileall -q app tests scripts
     Assert-NativeSuccess "Backend bytecode compilation"
+    & $Python scripts\audit_phase5_content.py --repo-root $root
+    Assert-NativeSuccess "Phase 5 content and license audit"
+    & $Python scripts\phase7_load_test.py --target backend --base-url http://127.0.0.1:8000 --profile smoke --dry-run
+    Assert-NativeSuccess "Phase 7 load runner safety contract"
+    & $Python scripts\verify_phase7_operations.py --repo-root $root
+    Assert-NativeSuccess "Phase 7 operational artifacts"
     & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m "not integration" --cov=app --cov-report=term-missing --cov-fail-under=50
     Assert-NativeSuccess "Backend unit tests"
 
@@ -86,6 +92,20 @@ try {
             Assert-NativeSuccess "Database migration"
             & $Python -m alembic check
             Assert-NativeSuccess "Model and migration parity"
+            & $Python scripts\verify_phase2_schema.py
+            Assert-NativeSuccess "Phase 2 schema invariants"
+            & $Python scripts\verify_phase3_schema.py
+            Assert-NativeSuccess "Phase 3 schema invariants"
+            & $Python scripts\verify_phase4_schema.py
+            Assert-NativeSuccess "Phase 4 schema invariants"
+            & $Python scripts\verify_phase5_schema.py
+            Assert-NativeSuccess "Phase 5 schema invariants"
+            & $Python scripts\verify_phase6_schema.py
+            Assert-NativeSuccess "Phase 6 schema invariants"
+            & $Python scripts\verify_phase7_schema.py
+            Assert-NativeSuccess "Phase 7 schema invariants"
+            & $Python scripts\verify_phase8_schema.py
+            Assert-NativeSuccess "Phase 8 schema invariants"
             & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m integration
             Assert-NativeSuccess "Backend integration tests"
             & $Python -m alembic downgrade base
@@ -94,6 +114,20 @@ try {
             Assert-NativeSuccess "Migration rebuild"
             & $Python -m alembic check
             Assert-NativeSuccess "Post-rebuild migration parity"
+            & $Python scripts\verify_phase2_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 2 schema invariants"
+            & $Python scripts\verify_phase3_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 3 schema invariants"
+            & $Python scripts\verify_phase4_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 4 schema invariants"
+            & $Python scripts\verify_phase5_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 5 schema invariants"
+            & $Python scripts\verify_phase6_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 6 schema invariants"
+            & $Python scripts\verify_phase7_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 7 schema invariants"
+            & $Python scripts\verify_phase8_schema.py
+            Assert-NativeSuccess "Post-rebuild phase 8 schema invariants"
 
             docker build --tag chinverse-backend:local-check .
             Assert-NativeSuccess "Production backend container build"

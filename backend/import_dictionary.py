@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from sqlalchemy import insert, select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.api.v1.endpoints.admin import (
     _dictionary_payload_from_csv_row,
@@ -19,7 +20,10 @@ DEFAULT_DICTIONARY_DIR = Path(__file__).resolve().parent / "data" / "dictionary"
 DEFAULT_DICTIONARY_FILE = DEFAULT_DICTIONARY_DIR / "hsk1_words_dictionary.csv"
 DEFAULT_HSK_DICTIONARY_FILES = tuple(
     DEFAULT_DICTIONARY_DIR / f"hsk{level}_words_dictionary.csv"
-    for level in (1, 2, 3)
+    for level in range(1, 7)
+) + (DEFAULT_DICTIONARY_DIR / "hsk7-9_words_dictionary.csv",)
+DEFAULT_DICTIONARY_FILES = DEFAULT_HSK_DICTIONARY_FILES + (
+    DEFAULT_DICTIONARY_DIR / "non_hsk_words_dictionary.csv",
 )
 
 
@@ -59,7 +63,7 @@ def _payloads_from_rows(rows: list[dict], *, is_csv: bool):
     return payloads, errors
 
 
-async def bulk_import_after_reset(db, payloads) -> tuple[int, int, int]:
+async def bulk_insert_dictionary_words(db, payloads, *, skip_existing: bool = False) -> tuple[int, int, int]:
     if not payloads:
         return 0, 0, 0
 
@@ -80,13 +84,19 @@ async def bulk_import_after_reset(db, payloads) -> tuple[int, int, int]:
         }
         for payload in payloads
     ]
-    result = await db.execute(insert(DictionaryWord).returning(DictionaryWord.id, DictionaryWord.chinese), word_rows)
+    statement = (
+        pg_insert(DictionaryWord).on_conflict_do_nothing(index_elements=[DictionaryWord.chinese])
+        if skip_existing else insert(DictionaryWord)
+    )
+    result = await db.execute(statement.returning(DictionaryWord.id, DictionaryWord.chinese), word_rows)
     word_ids = {row.chinese: row.id for row in result.all()}
 
     definition_rows = []
     example_rows = []
     collocation_rows = []
     for payload in payloads:
+        if payload.chinese.strip() not in word_ids:
+            continue
         word_id = word_ids[payload.chinese.strip()]
         definition_rows.extend(
             {
@@ -129,12 +139,12 @@ async def bulk_import_after_reset(db, payloads) -> tuple[int, int, int]:
 
     print(
         "Bulk inserted "
-        f"{len(word_rows)} words, "
+        f"{len(word_ids)} words, "
         f"{len(definition_rows)} definitions, "
         f"{len(example_rows)} examples, "
         f"{len(collocation_rows)} collocations."
     )
-    return len(word_rows), 0, 0
+    return len(word_ids), 0, 0
 
 
 async def import_dictionary_file(path: Path, *, reset: bool = False, progress_every: int = 25) -> None:
@@ -160,7 +170,7 @@ async def import_dictionary_file(path: Path, *, reset: bool = False, progress_ev
                 print(f"[row {index}] failed to parse {chinese}: {error}")
             print(f"Parsed {len(payloads)} dictionary words. Resetting dictionary tables...")
             await reset_dictionary(db)
-            created, updated, failed = await bulk_import_after_reset(db, payloads)
+            created, updated, failed = await bulk_insert_dictionary_words(db, payloads)
             failed += len(errors)
         else:
             payloads, errors = _payloads_from_rows(rows, is_csv=is_csv)
@@ -219,8 +229,10 @@ def main() -> None:
     parser.add_argument(
         "--all-hsk",
         action="store_true",
-        help="Import the canonical HSK1, HSK2, and HSK3 CSV files in order.",
+        help="Import all canonical HSK1–6 and HSK7–9 CSV files in order.",
     )
+    parser.add_argument("--all-dictionary", action="store_true", help="Include the curated non-HSK dictionary file.")
+    parser.add_argument("--dry-run", action="store_true", help="Validate every word without opening a database session.")
     parser.add_argument(
         "--reset",
         action="store_true",
@@ -236,14 +248,22 @@ def main() -> None:
 
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    if args.all_hsk:
+    if args.all_hsk or args.all_dictionary:
         if args.file:
-            parser.error("--all-hsk cannot be combined with an explicit file path")
-        paths = [path.resolve() for path in DEFAULT_HSK_DICTIONARY_FILES]
+            parser.error("Catalog flags cannot be combined with an explicit file path")
+        paths = list(DEFAULT_DICTIONARY_FILES if args.all_dictionary else DEFAULT_HSK_DICTIONARY_FILES)
+        if args.dry_run:
+            from scripts.sync_dictionary import read_catalog
+            print(f"Validated {len(read_catalog(paths))} dictionary words. Database unchanged.")
+            return
         asyncio.run(import_dictionary_files(paths, reset=args.reset, progress_every=args.progress_every))
         return
 
     path = Path(args.file).resolve() if args.file else DEFAULT_DICTIONARY_FILE.resolve()
+    if args.dry_run:
+        from scripts.sync_dictionary import read_catalog
+        print(f"Validated {len(read_catalog([path]))} dictionary words. Database unchanged.")
+        return
     asyncio.run(import_dictionary_file(path, reset=args.reset, progress_every=args.progress_every))
 
 

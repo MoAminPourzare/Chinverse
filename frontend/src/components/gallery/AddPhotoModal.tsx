@@ -70,9 +70,11 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
             handleClose();
         } catch (error) {
             console.error("Failed to upload image", error);
-            const requestError = error as { response?: { data?: { detail?: string } } };
+            const requestError = error as { response?: { status?: number; data?: { detail?: string } } };
             const detail = requestError.response?.data?.detail;
-            setError(detail ? cleanApiValidationMessage(detail) : "بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
+            setError(requestError.response?.status === 401
+                ? "نشست کاربری منقضی شده؛ دوباره وارد حساب شو و عکس را بارگذاری کن."
+                : detail ? cleanApiValidationMessage(detail) : "بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
         } finally {
             setUploading(false);
         }
@@ -172,6 +174,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                                 <span className="mt-2 text-xs text-slate-400">{IMAGE_FILE_FORMAT_LABEL}</span>
                                                 <input
                                                     type="file"
+                                                    aria-label="انتخاب عکس گالری"
                                                     accept={IMAGE_FILE_ACCEPT}
                                                     onChange={handleFileSelect}
                                                     className="hidden"
@@ -191,7 +194,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                             placeholder="هر عکسی یه داستانی داره؛ داستانتو اینجا بنویس!"
                                         />
                                         {error && (
-                                            <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
+                                            <p role="alert" className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
                                                 {error}
                                             </p>
                                         )}

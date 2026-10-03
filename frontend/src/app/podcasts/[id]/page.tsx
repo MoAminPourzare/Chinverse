@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PodcastCatalogDetailPage from "@/components/course/PodcastDetailPage";
 
 export default function PodcastDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="podcasts"
-            explorePath="/explore/podcasts"
-            eyebrow="پادکست"
-            countKeys={["episodes_count"]}
-            countLabel="اپیزود"
-            accentClass="bg-indigo-600"
-        />
-    );
+    return <PodcastCatalogDetailPage />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -58,14 +58,17 @@ export default function HomePage() {
     const [activeTab, setActiveTab] = useState<HomeTab>("activities");
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [feedError, setFeedError] = useState(false);
 
     const loadFeed = async () => {
         setLoading(true);
+        setFeedError(false);
         try {
             const response = await api.get<FeedItem[]>("/feed");
             setFeedItems(response.data);
         } catch (error) {
             console.error("Failed to fetch feed", error);
+            setFeedError(true);
         } finally {
             setLoading(false);
         }
@@ -131,6 +134,8 @@ export default function HomePage() {
                     <ActivitiesFeed
                         items={feedItems}
                         loading={loading}
+                        error={feedError}
+                        onRetry={() => void loadFeed()}
                     />
                 )}
             </main>
@@ -141,9 +146,13 @@ export default function HomePage() {
 function ActivitiesFeed({
     items,
     loading,
+    error,
+    onRetry,
 }: {
     items: FeedItem[];
     loading: boolean;
+    error: boolean;
+    onRetry: () => void;
 }) {
     if (loading) {
         return (
@@ -151,6 +160,18 @@ function ActivitiesFeed({
                 {Array.from({ length: 3 }).map((_, index) => (
                     <div key={index} className="h-[210px] animate-pulse rounded-[10px] bg-[#e2e5eb]" />
                 ))}
+            </section>
+        );
+    }
+
+    if (error) {
+        return (
+            <section className="mt-10 rounded-[10px] bg-[#e2e5eb] px-6 py-10 text-center shadow-[0_8px_18px_rgba(15,23,42,0.08)]" role="alert">
+                <h2 className="text-lg font-black text-slate-900">فعالیت‌ها دریافت نشد</h2>
+                <p className="mt-3 text-sm text-slate-700">اتصال را بررسی کن و دوباره تلاش کن.</p>
+                <button type="button" onClick={onRetry} className="mt-5 rounded-xl bg-[#155aa6] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0f4e92]">
+                    تلاش دوباره
+                </button>
             </section>
         );
     }

@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import HistoricalStoriesDetailPage from "@/components/course/HistoricalStoriesDetailPage";
 
-export default function HistoricalStoriesDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="historical-stories"
-            explorePath="/explore/historical-stories"
-            eyebrow="داستان‌های تاریخی"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-stone-600"
-        />
-    );
+export default function HistoricalStoriesPage() {
+    return <HistoricalStoriesDetailPage />;
 }

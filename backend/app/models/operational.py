@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Optional
 
 from sqlalchemy import (
@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Date,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -120,6 +121,16 @@ class SubscriptionOrder(Base, TimestampMixin):
             "user_id",
             desc("created_at"),
         ),
+        UniqueConstraint(
+            "provider",
+            "provider_reference",
+            name="uq_subscription_orders_provider_reference",
+        ),
+        CheckConstraint(
+            "status IN ('created', 'provider_pending', 'pending', 'paid', "
+            "'failed', 'cancelled', 'refunded', 'chargeback')",
+            name="ck_subscription_orders_status",
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -150,6 +161,9 @@ class SubscriptionOrder(Base, TimestampMixin):
         nullable=True,
     )
     checkout_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    failure_code: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
 
 
 class UserLessonWatchProgress(Base, TimestampMixin):

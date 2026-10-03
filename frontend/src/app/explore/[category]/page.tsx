@@ -25,7 +25,7 @@ const categoryConfig: Record<string, {
     calligraphy: { title: "خطاطی", detailPath: "/calligraphy", layout: "list", countLabel: "درس", accentClass: "bg-indigo-600" },
     "tea-culture": { title: "فرهنگ چای", detailPath: "/tea-culture", layout: "list", countLabel: "درس", accentClass: "bg-blue-700" },
     "culture-texts": { title: "متون کلاسیک آموزشی", detailPath: "/culture-texts", layout: "list", countLabel: "درس", accentClass: "bg-slate-700" },
-    "historical-stories": { title: "داستان‌های تاریخی", detailPath: "/historical-stories", layout: "list", countLabel: "درس", accentClass: "bg-blue-700" },
+    "historical-stories": { title: "داستان‌های کهن", detailPath: "/historical-stories", layout: "list", countLabel: "درس", accentClass: "bg-blue-700" },
     "classical-poetry": { title: "شعر و ادبیات کلاسیک", detailPath: "/classical-poetry", layout: "list", countLabel: "درس", accentClass: "bg-blue-700" },
     "festivals-customs": { title: "آیین‌ها و جشن‌ها", detailPath: "/festivals-customs", layout: "list", countLabel: "درس", accentClass: "bg-blue-700" },
     series: { title: "سریال‌ها", detailPath: "/series", layout: "portrait", countKeys: ["episodes_count"], countLabel: "قسمت" },

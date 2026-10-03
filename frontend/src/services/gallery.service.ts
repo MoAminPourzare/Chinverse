@@ -16,6 +16,9 @@ export const galleryService = {
     },
 
     async uploadImage(file: File, caption?: string): Promise<GalleryItem> {
+        // A read can safely renew an expired session before sending the file.
+        // Never replay the upload itself, which could create duplicate posts.
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const formData = new FormData();
         formData.append('file', file);
         if (caption) {
