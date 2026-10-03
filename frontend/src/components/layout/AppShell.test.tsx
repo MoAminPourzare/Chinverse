@@ -34,7 +34,7 @@ it.each([
     ["/support", false],
     ["/chatty", false],
     ["/chat", true],
-    ["/chat/42", true],
+    ["/chat/42", false],
 ])("limits the support shortcut to messages at %s", (pathname, visible) => {
     route.pathname = pathname;
     render(<AppShell releaseSha="test-release"><main>محتوا</main></AppShell>);

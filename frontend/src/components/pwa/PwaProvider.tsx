@@ -57,7 +57,7 @@ const subscribeToBrowserSupport = () => () => undefined;
 const readBrowserSupport = () => PWA_ENABLED && "serviceWorker" in navigator;
 const readServerBrowserSupport = () => false;
 
-export function PwaProvider({ children, releaseSha }: { children: ReactNode; releaseSha: string }) {
+export function PwaProvider({ children, releaseSha, showActionCards = true }: { children: ReactNode; releaseSha: string; showActionCards?: boolean }) {
     const [connectionState, setConnectionState] = useState<ConnectivityState>("online");
     const [showRestored, setShowRestored] = useState(false);
     const [installed, setInstalled] = useState(false);
@@ -316,7 +316,7 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
                     <span>ارتباط دوباره برقرار شد.</span>
                 </div>
             )}
-            {updateReady && !updateNoticeDismissed && (
+            {showActionCards && updateReady && !updateNoticeDismissed && (
                 <div className="pwa-action-card fixed bottom-[calc(env(safe-area-inset-bottom)+16px)] left-3 right-3 z-[1200] mx-auto flex max-w-[400px] items-center gap-2 rounded-[22px] border border-[#d5e1ef] bg-white p-3 text-right shadow-2xl dark:border-[#344050] dark:bg-[#171d26]" role="status" aria-live="polite" dir="rtl">
                     <RefreshCw className="h-5 w-5 shrink-0 text-[#155aa6]" />
                     <span className="min-w-0 flex-1 text-xs font-black text-slate-700 dark:text-[#e6ebf2]">نسخهٔ تازه آماده است.</span>
@@ -324,7 +324,7 @@ export function PwaProvider({ children, releaseSha }: { children: ReactNode; rel
                     <button type="button" onClick={() => setUpdateNoticeDismissed(true)} className="rounded-xl text-slate-500" aria-label="بعداً"><X className="h-5 w-5" /></button>
                 </div>
             )}
-            {iosInstallHint && (
+            {showActionCards && iosInstallHint && (
                 <div className="pwa-action-card fixed bottom-[calc(env(safe-area-inset-bottom)+16px)] left-3 right-3 z-[1190] mx-auto flex max-w-[400px] items-center gap-2 rounded-[22px] border border-[#d5e1ef] bg-white p-3 text-right shadow-2xl dark:border-[#344050] dark:bg-[#171d26]" role="status" dir="rtl">
                     <Download className="h-5 w-5 shrink-0 text-[#155aa6]" />
                     <span className="min-w-0 flex-1 text-xs font-bold leading-5 text-slate-700 dark:text-[#e6ebf2]">برای نصب در Safari، Share و سپس Add to Home Screen را بزن.</span>

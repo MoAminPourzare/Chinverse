@@ -244,6 +244,21 @@ html[data-keyboard="open"] .app-scroll {
   backface-visibility: hidden;
 }
 
+/* A conversation owns its scrolling; the route wrappers fill the app frame. */
+.app-scroll[data-scroll-mode="conversation"],
+.app-scroll[data-scroll-mode="conversation"] > .route-stage,
+.app-scroll[data-scroll-mode="conversation"] > .route-stage > .route-panel {
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+html[data-keyboard="open"] .app-scroll[data-scroll-mode="conversation"] {
+  padding-bottom: 0 !important;
+}
+
 .route-panel[data-phase="enter"] {
   position: relative;
   z-index: 1;

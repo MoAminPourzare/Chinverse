@@ -35,18 +35,36 @@ export default function ChatRoomPage() {
     const [otherUser, setOtherUser] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesScrollRef = useRef<HTMLElement>(null);
+    const followsLatestRef = useRef(true);
+    const forceLatestRef = useRef(true);
+    const messagesHeightRef = useRef(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const lastMessageIdRef = useRef<number>(0);
     const socketRef = useRef<WebSocket | null>(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    const scrollToBottom = useCallback(() => {
+        const container = messagesScrollRef.current;
+        container?.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
+    }, []);
 
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        if (!isLoading && (forceLatestRef.current || followsLatestRef.current)) {
+            forceLatestRef.current = false;
+            scrollToBottom();
+        }
+    }, [messages, isLoading, scrollToBottom]);
+
+    useEffect(() => {
+        const container = messagesScrollRef.current;
+        if (!container) return;
+        const observer = new ResizeObserver(() => {
+            messagesHeightRef.current = container.clientHeight;
+            if (followsLatestRef.current) scrollToBottom();
+        });
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [scrollToBottom]);
 
     useEffect(() => {
         lastMessageIdRef.current = messages.reduce((maxId, message) => Math.max(maxId, message.id), 0);
@@ -115,6 +133,8 @@ export default function ChatRoomPage() {
 
     useEffect(() => {
         lastMessageIdRef.current = 0;
+        followsLatestRef.current = true;
+        forceLatestRef.current = true;
         setMessages([]);
         setOtherUserOnline(null);
         setHistoryReady(false);
@@ -345,6 +365,8 @@ export default function ChatRoomPage() {
                 receiver_id: userId,
                 content: messageContent,
             });
+            followsLatestRef.current = true;
+            forceLatestRef.current = true;
             appendMessages([sent]);
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -352,7 +374,7 @@ export default function ChatRoomPage() {
             setNewMessage(messageContent);
         } finally {
             setIsSending(false);
-            inputRef.current?.focus();
+            inputRef.current?.focus({ preventScroll: true });
         }
     };
 
@@ -383,7 +405,7 @@ export default function ChatRoomPage() {
         isLoading ? 'در حال بارگذاری…' : otherUserOnline === true ? 'آنلاین' : otherUserOnline === false ? 'آفلاین' : 'وضعیت حضور نامشخص';
 
     return (
-        <div className="flex h-full min-h-full flex-col bg-[#f7f8fa]" dir="rtl">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f7f8fa]" dir="rtl">
             <header className="shrink-0 border-b border-[#dfe3ea] bg-[#f0f2f5] px-5 pb-3 pt-5">
                 <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3" dir="ltr">
                     <SafeBackButton fallback="/chat" className="justify-self-end" />
@@ -408,7 +430,17 @@ export default function ChatRoomPage() {
                 </div>
             </header>
 
-            <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <main
+                ref={messagesScrollRef}
+                aria-label="پیام‌های گفتگو"
+                onScroll={(event) => {
+                    const container = event.currentTarget;
+                    // Resizing the viewport can fire scroll before ResizeObserver.
+                    if (container.clientHeight !== messagesHeightRef.current) return;
+                    followsLatestRef.current = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+                }}
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+            >
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
@@ -467,7 +499,7 @@ export default function ChatRoomPage() {
                                                             : 'rounded-tl-[7px] border border-slate-100 bg-white text-slate-800',
                                                     )}
                                                 >
-                                                    <p className={cn("whitespace-pre-wrap", getTextAlign(message.content))} {...getDirectionalTextProps(message.content)}>{message.content}</p>
+                                                    <p className={cn("whitespace-pre-wrap [overflow-wrap:anywhere]", getTextAlign(message.content))} {...getDirectionalTextProps(message.content)}>{message.content}</p>
                                                     <div
                                                         className={cn(
                                                             'mt-1 flex items-center gap-1 text-[10px]',
@@ -484,16 +516,16 @@ export default function ChatRoomPage() {
                                 </div>
                             </div>
                         ))}
-                        <div ref={messagesEndRef} />
                     </div>
                 )}
             </main>
 
-            <footer className="shrink-0 border-t border-[#e3e7ee] bg-[#f7f8fa] px-4 pb-5 pt-3">
-                <div className="flex items-center gap-2 rounded-[24px] border border-[#d9dee7] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.06)] focus-within:border-[#155aa6] focus-within:ring-4 focus-within:ring-[#155aa6]/10">
+            <footer className="shrink-0 border-t border-[#e3e7ee] bg-[#f7f8fa] px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
+                <div className="flex items-center gap-2 rounded-[26px] border border-[#d9dee7] bg-white p-1.5 shadow-sm focus-within:border-[#155aa6] focus-within:ring-2 focus-within:ring-[#155aa6]/10">
                     <input
                         ref={inputRef}
                         type="text"
+                        aria-label="پیام"
                         value={newMessage}
                         dir="auto"
                         onChange={(event) => {
@@ -502,13 +534,13 @@ export default function ChatRoomPage() {
                         }}
                         onKeyDown={(event) => event.key === 'Enter' && !event.shiftKey && handleSend()}
                         placeholder="پیام خود را بنویس"
-                        className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                        className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-base text-slate-800 outline-none focus:outline-none focus-visible:outline-none placeholder:text-sm placeholder:text-slate-400"
                     />
                     <button
                         type="button"
                         onClick={handleSend}
                         disabled={!newMessage.trim() || isSending}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-[#155aa6] text-white shadow-[0_8px_14px_rgba(21,90,166,0.24)] transition hover:bg-[#0f4f96] focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#155aa6] text-white transition hover:bg-[#0f4f96] focus:outline-none focus:ring-4 focus:ring-[#155aa6]/20 disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label="ارسال پیام"
                     >
                         {isSending ? (

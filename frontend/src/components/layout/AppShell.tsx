@@ -32,26 +32,27 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
     const pathname = usePathname();
     const scrollRef = useRef<HTMLDivElement>(null);
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-    const showSupportButton = pathname === "/chat" || pathname.startsWith("/chat/");
+    const isChatRoom = pathname.startsWith("/chat/");
+    const showSupportButton = pathname === "/chat";
 
     useEffect(() => {
         scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }, [pathname]);
 
     return (
-        <PwaProvider releaseSha={releaseSha}>
+        <PwaProvider releaseSha={releaseSha} showActionCards={!isChatRoom}>
             <div className="app-viewport">
                 <div className="app-frame">
                     <ThemeController />
                     <MobileUxController />
                     <NotificationToaster />
-                    <div ref={scrollRef} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
+                    <div ref={scrollRef} data-scroll-mode={isChatRoom ? "conversation" : undefined} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
                         <RouteTransition>{children}</RouteTransition>
                     </div>
                     {showSupportButton && (
                         <Link
                             href="/support"
-                            className={`app-support-button absolute ${pathname === "/chat" ? "bottom-[calc(env(safe-area-inset-bottom)+24px)]" : "bottom-[calc(env(safe-area-inset-bottom)+92px)]"} right-[max(1.25rem,env(safe-area-inset-right))] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]`}
+                            className="app-support-button absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] right-[max(1.25rem,env(safe-area-inset-right))] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
                             aria-label="پشتیبانی"
                         >
                             <Headphones className="h-6 w-6" />
