@@ -45,6 +45,42 @@ test("questions and answers remain after reload, including full question text", 
     expect(answers).toHaveLength(1);
 });
 
+test("a short question appears once when reading and adding answers", async ({ page }, testInfo) => {
+    const text = "زبان چینی سخته؟";
+    const question = { id: 51, title: text, content: ` ${text} `, author_user_id: 2,
+        author: { id: 2, display_name: "زبان‌آموز" }, created_at: firstArticle.created_at };
+    const answers = [{ id: 61, question_id: 51, author_user_id: 2, parent_id: null,
+        author: question.author, content: "با تمرین منظم آسان‌تر می‌شود.", created_at: firstArticle.created_at }];
+    await page.route("**/api/backend/**", async route => {
+        const pathname = new URL(route.request().url()).pathname;
+        let body: unknown = [];
+        if (pathname.endsWith("/auth/refresh")) body = { access_token: "question-test-session" };
+        else if (pathname.endsWith("/users/me")) body = { id: 1 };
+        else if (pathname.endsWith("/forum/questions")) body = [{ ...question, answers_count: answers.length }];
+        else if (pathname.endsWith("/questions/51/answers")) {
+            const answer = { ...answers[0], id: 62, author_user_id: 1,
+                author: { id: 1, display_name: "پاسخ‌دهنده" }, content: route.request().postDataJSON().content };
+            answers.push(answer);
+            body = answer;
+        } else if (pathname.endsWith("/questions/51")) body = { ...question, answers_count: answers.length, answers };
+        await route.fulfill({ json: body });
+    });
+    await page.goto("/community?section=questions");
+    await page.getByRole("heading", { name: text, exact: true }).click();
+    await expect(page.getByText(answers[0].content, { exact: true })).toBeVisible();
+    await expect(page.getByText(text, { exact: true })).toHaveCount(1);
+    await page.getByPlaceholder("پاسخت را بنویس").fill("از واژه‌های روزمره شروع کن.");
+    await page.getByRole("button", { name: "ارسال پاسخ", exact: true }).click();
+    await expect(page.getByText("از واژه‌های روزمره شروع کن.", { exact: true })).toBeVisible();
+    await expect(page.getByText(text, { exact: true })).toHaveCount(1);
+    await page.reload();
+    await page.getByRole("heading", { name: text, exact: true }).click();
+    await expect(page.getByText("از واژه‌های روزمره شروع کن.", { exact: true })).toBeVisible();
+    await expect(page.getByText(text, { exact: true })).toHaveCount(1);
+    expect(answers).toHaveLength(2);
+    await testInfo.attach("question-with-answers", { body: await page.screenshot(), contentType: "image/png" });
+});
+
 test("question errors stay inline with the draft and submission can be retried", async ({ page }) => {
     let failure = 403;
     let writes = 0;

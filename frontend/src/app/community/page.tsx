@@ -63,7 +63,6 @@ function CommunityHub() {
         </Link>
         <section className="mt-8" aria-labelledby="forum-title">
             <h2 id="forum-title" className="text-base font-black text-slate-900">تالار گفتگو</h2>
-            <p className="mt-1 text-xs leading-6 text-slate-500">بپرس، تجربه‌ها را بخوان و بهتر یاد بگیر.</p>
             <nav aria-label="بخش‌های تالار گفتگو" className="mb-6 mt-4 flex gap-5 border-b border-slate-200">
                 {[{ id: "questions", label: "سوالات شما", Icon: MessageCircle }, { id: "articles", label: "مقالات", Icon: BookOpen }].map(({ id, label, Icon }) => <Link key={id} href={`/community?section=${id}`} scroll={false} aria-current={activeSection === id ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 border-b-2 px-1 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#155aa6]", activeSection === id ? "border-[#155aa6] text-[#155aa6]" : "border-transparent text-slate-500 hover:text-[#155aa6]")}><Icon aria-hidden className="size-4" />{label}</Link>)}
             </nav>
@@ -412,6 +411,8 @@ function QuestionCard({
     onAnswerChange: (value: string) => void;
     onSubmitAnswer: () => void;
 }) {
+    const hasAdditionalContent = question.content.trim() !== question.title.trim();
+
     return (
         <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white text-right shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
             <div className="p-4">
@@ -424,7 +425,7 @@ function QuestionCard({
                             <p className={cn("text-xs font-black text-[#155aa6]", getTextAlign(question.author?.display_name))} {...getDirectionalTextProps(question.author?.display_name)}>{question.author?.display_name || "کاربر چین‌ورس"}</p>
                             <span className="text-[11px] text-slate-400">{formatDate(question.created_at)}</span>
                         </div>
-                        <h3 className={cn("mt-2 line-clamp-2 text-sm font-black leading-7 text-slate-900", getTextAlign(question.title))} {...getDirectionalTextProps(question.title)}>{question.title}</h3>
+                        <h3 className={cn("mt-2 text-sm font-black leading-7 text-slate-900", !isOpen && "line-clamp-2", getTextAlign(question.title))} {...getDirectionalTextProps(question.title)}>{question.title}</h3>
                         <div className="mt-3 flex items-center justify-between">
                             <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
                                 {question.answers_count} پاسخ
@@ -459,7 +460,7 @@ function QuestionCard({
 
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
-                    <p className={cn("whitespace-pre-wrap break-words text-sm leading-7 text-slate-700", getTextAlign(question.content))} {...getDirectionalTextProps(question.content)}>{question.content}</p>
+                    {hasAdditionalContent && <p className={cn("whitespace-pre-wrap break-words text-sm leading-7 text-slate-700", getTextAlign(question.content))} {...getDirectionalTextProps(question.content)}>{question.content}</p>}
                     {isEditing && (
                         <div className="mb-4 rounded-[18px] border border-[#d6e1ee] bg-white p-3 shadow-sm">
                             <textarea
@@ -492,7 +493,7 @@ function QuestionCard({
                             </div>
                         </div>
                     )}
-                    <div className="mt-4 space-y-3">
+                    <div className={cn("space-y-3", (hasAdditionalContent || isEditing) && "mt-4")}>
                         {detail ? (
                             detail.answers.length > 0 ? (
                                 detail.answers.map((answer) => <ThreadBubble key={answer.id} item={answer} />)

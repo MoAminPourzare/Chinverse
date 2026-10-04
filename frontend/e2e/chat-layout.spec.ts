@@ -24,7 +24,7 @@ async function expectContainedLayout(page: Page) {
 }
 
 for (const count of [0, 2, 50]) {
-    test(`chat with ${count} messages keeps its header and composer in place`, async ({ page }, testInfo) => {
+    test(`chat with ${count} messages keeps its header and composer in place`, async ({ page, browserName }, testInfo) => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         const messages = Array.from({ length: count }, (_, index) => message(index + 1, `پیام آزمایشی شماره ${index + 1}`));
         let incoming: ((content: string) => void) | undefined;
@@ -71,7 +71,35 @@ for (const count of [0, 2, 50]) {
             await expect(page.getByText('پیام تازه هنگام خواندن پیام‌های قبلی')).toHaveCount(1);
             await expect.poll(() => list.evaluate(el => el.scrollTop)).toBeLessThanOrEqual(2);
         }
-        await page.getByRole('textbox', { name: 'پیام', exact: true }).fill('پیام جدید برای بررسی چیدمان');
+        const draft = page.getByRole('textbox', { name: 'پیام', exact: true });
+        await draft.fill('پیام جدید برای بررسی چیدمان');
+        await expect(draft).toBeFocused();
+        const composerStyle = await draft.evaluate(input => {
+            const field = getComputedStyle(input);
+            const wrapper = input.parentElement!;
+            const bounds = input.getBoundingClientRect();
+            const container = wrapper.getBoundingClientRect();
+            return {
+                outlineStyle: field.outlineStyle,
+                fontSize: parseFloat(field.fontSize),
+                textHeight: parseFloat(field.lineHeight) + parseFloat(field.paddingTop) + parseFloat(field.paddingBottom),
+                height: input.clientHeight,
+                inset: Math.min(bounds.left - container.left, container.right - bounds.right),
+            };
+        });
+        expect(composerStyle.outlineStyle).toBe('none');
+        expect(composerStyle.fontSize).toBeGreaterThanOrEqual(16);
+        expect(composerStyle.textHeight).toBeLessThanOrEqual(composerStyle.height);
+        expect(composerStyle.inset).toBeGreaterThanOrEqual(6);
+        await expect(draft.locator('..')).toHaveCSS('border-color', 'rgb(21, 90, 166)');
+        await expectContainedLayout(page);
+        if (count === 2) await testInfo.attach('focused-message-composer', { body: await page.screenshot(), contentType: 'image/png' });
+        if (count === 0 && browserName === 'chromium') {
+            await page.emulateMedia({ forcedColors: 'active' });
+            await expect(draft.locator('..')).toHaveCSS('outline-style', 'solid');
+            await expect(draft.locator('..')).toHaveCSS('outline-width', '2px');
+            await page.emulateMedia({ forcedColors: 'none' });
+        }
         await page.getByRole('button', { name: 'ارسال پیام', exact: true }).click();
         await expect(page.getByText('پیام جدید برای بررسی چیدمان', { exact: true })).toBeInViewport();
         await expectContainedLayout(page);
