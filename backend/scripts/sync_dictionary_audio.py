@@ -5,11 +5,13 @@ from collections import Counter
 import hashlib
 import json
 import logging
+import os
 from pathlib import Path
 import re
 import shutil
 import tempfile
 from zipfile import ZipFile
+from uuid import uuid4
 
 from anyio import to_thread
 import httpx
@@ -98,7 +100,20 @@ def store_recording(entry):
         if file_digest(destination) != entry["sha256"]:
             raise ValueError("Stored recording checksum mismatch")
     else:
-        shutil.copyfile(entry["source_path"], destination)
+        temporary = destination.with_name(f".{filename}.{uuid4().hex}.partial")
+        try:
+            shutil.copyfile(entry["source_path"], temporary)
+            if file_digest(temporary) != entry["sha256"]:
+                raise ValueError("Recording changed during storage")
+            # Publish a complete file without replacing an immutable clip that
+            # another worker has already installed (or a player has open).
+            try:
+                os.link(temporary, destination)
+            except FileExistsError:
+                if file_digest(destination) != entry["sha256"]:
+                    raise ValueError("Stored recording checksum mismatch")
+        finally:
+            temporary.unlink(missing_ok=True)
     return f"/{key}"
 
 
@@ -128,8 +143,10 @@ async def import_batch(db, entries):
         async with semaphore:
             return await to_thread.run_sync(store_recording, entry)
 
-    urls = await asyncio.gather(*(upload(entry) for _, entry in eligible))
-    for (word, entry), url in zip(eligible, urls):
+    unique = {entry["sha256"]: entry for _, entry in eligible}
+    urls = dict(zip(unique, await asyncio.gather(*(upload(entry) for entry in unique.values()))))
+    for word, entry in eligible:
+        url = urls[entry["sha256"]]
         pending = bool(entry["review_reasons"])
         clip = DictionaryAudio(word_id=word.id, sha256=entry["sha256"], bundle_sha256=entry["bundle_sha256"], audio_url=url, pinyins=entry["pinyins"],
             review_reasons=entry["review_reasons"], voice=entry["voice"], duration_seconds=entry["duration_seconds"],

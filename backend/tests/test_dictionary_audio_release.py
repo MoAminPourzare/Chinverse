@@ -1,4 +1,6 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
+import time
 from zipfile import ZipFile
 
 import pytest
@@ -36,3 +38,27 @@ def test_bundle_rejects_traversal_corruption_and_stale_catalog(tmp_path, monkeyp
     result = release.extract_bundle(archive(), tmp_path / "unpacked", manifest)
     assert result[0]["bundle_sha256"] == "0" * 64
     assert file_digest(result[0]["source_path"]) == sha
+
+
+def test_concurrent_shared_recordings_never_expose_an_incomplete_file(tmp_path, monkeypatch):
+    source = tmp_path / "source.mp3"
+    data = b"isolated-shared-recording" * 5000
+    source.write_bytes(data)
+    sha = file_digest(source)
+    monkeypatch.setattr(release, "DICTIONARY_AUDIO_DIR", tmp_path / "published")
+    monkeypatch.setattr(release.settings, "FILE_STORAGE_MODE", "mounted")
+
+    def slow_copy(source_path, destination):
+        with open(destination, "wb") as output:
+            output.write(data[:100])
+            output.flush()
+            time.sleep(0.02)
+            output.write(data[100:])
+
+    monkeypatch.setattr(release.shutil, "copyfile", slow_copy)
+    entry = {"source_path": source, "sha256": sha}
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        urls = list(pool.map(lambda _: release.store_recording(entry), range(18)))
+    assert len(set(urls)) == 1
+    assert file_digest(tmp_path / "published" / f"{sha}.mp3") == sha
+    assert not list((tmp_path / "published").glob("*.partial"))
