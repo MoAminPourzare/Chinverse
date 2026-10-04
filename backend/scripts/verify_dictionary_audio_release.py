@@ -8,14 +8,72 @@ import sys
 import time
 
 import asyncpg
+import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.phase4_staging_fixtures import (  # noqa: E402
     build_verified_ssl_context,
     validate_and_normalize_database_url,
 )
+from scripts.dictionary_audio import read_catalog, reading_key, split_readings  # noqa: E402
 
 MANIFEST_PATH = Path(__file__).resolve().parents[1] / "data" / "dictionary-audio-release.json"
+STAGING_API = "https://moamin9-chinverse-api.hf.space/api/v1"
+
+
+def public_snapshot(words, catalog):
+    indexed = {word["chinese"]: word for word in words}
+    eligible = [entry for entry in catalog if not entry["review_reasons"]]
+    linked = 0
+    for entry in eligible:
+        word = indexed.get(entry["chinese"])
+        if word and word.get("audio_url") and reading_key(word.get("audio_pinyin") or "") in {
+            reading_key(pinyin) for pinyin in entry["pinyins"]
+        }:
+            linked += 1
+    present = sum(entry["chinese"] in indexed for entry in catalog)
+    changed = sum(
+        {reading_key(pinyin) for pinyin in split_readings(indexed[entry["chinese"]]["pinyin"])}
+        != {reading_key(pinyin) for pinyin in entry["pinyins"]}
+        for entry in catalog if entry["chinese"] in indexed
+    )
+    return {"scope": "public_dictionary_links", "full_receipt_count_verified": False,
+            "catalog_present": present, "catalog_expected": len(catalog), "changed_readings": changed,
+            "public_linked": linked, "public_expected": len(eligible),
+            "sensitive_catalog_words": len(catalog) - len(eligible)}
+
+
+async def verify_public(wait_seconds):
+    catalog, digest = read_catalog()
+    manifest = json.loads(MANIFEST_PATH.read_text("utf-8-sig"))
+    if manifest["catalog_sha256"] != digest or manifest["word_count"] != len(catalog):
+        raise RuntimeError("The public verification catalog differs from the pinned release.")
+    deadline = time.monotonic() + wait_seconds
+    async with httpx.AsyncClient(timeout=30) as client:
+        while True:
+            words = []
+            # Search is public; whitespace selects all published words. Keep
+            # requests sequential and bound pagination even if the API drifts.
+            for page in range(500):
+                response = await client.get(f"{STAGING_API}/vocabulary/",
+                                            params={"q": " ", "skip": page * 100, "limit": 100})
+                response.raise_for_status()
+                batch = response.json()
+                if not isinstance(batch, list) or len(batch) > 100:
+                    raise RuntimeError("Unexpected public vocabulary response.")
+                words.extend(batch)
+                if len(batch) < 100:
+                    break
+            else:
+                raise RuntimeError("Public vocabulary pagination exceeded its bound.")
+            result = public_snapshot(words, catalog)
+            print(json.dumps(result), flush=True)
+            if result["catalog_present"] == len(catalog) and not result["changed_readings"] \
+                    and result["public_linked"] == result["public_expected"]:
+                return result
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Public dictionary audio links are not complete.")
+            await asyncio.sleep(min(30, max(0, deadline - time.monotonic())))
 
 
 async def snapshot(connection, bundle_sha):
@@ -77,9 +135,10 @@ async def main(wait_seconds):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wait-seconds", type=int, default=1800, choices=range(0, 1801), metavar="0..1800")
+    parser.add_argument("--public", action="store_true", help="Verify public links when no staging DB secret is configured")
     args = parser.parse_args()
     try:
-        asyncio.run(main(args.wait_seconds))
+        asyncio.run(verify_public(args.wait_seconds) if args.public else main(args.wait_seconds))
     except Exception as error:
         print(f"Read-only dictionary audio verification failed ({type(error).__name__}).", file=sys.stderr)
         sys.exit(1)

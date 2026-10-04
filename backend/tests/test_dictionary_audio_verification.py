@@ -58,3 +58,20 @@ async def test_snapshot_uses_only_reads_in_a_readonly_transaction():
 
     result = await verification.snapshot(Connection(), "bundle")
     assert result["imported"] == 3
+
+
+def test_public_verification_never_claims_to_observe_pending_recordings():
+    catalog = [{"chinese": "你好", "pinyins": ["nǐ hǎo"], "review_reasons": []},
+               {"chinese": "只", "pinyins": ["zhī", "zhǐ"], "review_reasons": ["multiple_readings"]}]
+    words = [{"chinese": "你好", "pinyin": "nǐ hǎo", "audio_pinyin": "nǐ hǎo", "audio_url": "https://cdn.invalid/clip.mp3"},
+             {"chinese": "只", "pinyin": "zhī/zhǐ", "audio_url": None}]
+    result = verification.public_snapshot(words, catalog)
+    assert result["public_linked"] == result["public_expected"] == 1
+    assert result["sensitive_catalog_words"] == 1
+    assert result["full_receipt_count_verified"] is False
+    assert result["changed_readings"] == 0
+    words[0]["audio_pinyin"] = "wrong"
+    words[1]["pinyin"] = "changed"
+    result = verification.public_snapshot(words, catalog)
+    assert result["public_linked"] == 0
+    assert result["changed_readings"] == 1

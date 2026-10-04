@@ -28,6 +28,9 @@ https://chinverse-git-codex-phase-8-beta-release-death-stroke.vercel.app
 بررسی تعداد رکوردها در workflow مربوط به staging، پس از تأیید نسخهٔ دقیق سرور انجام می‌شود.
 ابزار `backend/scripts/verify_dictionary_audio_release.py` فقط endpoint از قبل تأییدشدهٔ Neon
 را می‌پذیرد و در تراکنش فقط‌خواندنی تعداد رکوردهای همین بسته و اتصال صداها را بررسی می‌کند.
+اگر secret اتصال staging تنظیم نشده باشد، ابزار فقط حضور همهٔ واژه‌های کاتالوگ و اتصال
+صداهای عادی در API عمومی را بررسی می‌کند. این نتیجه جای شمارش رکوردهای حساس در پنل ادمین
+را نمی‌گیرد و در خروجی با `full_receipt_count_verified: false` مشخص می‌شود.
 
 ## مرحلهٔ ۲: ویدیوی نمونه و زیرنویس روی آروان
 
