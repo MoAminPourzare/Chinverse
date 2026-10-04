@@ -1,53 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { exploreSections, type ExploreItem } from "@/components/explore/exploreData";
+import { ChevronLeft } from "lucide-react";
+import { exploreSections } from "@/components/explore/exploreData";
+import ExploreItemLink from "@/components/explore/ExploreItemLink";
 
 export default function ExplorePage() {
     return (
-        <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="motion-list mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
+        <div className="min-h-full bg-[var(--app-canvas)] pb-8" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-6">
+                <header className="px-1">
+                    <h1 className="text-[24px] font-bold leading-9 text-[var(--app-text)]">کاوش</h1>
+                    <p className="mt-1 text-[13px] leading-6 text-[var(--app-text-muted)]">درس‌ها و موضوع‌های مورد علاقه‌ات را پیدا کن.</p>
+                </header>
                 {exploreSections.map((section) => (
-                    <section key={section.id} className="rounded-[24px] border border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
-                        <div className="mb-3 flex items-center justify-between gap-3">
+                    <section key={section.id} aria-labelledby={`explore-${section.id}`} className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5">
+                        <div className="mb-3 flex items-center justify-between gap-2 px-1">
                             <div className="min-w-0">
-                                <h2 className="text-[16px] font-black leading-7 text-[#25272d]">{section.title}</h2>
+                                <h2 id={`explore-${section.id}`} className="text-[16px] font-bold leading-7 text-[var(--app-text)]">{section.title}</h2>
+                                <p className="text-[12px] leading-6 text-[var(--app-text-muted)]">{section.items.length.toLocaleString("fa-IR")} موضوع</p>
                             </div>
                             <Link
                                 href={`/explore/groups/${section.id}`}
-                                className="shrink-0 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-[11px] font-black text-[#155aa6] shadow-sm transition hover:bg-[#eef6ff]"
+                                aria-label={`مشاهده همهٔ ${section.title}`}
+                                className="flex shrink-0 items-center gap-1 rounded-xl px-1.5 py-2 text-[12px] font-semibold text-[var(--app-primary)] transition-colors hover:bg-[var(--app-primary-soft)]"
                             >
                                 مشاهده همه
+                                <ChevronLeft size={15} aria-hidden="true" />
                             </Link>
                         </div>
 
-                        <div className="motion-list grid grid-cols-2 gap-2">
+                        <ul className="space-y-2">
                             {section.items.slice(0, 4).map((item) => (
-                                <ExploreCompactCard key={item.id} item={item} />
+                                <li key={item.id}><ExploreItemLink item={item} /></li>
                             ))}
-                        </div>
+                        </ul>
                     </section>
                 ))}
             </main>
         </div>
-    );
-}
-
-function ExploreCompactCard({ item }: { item: ExploreItem }) {
-    const Icon = item.icon;
-
-    return (
-        <Link href={item.href} className="group min-w-0">
-            <div className="flex h-[74px] items-center gap-2 rounded-[18px] border border-[#dfe6f0] bg-[#f8fbff] px-3 shadow-[0_5px_16px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-[#c7d8ea] hover:bg-white">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#155aa6] text-white shadow-[0_10px_18px_rgba(21,90,166,0.24)]">
-                    <Icon size={20} strokeWidth={2.3} />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-2 text-[13px] font-black leading-5 text-slate-900">{item.title}</h3>
-                </div>
-                <ArrowLeft size={15} className="shrink-0 text-slate-300 transition group-hover:text-[#155aa6]" />
-            </div>
-        </Link>
     );
 }
