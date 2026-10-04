@@ -16,7 +16,7 @@ from app.models.dictionary import DictionaryWord
 from scripts.dictionary_audio import file_digest, reading_key, split_readings
 
 
-def publication_entries(directory, approvals=None, allow_partial=False):
+def publication_entries(directory, approvals=None, allow_partial=False, *, include_pending=False):
     directory = Path(directory).resolve()
     index = json.loads((directory / "index.json").read_text(encoding="utf-8"))
     if index.get("version") != 1:
@@ -55,8 +55,10 @@ def publication_entries(directory, approvals=None, allow_partial=False):
             reading_key(approval.get("approved_pinyin", "")) in {reading_key(p) for p in word["pinyins"]})
         if word.get("review_reasons") and not verified:
             counts["pending_pronunciation_review"] += 1
-            continue
-        eligible.append({**word, "source_path": source})
+            if not include_pending:
+                continue
+        eligible.append({**word, "source_path": source,
+                         "approved_pinyin": approval["approved_pinyin"] if verified else None})
     counts["eligible"] = len(eligible)
     return eligible, counts
 
@@ -104,7 +106,8 @@ async def publish_audio(db, entries, *, dry_run=False):
         result = await db.execute(update(DictionaryWord).where(
             DictionaryWord.id == word.id, DictionaryWord.pinyin == word.pinyin,
             DictionaryWord.status == "published", DictionaryWord.audio_url == word.audio_url,
-        ).values(audio_url=stored.public_url).execution_options(synchronize_session=False))
+        ).values(audio_url=stored.public_url, audio_pinyin=entry.get("approved_pinyin") or entry["pinyins"][0])
+          .execution_options(synchronize_session=False))
         counts["published" if result.rowcount == 1 else "changed_during_publication"] += 1
     return counts
 

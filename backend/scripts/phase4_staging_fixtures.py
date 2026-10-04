@@ -95,6 +95,7 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("content_reports", "assigned_to", "SET NULL"),
     ("content_reports", "reporter_id", "SET NULL"),
     ("courses", "published_by_id", "SET NULL"),
+    ("dictionary_audio", "reviewed_by", "SET NULL"),
     ("forum_answers", "author_user_id", "NO ACTION"),
     ("forum_questions", "author_user_id", "NO ACTION"),
     ("legal_acceptances", "user_id", "CASCADE"),

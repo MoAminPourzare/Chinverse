@@ -50,6 +50,7 @@ class VocabularyWordResponse(BaseModel):
     chinese: str
     pinyin: str
     audio_url: Optional[str] = None
+    audio_pinyin: Optional[str] = None
     level: str
     hsk_level: Optional[int] = None
     source: str = "manual"

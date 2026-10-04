@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust, beta
 from app.core.config import settings
 from app.api.v1.endpoints import collections
+from app.api.v1.endpoints import dictionary_audio
 
 api_router = APIRouter()
 
@@ -11,6 +12,7 @@ api_router.include_router(trust.router)
 
 # ===== ADMIN =====
 api_router.include_router(admin.router, tags=["admin"])
+api_router.include_router(dictionary_audio.router)
 
 # ===== FEED =====
 api_router.include_router(feed.router, prefix="/feed", tags=["feed"])

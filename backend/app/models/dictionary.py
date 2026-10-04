@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Optional, List
-from sqlalchemy import String, ForeignKey, Text, BigInteger, Integer, Index
+from sqlalchemy import String, ForeignKey, Text, BigInteger, Integer, Index, JSON, DateTime, CheckConstraint
+from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -18,6 +19,7 @@ class DictionaryWord(Base, TimestampMixin):
     chinese: Mapped[str] = mapped_column(String, nullable=False)
     pinyin: Mapped[str] = mapped_column(String, index=True, nullable=False)
     audio_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    audio_pinyin: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     level: Mapped[str] = mapped_column(String, index=True, nullable=False) # HSK1, HSK2, etc.
     hsk_level: Mapped[Optional[int]] = mapped_column(Integer, index=True, nullable=True)
     source: Mapped[str] = mapped_column(String, default="manual", nullable=False)
@@ -44,6 +46,29 @@ class DictionaryWord(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="WordExample.sense_order, WordExample.id",
     )
+
+
+class DictionaryAudio(Base, TimestampMixin):
+    __tablename__ = "dictionary_audio"
+    __table_args__ = (
+        CheckConstraint("status IN ('ready', 'pending', 'approved', 'rejected')", name="ck_dictionary_audio_status"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    word_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("dictionary_words.id", ondelete="CASCADE"), unique=True, nullable=False,
+    )
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    bundle_sha256: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    audio_url: Mapped[str] = mapped_column(String, nullable=False)
+    pinyins: Mapped[List[str]] = mapped_column(JSON, nullable=False)
+    review_reasons: Mapped[List[str]] = mapped_column(JSON, nullable=False)
+    voice: Mapped[str] = mapped_column(String, nullable=False)
+    duration_seconds: Mapped[float] = mapped_column(nullable=False)
+    status: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
+    approved_pinyin: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reviewed_by: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"))
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class WordDefinition(Base, TimestampMixin):

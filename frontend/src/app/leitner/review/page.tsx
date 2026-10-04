@@ -51,6 +51,7 @@ interface Word {
     chinese: string;
     pinyin: string;
     audio_url?: string;
+    audio_pinyin?: string;
     persian_meaning?: string;
     chinese_meaning?: string;
     composition?: string;
@@ -320,6 +321,9 @@ export default function LeitnerReviewPage() {
                                     <p className="font-latin mt-1 text-sm font-bold text-slate-400" dir="ltr">
                                         {currentCard.word.pinyin}
                                     </p>
+                                )}
+                                {currentCard.word.audio_url && currentCard.word.audio_pinyin && /[/|,，;；]/.test(currentCard.word.pinyin) && (
+                                    <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{currentCard.word.audio_pinyin}</span></p>
                                 )}
                             </div>
 

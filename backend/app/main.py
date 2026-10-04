@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
@@ -40,9 +41,19 @@ deployed_release_sha = resolve_release_sha(settings.RELEASE_SHA)
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await start_chat_realtime()
+    audio_import = None
+    if settings.ENVIRONMENT.lower() in {"production", "prod", "staging"} and settings.USES_OBJECT_STORAGE:
+        from scripts.sync_dictionary_audio import run_background_import
+        audio_import = asyncio.create_task(run_background_import())
     try:
         yield
     finally:
+        if audio_import:
+            audio_import.cancel()
+            try:
+                await audio_import
+            except asyncio.CancelledError:
+                pass
         await stop_chat_realtime()
         await engine.dispose()
         sentry_sdk.flush(timeout=2.0)

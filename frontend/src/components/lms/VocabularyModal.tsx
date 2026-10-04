@@ -36,6 +36,7 @@ interface VocabularyWord {
     chinese: string;
     pinyin: string;
     audio_url?: string | null;
+    audio_pinyin?: string | null;
     level?: string;
     hsk_level?: number | null;
     source?: string;
@@ -244,6 +245,12 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     <p className="font-latin text-base text-gray-600 sm:text-lg" dir="ltr" lang="en">
                         {word.pinyin}
                     </p>
+                    {word.audio_url && word.audio_pinyin && /[/|,，;；]/.test(word.pinyin) && (
+                        <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{word.audio_pinyin}</span></p>
+                    )}
+                    {word.audio_url && word.audio_pinyin && /[/|,，;；]/.test(word.pinyin) && (
+                        <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{word.audio_pinyin}</span></p>
+                    )}
                     {(word.hsk_level || word.level) && (
                         <span className="mt-3 inline-flex rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-bold text-[#155aa6]">
                             {dictionaryLevelLabel(word)}

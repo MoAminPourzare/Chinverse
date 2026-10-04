@@ -692,6 +692,8 @@ async def _upsert_dictionary_word(
         db.add(word)
         await db.flush()
 
+    if word.audio_url != _clean_optional(payload.audio_url) or word.pinyin != payload.pinyin.strip():
+        word.audio_pinyin = None
     word.chinese = chinese
     word.pinyin = payload.pinyin.strip()
     word.audio_url = _clean_optional(payload.audio_url)
@@ -1086,6 +1088,8 @@ async def admin_update_dictionary_word(
 ) -> Any:
     _ = current_user
     word = await _get_word(db, word_id)
+    if word.audio_url != _clean_optional(payload.audio_url) or word.pinyin != payload.pinyin.strip():
+        word.audio_pinyin = None
     word.chinese = payload.chinese.strip()
     word.pinyin = payload.pinyin.strip()
     word.audio_url = _clean_optional(payload.audio_url)

@@ -14,6 +14,7 @@ from app.models.settings import UserPreference, UserLanguageSetting
 from app.models.media import MediaAccessAuditEvent, MediaAsset
 from app.models.dictionary import (
     DictionaryWord,
+    DictionaryAudio,
     WordCollocation,
     WordDefinition,
     WordExample,

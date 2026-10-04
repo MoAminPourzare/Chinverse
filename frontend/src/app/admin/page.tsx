@@ -1522,6 +1522,9 @@ function DictionaryTab(props: {
             <div className="space-y-4">
                 <Surface className={cn(panelClass, "p-4")}>
                     <PanelTitle icon={<FileText size={18} />} title="بازبینی کلمات" subtitle="کلمات دیکشنری را ببین، فیلدهای خالی را پیدا کن و برای اصلاح انتخاب کن." />
+                    <Link href="/admin/dictionary-audio" className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#eef6ff] px-4 text-sm font-bold text-[#155aa6]">
+                        <Headphones size={18} /> شنیدن و بازبینی صدای واژه‌ها
+                    </Link>
                     <div className="mt-4 grid gap-2 sm:grid-cols-4">
                         <DictionaryReviewStat label="واژه‌های بارگذاری‌شده" value={stats.total} tone="blue" />
                         <DictionaryReviewStat label="کامل" value={stats.complete} tone="green" />
