@@ -1,5 +1,5 @@
-from typing import Any, List
-from fastapi import APIRouter, Depends
+from typing import Any, List, Literal
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 from sqlalchemy.orm import selectinload
@@ -7,9 +7,10 @@ from sqlalchemy.orm import selectinload
 from app.api import deps
 from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
-from app.models.user import User, UserGalleryItem, UserStatus
+from app.models.user import User, UserGalleryItem
 from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
+from app.services.showcase_visibility import showcase_user_filters
 
 router = APIRouter()
 
@@ -63,6 +64,7 @@ def _provider_info(item: UserGalleryItem | UserService) -> dict[str, Any] | None
 async def get_feed(
     db: AsyncSession = Depends(deps.get_db),
     pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
+    kind: Literal["gallery", "service"] | None = Query(default=None),
 ) -> Any:
     """
     Get unified activity feed combining gallery items and services.
@@ -71,26 +73,30 @@ async def get_feed(
     # Fetch latest gallery items with user info
     fetch_limit = max(pagination.skip + pagination.limit, pagination.limit)
 
-    gallery_result = await db.execute(
-        select(UserGalleryItem)
-        .join(User, User.id == UserGalleryItem.user_id)
-        .options(selectinload(UserGalleryItem.user).selectinload(User.profile))
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
-        .order_by(desc(UserGalleryItem.created_at))
-        .limit(fetch_limit)
-    )
-    gallery_items = gallery_result.scalars().all()
+    gallery_items = []
+    if kind != "service":
+        gallery_result = await db.execute(
+            select(UserGalleryItem)
+            .join(User, User.id == UserGalleryItem.user_id)
+            .options(selectinload(UserGalleryItem.user).selectinload(User.profile))
+            .where(*showcase_user_filters())
+            .order_by(desc(UserGalleryItem.created_at), desc(UserGalleryItem.id))
+            .limit(fetch_limit)
+        )
+        gallery_items = gallery_result.scalars().all()
 
     # Fetch latest services with user info
-    service_result = await db.execute(
-        select(UserService)
-        .join(User, User.id == UserService.user_id)
-        .options(selectinload(UserService.user).selectinload(User.profile))
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
-        .order_by(desc(UserService.created_at))
-        .limit(fetch_limit)
-    )
-    services = service_result.scalars().all()
+    services = []
+    if kind != "gallery":
+        service_result = await db.execute(
+            select(UserService)
+            .join(User, User.id == UserService.user_id)
+            .options(selectinload(UserService.user).selectinload(User.profile))
+            .where(*showcase_user_filters())
+            .order_by(desc(UserService.created_at), desc(UserService.id))
+            .limit(fetch_limit)
+        )
+        services = service_result.scalars().all()
     gallery_counts = await _read_engagement_counts(db, "post", [item.id for item in gallery_items])
     service_counts = await _read_engagement_counts(db, "service", [service.id for service in services])
 
@@ -133,7 +139,7 @@ async def get_feed(
 
     # Sort by created_at descending
     feed_items.sort(
-        key=lambda x: x["created_at"] or "",
+        key=lambda x: (x["created_at"] or "", x["type"], x["data"]["id"]),
         reverse=True
     )
 
@@ -152,8 +158,7 @@ async def get_post_detail(
         .options(selectinload(UserGalleryItem.user).selectinload(User.profile))
         .where(
             UserGalleryItem.id == post_id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *showcase_user_filters(),
         )
     )
     item = result.scalar_one_or_none()

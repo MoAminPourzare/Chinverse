@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.main import app
 from app.models.service import UserService
-from app.models.user import User, UserProfile, UserStatus
+from app.models.user import User, UserGalleryItem, UserProfile, UserStatus
 
 
 pytestmark = pytest.mark.integration
@@ -52,6 +52,11 @@ async def test_showcase_registration_service_details_and_visibility_policy(monke
             db.add(control_service)
             await db.flush()
             control_service_id = control_service.id
+            owner_post = UserGalleryItem(user_id=owner_id, image_url="/uploads/gallery/beta-owner.jpg", caption="پست کاربر بتا")
+            control_post = UserGalleryItem(user_id=control_id, image_url="/uploads/gallery/verified.jpg", caption="پست تأییدشده")
+            db.add_all([owner_post, control_post])
+            await db.flush()
+            owner_post_id, control_post_id = owner_post.id, control_post.id
             await db.commit()
 
         async def check_public_routes(visible):
@@ -62,10 +67,17 @@ async def test_showcase_registration_service_details_and_visibility_policy(monke
             assert (service_id in {item["id"] for item in services.json()}) is visible
             assert control_id in {item["id"] for item in users.json()}
             assert control_service_id in {item["id"] for item in services.json()}
+            feed = await client.get("/api/v1/feed?limit=100")
+            assert feed.status_code == 200, feed.text
+            feed_ids = {item["id"] for item in feed.json()}
+            assert (f"service_{service_id}" in feed_ids) is visible
+            assert (f"gallery_{owner_post_id}" in feed_ids) is visible
+            assert {f"service_{control_service_id}", f"gallery_{control_post_id}"} <= feed_ids
             for path in (
                 f"/api/v1/users/{owner_id}/public",
                 f"/api/v1/users/{owner_id}/services",
                 f"/api/v1/users/me/services/public/{service_id}",
+                f"/api/v1/feed/posts/{owner_post_id}",
             ):
                 response = await client.get(path)
                 assert response.status_code == (200 if visible else 404), response.text
@@ -75,6 +87,7 @@ async def test_showcase_registration_service_details_and_visibility_policy(monke
                 assert '"password_hash"' not in response.text
             assert email not in users.text + services.text
             assert '"phone"' not in users.text + services.text
+            assert email not in feed.text and '"phone"' not in feed.text
 
         for tier, required, visible in (
             ("staging", False, True), ("staging", True, False),
