@@ -134,16 +134,21 @@ test("article library opens the complete imported article and retains its select
 
 test("article load errors can be retried and signed-in comments survive reloading", async ({ page }) => {
     let offline = true;
+    let expired = false;
+    let refreshes = 0;
+    let writes = 0;
     const comments: unknown[] = [];
     await page.route("**/api/backend/**", async route => {
         const pathname = new URL(route.request().url()).pathname;
         let body: unknown = [];
         let status = 200;
-        if (pathname.endsWith("/auth/refresh")) body = { access_token: "test-article-token" };
-        else if (pathname.endsWith("/users/me")) body = { id: 1 };
+        if (pathname.endsWith("/auth/refresh")) { refreshes++; expired = false; body = { access_token: `test-article-token-${refreshes}` }; }
+        else if (pathname.endsWith("/users/me")) { status = expired ? 401 : 200; body = expired ? { detail: "Expired access token" } : { id: 1 }; }
         else if (pathname.endsWith("/comments") && route.request().method() === "POST") {
+            writes++;
+            status = expired ? 401 : 200;
             body = { id: 1, article_id: 71, author_user_id: 1, parent_id: null, content: route.request().postDataJSON().content, created_at: firstArticle.created_at, author: { id: 1, display_name: "زبان‌آموز", avatar_url: null } };
-            comments.push(body);
+            if (!expired) comments.push(body);
         } else if (pathname.includes("/forum/articles/")) {
             if (offline) { status = 503; body = { detail: "temporary outage" }; }
             else body = { ...firstArticle, comments_count: comments.length, comments };
@@ -155,9 +160,45 @@ test("article load errors can be retried and signed-in comments survive reloadin
     offline = false;
     await page.getByRole("button", { name: "تلاش دوباره" }).click();
     await page.getByLabel("دیدگاه شما").fill("این مقاله برای شروع دوباره مفید بود.");
+    expired = true;
     await page.getByRole("button", { name: "ثبت دیدگاه", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "دیدگاهت ثبت شد." })).toBeVisible();
     await expect(page.getByText("این مقاله برای شروع دوباره مفید بود.", { exact: true })).toBeVisible();
+    expect(refreshes).toBe(2);
+    expect(writes).toBe(1);
     await page.reload();
     await expect(page.getByText("این مقاله برای شروع دوباره مفید بود.", { exact: true })).toBeVisible();
+    expect(comments).toHaveLength(1);
+});
+
+test("a failed article comment keeps its draft and can be submitted again", async ({ page }) => {
+    let unavailable = true;
+    const comments: unknown[] = [];
+    await page.route("**/api/backend/**", async route => {
+        const pathname = new URL(route.request().url()).pathname;
+        let status = 200;
+        let body: unknown = [];
+        if (pathname.endsWith("/auth/refresh")) body = { access_token: "test-article-token" };
+        else if (pathname.endsWith("/users/me")) body = { id: 1 };
+        else if (pathname.endsWith("/comments") && route.request().method() === "POST") {
+            status = unavailable ? 503 : 200;
+            body = unavailable ? { detail: "temporary outage" } : { id: 1, article_id: 71, author_user_id: 1, parent_id: null, content: route.request().postDataJSON().content, created_at: firstArticle.created_at, author: null };
+            if (!unavailable) comments.push(body);
+        } else if (pathname.includes("/forum/articles/")) body = { ...firstArticle, comments_count: comments.length, comments };
+        await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+    });
+    await page.goto(`/articles/${source.slug}`);
+    const draft = page.getByLabel("دیدگاه شما");
+    await draft.fill("تجربهٔ من از تمرین روزانهٔ زبان چینی");
+    await page.getByRole("button", { name: "ثبت دیدگاه", exact: true }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "دیدگاه ثبت نشد" })).toBeVisible();
+    await expect(draft).toHaveValue("تجربهٔ من از تمرین روزانهٔ زبان چینی");
+    expect(comments).toHaveLength(0);
+    unavailable = false;
+    await page.getByRole("button", { name: "ثبت دیدگاه", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "دیدگاهت ثبت شد." })).toBeVisible();
+    await expect(draft).toHaveValue("");
+    await page.reload();
+    await expect(page.getByText("تجربهٔ من از تمرین روزانهٔ زبان چینی", { exact: true })).toBeVisible();
     expect(comments).toHaveLength(1);
 });

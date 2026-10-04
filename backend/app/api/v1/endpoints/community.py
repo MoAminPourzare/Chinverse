@@ -359,7 +359,7 @@ async def get_articles(
             func.count(ArticleComment.id).label("comments_count"),
         )
         .join(User, User.id == ArticleComment.author_user_id)
-        .where(User.status == UserStatus.ACTIVE, User.is_verified.is_(True))
+        .where(*forum_user_filters())
         .group_by(ArticleComment.article_id)
         .subquery()
     )
@@ -444,8 +444,7 @@ async def load_article_detail(db: AsyncSession, identifier):
         .options(selectinload(ArticleComment.author).selectinload(User.profile))
         .where(
             ArticleComment.article_id == article.id,
-            User.status == UserStatus.ACTIVE,
-            User.is_verified.is_(True),
+            *forum_user_filters(),
         )
         .order_by(ArticleComment.created_at.asc(), ArticleComment.id.asc())
     )

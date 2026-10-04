@@ -294,6 +294,70 @@ async def test_editorial_article_publication_is_idempotent_and_preserves_comment
 
 
 @pytest.mark.asyncio
+async def test_optional_beta_article_comments_persist_and_follow_account_visibility(monkeypatch):
+    from sqlalchemy import select
+    from app.models.social import Article, ArticleComment
+    from app.models.user import UserStatus
+    from scripts.sync_articles import publish_articles, read_catalog
+
+    monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "staging")
+    monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", False)
+    item = read_catalog()[0].model_copy(update={"slug": f"comment-test-{uuid4().hex}"})
+    async with SessionLocal.begin() as db:
+        await publish_articles(db, [item])
+        article_id = await db.scalar(select(Article.id).where(Article.slug == item.slug))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        user_id, headers = await authenticated_user(client)
+        async with SessionLocal.begin() as db:
+            user = await db.get(User, user_id)
+            user.is_verified = False
+        content = "این مقاله برای یادگیری زبان چینی مفید بود."
+        created = await client.post(f"/api/v1/community/forum/articles/{article_id}/comments",
+            headers=headers, json={"content": f"  {content}  "})
+        assert created.status_code == 200, created.text
+        comment_id = created.json()["id"]
+        assert created.json()["content"] == content
+        assert created.json()["author"]["id"] == user_id
+
+        for tier, required, visible in (
+            ("staging", False, True), ("staging", True, False),
+            ("production", False, False), ("local", False, False),
+        ):
+            monkeypatch.setattr(settings, "DEPLOYMENT_TIER", tier)
+            monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", required)
+            listing = await client.get("/api/v1/community/forum/articles?limit=100")
+            assert listing.status_code == 200, listing.text
+            saved = next(article for article in listing.json() if article["id"] == article_id)
+            assert saved["comments_count"] == int(visible)
+            for identifier in (str(article_id), f"by-slug/{item.slug}"):
+                detail = await client.get(f"/api/v1/community/forum/articles/{identifier}")
+                assert detail.status_code == 200, detail.text
+                assert detail.json()["comments_count"] == int(visible)
+                assert [comment["id"] for comment in detail.json()["comments"]] == ([comment_id] if visible else [])
+                if visible:
+                    assert detail.json()["comments"][0]["content"] == content
+            async with SessionLocal() as db:
+                saved_comment = await db.get(ArticleComment, comment_id)
+                assert saved_comment.body == content
+
+        monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "staging")
+        monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", False)
+        for user_status in (UserStatus.SUSPENDED, UserStatus.DELETED):
+            async with SessionLocal.begin() as db:
+                user = await db.get(User, user_id)
+                user.status = user_status
+            detail = await client.get(f"/api/v1/community/forum/articles/{article_id}")
+            assert detail.json()["comments_count"] == 0
+            assert detail.json()["comments"] == []
+            listing = await client.get("/api/v1/community/forum/articles?limit=100")
+            assert next(article for article in listing.json() if article["id"] == article_id)["comments_count"] == 0
+            rejected = await client.post(f"/api/v1/community/forum/articles/{article_id}/comments",
+                headers=headers, json={"content": "Inactive accounts cannot post"})
+            assert rejected.status_code == 403, rejected.text
+
+
+@pytest.mark.asyncio
 async def test_structured_articles_do_not_bypass_user_visibility_or_overwrite_authored_articles():
     from app.models.social import Article
     from scripts.sync_articles import publish_articles, read_catalog

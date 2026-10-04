@@ -171,6 +171,8 @@ export const communityService = {
     },
 
     async createArticleComment(articleId: number, data: ArticleCommentCreate): Promise<ArticleComment> {
+        // Renew an expired session through a safe read before submitting once.
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         const response = await api.post<ArticleComment>(`/community/forum/articles/${articleId}/comments`, data);
         return response.data;
     },

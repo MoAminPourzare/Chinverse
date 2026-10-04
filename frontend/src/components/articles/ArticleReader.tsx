@@ -19,6 +19,7 @@ export function ArticleReader({ identifier }: { identifier: string }) {
     const [loadError, setLoadError] = useState("");
     const [draft, setDraft] = useState("");
     const [commentError, setCommentError] = useState("");
+    const [commentSaved, setCommentSaved] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const requestId = useRef(0);
     const load = useCallback(async () => {
@@ -44,6 +45,7 @@ export function ArticleReader({ identifier }: { identifier: string }) {
     async function sendComment(event: React.FormEvent) {
         event.preventDefault();
         if (!article || submitting) return;
+        setCommentSaved(false);
         const content = draft.trim();
         const invalid = validationMessage(validateTextLength(content, "دیدگاه", { required: true, max: 8000 }));
         if (invalid) { setCommentError(invalid); return; }
@@ -53,6 +55,7 @@ export function ArticleReader({ identifier }: { identifier: string }) {
             const comment = await communityService.createArticleComment(article.id, { content });
             setArticle(previous => previous ? { ...previous, comments: [...previous.comments, comment], comments_count: previous.comments_count + 1 } : previous);
             setDraft("");
+            setCommentSaved(true);
         } catch (error) {
             const status = (error as { response?: { status?: number } }).response?.status;
             setCommentError(status === 403 ? "برای ثبت دیدگاه، تأیید حساب کاربری‌ات را کامل کن." : status === 401 ? "برای ثبت دیدگاه دوباره وارد حساب شو." : "دیدگاه ثبت نشد. لطفاً دوباره تلاش کن.");
@@ -91,8 +94,9 @@ export function ArticleReader({ identifier }: { identifier: string }) {
                 {!article.comments.length && <p className="mb-5 text-xs leading-7 text-slate-500">اولین دیدگاه دربارهٔ این مقاله را تو بنویس.</p>}
                 {currentUserId ? <form onSubmit={sendComment} className="mt-5 space-y-3">
                     <label htmlFor="article-comment" className="block text-xs font-bold text-slate-700">دیدگاه شما</label>
-                    <textarea id="article-comment" value={draft} onChange={event => setDraft(event.target.value)} maxLength={8000} rows={3} placeholder="تجربه یا نظرت را بنویس…" disabled={submitting} className="w-full resize-y rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-7 outline-none focus:border-[#155aa6] focus:ring-2 focus:ring-blue-100" />
+                    <textarea id="article-comment" value={draft} onChange={event => { setDraft(event.target.value); setCommentSaved(false); }} maxLength={8000} rows={3} placeholder="تجربه یا نظرت را بنویس…" disabled={submitting} className="w-full resize-y rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-7 outline-none focus:border-[#155aa6] focus:ring-2 focus:ring-blue-100" />
                     {commentError && <p role="alert" className="text-xs leading-6 text-red-600">{commentError}</p>}
+                    {commentSaved && <p role="status" className="text-xs leading-6 text-[#155aa6]">دیدگاهت ثبت شد.</p>}
                     <button type="submit" disabled={submitting || !draft.trim()} className="min-h-11 rounded-xl bg-[#155aa6] px-5 text-sm font-bold text-white disabled:opacity-50">{submitting ? "در حال ثبت…" : "ثبت دیدگاه"}</button>
                 </form> : <Link href={`/login?next=${encodeURIComponent(articleHref(article))}`} className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-blue-50 px-4 text-xs font-bold text-[#155aa6]">برای ثبت دیدگاه وارد حساب شو</Link>}
             </section>

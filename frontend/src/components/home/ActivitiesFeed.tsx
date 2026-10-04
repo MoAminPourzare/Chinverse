@@ -26,9 +26,7 @@ export default function ActivitiesFeed() {
     const [kind, setKind] = useState<FeedKind>("all");
     return (
         <section className="mt-6" aria-label="فعالیت‌های کاربران">
-            <h2 className="text-base font-black text-slate-950">تازه‌های چین‌ورس</h2>
-            <p className="mt-1 text-xs leading-6 text-slate-500">پست‌ها و خدمات تازهٔ اعضای جامعه</p>
-            <div className="mt-3 flex gap-2" aria-label="نوع فعالیت">
+            <div className="flex gap-2" aria-label="نوع فعالیت">
                 {filters.map(filter => (
                     <button key={filter.id} type="button" aria-pressed={kind === filter.id} onClick={() => setKind(filter.id)}
                         className={cn("min-h-10 rounded-full border px-5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]", kind === filter.id ? "border-[#155aa6] bg-[#155aa6] text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
