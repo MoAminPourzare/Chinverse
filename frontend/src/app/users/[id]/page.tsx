@@ -23,7 +23,7 @@ import PostViewerModal from "@/components/engagement/PostViewerModal";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
-import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import ProfileSocialLink from "@/components/profile/ProfileSocialLink";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { BackButton } from "@/components/ui/IconButton";
 import { getSocialActionError } from "@/lib/socialActionError";
@@ -189,28 +189,7 @@ export default function PublicProfilePage() {
                                 ✏️ شبکه‌های اجتماعی
                             </h3>
                             <div className="grid gap-2">
-                                {socials.map((social, idx) => {
-                                    const platform = getSocialPlatform(social.platform);
-                                    const Icon = platform.icon;
-                                    const href = getSocialProfileUrl(social.platform, social.handle);
-                                    const target = getSocialLinkTarget(social.platform);
-                                    const rel = getSocialLinkRel(social.platform);
-                                    return (
-                                        <a
-                                            key={idx}
-                                            href={href}
-                                            target={target}
-                                            rel={rel}
-                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]"
-                                        >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-sm">
-                                                <Icon className="h-4 w-4" />
-                                            </span>
-                                            <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
-                                            <span className="dir-ltr truncate text-left text-xs text-slate-500">{social.handle}</span>
-                                        </a>
-                                    );
-                                })}
+                                {socials.map((social, idx) => <ProfileSocialLink key={idx} platformId={social.platform} handle={social.handle} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]" />)}
                             </div>
                         </div>
                     )}
