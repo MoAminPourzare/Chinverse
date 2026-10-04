@@ -289,6 +289,54 @@ jobs:
             echo "- Published course catalog count: ${course_count} (an empty catalog validates the empty state, not signed playback)"
           } >>"$GITHUB_STEP_SUMMARY"
 
+  dictionary-audio-readonly:
+    name: Complete pinned dictionary audio import
+    needs: readonly-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: staging
+    env:
+      DATABASE_URL: ${{ secrets.PHASE2_STAGING_DATABASE_URL }}
+    steps:
+      - name: Checkout immutable release
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate required staging secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE"
+          test -n "${DATABASE_URL:-}" || { echo "Required staging database secret is missing" >&2; exit 1; }
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install poetry==2.4.1
+          poetry sync --with dev --no-root --no-interaction
+
+      - name: Verify complete import without changing records
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          poetry run python scripts/verify_dictionary_audio_release.py | tee "$RUNNER_TEMP/dictionary-audio-counts.jsonl"
+          {
+            echo "### Pinned dictionary audio release"
+            echo
+            echo "Read-only verification on the approved staging database; pending reviews are preserved."
+            echo '```json'
+            tail -n 1 "$RUNNER_TEMP/dictionary-audio-counts.jsonl"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   backend-stateful-smoke:
     name: Synthetic backend account, chat and RBAC smoke
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_backend_stateful }}
