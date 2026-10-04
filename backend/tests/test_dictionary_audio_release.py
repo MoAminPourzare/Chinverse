@@ -1,6 +1,9 @@
 import json
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import time
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from zipfile import ZipFile
 
 import pytest
@@ -62,3 +65,40 @@ def test_concurrent_shared_recordings_never_expose_an_incomplete_file(tmp_path, 
     assert len(set(urls)) == 1
     assert file_digest(tmp_path / "published" / f"{sha}.mp3") == sha
     assert not list((tmp_path / "published").glob("*.partial"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("environment,storage,starts", [
+    ("production", "mounted", True),
+    ("staging", "mounted", True),
+    ("production", "s3", True),
+    ("production", "local", False),
+    ("local", "mounted", False),
+])
+async def test_durable_release_storage_starts_audio_import_and_cancels_on_shutdown(
+    monkeypatch, environment, storage, starts,
+):
+    from app import main
+
+    started = asyncio.Event()
+    stopped = asyncio.Event()
+
+    async def importer():
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            stopped.set()
+
+    monkeypatch.setattr(main.settings, "ENVIRONMENT", environment)
+    monkeypatch.setattr(main.settings, "FILE_STORAGE_MODE", storage)
+    monkeypatch.setattr(release, "run_background_import", importer)
+    monkeypatch.setattr(main, "start_chat_realtime", AsyncMock())
+    monkeypatch.setattr(main, "stop_chat_realtime", AsyncMock())
+    disposal = AsyncMock()
+    monkeypatch.setattr(main, "engine", SimpleNamespace(dispose=disposal))
+    async with main.lifespan(main.app):
+        await asyncio.sleep(0)
+        assert started.is_set() == starts
+    assert stopped.is_set() == starts
+    disposal.assert_awaited_once()

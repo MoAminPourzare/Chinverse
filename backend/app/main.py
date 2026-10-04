@@ -42,7 +42,9 @@ deployed_release_sha = resolve_release_sha(settings.RELEASE_SHA)
 async def lifespan(_app: FastAPI):
     await start_chat_realtime()
     audio_import = None
-    if settings.ENVIRONMENT.lower() in {"production", "prod", "staging"} and settings.USES_OBJECT_STORAGE:
+    if settings.ENVIRONMENT.lower() in {"production", "prod", "staging"} and (
+        settings.USES_OBJECT_STORAGE or settings.USES_MOUNTED_STORAGE
+    ):
         from scripts.sync_dictionary_audio import run_background_import
         audio_import = asyncio.create_task(run_background_import())
     try:
