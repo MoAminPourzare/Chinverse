@@ -42,6 +42,16 @@ def test_bundle_rejects_traversal_corruption_and_stale_catalog(tmp_path, monkeyp
     assert result[0]["bundle_sha256"] == "0" * 64
     assert file_digest(result[0]["source_path"]) == sha
 
+    # Published Windows bundles keep their original checksum while the code
+    # pins the same catalog content with a checkout-independent fingerprint.
+    legacy_manifest = {**manifest, "catalog_sha256": "windows-digest",
+                       "canonical_catalog_sha256": "catalog-digest"}
+    release.extract_bundle(archive(catalog_sha="windows-digest"), tmp_path / "unpacked", legacy_manifest)
+    for changed in ({**legacy_manifest, "canonical_catalog_sha256": "changed-content"},
+                    {**legacy_manifest, "catalog_sha256": "different-bundle"}):
+        with pytest.raises(ValueError, match="catalog"):
+            release.extract_bundle(archive(catalog_sha="windows-digest"), tmp_path / "unpacked", changed)
+
 
 def test_concurrent_shared_recordings_never_expose_an_incomplete_file(tmp_path, monkeypatch):
     source = tmp_path / "source.mp3"

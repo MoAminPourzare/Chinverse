@@ -42,7 +42,7 @@ def extract_bundle(path: Path, directory: Path, manifest):
             raise ValueError("Unexpected audio bundle path")
         index = json.loads(archive.read("index.json"))
         catalog, catalog_sha = read_catalog()
-        if index.get("version") != 1 or index.get("catalog_sha256") != catalog_sha or manifest["catalog_sha256"] != catalog_sha:
+        if index.get("version") != 1 or index.get("catalog_sha256") != manifest["catalog_sha256"] or manifest.get("canonical_catalog_sha256", manifest["catalog_sha256"]) != catalog_sha:
             raise ValueError("Audio release differs from the current catalog")
         expected = {word["chinese"]: word for word in catalog}
         entries = index["words"]
@@ -171,7 +171,7 @@ async def sync_release():
         current = await db.scalar(select(func.count()).select_from(DictionaryAudio).where(
             DictionaryAudio.bundle_sha256 == manifest["sha256"]))
     _, digest = read_catalog()
-    if digest != manifest["catalog_sha256"]:
+    if digest != manifest.get("canonical_catalog_sha256", manifest["catalog_sha256"]):
         raise ValueError("Audio manifest is stale")
     # The pinned content index also detects replacements; no download on normal restarts.
     if current == manifest["word_count"]:

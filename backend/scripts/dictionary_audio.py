@@ -36,7 +36,9 @@ def read_catalog(directory=CATALOG_DIR):
     for name in names:
         path = Path(directory) / name
         digest.update(name.encode())
-        digest.update(path.read_bytes())
+        # Git may normalize Windows CRLF checkouts to LF on Linux. Bind the
+        # catalog to its content, independently of those checkout line endings.
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
         with path.open(encoding="utf-8-sig", newline="") as stream:
             for row in csv.DictReader(stream):
                 chinese = row["chinese_word"].strip()

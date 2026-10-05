@@ -4,5 +4,6 @@
   "word_count": 11630,
   "size_bytes": 128502836,
   "catalog_sha256": "ca56678e3ed29f203eeb209a0b78a6ab32fca93d6bb995aebabbad37cb0b177d",
+  "canonical_catalog_sha256": "af1f5991cac7c0b23d7fad3e735580a58b5ded48b3e33d38ca287d6700224e1f",
   "sha256": "20e4e191d97c622e00f1ddd073aa64292c8cd9bc1e3dc34ec47d29779f91769f"
 }

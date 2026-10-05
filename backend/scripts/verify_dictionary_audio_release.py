@@ -46,7 +46,7 @@ def public_snapshot(words, catalog):
 async def verify_public(wait_seconds):
     catalog, digest = read_catalog()
     manifest = json.loads(MANIFEST_PATH.read_text("utf-8-sig"))
-    if manifest["catalog_sha256"] != digest or manifest["word_count"] != len(catalog):
+    if manifest.get("canonical_catalog_sha256", manifest["catalog_sha256"]) != digest or manifest["word_count"] != len(catalog):
         raise RuntimeError("The public verification catalog differs from the pinned release.")
     deadline = time.monotonic() + wait_seconds
     async with httpx.AsyncClient(timeout=30) as client:

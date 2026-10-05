@@ -23,6 +23,18 @@ def test_audio_catalog_covers_every_unique_word_and_distinguishes_true_readings(
     assert audio.job_key(catalog["只"], rate="-10%") != audio.job_key(catalog["只"], rate="+0%")
 
 
+def test_catalog_digest_survives_checkout_line_endings_but_detects_content_changes(tmp_path):
+    expected_words, expected_digest = audio.read_catalog()
+    for ending in (b"\n", b"\r\n"):
+        for source in audio.CATALOG_DIR.glob("*.csv"):
+            content = source.read_bytes().replace(b"\r\n", b"\n")
+            (tmp_path / source.name).write_bytes(content.replace(b"\n", ending))
+        assert audio.read_catalog(tmp_path) == (expected_words, expected_digest)
+    changed = tmp_path / "hsk1_words_dictionary.csv"
+    changed.write_bytes(changed.read_bytes().replace("爸爸".encode(), "妈妈".encode(), 1))
+    assert audio.read_catalog(tmp_path)[1] != expected_digest
+
+
 def bundle(tmp_path, monkeypatch, sensitive=False):
     for name in ("audio", "records", "temporary"):
         (tmp_path / name).mkdir(exist_ok=True)
