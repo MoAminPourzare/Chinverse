@@ -1,5 +1,6 @@
 import json
 import asyncio
+import errno
 from concurrent.futures import ThreadPoolExecutor
 import time
 from types import SimpleNamespace
@@ -53,13 +54,18 @@ def test_bundle_rejects_traversal_corruption_and_stale_catalog(tmp_path, monkeyp
             release.extract_bundle(archive(catalog_sha="windows-digest"), tmp_path / "unpacked", changed)
 
 
-def test_concurrent_shared_recordings_never_expose_an_incomplete_file(tmp_path, monkeypatch):
+@pytest.mark.parametrize("hardlinks_supported", [True, False])
+def test_concurrent_shared_recordings_never_expose_an_incomplete_file(tmp_path, monkeypatch, hardlinks_supported):
     source = tmp_path / "source.mp3"
     data = b"isolated-shared-recording" * 5000
     source.write_bytes(data)
     sha = file_digest(source)
     monkeypatch.setattr(release, "DICTIONARY_AUDIO_DIR", tmp_path / "published")
     monkeypatch.setattr(release.settings, "FILE_STORAGE_MODE", "mounted")
+    if not hardlinks_supported:
+        def unsupported_link(*args):
+            raise OSError(errno.EOPNOTSUPP, "Mount does not support hard links")
+        monkeypatch.setattr(release.os, "link", unsupported_link)
 
     def slow_copy(source_path, destination):
         with open(destination, "wb") as output:
@@ -75,6 +81,31 @@ def test_concurrent_shared_recordings_never_expose_an_incomplete_file(tmp_path, 
     assert len(set(urls)) == 1
     assert file_digest(tmp_path / "published" / f"{sha}.mp3") == sha
     assert not list((tmp_path / "published").glob("*.partial"))
+
+
+def test_mount_publication_preserves_existing_corruption_and_does_not_hide_permission_errors(tmp_path, monkeypatch):
+    source = tmp_path / "source.mp3"
+    source.write_bytes(b"verified-recording")
+    sha = file_digest(source)
+    public = tmp_path / "published"
+    public.mkdir()
+    destination = public / f"{sha}.mp3"
+    monkeypatch.setattr(release, "DICTIONARY_AUDIO_DIR", public)
+    monkeypatch.setattr(release.settings, "FILE_STORAGE_MODE", "mounted")
+    entry = {"source_path": source, "sha256": sha}
+    destination.write_bytes(b"existing-corrupt-recording")
+    with pytest.raises(ValueError, match="Stored recording checksum"):
+        release.store_recording(entry)
+    assert destination.read_bytes() == b"existing-corrupt-recording"
+    destination.unlink()
+
+    def denied_link(*args):
+        raise PermissionError(errno.EACCES, "Access denied")
+    monkeypatch.setattr(release.os, "link", denied_link)
+    with pytest.raises(PermissionError):
+        release.store_recording(entry)
+    assert not destination.exists()
+    assert not list(public.glob("*.partial"))
 
 
 @pytest.mark.asyncio
