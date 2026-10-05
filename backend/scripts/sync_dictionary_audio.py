@@ -3,7 +3,6 @@ import argparse
 import asyncio
 from collections import Counter
 import errno
-import errno
 import hashlib
 import json
 import logging
@@ -12,7 +11,6 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
-from threading import Lock
 from threading import Lock
 from zipfile import ZipFile
 from uuid import uuid4
@@ -33,7 +31,6 @@ logger = logging.getLogger(__name__)
 MANIFEST_PATH = BACKEND_DIR / "data" / "dictionary-audio-release.json"
 MAX_BUNDLE_BYTES = 200 * 1024 * 1024
 MAX_EXTRACTED_BYTES = 250 * 1024 * 1024
-MOUNTED_PUBLICATION_LOCK = Lock()
 MOUNTED_PUBLICATION_LOCK = Lock()
 
 
@@ -118,18 +115,6 @@ def store_recording(entry):
             except FileExistsError:
                 if file_digest(destination) != entry["sha256"]:
                     raise ValueError("Stored recording checksum mismatch")
-            except OSError as error:
-                if not settings.USES_MOUNTED_STORAGE or error.errno not in {errno.EOPNOTSUPP, errno.ENOSYS}:
-                    raise
-                # Bucket mounts can support rename but not hard links. The DB
-                # advisory lock serializes importers across processes; this
-                # lock also serializes direct calls within this process.
-                with MOUNTED_PUBLICATION_LOCK:
-                    if destination.exists():
-                        if file_digest(destination) != entry["sha256"]:
-                            raise ValueError("Stored recording checksum mismatch")
-                    else:
-                        os.replace(temporary, destination)
             except OSError as error:
                 if not settings.USES_MOUNTED_STORAGE or error.errno not in {errno.EOPNOTSUPP, errno.ENOSYS}:
                     raise
