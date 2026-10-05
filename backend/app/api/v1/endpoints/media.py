@@ -8,6 +8,7 @@ courses and versioned subtitle tracks.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 import hashlib
 import hmac
@@ -28,6 +29,7 @@ from app.api.v1.endpoints.course_admin import _load_course
 from app.api.errors import bad_request, forbidden, not_found, unauthorized
 from app.api.rate_limit import write_rate_limit
 from app.core.config import settings
+from app.core.arvan_vod import ArvanVodError, read_arvan_vod_resource
 from app.core.paths import THUMBNAILS_DIR, UPLOADS_DIR, VIDEOS_DIR
 from app.core.storage import (
     delete_public_file,
@@ -140,7 +142,13 @@ async def _read_hls_manifest_resource(
     provider: str,
     resource: str,
 ) -> bytes:
-    if provider == "s3":
+    if provider == "arvan_vod":
+        try:
+            stored = await read_arvan_vod_resource(asset.file_url, resource, max_bytes=MAX_HLS_MANIFEST_BYTES)
+            value = stored.content
+        except ArvanVodError as exc:
+            raise bad_request("Arvan HLS manifest cannot be verified") from exc
+    elif provider == "s3":
         object_key = media_resource_storage_key(asset.storage_key, resource)
         try:
             value = await read_object_storage_bytes(
@@ -173,6 +181,12 @@ async def _verify_hls_resource_has_bytes(
     provider: str,
     resource: str,
 ) -> None:
+    if provider == "arvan_vod":
+        try:
+            await read_arvan_vod_resource(asset.file_url, resource, byte_range="bytes=0-0", max_bytes=1024)
+        except ArvanVodError as exc:
+            raise bad_request("Arvan HLS dependency cannot be verified") from exc
+        return
     if provider == "s3":
         object_key = media_resource_storage_key(asset.storage_key, resource)
         stream = await open_object_storage_stream(
@@ -209,6 +223,7 @@ async def _verify_hls_graph(
     checked_manifests: set[str] = {""}
     manifest_count = 1
     total_manifest_bytes = len(root_manifest)
+    arvan_resources: list[str] = []
 
     while queue:
         current_resource, manifest_bytes, depth = queue.pop(0)
@@ -232,6 +247,9 @@ async def _verify_hls_graph(
             is_manifest = reference.is_manifest or reference.path.lower().endswith(".m3u8")
             if not is_manifest:
                 if not first_seen:
+                    continue
+                if provider == "arvan_vod":
+                    arvan_resources.append(reference.path)
                     continue
                 await _verify_hls_resource_has_bytes(
                     asset,
@@ -258,6 +276,17 @@ async def _verify_hls_graph(
                 raise bad_request("HLS manifest graph is too large")
             queue.append((reference.path, child_manifest, depth + 1))
 
+    # VOD graph probes are independent network reads. Keep concurrency bounded
+    # and finish the whole batch before propagating a failed dependency.
+    for offset in range(0, len(arvan_resources), 8):
+        results = await asyncio.gather(*(
+            _verify_hls_resource_has_bytes(asset, provider=provider, resource=resource)
+            for resource in arvan_resources[offset:offset + 8]
+        ), return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+
 
 async def _verify_media_storage_for_publish(asset: MediaAsset) -> None:
     """Fail closed unless registered bytes exist and match their immutable digest."""
@@ -268,7 +297,11 @@ async def _verify_media_storage_for_publish(asset: MediaAsset) -> None:
 
     provider = str(asset.storage_provider or "").strip().lower()
     manifest_bytes: bytes | None = None
-    if provider == "s3":
+    if provider == "arvan_vod":
+        manifest_bytes = await _read_hls_manifest_resource(asset, provider=provider, resource="")
+        actual_checksum = hashlib.sha256(manifest_bytes).hexdigest()
+        actual_size = len(manifest_bytes)
+    elif provider == "s3":
         stored = await object_storage_digest(
             object_key,
             bucket_name=_private_media_bucket(),
@@ -725,7 +758,14 @@ async def resolve_media_content(
     response: Response
     if is_manifest:
         try:
-            if provider == "s3":
+            if provider == "arvan_vod":
+                stored = await read_arvan_vod_resource(asset.file_url, resource, max_bytes=MAX_HLS_MANIFEST_BYTES)
+                manifest_bytes = stored.content
+                if not resource and not hmac.compare_digest(
+                    hashlib.sha256(manifest_bytes).hexdigest(), asset.checksum_sha256 or "",
+                ):
+                    raise not_found("Media manifest")
+            elif provider == "s3":
                 manifest_bytes = await read_object_storage_bytes(
                     object_key,
                     max_bytes=MAX_HLS_MANIFEST_BYTES,
@@ -752,12 +792,29 @@ async def resolve_media_content(
                 expires=expires,
                 current_resource=resource,
             )
+        except ArvanVodError as exc:
+            raise HTTPException(status_code=502, detail="Video provider is temporarily unavailable") from exc
         except (UnicodeDecodeError, ValueError, MediaResourceError) as exc:
             raise not_found("Media manifest") from exc
         response = Response(
             content=rewritten,
             media_type="application/vnd.apple.mpegurl",
             headers=common_headers,
+        )
+    elif provider == "arvan_vod":
+        normalized_range = range_header.strip() if range_header else None
+        if normalized_range and not _SINGLE_BYTE_RANGE_RE.fullmatch(normalized_range):
+            raise HTTPException(status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+        try:
+            stored = await read_arvan_vod_resource(asset.file_url, resource, byte_range=normalized_range)
+        except ArvanVodError as exc:
+            raise HTTPException(status_code=502, detail="Video provider is temporarily unavailable") from exc
+        stream_headers = {**common_headers, "Accept-Ranges": "bytes"}
+        if stored.content_range:
+            stream_headers["Content-Range"] = stored.content_range
+        response = Response(
+            stored.content, status_code=stored.status_code, media_type=stored.content_type,
+            headers=stream_headers,
         )
     elif provider == "s3":
         normalized_range = range_header.strip() if range_header else None

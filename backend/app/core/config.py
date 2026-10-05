@@ -204,6 +204,7 @@ class Settings(BaseSettings):
     OBJECT_STORAGE_ADDRESSING_STYLE: str = "path"
     MEDIA_SIGNING_KEY: str = ""
     MEDIA_SIGNED_URL_TTL_SECONDS: int = 300
+    ARVAN_VOD_ALLOWED_HOSTS: str = "chinverse-test.arvanvod.ir"
 
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://0.0.0.0:3000"
     BACKEND_CORS_ORIGIN_REGEX: str = (

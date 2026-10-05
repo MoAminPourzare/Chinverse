@@ -42,6 +42,8 @@ deployed_release_sha = resolve_release_sha(settings.RELEASE_SHA)
 async def lifespan(_app: FastAPI):
     await start_chat_realtime()
     audio_import = None
+    from scripts.sync_client_demo import run_background_import as import_client_demo
+    demo_import = asyncio.create_task(import_client_demo())
     if settings.ENVIRONMENT.lower() in {"production", "prod", "staging"} and (
         settings.USES_OBJECT_STORAGE or settings.USES_MOUNTED_STORAGE
     ):
@@ -50,6 +52,11 @@ async def lifespan(_app: FastAPI):
     try:
         yield
     finally:
+        demo_import.cancel()
+        try:
+            await demo_import
+        except asyncio.CancelledError:
+            pass
         if audio_import:
             audio_import.cancel()
             try:

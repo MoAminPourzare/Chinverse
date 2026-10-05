@@ -431,8 +431,18 @@ def validate_media_asset(asset: MediaAsset) -> WorkflowValidation:
         media_resource_storage_key(asset.storage_key)
     except MediaResourceError:
         errors.append("storage_key_required")
-    if provider not in {"local", "mounted", "s3"}:
+    if provider not in {"local", "mounted", "s3", "arvan_vod"}:
         errors.append("storage_provider_invalid")
+    if provider == "arvan_vod":
+        from app.core.arvan_vod import arvan_vod_resource_url
+        try:
+            arvan_vod_resource_url(asset.file_url)
+        except (ValueError, AttributeError):
+            errors.append("arvan_vod_source_invalid")
+        if playback_type != MediaPlaybackType.HLS.value or media_type not in {"video", "audio"}:
+            errors.append("arvan_vod_requires_hls")
+    if asset.license_type == "owner_authorized_staging_demo" and settings.DEPLOYMENT_TIER != "staging":
+        errors.append("staging_demo_not_available_in_production")
     if not asset.checksum_sha256 or not re.fullmatch(r"[0-9a-fA-F]{64}", asset.checksum_sha256):
         errors.append("checksum_sha256_required")
     if not asset.source_name:
