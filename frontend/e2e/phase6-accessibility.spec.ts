@@ -17,6 +17,10 @@ for (const route of wcagRoutes) {
   test(`${route} has no automatically detectable WCAG 2.2 A/AA violations`, async ({ page }) => {
     await page.goto(route);
     await expect(page.locator("body")).toBeVisible();
+    // The route fades in after hydration. Audit its final colors, rather than
+    // a transient, partially transparent frame (especially on mobile WebKit).
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    await expect(page.locator(".route-panel")).toHaveCSS("opacity", "1");
 
     const result = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -40,6 +44,8 @@ for (const route of ["/login", "/settings/appearance"]) {
     });
     await page.goto(route);
     await expect(page.locator("html")).toHaveClass(/dark/);
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    await expect(page.locator(".route-panel")).toHaveCSS("opacity", "1");
 
     const result = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
