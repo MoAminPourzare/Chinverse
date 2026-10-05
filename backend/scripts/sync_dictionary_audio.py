@@ -24,7 +24,7 @@ from app.core.paths import BACKEND_DIR, DICTIONARY_AUDIO_DIR
 from app.core.storage import CACHE_CONTROL_IMMUTABLE, get_object_storage_client
 from app.db.session import SessionLocal, engine
 from app.models.dictionary import DictionaryAudio, DictionaryWord
-from app.services.dictionary_audio import current_readings, reading_key
+from app.services.dictionary_audio import recording_matches_word
 from scripts.dictionary_audio import file_digest, read_catalog
 
 logger = logging.getLogger(__name__)
@@ -144,7 +144,7 @@ async def import_batch(db, entries):
         word = words.get(entry["chinese"])
         if not word or word.status != "published":
             counts["not_published"] += 1
-        elif current_readings(word) != {reading_key(p) for p in entry["pinyins"]}:
+        elif not recording_matches_word(word, entry["pinyins"]):
             counts["pinyin_changed"] += 1
         elif word.id in existing:
             if existing[word.id].sha256 != entry["sha256"]:

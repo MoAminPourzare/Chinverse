@@ -37,8 +37,13 @@ def public_snapshot(words, catalog):
         != {reading_key(pinyin) for pinyin in entry["pinyins"]}
         for entry in catalog if entry["chinese"] in indexed
     )
+    incompatible = sum(
+        not {reading_key(p) for p in split_readings(indexed[entry["chinese"]]["pinyin"])}.issubset(
+            {reading_key(p) for p in entry["pinyins"]}
+        ) for entry in catalog if entry["chinese"] in indexed
+    )
     return {"scope": "public_dictionary_links", "full_receipt_count_verified": False,
-            "catalog_present": present, "catalog_expected": len(catalog), "changed_readings": changed,
+            "catalog_present": present, "catalog_expected": len(catalog), "changed_readings": changed, "incompatible_readings": incompatible,
             "public_linked": linked, "public_expected": len(eligible),
             "sensitive_catalog_words": len(catalog) - len(eligible)}
 
@@ -68,7 +73,7 @@ async def verify_public(wait_seconds):
                 raise RuntimeError("Public vocabulary pagination exceeded its bound.")
             result = public_snapshot(words, catalog)
             print(json.dumps(result), flush=True)
-            if result["catalog_present"] == len(catalog) and not result["changed_readings"] \
+            if result["catalog_present"] == len(catalog) and not result["incompatible_readings"] \
                     and result["public_linked"] == result["public_expected"]:
                 return result
             if time.monotonic() >= deadline:

@@ -18,6 +18,12 @@ def current_readings(word: DictionaryWord) -> set[str]:
     return {reading_key(p) for p in re.split(r"[/|,，;；]", word.pinyin) if p.strip()}
 
 
+def recording_matches_word(word, pinyins):
+    """A catalog may include additional senses beyond the active dictionary entry."""
+    active = current_readings(word)
+    return bool(active) and active.issubset({reading_key(p) for p in pinyins})
+
+
 async def review_recording(db, audio_id, *, sha256, decision, approved_pinyin, actor_id):
     # Lock in the same order as bundle import. Both the asset and live word can change.
     word_id = await db.scalar(select(DictionaryAudio.word_id).where(DictionaryAudio.id == audio_id))
@@ -29,11 +35,11 @@ async def review_recording(db, audio_id, *, sha256, decision, approved_pinyin, a
         raise not_found("Dictionary audio")
     if clip.sha256 != sha256:
         raise conflict("Recording changed; reload before reviewing")
-    if word.status != "published" or current_readings(word) != {reading_key(p) for p in clip.pinyins}:
+    if word.status != "published" or not recording_matches_word(word, clip.pinyins):
         raise conflict("Dictionary pronunciation changed; recording needs regeneration")
     if decision == "approved":
         heard = next((p for p in clip.pinyins if reading_key(p) == reading_key(approved_pinyin or "")), None)
-        if not heard:
+        if not heard or reading_key(heard) not in current_readings(word):
             raise bad_request("Select the pronunciation heard in this recording")
         if word.audio_url and word.audio_url != clip.audio_url:
             raise conflict("An existing curated recording is active; edit the word before replacing it")

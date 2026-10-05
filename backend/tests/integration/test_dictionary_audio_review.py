@@ -28,19 +28,27 @@ async def test_generated_audio_review_is_persistent_exact_and_preserves_curated_
         admin = User(email=f"audio-review-{suffix}@example.com", phone=f"09{uuid4().int % 10**9:09d}", password_hash="test-only", role=UserRole.ADMIN)
         words = [DictionaryWord(chinese=f"敏-{suffix}", pinyin="zhī/zhǐ", level="HSK1"),
                  DictionaryWord(chinese=f"普通-{suffix}", pinyin="pǔtōng", level="HSK2"),
-                 DictionaryWord(chinese=f"旧-{suffix}", pinyin="jiù", level="HSK3", audio_url="https://example.com/curated.mp3")]
+                 DictionaryWord(chinese=f"旧-{suffix}", pinyin="jiù", level="HSK3", audio_url="https://example.com/curated.mp3"),
+                 DictionaryWord(chinese=f"旧读-{suffix}", pinyin="zhǐ", level="HSK1")]
         db.add_all([admin, *words])
         await db.flush()
         admin_id = admin.id
         ids = [word.id for word in words]
-        entries = [{"chinese": word.chinese, "pinyins": word.pinyin.split("/"), "sha256": digest,
+        entries = [{"chinese": word.chinese, "pinyins": ["zhǐ", "zhī"] if i == 3 else word.pinyin.split("/"), "sha256": digest,
                     "source_path": source, "bundle_sha256": "0" * 64, "voice": "test",
-                    "duration_seconds": 1.2, "review_reasons": ["multiple_readings"] if i == 0 else []}
+                    "duration_seconds": 1.2, "review_reasons": ["multiple_readings"] if i in (0, 3) else []}
                    for i, word in enumerate(words)]
         counts = await import_batch(db, entries)
-        assert counts["imported"] == 3 and counts["published"] == 1 and counts["existing_audio_preserved"] == 1
+        assert counts["imported"] == 4 and counts["published"] == 1 and counts["existing_audio_preserved"] == 1
     async with SessionLocal.begin() as db:
-        assert (await import_batch(db, entries))["already_imported"] == 3
+        assert (await import_batch(db, entries))["already_imported"] == 4
+        legacy = await db.scalar(select(DictionaryAudio).where(DictionaryAudio.word_id == ids[3]))
+        assert legacy.status == "pending"
+        with pytest.raises(HTTPException) as undeclared:
+            await review_recording(db, legacy.id, sha256=digest, decision="approved", approved_pinyin="zhī", actor_id=admin_id)
+        assert undeclared.value.status_code == 400
+        await review_recording(db, legacy.id, sha256=digest, decision="approved", approved_pinyin="zhǐ", actor_id=admin_id)
+        assert (await db.get(DictionaryWord, ids[3])).pinyin == "zhǐ"
         pending = await db.scalar(select(DictionaryAudio).where(DictionaryAudio.word_id == ids[0]))
         clip_id = pending.id
         assert pending.status == "pending" and (await db.get(DictionaryWord, ids[0])).audio_url is None
@@ -86,7 +94,7 @@ async def test_generated_audio_review_is_persistent_exact_and_preserves_curated_
             normal._auth_mfa_verified = True
             page = await client.get("/api/v1/admin/dictionary-audio", params={"q": suffix, "state": "all", "multiple": True})
             assert page.status_code == 200, page.text
-            assert page.json()["total"] == 1
+            assert page.json()["total"] == 2
             assert page.json()["items"][0]["stale"] is True
         finally:
             app.dependency_overrides.clear()

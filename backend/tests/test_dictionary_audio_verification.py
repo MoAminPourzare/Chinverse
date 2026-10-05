@@ -70,6 +70,10 @@ def test_public_verification_never_claims_to_observe_pending_recordings():
     assert result["sensitive_catalog_words"] == 1
     assert result["full_receipt_count_verified"] is False
     assert result["changed_readings"] == 0
+    words[1]["pinyin"] = "zhǐ"
+    subset = verification.public_snapshot(words, catalog)
+    assert subset["changed_readings"] == 1 and subset["incompatible_readings"] == 0
+    assert subset["public_linked"] == subset["public_expected"]
     words[0]["audio_pinyin"] = "wrong"
     words[1]["pinyin"] = "changed"
     result = verification.public_snapshot(words, catalog)

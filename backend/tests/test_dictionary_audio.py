@@ -126,3 +126,39 @@ async def test_dictionary_audio_is_public_with_range_and_immutable_cache():
             assert (await client.get("/uploads/dictionary-audio/../videos/private.mp4")).status_code == 404
     finally:
         path.unlink(missing_ok=True)
+
+
+@pytest.mark.asyncio
+async def test_review_only_accepts_declared_readings_from_a_richer_catalog():
+    from unittest.mock import AsyncMock
+    from fastapi import HTTPException
+    from app.api.v1.endpoints.dictionary_audio import serialize
+    from app.models.dictionary import DictionaryAudio, DictionaryWord
+    from app.services.dictionary_audio import recording_matches_word, review_recording
+
+    word = DictionaryWord(id=1, chinese="只", pinyin="zhǐ", level="HSK1", status="published")
+    clip = DictionaryAudio(id=1, word_id=1, sha256="0" * 64, pinyins=["zhǐ", "zhī"],
+                           audio_url="/uploads/dictionary-audio/test.mp3", status="pending",
+                           review_reasons=["multiple_readings"])
+    assert recording_matches_word(word, clip.pinyins)
+    assert serialize(clip, word)["pinyins"] == ["zhǐ"]
+    assert not serialize(clip, word)["stale"]
+    assert clip.pinyins == ["zhǐ", "zhī"]
+
+    async def review(heard):
+        db = SimpleNamespace(scalar=AsyncMock(side_effect=[1, word, clip]), flush=AsyncMock())
+        return await review_recording(db, 1, sha256=clip.sha256, decision="approved",
+                                      approved_pinyin=heard, actor_id=1)
+
+    with pytest.raises(HTTPException) as rejected:
+        await review("zhī")
+    assert rejected.value.status_code == 400 and word.audio_url is None
+    await review("zhǐ")
+    assert word.audio_url == clip.audio_url and word.audio_pinyin == "zhǐ"
+    assert word.pinyin == "zhǐ"
+    word.pinyin = "cháng"
+    assert not recording_matches_word(word, clip.pinyins)
+    assert serialize(clip, word)["stale"]
+    with pytest.raises(HTTPException) as stale:
+        await review("zhǐ")
+    assert stale.value.status_code == 409

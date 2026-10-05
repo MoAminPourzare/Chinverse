@@ -12,7 +12,7 @@ from app.core.paths import BACKEND_DIR
 from app.models.dictionary import DictionaryAudio, DictionaryWord
 from app.models.user import User
 from app.services.auth_security import add_audit_event
-from app.services.dictionary_audio import current_readings, reading_key, review_recording
+from app.services.dictionary_audio import current_readings, reading_key, recording_matches_word, review_recording
 
 router = APIRouter(prefix="/admin/dictionary-audio", tags=["admin"])
 manifest_path = BACKEND_DIR / "data" / "dictionary-audio-release.json"
@@ -29,12 +29,14 @@ def serialize(clip, word):
     return {
         "id": clip.id, "word_id": word.id, "chinese": word.chinese, "pinyin": word.pinyin,
         "level": word.level, "meaning": word.persian_meaning, "audio_url": clip.audio_url,
-        "sha256": clip.sha256, "pinyins": clip.pinyins, "review_reasons": clip.review_reasons,
+        "sha256": clip.sha256,
+        "pinyins": [p for p in clip.pinyins if reading_key(p) in current_readings(word)],
+        "review_reasons": clip.review_reasons,
         "status": clip.status, "approved_pinyin": clip.approved_pinyin,
         "duration_seconds": clip.duration_seconds, "reviewed_at": clip.reviewed_at,
         "active": word.audio_url == clip.audio_url,
         "curated_audio_preserved": bool(word.audio_url and word.audio_url != clip.audio_url),
-        "stale": word.status != "published" or current_readings(word) != {reading_key(p) for p in clip.pinyins},
+        "stale": word.status != "published" or not recording_matches_word(word, clip.pinyins),
     }
 
 
