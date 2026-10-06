@@ -1,4 +1,5 @@
 """Bounded reads from registered Arvan VOD assets, behind the media gateway."""
+import asyncio
 from dataclasses import dataclass
 from urllib.parse import quote, urlsplit, urlunsplit
 
@@ -11,6 +12,10 @@ MAX_ARVAN_RESOURCE_BYTES = 32 * 1024 * 1024
 
 
 class ArvanVodError(ValueError):
+    pass
+
+
+class _RetryableArvanVodError(ArvanVodError):
     pass
 
 
@@ -50,24 +55,34 @@ async def read_arvan_vod_resource(
     headers = {"Accept-Encoding": "identity"}
     if byte_range:
         headers["Range"] = byte_range
-    try:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
-            async with client.stream("GET", url, headers=headers) as response:
-                if response.status_code not in {200, 206}:
-                    raise ArvanVodError("Arvan VOD resource is unavailable")
-                length = response.headers.get("content-length")
-                if length and (not length.isdecimal() or int(length) > max_bytes):
-                    raise ArvanVodError("Arvan VOD resource exceeds the size limit")
-                content = bytearray()
-                async for chunk in response.aiter_bytes():
-                    content.extend(chunk)
-                    if len(content) > max_bytes:
-                        raise ArvanVodError("Arvan VOD resource exceeds the size limit")
-                if not content:
-                    raise ArvanVodError("Arvan VOD resource is empty")
-                return ArvanVodObject(
-                    bytes(content), response.headers.get("content-type", "application/octet-stream"),
-                    response.status_code, response.headers.get("content-range"),
-                )
-    except httpx.HTTPError as exc:
-        raise ArvanVodError("Arvan VOD request failed") from exc
+    async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
+        for attempt in range(3):
+            try:
+                return await _read_once(client, url, headers, max_bytes)
+            except (httpx.HTTPError, _RetryableArvanVodError) as exc:
+                if attempt == 2:
+                    raise ArvanVodError("Arvan VOD request failed after bounded retries") from exc
+                await asyncio.sleep(0.5 * (attempt + 1))
+    raise ArvanVodError("Arvan VOD request failed")
+
+
+async def _read_once(client: httpx.AsyncClient, url: str, headers: dict, max_bytes: int) -> ArvanVodObject:
+    async with client.stream("GET", url, headers=headers) as response:
+        if response.status_code == 429 or 500 <= response.status_code < 600:
+            raise _RetryableArvanVodError("Arvan VOD is temporarily unavailable")
+        if response.status_code not in {200, 206}:
+            raise ArvanVodError(f"Arvan VOD resource is unavailable (HTTP {response.status_code})")
+        length = response.headers.get("content-length")
+        if length and (not length.isdecimal() or int(length) > max_bytes):
+            raise ArvanVodError("Arvan VOD resource exceeds the size limit")
+        content = bytearray()
+        async for chunk in response.aiter_bytes():
+            content.extend(chunk)
+            if len(content) > max_bytes:
+                raise ArvanVodError("Arvan VOD resource exceeds the size limit")
+        if not content:
+            raise ArvanVodError("Arvan VOD resource is empty")
+        return ArvanVodObject(
+            bytes(content), response.headers.get("content-type", "application/octet-stream"),
+            response.status_code, response.headers.get("content-range"),
+        )

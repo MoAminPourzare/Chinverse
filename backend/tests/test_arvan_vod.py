@@ -49,11 +49,15 @@ def test_arvan_resource_stays_inside_source_playlist_directory():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("mode", ["range", "redirect", "oversized", "missing"])
+@pytest.mark.parametrize("mode", ["range", "redirect", "oversized", "missing", "transient", "unavailable", "timeout"])
 async def test_arvan_reads_are_bounded_and_do_not_follow_redirects(monkeypatch, mode):
     requests = []
     def handle(request):
         requests.append(request)
+        if mode == "timeout":
+            raise httpx.ReadTimeout("temporary timeout", request=request)
+        if mode == "unavailable" or (mode == "transient" and len(requests) == 1):
+            return httpx.Response(503)
         if mode == "redirect":
             return httpx.Response(302, headers={"Location": "http://127.0.0.1/private"})
         if mode == "missing":
@@ -65,13 +69,18 @@ async def test_arvan_reads_are_bounded_and_do_not_follow_redirects(monkeypatch, 
     monkeypatch.setattr(arvan_vod.httpx, "AsyncClient", lambda **kwargs: client_type(
         transport=httpx.MockTransport(handle), **kwargs,
     ))
-    if mode != "range":
+    sleep = AsyncMock()
+    monkeypatch.setattr(arvan_vod.asyncio, "sleep", sleep)
+    if mode not in {"range", "transient"}:
         with pytest.raises(arvan_vod.ArvanVodError):
             await arvan_vod.read_arvan_vod_resource(URL, "seg-1.ts", byte_range="bytes=0-0", max_bytes=4)
     else:
         result = await arvan_vod.read_arvan_vod_resource(URL, "seg-1.ts", byte_range="bytes=0-0", max_bytes=4)
         assert result.content == b"x" and result.content_range == "bytes 0-0/123"
-    assert len(requests) == 1 and requests[0].headers["Range"] == "bytes=0-0"
+    expected_requests = 3 if mode in {"unavailable", "timeout"} else 2 if mode == "transient" else 1
+    assert len(requests) == expected_requests
+    assert all(request.headers["Range"] == "bytes=0-0" for request in requests)
+    assert sleep.await_count == expected_requests - 1
 
 
 def test_staging_demo_requires_pinned_neon_and_is_unavailable_in_production(monkeypatch):
