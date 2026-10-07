@@ -17,7 +17,6 @@ export default function HSKCourseDetailPage() {
     const router = useRouter();
     const course = getHskCourse(params?.id);
     const { publishedCourse, isLoading, hasError } = useHskPublishedCourse(course);
-    const isReferenceCourse = course?.slug === "hsk-1";
 
     if (!course && /^\d+$/.test(params?.id || "")) {
         return (
@@ -64,19 +63,18 @@ export default function HSKCourseDetailPage() {
                     </div>
                 </header>
 
-                <section className={`mt-3 grid items-center gap-5 ${isReferenceCourse ? "grid-cols-[1fr_40%]" : "grid-cols-[1fr_46%]"}`} dir="ltr">
+                <section className="mt-3 grid grid-cols-[1fr_40%] items-center gap-5" dir="ltr">
                     <div className="min-w-0 text-center" dir="rtl">
                         <h1 className="text-[22px] font-black leading-8 text-[#343941] dark:text-white" dir="ltr">{course.title}</h1>
-                        <p className="mt-1 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{course.tagline ?? "یادگیری زبان چینی، آسان و مرحله‌به‌مرحله"}</p>
-                        {!isReferenceCourse && <p className="mt-2 text-[10px] font-bold text-[#667587] dark:text-slate-300">امتیازدهی فعلاً فعال نیست</p>}
+                        <p className="mt-1 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{course.tagline}</p>
                     </div>
-                    <div className={isReferenceCourse ? "relative aspect-[128/155] overflow-hidden" : "relative aspect-square overflow-hidden rounded-[10px] bg-slate-200 shadow-[0_8px_20px_rgba(15,23,42,0.08)]"}>
+                    <div className="relative aspect-[128/155] overflow-hidden">
                         <Image
                             src={course.coverPath}
                             alt={`جلد دورهٔ ${course.title}`}
                             fill
                             sizes="190px"
-                            className={isReferenceCourse ? "object-contain" : "object-cover"}
+                            className="object-contain"
                             priority
                         />
                     </div>
@@ -84,7 +82,7 @@ export default function HSKCourseDetailPage() {
 
                 <section className="mt-5">
                     <h2 className="text-sm font-black text-[#343941] dark:text-white">معرفی دوره:</h2>
-                    <div className={`mt-2 text-justify text-[12px] font-medium text-[#40464f] dark:text-slate-300 ${isReferenceCourse ? "space-y-2 leading-6" : "leading-7"}`}>
+                    <div className="mt-2 space-y-2 text-justify text-[12px] font-medium leading-6 text-[#40464f] dark:text-slate-300">
                         {course.description.split("\n\n").map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
                     </div>
                 </section>
@@ -101,7 +99,7 @@ export default function HSKCourseDetailPage() {
                     <div className="mb-3 flex items-end justify-between gap-3">
                         <div>
                             <h2 id="hsk-lessons-heading" className="text-base font-black text-[#343941] dark:text-white">درس‌های دوره</h2>
-                            {(!isReferenceCourse || hasError) && <p className="mt-1 text-[11px] leading-5 text-[#737b87] dark:text-slate-400">{hasError ? "وضعیت ویدیوها دریافت نشد؛ دوباره صفحه را باز کن." : isLoading ? "در حال بررسی درس‌های منتشرشده…" : "درس‌های آماده با متن «آمادهٔ پخش» مشخص شده‌اند؛ بقیه در دست آماده‌سازی‌اند."}</p>}
+                            {hasError && <p className="mt-1 text-[11px] leading-5 text-[#737b87] dark:text-slate-400">وضعیت ویدیوها دریافت نشد؛ دوباره صفحه را باز کن.</p>}
                         </div>
                         <span className="shrink-0 rounded-full bg-[#e8f2fd] px-2.5 py-1 text-[10px] font-black text-[#155aa6]">{course.lessonPart ? `${course.lessonCount / 2} درس · ${course.lessonCount} بخش` : `${course.lessonCount} درس`}</span>
                     </div>
