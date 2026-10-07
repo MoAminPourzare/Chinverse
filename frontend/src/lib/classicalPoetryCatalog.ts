@@ -16,11 +16,15 @@ export const CLASSICAL_POETRY_CATALOG: PlannedCatalogCourse[] = [
         lessonCount: CLASSICAL_POETRY_LESSON_TOPICS.length,
         fallbackLessonTitle: "قسمت",
         description: [
-            "این مجموعه از «兔小贝» به شعرهای کلاسیک چینی اختصاص دارد. فهرست ۶۵ قسمتی آن با عنوان اصلی چینی هر شعر ثبت شده است.",
+            "این برنامه شعرهای کلاسیک چینی رو با یه فضای کودکانه و کارتونی آموزش می‌ده. شعرها معمولاً کوتاه و معروفن (بیشتر از دوره تانگ) و با تصویر و انیمیشن همراه شدن تا هم معنیشون راحت‌تر فهمیده بشه هم تو ذهن بمونن.",
+            "برای زبان‌آموزها خیلی مفیده چون هم با ادبیات کلاسیک چین آشنا می‌شی، هم تلفظ درست شعرها رو می‌شنوی.",
+            "از نظر زبانی ماندارین معیار و واضح استفاده میشه و چون شعرها ریتم دارن، برای تقویت شنیدار هم کمک‌کننده‌ست."
         ],
         audience: ["علاقه‌مندان به شعر و ادبیات کلاسیک چین"],
         knownLessonTitles: Object.fromEntries(CLASSICAL_POETRY_LESSON_TOPICS.map((_, index) => [index + 1, `第${index + 1}集`])),
         knownLessonSubtitles: Object.fromEntries(CLASSICAL_POETRY_LESSON_TOPICS.map((topic, index) => [index + 1, topic])),
+        introductionHeading: "معرفی برنامه:",
+        tagline: "فرهنگ و اندیشه چین | ؟ دقیقه",
     },
 ];
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Play, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
+import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
+import ScreenMediaCredits from "@/components/course/ScreenMediaCredits";
 import { BackButton } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getReturnToHref } from "@/lib/returnTo";
@@ -108,7 +110,7 @@ export default function ScreenMediaDetailPage({
         );
 
         return (
-            <div className="min-h-full bg-white pb-28 dark:bg-[#10151c]" dir="rtl">
+            <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-6 py-4">
                     <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                         <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
@@ -124,33 +126,19 @@ export default function ScreenMediaDetailPage({
                         <div className="min-w-0 text-center">
                             <h1 className={`font-cjk font-bold leading-7 text-[#343941] dark:text-white ${showAnimationCards ? "text-[17px]" : "text-[19px]"}`}>{item.title}</h1>
                             <p className="mt-1 text-[12px] text-[#454b55] dark:text-slate-300">{item.pinyin}</p>
-                            <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                            <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه | ؟ دقیقه</p>
                             <div className="mt-3 flex justify-center gap-1" aria-hidden="true">
                                 {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
                             </div>
                             <button type="button" disabled aria-label="ثبت نظر پس از انتشار فعال می‌شود" className="mt-1.5 text-[10px] font-medium text-[#1768d4] disabled:cursor-not-allowed">ثبت نظر</button>
                         </div>
                         <div className={`relative aspect-[2/3] overflow-hidden rounded-[8px] bg-slate-100 ${showAnimationCards ? "w-full max-w-[110px]" : ""}`}>
-                            <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-cover" priority />
+                            <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-contain" priority />
                         </div>
                     </section>
 
-                    {showAnimationCards && (
-                        <section className="mt-6 space-y-2" aria-label="خلاصهٔ داستان">
-                            {item.synopsis.map((paragraph) => <p key={paragraph} className="text-right text-[12px] leading-6 text-[#40464f] dark:text-slate-300">{paragraph}</p>)}
-                        </section>
-                    )}
-
-                    <dl className="mt-6 space-y-4 text-right">
-                        {(showAnimationCards || item.showGenresInDetail) && <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">ژانر:</dt><dd className="mt-1 text-[12px] text-[#40464f] dark:text-slate-300">{item.genres.join("، ")}</dd></div>}
-                        {item.showYearInDetail !== false && <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">سال انتشار:</dt><dd className="mt-1 text-[12px] text-[#40464f] dark:text-slate-300">{item.year} – {item.country}</dd></div>}
-                        {showAnimationCards && item.credits ? item.credits.map((credit) => (
-                            <div key={credit.label}><dt className="text-[12px] font-bold text-[#343941] dark:text-white">{credit.label}</dt><dd><DetailList items={credit.items} /></dd></div>
-                        )) : <>
-                            <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">کارگردان:</dt><dd><DetailList items={item.directors} /></dd></div>
-                            <div><dt className="text-[12px] font-bold text-[#343941] dark:text-white">بازیگران اصلی:</dt><dd><DetailList items={item.cast} /></dd></div>
-                        </>}
-                    </dl>
+                    <ReferenceIntroduction heading="خلاصه داستان:" paragraphs={item.synopsis} />
+                    <ScreenMediaCredits item={item} />
 
                     {playbackHref ? (
                         <Link href={playbackHref} className="mt-7 flex min-h-32 overflow-hidden rounded-[10px] bg-[#e9edf5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6] dark:bg-[#202b3a]" dir="ltr" aria-label={`تماشای ${itemNoun} ${item.title}`}>
@@ -168,9 +156,9 @@ export default function ScreenMediaDetailPage({
 
     if ((showSeriesCards || showAnimationCards) && item.episodeCount) {
         return (
-            <div className="min-h-full bg-white pb-28 dark:bg-[#10151c]" dir="rtl">
+            <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                    <div className={showAnimationCards ? "sticky top-0 z-10 -mx-6 bg-white px-6 pb-5 dark:bg-[#10151c]" : undefined}>
+                    <div className={showAnimationCards ? "sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]" : undefined}>
                         <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                             <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                             <div className="flex items-center gap-1">
@@ -185,17 +173,20 @@ export default function ScreenMediaDetailPage({
                             <div className="min-w-0 text-center">
                                 <h1 className={`font-cjk font-bold leading-7 text-[#343941] dark:text-white ${showAnimationCards ? "text-[17px]" : "text-[19px]"}`}>{item.detailTitleLines ? item.detailTitleLines.map((line) => <span key={line} className="block">{line}</span>) : item.title}</h1>
                                 <p className="mt-1 text-[12px] text-[#454b55] dark:text-slate-300">{item.pinyin}</p>
-                                <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                                <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه | ؟ دقیقه</p>
                                 <div className="mt-3 flex justify-center gap-1" aria-hidden="true">
                                     {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
                                 </div>
                                 <button type="button" disabled aria-label="ثبت نظر پس از انتشار فعال می‌شود" className="mt-1.5 text-[10px] font-medium text-[#1768d4] disabled:cursor-not-allowed">ثبت نظر</button>
                             </div>
                             <div className={`relative overflow-hidden rounded-[8px] bg-slate-100 ${item.posterAspect === "landscape" ? "aspect-video" : `aspect-[2/3] ${showAnimationCards ? "w-full max-w-[110px]" : ""}`}`}>
-                                <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-cover" priority />
+                                <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-contain" priority />
                             </div>
                         </section>
                     </div>
+
+                    <ReferenceIntroduction heading="خلاصه داستان:" paragraphs={item.synopsis} />
+                    <ScreenMediaCredits item={item} />
 
                     <section className="mt-5 space-y-2" aria-label={`قسمت‌های ${itemNoun} ${item.title}`}>
                         {Array.from({ length: item.episodeCount }, (_, index) => {
@@ -268,7 +259,7 @@ export default function ScreenMediaDetailPage({
                         <p className="mt-1 text-[10px] font-bold text-[#667587] dark:text-slate-300" dir="rtl">امتیازدهی فعلاً فعال نیست</p>
                     </div>
                     <div className="relative aspect-[2/3] overflow-hidden rounded-[10px] bg-slate-200 shadow-[0_8px_20px_rgba(15,23,42,0.08)]">
-                        <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="175px" className="object-cover" priority />
+                        <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="175px" className="object-contain" priority />
                     </div>
                 </section>
 

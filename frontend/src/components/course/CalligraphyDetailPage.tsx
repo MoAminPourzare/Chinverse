@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
+import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
 import { BackButton } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getCalligraphyCourse } from "@/lib/calligraphyCatalog";
@@ -68,7 +69,7 @@ export default function CalligraphyDetailPage() {
                         <div className="min-w-0 text-center">
                             <h1 className="text-[15px] font-bold leading-6 text-[#343941] dark:text-white" lang="zh">{course.cardTitle || course.title}</h1>
                             {course.subtitle && <p className="mt-0.5 text-[14px] font-bold leading-5 text-[#343941] dark:text-white" lang="zh">{course.subtitle}</p>}
-                            <p className="mt-2 text-[10px] leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">هنر و مهارت‌های چینی</p>
+                            <p className="mt-2 text-[10px] leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">{course.tagline || "هنر و مهارت‌های چینی"}</p>
                             <div className="mt-2 flex justify-center gap-1" aria-hidden="true">
                                 {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
                             </div>
@@ -80,9 +81,7 @@ export default function CalligraphyDetailPage() {
                     </section>
                 </div>
 
-                {showingLevels && <section className="mt-3 space-y-2 text-[12px] leading-7 text-[#343941] dark:text-slate-100" aria-label="معرفی دوره">
-                    {course.description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                </section>}
+                {!level && <ReferenceIntroduction heading={course.introductionHeading || "معرفی دوره:"} paragraphs={course.description} />}
                 {level && <section className="mt-4 text-[#343941] dark:text-slate-100">
                     <h2 className="font-cjk text-[18px] leading-7" dir="ltr" lang="zh">{level.title}</h2>
                     <p className="mt-1 text-xs">{level.lessonCount} درس</p>
@@ -128,11 +127,6 @@ export default function CalligraphyDetailPage() {
                     })}
                 </section>
 
-                <details className="mt-5 rounded-[14px] bg-white p-4 text-[#343941] dark:bg-[#18212b] dark:text-slate-100">
-                    <summary className="cursor-pointer text-sm font-bold">{showingLevels ? "این دوره مناسب چه کسی است؟" : "معرفی و سطح مجموعه"}</summary>
-                    {!showingLevels && course.description.map((paragraph) => <p key={paragraph} className="mt-3 text-[12px] leading-7">{paragraph}</p>)}
-                    <ul className="mt-3 list-disc space-y-1 pr-5 text-[12px] leading-6">{course.audience.map((item) => <li key={item}>{item}</li>)}</ul>
-                </details>
             </main>
         </div>
     );

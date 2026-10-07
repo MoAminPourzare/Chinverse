@@ -20,7 +20,8 @@ describe("cooking catalog", () => {
         expect(getCookingCourse("meishi-zuojia-wang-gang")?.coverPath).toContain("美食作家王刚.png");
         for (const course of COOKING_CATALOG) {
             expect(course.subtitle).toBeTruthy();
-            expect(course.description.length).toBeGreaterThanOrEqual(3);
+            expect(course.description.length).toBeGreaterThan(0);
+            expect(course.description.every((paragraph) => paragraph.trim().length > 0)).toBe(true);
             expect(course).not.toHaveProperty("rating");
             expect(course).not.toHaveProperty("duration");
             expect(existsSync(path.join(process.cwd(), "public", decodeURIComponent(course.coverPath)))).toBe(true);

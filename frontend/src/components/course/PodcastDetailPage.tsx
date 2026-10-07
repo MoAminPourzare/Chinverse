@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
+import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
 import { BackButton } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getPodcast } from "@/lib/podcastCatalog";
@@ -59,7 +60,7 @@ export default function PodcastDetailPage() {
                                 {(podcast.titleLines || [podcast.title]).map((line) => <span key={line} className="block">{line}</span>)}
                                 <span className="block" lang="zh">{podcast.subtitle}</span>
                             </h1>
-                            <p className="mt-2 text-[10px] leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                            <p className="mt-2 text-[10px] leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">{podcast.tagline}</p>
                             <div className="mt-2 flex justify-center gap-1" aria-hidden="true">
                                 {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
                             </div>
@@ -70,6 +71,8 @@ export default function PodcastDetailPage() {
                         </div>
                     </section>
                 </div>
+
+                <ReferenceIntroduction heading="معرفی پادکست:" paragraphs={podcast.description} audience={podcast.audience} />
 
                 <section className="mt-5 space-y-2" aria-label={`قسمت‌های ${podcast.title}`}>
                     {cards.map((card) => {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Music2, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
+import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
 import { BackButton } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getMusicArtist } from "@/lib/musicArtistCatalog";
@@ -67,17 +68,23 @@ export default function MusicArtistDetailPage() {
                         <div className="min-w-0 text-center" dir="ltr">
                             <h1 className="font-cjk text-[20px] leading-8 text-[#343941] dark:text-white">{artist.title}</h1>
                             <p className="mt-1 text-[13px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{artist.pinyin}</p>
-                            <p className="mt-3 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">سرگرمی و رسانه</p>
+                            <p className="mt-3 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">سرگرمی و رسانه | ؟ دقیقه</p>
                             <div className="mt-3 flex justify-center gap-1" aria-hidden="true">
                                 {Array.from({ length: 5 }, (_, index) => <Star key={index} size={19} className={index < 4 ? "fill-[#f3ac25] text-[#f3ac25]" : "text-[#9ba4af]"} />)}
                             </div>
                             <button type="button" disabled aria-label="ثبت نظر پس از انتشار فعال می‌شود" className="mt-1.5 text-[10px] font-medium text-[#1768d4] disabled:cursor-not-allowed">ثبت نظر</button>
                         </div>
                         <div className={`relative w-full overflow-hidden bg-slate-200 ${artist.portraitAspect === "portrait" ? "aspect-[3/4] max-w-[116px]" : "aspect-square rounded-[10px]"}`}>
-                            <Image src={artist.detailPortraitPath || artist.portraitPath} alt={`تصویر ${artist.displayName}`} fill sizes="155px" className="object-cover" priority />
+                            <Image src={artist.detailPortraitPath || artist.portraitPath} alt={`تصویر ${artist.displayName}`} fill sizes="155px" className="object-contain" priority />
                         </div>
                     </section>
                 </div>
+
+                <ReferenceIntroduction heading="بیوگرافی:" paragraphs={artist.biography} />
+                <section className="mt-6 text-right text-[12px] leading-6 text-[#40464f] dark:text-slate-300" aria-label="سبک">
+                    <h2 className="font-bold text-[#343941] dark:text-white">سبک:</h2>
+                    <p>{artist.styles.join(" / ")}</p>
+                </section>
 
                 <section className="mt-5 space-y-2" aria-label={`آثار ${artist.displayName}`}>
                     {artist.releases.map((release) => {
