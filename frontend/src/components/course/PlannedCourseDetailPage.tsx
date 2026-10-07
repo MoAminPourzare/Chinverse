@@ -79,8 +79,8 @@ export default function PlannedCourseDetailPage({
                     <div className="min-w-0 text-center" dir="ltr">
                         <h1 className="text-[17px] font-black leading-7 text-[#343941] dark:text-white">{course.title}</h1>
                         {course.subtitle && <p className="mt-0.5 text-[12px] font-medium leading-5 text-[#40464f] dark:text-slate-300">{course.subtitle}</p>}
-                        <p className="mt-2 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">{eyebrow || `یادگیری زبان چینی | ${title}`}</p>
-                        <p className="mt-2 text-[10px] font-bold text-[#667587] dark:text-slate-300" dir="rtl">امتیازدهی فعلاً فعال نیست</p>
+                        <p className="mt-2 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">{course.tagline || eyebrow || `یادگیری زبان چینی | ${title}`}</p>
+                        {!course.tagline && <p className="mt-2 text-[10px] font-bold text-[#667587] dark:text-slate-300" dir="rtl">امتیازدهی فعلاً فعال نیست</p>}
                     </div>
                     <div className={`relative overflow-hidden rounded-[10px] bg-slate-200 shadow-[0_8px_20px_rgba(15,23,42,0.08)] ${course.detailImageAspect === "video" ? "aspect-video" : "aspect-square"}`}>
                         <Image src={course.detailCoverPath || course.coverPath} alt={`تصویر دورهٔ ${course.title}`} fill sizes="190px" className="object-cover" priority />
@@ -90,7 +90,7 @@ export default function PlannedCourseDetailPage({
                 <section className="mt-5">
                     <h2 className="text-sm font-black text-[#343941] dark:text-white">{course.introductionHeading || descriptionHeading}</h2>
                     {course.description.map((paragraph) => (
-                        <p key={paragraph} className="mt-2 text-right text-[12px] font-medium leading-7 text-[#40464f] dark:text-slate-300">{paragraph}</p>
+                        <p key={paragraph} className={`mt-2 text-[12px] font-medium text-[#40464f] dark:text-slate-300 ${course.tagline ? "text-justify leading-6" : "text-right leading-7"}`}>{paragraph}</p>
                     ))}
                 </section>
 
@@ -105,9 +105,9 @@ export default function PlannedCourseDetailPage({
                     <div className="mb-3 flex items-end justify-between gap-3">
                         <div>
                             <h2 id="planned-lessons-heading" className="text-base font-black text-[#343941] dark:text-white">{course.practiceCount ? "درس‌ها و تمرین‌های دوره" : listHeading}</h2>
-                            <p className="mt-1 text-[11px] leading-5 text-[#737b87] dark:text-slate-400">
-                                {course.lessonGroupCounts ? "تعداد درس‌های هر سطح ثبت شده است؛ جزئیات درس‌ها در انتظار تکمیل‌اند." : hasError ? "وضعیت ویدیوها دریافت نشد؛ دوباره صفحه را باز کن." : isLoading ? `در حال بررسی ${unitPlural} منتشرشده…` : `${unitPlural} آماده به پلیر وصل‌اند؛ بقیه در دست آماده‌سازی‌اند.`}
-                            </p>
+                            {(!course.tagline || hasError) && <p className="mt-1 text-[11px] leading-5 text-[#737b87] dark:text-slate-400">
+                                {hasError ? "وضعیت ویدیوها دریافت نشد؛ دوباره صفحه را باز کن." : course.lessonGroupCounts ? "تعداد درس‌های هر سطح ثبت شده است؛ جزئیات درس‌ها در انتظار تکمیل‌اند." : isLoading ? `در حال بررسی ${unitPlural} منتشرشده…` : `${unitPlural} آماده به پلیر وصل‌اند؛ بقیه در دست آماده‌سازی‌اند.`}
+                            </p>}
                         </div>
                         <span className="shrink-0 rounded-full bg-[#e8f2fd] px-2.5 py-1 text-[10px] font-black text-[#155aa6]">{course.countSummary || (course.chapterCount ? `${course.chapterCount} درس · ${course.lessonCount} بخش` : `${course.lessonCount} ${countLabel}${course.practiceCount ? ` · ${course.practiceCount} تمرین` : ""}`)}</span>
                     </div>
