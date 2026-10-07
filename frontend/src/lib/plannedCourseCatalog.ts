@@ -2,6 +2,7 @@ export interface PlannedCatalogCourse {
     slug: string;
     title: string;
     tagline?: string;
+    detailTitleLines?: string[];
     cardTitle?: string;
     subtitle?: string;
     cardSubtitle?: string;

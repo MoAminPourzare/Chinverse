@@ -57,6 +57,10 @@ export default function PlannedCourseDetailPage({
     }
 
 
+    const detailTitleLines = course.tagline
+        ? course.detailTitleLines || course.title.split(/ (?=\()/u)
+        : undefined;
+
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
@@ -77,7 +81,13 @@ export default function PlannedCourseDetailPage({
 
                 <section className="mt-3 grid grid-cols-[1fr_46%] items-center gap-3" dir="ltr">
                     <div className="min-w-0 text-center" dir="ltr">
-                        <h1 className="text-[17px] font-black leading-7 text-[#343941] dark:text-white">{course.title}</h1>
+                        <h1 className="text-[17px] font-black leading-7 text-[#343941] dark:text-white">
+                            {detailTitleLines ? detailTitleLines.map((line, index) => (
+                                <span key={line} className={`block ${index > 0 && (line.length > 18 || (line.length > 11 && /\p{Script=Han}/u.test(line))) ? "text-[14px]" : ""}`}>
+                                    {index > 0 ? " " : ""}{line}
+                                </span>
+                            )) : course.title}
+                        </h1>
                         {course.subtitle && <p className="mt-0.5 text-[12px] font-medium leading-5 text-[#40464f] dark:text-slate-300">{course.subtitle}</p>}
                         <p className="mt-2 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">{course.tagline || eyebrow || `یادگیری زبان چینی | ${title}`}</p>
                         {!course.tagline && <p className="mt-2 text-[10px] font-bold text-[#667587] dark:text-slate-300" dir="rtl">امتیازدهی فعلاً فعال نیست</p>}

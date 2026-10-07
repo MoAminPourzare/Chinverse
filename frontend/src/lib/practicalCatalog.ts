@@ -58,6 +58,7 @@ export const PRACTICAL_CATALOG: PlannedCatalogCourse[] = [
     {
         slug: "love-chinese-vocabulary",
         title: "Love Chinese 爱中文 (Chinese Vocabulary)",
+        detailTitleLines: ["Love Chinese", "爱中文", "(Chinese Vocabulary)"],
         tagline: "یادگیری زبان چینی | از اساس",
         coverPath: `${assetRoot}/Love Chinese爱中文.jpeg`,
         lessonCount: LOVE_CHINESE_VOCABULARY_TOPICS.length,
