@@ -2,7 +2,20 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.community import ArticleCreate
-from app.schemas.user import UserCreate, UserProfileUpdate
+from app.schemas.user import ALLOWED_PROFILE_HEADLINES, LEGACY_PROFILE_HEADLINES, UserCreate, UserProfileUpdate
+
+
+@pytest.mark.parametrize("headline", sorted(ALLOWED_PROFILE_HEADLINES | LEGACY_PROFILE_HEADLINES))
+def test_profile_accepts_requested_and_previously_saved_job_titles(headline):
+    profile = UserProfileUpdate(headline=f" {headline} ")
+    assert profile.headline == headline
+
+
+def test_profile_has_all_46_requested_titles_and_rejects_unknown_titles():
+    assert len(ALLOWED_PROFILE_HEADLINES) == 46
+    assert {"مدرس HSK", "مدرس تای‌چی / چی‌گونگ", "کارشناس مطالعات چین", "صراف"} <= ALLOWED_PROFILE_HEADLINES
+    with pytest.raises(ValidationError, match="Invalid profile headline"):
+        UserProfileUpdate(headline="عنوان نامعتبر")
 
 
 def test_signup_normalizes_email_phone_name_and_referral_code():

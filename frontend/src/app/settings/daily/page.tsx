@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import Surface from "@/components/ui/Surface";
 import { AppHeader } from "@/components/ui/IconButton";
@@ -15,7 +15,7 @@ import {
     dailyGoalWordOptions,
     useLearningPreferences,
 } from "@/lib/learningPreferences";
-import { cn } from "@/lib/cn";
+import styles from "./DailyGoal.module.css";
 
 const goalIcon = "/assets/chinverse/icons/Goal.svg";
 
@@ -212,22 +212,32 @@ function StudyTimeGoalPicker({ value, onChange }: { value: number; onChange: (va
 
     return (
         <Surface className="overflow-hidden border-white bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-            <div className="relative overflow-hidden rounded-[8px] bg-[#efa38d] px-3 pb-5 pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
-                <PracticeProgress progress={Math.min(Math.max(value, 0), 100)} onSelect={onChange} />
+            <div role="group" aria-label="زمان هدف روزانه" className="relative overflow-hidden rounded-[8px] bg-[#efa38d] px-3 pb-5 pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+                <PracticeProgress value={value} onSelect={onChange} />
 
-                <div key={activeCard.chinese} className="tab-content-motion mx-auto mt-10 flex min-h-[116px] max-w-[520px] flex-col items-center justify-center text-center">
-                    <p className="mb-2 text-[12px] font-black text-[#155aa6]">
-                        هدف مطالعه: {toPersianDigits(value)} دقیقه
-                    </p>
-                    <p className="text-[13px] font-medium leading-7 text-slate-950">
-                        {activeCard.persian}
-                    </p>
-                    <p dir="ltr" lang="zh" className="font-cjk mt-1 text-[15px] font-semibold leading-7 text-slate-900">
-                        {activeCard.chinese}
-                    </p>
-                    <p dir="ltr" lang="zh-Latn" className="mt-1 text-[12px] font-medium leading-5 text-slate-800">
-                        {activeCard.pinyin}
-                    </p>
+                <div className="mx-auto mt-5 grid max-w-[520px]">
+                    {/* All quotes size the same grid cell, including the longest at this screen width. */}
+                    {studyMinuteCards.map((card, index) => (
+                        <div
+                            key={card.minutes}
+                            aria-hidden={index !== activeIndex}
+                            style={{ gridArea: "1 / 1", visibility: index === activeIndex ? "visible" : "hidden" }}
+                            className={`${index === activeIndex ? "tab-content-motion" : ""} flex min-h-[116px] min-w-0 flex-col items-center justify-center text-center`}
+                        >
+                            <p className="mb-2 text-[12px] font-black text-[#10467f]">
+                                هدف مطالعه: {toPersianDigits(value)} دقیقه
+                            </p>
+                            <p className="text-[13px] font-medium leading-7 text-slate-950">
+                                {card.persian}
+                            </p>
+                            <p dir="ltr" lang="zh" className="font-cjk mt-1 text-[15px] font-semibold leading-7 text-slate-900">
+                                {card.chinese}
+                            </p>
+                            <p dir="ltr" lang="zh-Latn" className="mt-1 text-[12px] font-medium leading-5 text-slate-800">
+                                {card.pinyin}
+                            </p>
+                        </div>
+                    ))}
                 </div>
 
                 <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -288,42 +298,35 @@ function StudyTimeGoalPicker({ value, onChange }: { value: number; onChange: (va
     );
 }
 
-function PracticeProgress({ progress, onSelect }: { progress: number; onSelect: (value: number) => void }) {
-    const progressWidth = `${Math.min(Math.max(progress, 0), 100)}%`;
-    const markerPosition = `clamp(22px, ${progressWidth}, calc(100% - 22px))`;
-    const dots = Array.from({ length: 11 });
+function PracticeProgress({ value, onSelect }: { value: number; onSelect: (value: number) => void }) {
+    const progress = Math.min(Math.max(value, 0), 100);
+    const ticks = Array.from({ length: 11 }, (_, index) => index * 10);
 
     return (
-        <div dir="ltr" className="relative h-[62px] px-2 pt-8">
-            <div
-                className="absolute top-3 z-20 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-[#155aa6] text-xs font-black text-white shadow-[0_12px_22px_rgba(21,90,166,0.24)] transition-all duration-500"
-                style={{ left: markerPosition }}
-            >
-                {progress}
+        <div dir="ltr">
+            <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-900" dir="rtl">
+                <label htmlFor="daily-goal-minutes">زمان مطالعه روزانه</label>
+                <span className="rounded-lg bg-[#155aa6] px-3 py-2 font-black text-white">{toPersianDigits(value)} دقیقه</span>
             </div>
-            <div
-                className="absolute top-[40px] z-10 h-[36px] w-[2px] -translate-x-1/2 bg-[#155aa6] transition-all duration-500"
-                style={{ left: markerPosition }}
+            <input
+                id="daily-goal-minutes"
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={progress}
+                aria-valuetext={`${toPersianDigits(progress)} دقیقه`}
+                onChange={(event) => onSelect(Number(event.target.value))}
+                className={styles.slider}
+                style={{ "--goal-progress": `${progress}%` } as CSSProperties}
             />
-            <div className="relative h-[13px] overflow-hidden rounded-full bg-[#a8d8f2]">
-                <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-[#155aa6] transition-all duration-500"
-                    style={{ width: progressWidth }}
-                />
-                <div className="absolute inset-x-4 inset-y-0 grid grid-cols-[repeat(11,minmax(0,1fr))] items-center">
-                    {dots.map((_, index) => (
-                        <button
-                            key={index}
-                            type="button"
-                            onClick={() => onSelect(index * 10)}
-                            className={cn(
-                                "mx-auto h-[7px] w-[7px] rounded-full transition-colors duration-500",
-                                index * 10 <= progress ? "bg-white" : "bg-slate-700",
-                            )}
-                            aria-label={`${index * 10} دقیقه`}
-                        />
-                    ))}
-                </div>
+            <div className={styles.ticks}>
+                {ticks.map((minutes) => (
+                    <button key={minutes} type="button" data-inline-action="true" onClick={() => onSelect(minutes)} aria-label={`${minutes} دقیقه`} aria-pressed={value === minutes} className={styles.tick}>
+                        <span aria-hidden className={styles.tickMark} />
+                        <span aria-hidden>{toPersianDigits(minutes)}</span>
+                    </button>
+                ))}
             </div>
         </div>
     );

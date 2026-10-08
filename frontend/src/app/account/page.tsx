@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Image from "@/components/ui/PublicMediaImage";
-import { Check, ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
 import SafeBackButton from "@/components/ui/SafeBackButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import SearchableOptionList from "@/components/ui/SearchableOptionList";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import {
@@ -526,9 +527,17 @@ function OptionPicker({
     onToggle: () => void;
     onSelect: (value: string) => void;
 }) {
+    const triggerRef = useRef<HTMLButtonElement>(null);
     return (
-        <div className="relative">
+        <div className="relative" onKeyDown={(event) => {
+            if (isOpen && event.key === "Escape") {
+                event.preventDefault();
+                onToggle();
+                triggerRef.current?.focus();
+            }
+        }}>
             <button
+                ref={triggerRef}
                 id={id}
                 type="button"
                 onClick={onToggle}
@@ -547,44 +556,18 @@ function OptionPicker({
 
             {isOpen && (
                 <div id={`${id}-options`} className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
-                    <div className="max-h-72 overflow-y-auto pr-1">
-                        <div className="motion-list grid grid-cols-2 gap-2">
-                            {clearLabel && (
-                                <button
-                                    type="button"
-                                    onClick={() => onSelect("")}
-                                    className={cn(
-                                        "flex min-h-11 items-center justify-center rounded-[16px] border px-3 py-2 text-center text-[12px] font-black transition-all duration-300",
-                                        !value
-                                            ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
-                                            : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                    )}
-                                >
-                                    {clearLabel}
-                                </button>
-                            )}
-
-                            {options.map((option) => {
-                                const active = value === option;
-                                return (
-                                    <button
-                                        key={option}
-                                        type="button"
-                                        onClick={() => onSelect(option)}
-                                        className={cn(
-                                            "flex min-h-11 items-center justify-center gap-1.5 rounded-[16px] border px-3 py-2 text-center text-[12px] font-black leading-5 transition-all duration-300",
-                                            active
-                                                ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
-                                                : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                        )}
-                                    >
-                                        {active && <Check size={14} />}
-                                        <span className="line-clamp-2">{option}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <SearchableOptionList
+                        label={label}
+                        options={options}
+                        selectedValues={value ? [value] : []}
+                        searchable={id === "account-headline" || id === "account-country" || id === "account-city"}
+                        clearLabel={clearLabel}
+                        onClear={() => onSelect("")}
+                        onSelect={(option) => {
+                            onSelect(option);
+                            triggerRef.current?.focus();
+                        }}
+                    />
                 </div>
             )}
         </div>

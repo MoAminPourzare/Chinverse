@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
     BriefcaseBusiness,
-    Check,
     ChevronLeft,
     GraduationCap,
     ImageIcon,
@@ -19,6 +18,7 @@ import {
     X,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
+import SearchableOptionList from "@/components/ui/SearchableOptionList";
 import LikeButton from "@/components/engagement/LikeButton";
 import { BackButton, IconButton } from "@/components/ui/IconButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
@@ -396,45 +396,22 @@ function TalentFilterPanel({
                     </>
                 ) : (
                     <div className="mt-5 flex min-h-0 flex-1 flex-col">
-                        <div className="min-h-0 flex-1 overflow-y-auto rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+                        <div className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                             {activeFilterKey === "jobTitles" && (
                                 <p className="mb-3 rounded-[18px] border border-amber-100 bg-amber-50 px-4 py-3 text-[12px] font-bold leading-6 text-amber-800">
                                     عنوان شغلی توسط خود کاربر انتخاب می‌شود و به معنی تأیید تخصص، مجوز یا سابقه کاری فرد توسط چین‌ورس نیست.
                                 </p>
                             )}
-                            <button
-                                type="button"
-                                onClick={() => onClearFilter(activeFilterKey)}
-                                className={cn(
-                                    "mb-2 flex min-h-11 w-full items-center justify-center rounded-[16px] border px-3 text-center text-sm font-black transition",
-                                    filters[activeFilterKey].length === 0
-                                        ? "border-[#155aa6] bg-[#155aa6] text-white"
-                                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                )}
-                            >
-                                همه موارد
-                            </button>
-                            <div className="grid grid-cols-2 gap-2">
-                                {filterConfig[activeFilterKey].options.map((option) => {
-                                    const active = filters[activeFilterKey].includes(option);
-                                    return (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() => onToggleValue(activeFilterKey, option)}
-                                            className={cn(
-                                                "flex min-h-12 items-center justify-center gap-1.5 rounded-[16px] border px-3 py-2 text-center text-[12px] font-black leading-5 transition-all duration-200",
-                                                active
-                                                    ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
-                                                    : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                            )}
-                                        >
-                                            {active && <Check size={14} />}
-                                            <span className="line-clamp-2">{option}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            <SearchableOptionList
+                                key={activeFilterKey}
+                                label={filterConfig[activeFilterKey].label}
+                                options={filterConfig[activeFilterKey].options}
+                                selectedValues={filters[activeFilterKey]}
+                                onSelect={(option) => onToggleValue(activeFilterKey, option)}
+                                clearLabel="همه موارد"
+                                onClear={() => onClearFilter(activeFilterKey)}
+                                scrollClassName="flex-1"
+                            />
                         </div>
                     </div>
                 )}
