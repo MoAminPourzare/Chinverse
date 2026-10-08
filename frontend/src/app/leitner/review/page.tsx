@@ -313,13 +313,13 @@ export default function LeitnerReviewPage() {
                                             unoptimized
                                         />
                                     </button>
-                                    <span className={cn("font-cjk text-3xl font-black", boxStyle.text)} dir="ltr" lang="zh-CN">
+                                    <span className={cn("font-cjk min-w-0 break-words text-3xl font-black", boxStyle.text)} dir="ltr" lang="zh-CN">
                                         {currentCard.word.chinese}
                                     </span>
                                 </div>
-                                    <p className="font-latin mt-2 text-center! text-base font-bold text-slate-600" dir="ltr">
-                                        {currentCard.word.pinyin}
-                                    </p>
+                                <p className="font-latin mt-2 break-words text-center! text-base font-bold text-slate-600" dir="ltr">
+                                    {currentCard.word.pinyin}
+                                </p>
                                 {pronunciation.error && <p role="alert" className="mt-2 text-xs leading-6 text-red-700">{pronunciation.error}</p>}
                                 {currentCard.word.audio_url && currentCard.word.audio_pinyin && /[/|,，;；]/.test(currentCard.word.pinyin) && (
                                     <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{currentCard.word.audio_pinyin}</span></p>

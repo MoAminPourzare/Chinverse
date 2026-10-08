@@ -22,7 +22,7 @@ async function ready(page: Page, route: string) {
     await page.evaluate(() => document.fonts.ready);
 }
 
-async function setup(page: Page, upcoming = false, count = 5) {
+async function setup(page: Page, upcoming = false, count = 5, longWord = false) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.addInitScript(() => {
         localStorage.setItem("chinverse.pwa.ios-hint-dismissed", "true");
@@ -35,7 +35,7 @@ async function setup(page: Page, upcoming = false, count = 5) {
         } });
     });
     let cards = chinese.slice(0, count).map((word, i) => ({ id: i + 11, box_number: i + 1, next_review_at: upcoming ? "2099-01-01T00:00:00Z" : "2020-01-01T00:00:00Z", word: {
-        id: i + 1, chinese: word, pinyin: pinyin[i], audio_url: null,
+        id: i + 1, chinese: longWord && i === 0 ? "一日不见如隔三秋" : word, pinyin: pinyin[i], audio_url: null,
         chinese_meaning: "中文解释", persian_meaning: fa, composition: "经理工作",
         definitions: [], collocations: [{ id: i + 1, phrase_zh: word + "工作", phrase_pinyin: "gōngzuò", translation_target: "ترکیب آزمایشی", sense_order: 1 }],
         examples: [{ id: i + 1, zh_text: "这是" + word, pinyin: "zhè shì", target_text: "مثال آزمایشی", sense_order: 1 }],
@@ -163,16 +163,25 @@ test("failed review keeps the back visible and the forgotten choice submits the 
 
 test("a narrow back card expands without clipped headings or nested scrolling", async ({ page }, info) => {
     await page.setViewportSize({ width: 320, height: 667 });
-    await setup(page);
+    await setup(page, false, 5, true);
     await ready(page, "/leitner/review");
+    const frontWord = page.getByText("一日不见如隔三秋", { exact: true });
+    expect(await frontWord.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBeTruthy();
     await page.getByRole("button", { name: "دیدن پشت کارت", exact: true }).click();
     await page.getByRole("tab", { name: "معنی فارسی", exact: true }).click();
     const panel = page.getByRole("tabpanel"), card = page.getByRole("region", { name: "پشت کارت", exact: true });
+    const wordBounds = (await page.getByText("一日不见如隔三秋", { exact: true }).boundingBox())!, cardBounds = (await card.boundingBox())!;
+    expect(wordBounds.x).toBeGreaterThan(cardBounds.x);
+    expect(wordBounds.x + wordBounds.width).toBeLessThan(cardBounds.x + cardBounds.width);
     expect(await card.evaluate((element) => element.scrollHeight <= element.clientHeight + 2)).toBeTruthy();
     expect(await panel.evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
     expect(await page.locator("main").evaluate((element) => element.querySelectorAll(":scope > div > span").length)).toBe(0);
     await page.getByRole("tab", { name: "معنی چینی", exact: true }).click();
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: "معنی فارسی", exact: true })).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(page.getByRole("tab", { name: "معنی چینی", exact: true })).toBeFocused();
     await expect(page.getByText("jīnglǐ", { exact: true })).toBeVisible();
     const violations = (await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa"]).analyze()).violations;
     expect(violations).toEqual([]);
