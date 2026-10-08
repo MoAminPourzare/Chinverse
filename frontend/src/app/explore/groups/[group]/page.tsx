@@ -4,6 +4,7 @@ import { notFound, useParams } from "next/navigation";
 import { getExploreSection } from "@/components/explore/exploreData";
 import ExploreItemLink from "@/components/explore/ExploreItemLink";
 import { BackButton } from "@/components/ui/IconButton";
+import styles from "@/components/explore/ExploreGallery.module.css";
 
 export default function ExploreGroupPage() {
     const params = useParams();
@@ -15,22 +16,22 @@ export default function ExploreGroupPage() {
     }
 
     return (
-        <div className="min-h-full bg-[var(--app-canvas)] pb-8" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-6">
+        <div className={styles.page} dir="rtl">
+            <main className={styles.main}>
                 <header>
-                    <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2" dir="ltr">
+                    <div className={styles.groupHeader} dir="ltr">
                         <BackButton href="/explore" label="بازگشت به کاوش" />
-                        <h1 className="min-w-0 text-center text-[18px] font-bold leading-8 text-[var(--app-text)]" dir="rtl">{section.title}</h1>
+                        <h1 className={styles.groupTitle} dir="rtl">{section.title}</h1>
                         <span aria-hidden />
                     </div>
-                    <p className="mt-5 px-1 text-[13px] leading-7 text-[var(--app-text-muted)]">{section.subtitle}</p>
+                    <p className={styles.groupDescription}>{section.subtitle}</p>
                 </header>
 
-                <section aria-label={`موضوع‌های ${section.title}`} className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5">
-                    <p className="mb-3 px-1 text-[12px] leading-6 text-[var(--app-text-muted)]">{section.items.length.toLocaleString("fa-IR")} موضوع</p>
-                    <ul className="space-y-2">
-                        {section.items.map((item) => (
-                            <li key={item.id}><ExploreItemLink item={item} /></li>
+                <section aria-label={`موضوع‌های ${section.title}`} className={styles.panel}>
+                    <p className={styles.groupCount}>{section.items.length.toLocaleString("fa-IR")} موضوع</p>
+                    <ul className={section.id === "learning" ? styles.tiles : styles.list}>
+                        {section.items.map((item, index) => (
+                            <li key={item.id}><ExploreItemLink item={item} layout={section.id === "learning" ? "tile" : "row"} preload={index === 0} eager={index < (section.id === "learning" ? 6 : 4)} /></li>
                         ))}
                     </ul>
                 </section>

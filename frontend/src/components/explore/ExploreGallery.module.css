@@ -1,0 +1,334 @@
+.page {
+    min-height: 100%;
+    padding-bottom: 32px;
+    background: var(--app-canvas);
+}
+
+.main {
+    display: flex;
+    width: 100%;
+    max-width: 430px;
+    margin-inline: auto;
+    flex-direction: column;
+    gap: 22px;
+    padding: 26px 16px 8px;
+}
+
+.header {
+    padding-inline: 4px;
+}
+
+.title {
+    color: var(--app-text);
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.6;
+    letter-spacing: -0.6px;
+}
+
+.subtitle {
+    margin-top: 3px;
+    color: var(--app-text-muted);
+    font-size: 12px;
+    line-height: 2;
+}
+
+.panel {
+    padding: 15px 12px 12px;
+    border: 1px solid color-mix(in srgb, var(--app-border) 72%, transparent);
+    border-radius: 26px;
+    background: var(--app-surface);
+    box-shadow: 0 3px 14px -9px var(--app-shadow);
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-inline: 3px;
+}
+
+.sectionTitle {
+    color: var(--app-text);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.9;
+}
+
+.count {
+    color: var(--app-text-muted);
+    font-size: 11px;
+    line-height: 1.8;
+}
+
+.viewAll {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 3px;
+    border-radius: 12px;
+    color: var(--app-primary);
+    font-size: 11px;
+    font-weight: 650;
+    white-space: nowrap;
+    transition: background 180ms ease;
+}
+
+.viewAll:hover {
+    background: var(--app-primary-soft);
+}
+
+.list,
+.tiles {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    direction: ltr;
+}
+
+.list li,
+.tiles li {
+    min-width: 0;
+}
+
+.card {
+    --tile-tint: #eef7ff;
+    position: relative;
+    display: grid;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--app-border) 40%, transparent);
+    color: var(--app-text);
+    transition: transform 200ms var(--motion-ease-smooth), box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.card[data-tone="rose"] {
+    --tile-tint: #fff2f6;
+}
+
+.card[data-tone="violet"] {
+    --tile-tint: #f4f1ff;
+}
+
+.card[data-tone="amber"] {
+    --tile-tint: #fff8e9;
+}
+
+.tile {
+    min-height: 155px;
+    border-color: transparent;
+    border-radius: 19px;
+    background: var(--tile-tint);
+}
+
+.row {
+    min-height: 134px;
+    grid-template-columns: minmax(0, 1fr) 54%;
+    gap: 6px;
+    padding: 5px;
+    border-radius: 19px;
+    background: var(--app-canvas);
+}
+
+.picture {
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--tile-tint);
+}
+
+.tile .picture {
+    position: absolute;
+    inset-block: auto 0;
+    right: -4px;
+    width: 68%;
+    height: 72%;
+    border-radius: 0;
+    mask-image: linear-gradient(to left, black 66%, transparent), linear-gradient(to bottom, transparent, black 15%, black 88%, transparent);
+    mask-composite: intersect;
+}
+
+.image {
+    object-fit: contain;
+    transition: transform 350ms var(--motion-ease-smooth);
+}
+
+.scene .image {
+    object-fit: cover;
+}
+
+.content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.tile .content {
+    width: 53%;
+    min-height: 155px;
+    padding: 16px 0 14px 12px;
+    text-align: left;
+}
+
+.row .content {
+    justify-content: center;
+    padding: 9px 5px 9px 9px;
+}
+
+.itemTitle {
+    width: 100%;
+    color: var(--app-text);
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.65;
+}
+
+.description {
+    width: 100%;
+    margin-top: 3px;
+    color: color-mix(in srgb, var(--app-text) 76%, var(--app-text-muted));
+    font-size: 10px;
+    line-height: 1.85;
+}
+
+.arrow {
+    display: inline-flex;
+    width: 29px;
+    height: 29px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    border-radius: 50%;
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
+}
+
+.tile .arrow {
+    margin-top: auto;
+    background: color-mix(in srgb, var(--app-surface) 72%, transparent);
+}
+
+.row .arrow {
+    align-self: flex-end;
+}
+
+.groupHeader {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) 46px;
+    align-items: center;
+    gap: 5px;
+}
+
+.groupTitle {
+    color: var(--app-text);
+    font-size: 18px;
+    font-weight: 750;
+    line-height: 1.7;
+    text-align: center;
+}
+
+.groupDescription {
+    margin-top: 13px;
+    color: var(--app-text-muted);
+    font-size: 12px;
+    line-height: 2;
+}
+
+.groupCount {
+    margin: 0 3px 12px;
+    color: var(--app-text-muted);
+    font-size: 12px;
+}
+
+@media (hover: hover) {
+    .card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--app-primary) 28%, transparent);
+        box-shadow: 0 7px 18px -10px var(--app-shadow);
+    }
+
+    .card:hover .image {
+        transform: scale(1.035);
+    }
+}
+
+@media (max-width: 360px) {
+    .main {
+        padding-inline: 12px;
+    }
+
+    .panel {
+        padding-inline: 9px;
+    }
+
+    .tiles {
+        gap: 8px;
+    }
+
+    .sectionTitle {
+        font-size: 14px;
+    }
+
+    .tile .content {
+        width: 58%;
+        padding-left: 10px;
+    }
+
+    .tile .picture {
+        right: -9px;
+        width: 70%;
+    }
+
+    .itemTitle {
+        font-size: 14px;
+    }
+
+    .row {
+        grid-template-columns: minmax(0, 1fr) 51%;
+    }
+}
+
+:global(html.dark) .tile {
+    --tile-tint: #1b2c40;
+}
+
+:global(html.dark) .tile[data-tone="rose"] {
+    --tile-tint: #382330;
+}
+
+:global(html.dark) .tile[data-tone="violet"] {
+    --tile-tint: #28243f;
+}
+
+:global(html.dark) .tile[data-tone="amber"] {
+    --tile-tint: #342d22;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card,
+    .image,
+    .viewAll {
+        transition: none;
+    }
+
+    .card:hover,
+    .card:hover .image {
+        transform: none;
+    }
+}
