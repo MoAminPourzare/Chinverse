@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Volume2 } from "lucide-react";
+import { Dialog, DialogDescription, DialogPanel, DialogTitle } from "@headlessui/react";
+import { Play, Trash2, Volume2 } from "lucide-react";
 import api from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { getMediaUrl } from "@/lib/media";
+import { LEITNER_STAGES } from "@/lib/leitnerStages";
+import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
 
 interface Word {
     id: number;
@@ -39,67 +41,34 @@ interface LeitnerReviewResponse {
     cards: Flashcard[];
 }
 
-const BOX_INFO: Record<number, {
-    title: string;
-    subtitle: string;
-    image: string;
-    border: string;
-    header: string;
-}> = {
-    1: {
-        title: "بذر",
-        subtitle: "نیازمند یادآوری",
-        image: "/assets/chinverse/leitner/stage-seed.svg",
-        border: "border-[#e51f35]",
-        header: "bg-[#e51f35]",
-    },
-    2: {
-        title: "جوانه",
-        subtitle: "حافظه کوتاه مدت",
-        image: "/assets/chinverse/leitner/stage-sprout.svg",
-        border: "border-[#f4aa16]",
-        header: "bg-[#f7bd28]",
-    },
-    3: {
-        title: "نهال",
-        subtitle: "حافظه میان مدت",
-        image: "/assets/chinverse/leitner/stage-branch.svg",
-        border: "border-[#39aa20]",
-        header: "bg-[#50b008]",
-    },
-    4: {
-        title: "درخت جوان",
-        subtitle: "حافظه بلند مدت",
-        image: "/assets/chinverse/leitner/stage-tree.svg",
-        border: "border-[#88c7ee]",
-        header: "bg-[#a2cef0]",
-    },
-    5: {
-        title: "درخت تنومند",
-        subtitle: "آموخته شده",
-        image: "/assets/chinverse/leitner/stage-mastered.svg",
-        border: "border-[#155aa6]",
-        header: "bg-[#20518f]",
-    },
-};
+const BOX_INFO = LEITNER_STAGES;
 
 export default function LeitnerDashboard() {
     const [stats, setStats] = useState<LeitnerStats | null>(null);
-    const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+    const [cards, setCards] = useState<Flashcard[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [cardToDelete, setCardToDelete] = useState<Flashcard | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const fetchLeitner = useCallback(async () => {
         setLoading(true);
         setLoadError(null);
         try {
-            const [statsResponse, reviewResponse] = await Promise.all([
+            const [statsResponse, cardsResponse] = await Promise.all([
                 api.get<LeitnerStats>("/leitner/dashboard"),
-                api.get<LeitnerReviewResponse>("/leitner/review", { params: { limit: 1000 } }),
+                api.get<LeitnerReviewResponse>("/leitner/cards", { params: { limit: 1000 } }),
             ]);
-
+            const nextCards = [...cardsResponse.data.cards];
+            // Include cards scheduled for later, and paginate large personal collections.
+            while (nextCards.length < statsResponse.data.total_cards) {
+                const response = await api.get<LeitnerReviewResponse>("/leitner/cards", { params: { limit: 1000, skip: nextCards.length } });
+                if (!response.data.cards.length) break;
+                nextCards.push(...response.data.cards);
+            }
             setStats(statsResponse.data);
-            setDueCards(Array.isArray(reviewResponse.data.cards) ? reviewResponse.data.cards : []);
+            setCards(nextCards);
         } catch (error) {
             console.error("Failed to fetch leitner dashboard:", error);
             setLoadError("اطلاعات لایتنر دریافت نشد. اتصال را بررسی و دوباره تلاش کن.");
@@ -112,11 +81,20 @@ export default function LeitnerDashboard() {
         void fetchLeitner();
     }, [fetchLeitner]);
 
-    const playAudio = (url?: string) => {
-        if (!url) return;
-        void new Audio(getMediaUrl(url)).play().catch((error) => {
-            console.error("Failed to play vocabulary audio:", error);
-        });
+    const deleteCard = async () => {
+        if (!cardToDelete || deleting) return;
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+            await api.delete(`/leitner/cards/${cardToDelete.id}`);
+            setCards((previous) => previous.filter((card) => card.id !== cardToDelete.id));
+            setCardToDelete(null);
+            await fetchLeitner();
+        } catch {
+            setDeleteError("لغت حذف نشد. دوباره تلاش کن.");
+        } finally {
+            setDeleting(false);
+        }
     };
 
     if (loading) {
@@ -148,7 +126,7 @@ export default function LeitnerDashboard() {
     }
 
     const hasCards = stats.total_cards > 0;
-    const hasDueCards = dueCards.length > 0;
+    const hasDueCards = stats.total_due > 0;
 
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
@@ -156,6 +134,8 @@ export default function LeitnerDashboard() {
                 <header className="pt-1 text-center">
                     <h1 className="text-xl font-black text-slate-950">لایتنر</h1>
                 </header>
+
+                {loadError && <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{loadError} <button type="button" onClick={() => void fetchLeitner()} className="underline">تلاش دوباره</button></div>}
 
                 <section aria-label="جعبه‌های لایتنر">
                     <div className="grid grid-cols-6 gap-2">
@@ -183,16 +163,31 @@ export default function LeitnerDashboard() {
                             </div>
                         )}
 
-                        {hasDueCards && (
+                        {cards.length > 0 && (
                             <div className="motion-list space-y-2.5">
-                                {dueCards.map((card) => (
-                                    <ReviewWordRow key={card.id} card={card} onPlayAudio={playAudio} />
+                                {cards.map((card) => (
+                                    <ReviewWordRow key={card.id} card={card} onDelete={() => { setDeleteError(null); setCardToDelete(card); }} />
                                 ))}
                             </div>
                         )}
                     </section>
                 )}
             </main>
+            <Dialog open={Boolean(cardToDelete)} onClose={() => { if (!deleting) setCardToDelete(null); }} className="relative z-[1100]" dir="rtl">
+                <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm" aria-hidden="true" />
+                <div className="fixed inset-0 flex items-center justify-center overflow-y-auto p-5">
+                    <DialogPanel className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+                        <DialogTitle className="text-lg font-black text-slate-950">حذف لغت از لایتنر</DialogTitle>
+                        <DialogDescription className="mt-4 text-sm leading-7 text-slate-600">آیا مطمئنی که می‌خوای این لغت رو از لایتنرت حذف کنی؟</DialogDescription>
+                        <div className="font-cjk mt-3 text-center text-2xl text-slate-900" lang="zh-CN" dir="ltr">{cardToDelete?.word.chinese}</div>
+                        {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => void deleteCard()} disabled={deleting} className="min-h-12 rounded-full bg-red-700 font-bold text-white disabled:opacity-60">آره</button>
+                            <button type="button" data-autofocus onClick={() => setCardToDelete(null)} disabled={deleting} className="min-h-12 rounded-full bg-slate-100 font-bold text-slate-700 disabled:opacity-60">نه</button>
+                        </div>
+                    </DialogPanel>
+                </div>
+            </Dialog>
         </div>
     );
 }
@@ -220,20 +215,20 @@ function EmptyLeitnerState() {
     );
 }
 
-function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (url?: string) => void }) {
+function ReviewWordRow({ card, onDelete }: { card: Flashcard; onDelete: () => void }) {
     const boxNumber = normalizeBoxNumber(card.box_number);
     const box = BOX_INFO[boxNumber];
+    const pronunciation = useVocabularyPronunciation(card.word, true);
 
     return (
         <article className={cn("overflow-hidden rounded-[14px] border-2 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)]", box.border)}>
-            <div className="flex min-h-[58px] items-center justify-between gap-3 px-3 py-2">
-                <div className="flex min-w-0 items-center gap-3">
+            <div className="grid min-h-[68px] grid-cols-[76px_minmax(0,1fr)_76px] items-center gap-1 px-2 py-2">
+                <div className="flex min-w-0 items-center gap-1">
                     <button
                         type="button"
-                        onClick={() => onPlayAudio(card.word.audio_url)}
-                        disabled={!card.word.audio_url}
+                        onClick={() => pronunciation.playing ? pronunciation.stop() : void pronunciation.play()}
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-35"
-                        aria-label="پخش تلفظ"
+                        aria-label={pronunciation.playing ? "توقف تلفظ" : "پخش تلفظ"}
                     >
                         <Volume2 size={19} />
                     </button>
@@ -247,15 +242,14 @@ function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (u
                     />
                 </div>
 
-                <div className="min-w-0 flex-1 text-left" dir="ltr">
-                    <p className="font-cjk truncate text-[19px] font-bold text-slate-900" lang="zh-CN">
+                <div className="min-w-0 text-center" dir="ltr">
+                    <p className="font-cjk break-words text-center! text-[23px] font-bold text-slate-900" lang="zh-CN">
                         {card.word.chinese}
                     </p>
-                    <p className="font-latin truncate text-[11px] font-semibold text-slate-400">
-                        {card.word.pinyin}
-                    </p>
                 </div>
+                <button type="button" onClick={onDelete} aria-label={`حذف ${card.word.chinese} از لایتنر`} className="flex h-11 w-11 items-center justify-center justify-self-end rounded-full text-slate-500 transition hover:bg-red-50 hover:text-red-700"><Trash2 size={20} /></button>
             </div>
+            {pronunciation.error && <p role="alert" className="px-3 pb-2 text-xs leading-6 text-red-700">{pronunciation.error}</p>}
             {card.word.persian_meaning && (
                 <div className="border-t border-slate-100 bg-slate-50/75 px-3 py-2 text-right text-[11px] font-bold leading-5 text-slate-500">
                     {card.word.persian_meaning}

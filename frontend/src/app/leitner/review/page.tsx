@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
-import { Check, Loader2, Send, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { getMediaUrl } from "@/lib/media";
+import { LEITNER_STAGES } from "@/lib/leitnerStages";
+import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
+import styles from "./review.module.css";
 import { BackButton } from "@/components/ui/IconButton";
 import {
     getChineseTextStyle,
@@ -86,10 +88,10 @@ const BOX_INTERVALS: Record<number, number> = {
 type BackTabType = "examples" | "composition" | "persian" | "chinese";
 
 const backTabs: { key: BackTabType; label: string }[] = [
-    { key: "examples", label: "مثال‌ها" },
-    { key: "composition", label: "ترکیب" },
-    { key: "persian", label: "معنی فارسی" },
     { key: "chinese", label: "معنی چینی" },
+    { key: "persian", label: "معنی فارسی" },
+    { key: "composition", label: "ترکیب واژگانی" },
+    { key: "examples", label: "مثال‌ها" },
 ];
 
 export default function LeitnerReviewPage() {
@@ -102,7 +104,9 @@ export default function LeitnerReviewPage() {
     const [isFlipped, setIsFlipped] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sessionComplete, setSessionComplete] = useState(false);
-    const [activeBackTab, setActiveBackTab] = useState<BackTabType>("examples");
+    const [activeBackTab, setActiveBackTab] = useState<BackTabType>("chinese");
+    const currentCard = cards[currentIndex];
+    const pronunciation = useVocabularyPronunciation(currentCard?.word || { id: 0, chinese: "" }, Boolean(currentCard && !sessionComplete && !loading));
 
     const fetchReviewCards = useCallback(async () => {
         setLoading(true);
@@ -112,6 +116,8 @@ export default function LeitnerReviewPage() {
             const nextCards = Array.isArray(response.data.cards) ? response.data.cards : [];
             setCards(nextCards);
             setCurrentIndex(0);
+            setIsFlipped(false);
+            setActiveBackTab("chinese");
             setSessionComplete(nextCards.length === 0);
         } catch (error) {
             console.error("Failed to fetch review cards:", error);
@@ -124,13 +130,6 @@ export default function LeitnerReviewPage() {
     useEffect(() => {
         void fetchReviewCards();
     }, [fetchReviewCards]);
-
-    const playAudio = (url?: string) => {
-        if (!url) return;
-        void new Audio(getMediaUrl(url)).play().catch((error) => {
-            console.error("Failed to play vocabulary audio:", error);
-        });
-    };
 
     const handleReview = async (remembered: boolean) => {
         if (isSubmitting) return;
@@ -148,7 +147,7 @@ export default function LeitnerReviewPage() {
             if (currentIndex + 1 < cards.length) {
                 setCurrentIndex(currentIndex + 1);
                 setIsFlipped(false);
-                setActiveBackTab("examples");
+                setActiveBackTab("chinese");
             } else {
                 setSessionComplete(true);
             }
@@ -230,9 +229,9 @@ export default function LeitnerReviewPage() {
         );
     }
 
-    const currentCard = cards[currentIndex];
     const currentBox = normalizeBoxNumber(currentCard.box_number);
     const boxStyle = BOX_STYLES[currentBox];
+    const stage = LEITNER_STAGES[currentBox];
     const rememberedBox = Math.min(currentBox + 1, 5);
     const rememberedInterval = BOX_INTERVALS[rememberedBox] || 1;
     const chineseTextStyle = getChineseTextStyle(preferences);
@@ -245,7 +244,7 @@ export default function LeitnerReviewPage() {
     const chineseDefinitions = definitions.filter((item) => item.lang_code === "zh");
 
     return (
-        <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
+        <div className="min-h-full bg-[#f7f8fa] px-4 pb-28 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
                 <header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="ltr">
                     <BackButton onClick={() => router.push("/leitner")} className="justify-self-end" />
@@ -255,21 +254,28 @@ export default function LeitnerReviewPage() {
                     </div>
                 </header>
 
-                <section className={cn("mt-4 overflow-hidden rounded-[18px] border-2 bg-white shadow-[0_12px_26px_rgba(15,23,42,0.10)]", boxStyle.border)}>
+                <section aria-label="مرحلهٔ یادگیری" className="mt-4 flex items-center gap-3 px-1">
+                    <Image src={stage.image} alt={stage.title} width={60} height={60} className="h-15 w-15 shrink-0 object-contain" unoptimized />
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-black text-slate-800">{stage.title}</h2>
+                        <p className="mt-1 text-[13px] leading-6 text-slate-600">{stage.message}</p>
+                    </div>
+                </section>
+
+                <section aria-label={isFlipped ? "پشت کارت" : "روی کارت"} className={cn("mt-4 overflow-hidden rounded-[18px] border-2 bg-white shadow-[0_12px_26px_rgba(15,23,42,0.10)]", stage.border)}>
                     {!isFlipped ? (
                         <div className="flex min-h-[340px] flex-col items-center justify-center px-6 py-8 text-center">
                             <span className={cn("rounded-full px-3 py-1 text-[11px] font-black", boxStyle.soft)}>
                                 {boxStyle.label}
                             </span>
                             <div className="mt-8 flex items-center justify-center gap-4">
-                                <span className="font-cjk text-[3.4rem] font-bold leading-tight text-slate-900" dir="ltr" lang="zh-CN">
+                                <span className="font-cjk min-w-0 break-words text-[3rem] font-bold leading-tight text-slate-900" dir="ltr" lang="zh-CN">
                                     {currentCard.word.chinese}
                                 </span>
                                 <button
-                                    onClick={() => playAudio(currentCard.word.audio_url)}
-                                    disabled={!currentCard.word.audio_url}
-                                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-35"
-                                    aria-label="پخش تلفظ"
+                                    onClick={() => pronunciation.playing ? pronunciation.stop() : void pronunciation.play()}
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe]"
+                                    aria-label={pronunciation.playing ? "توقف تلفظ" : "پخش تلفظ"}
                                 >
                                     <Image
                                         src="/assets/chinverse/icons/Speaker.svg"
@@ -281,28 +287,22 @@ export default function LeitnerReviewPage() {
                                     />
                                 </button>
                             </div>
-                            {preferences.showPinyin && (
-                                <p className="font-latin mt-3 text-sm font-bold text-slate-400" dir="ltr">
-                                    {currentCard.word.pinyin}
-                                </p>
-                            )}
+                            {pronunciation.error && <p role="alert" className="mt-3 text-xs leading-6 text-red-700">{pronunciation.error}</p>}
                             <button
                                 onClick={() => setIsFlipped(true)}
                                 className="mt-10 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#155aa6] text-sm font-black text-white shadow-[0_10px_18px_rgba(21,90,166,0.25)] transition active:scale-[0.98]"
                             >
                                 دیدن پشت کارت
-                                <Send size={16} />
                             </button>
                         </div>
                     ) : (
-                        <div className="flex max-h-[620px] flex-col">
-                            <div className="border-b border-slate-100 bg-[#f8fafc] px-4 py-4 text-center">
+                        <div className="flex flex-col">
+                            <div className="shrink-0 px-4 pb-2 pt-5 text-center">
                                 <div className="flex items-center justify-center gap-3">
                                     <button
-                                        onClick={() => playAudio(currentCard.word.audio_url)}
-                                        disabled={!currentCard.word.audio_url}
-                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#155aa6] shadow-sm disabled:cursor-not-allowed disabled:opacity-35"
-                                        aria-label="پخش تلفظ"
+                                        onClick={() => pronunciation.playing ? pronunciation.stop() : void pronunciation.play()}
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6]"
+                                        aria-label={pronunciation.playing ? "توقف تلفظ" : "پخش تلفظ"}
                                     >
                                         <Image
                                             src="/assets/chinverse/icons/Speaker.svg"
@@ -317,26 +317,42 @@ export default function LeitnerReviewPage() {
                                         {currentCard.word.chinese}
                                     </span>
                                 </div>
-                                {preferences.showPinyin && (
-                                    <p className="font-latin mt-1 text-sm font-bold text-slate-400" dir="ltr">
+                                    <p className="font-latin mt-2 text-center! text-base font-bold text-slate-600" dir="ltr">
                                         {currentCard.word.pinyin}
                                     </p>
-                                )}
+                                {pronunciation.error && <p role="alert" className="mt-2 text-xs leading-6 text-red-700">{pronunciation.error}</p>}
                                 {currentCard.word.audio_url && currentCard.word.audio_pinyin && /[/|,，;；]/.test(currentCard.word.pinyin) && (
                                     <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{currentCard.word.audio_pinyin}</span></p>
                                 )}
                             </div>
 
-                            <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-2 py-2" dir="rtl">
+                            <div role="tablist" aria-label="اطلاعات لغت" className="grid grid-cols-4 gap-1 px-2 py-2" dir="rtl">
                                 {backTabs.map((tab) => (
                                     <button
                                         key={tab.key}
+                                        id={`leitner-tab-${tab.key}`}
+                                        role="tab"
+                                        aria-selected={activeBackTab === tab.key}
+                                        aria-controls="leitner-card-details"
+                                        tabIndex={activeBackTab === tab.key ? 0 : -1}
+                                        onKeyDown={(event) => {
+                                            const index = backTabs.indexOf(tab);
+                                            let nextIndex: number;
+                                            if (event.key === "ArrowLeft") nextIndex = (index + 1) % backTabs.length;
+                                            else if (event.key === "ArrowRight") nextIndex = (index + backTabs.length - 1) % backTabs.length;
+                                            else if (event.key === "Home") nextIndex = 0;
+                                            else if (event.key === "End") nextIndex = backTabs.length - 1;
+                                            else return;
+                                            event.preventDefault();
+                                            setActiveBackTab(backTabs[nextIndex].key);
+                                            document.getElementById(`leitner-tab-${backTabs[nextIndex].key}`)?.focus();
+                                        }}
                                         onClick={() => setActiveBackTab(tab.key)}
                                         className={cn(
-                                            "shrink-0 rounded-full px-3 py-2 text-xs font-black transition",
+                                            styles.tab, "min-w-0 rounded-xl px-1 py-2 transition",
                                             activeBackTab === tab.key
                                                 ? "bg-[#155aa6] text-white"
-                                                : "bg-slate-100 text-slate-500 hover:bg-[#eef6ff] hover:text-[#155aa6]",
+                                                : "bg-slate-100 text-slate-600 hover:bg-[#eef6ff] hover:text-[#155aa6]",
                                         )}
                                     >
                                         {tab.label}
@@ -344,7 +360,7 @@ export default function LeitnerReviewPage() {
                                 ))}
                             </div>
 
-                            <div className="min-h-[220px] flex-1 overflow-y-auto px-4 py-4" dir="rtl">
+                            <div id="leitner-card-details" role="tabpanel" aria-labelledby={`leitner-tab-${activeBackTab}`} tabIndex={0} className="min-h-[160px] px-3 py-4" dir="rtl">
                                 {activeBackTab === "examples" && (
                                     <div className="space-y-4">
                                         {examples.length === 0 ? (
@@ -431,30 +447,22 @@ export default function LeitnerReviewPage() {
                                         {loadError}
                                     </p>
                                 )}
-                                <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
-                                    <div className="rounded-[12px] bg-red-50 px-3 py-2 text-red-600">
-                                        فراموش شد: جعبه ۱، مرور فردا
-                                    </div>
-                                    <div className="rounded-[12px] bg-emerald-50 px-3 py-2 text-emerald-700">
-                                        بلد بودی: {BOX_STYLES[rememberedBox].label}، {toPersianDigits(rememberedInterval)} روز بعد
-                                    </div>
-                                </div>
-                                <div className="mt-3 flex gap-3">
+                                <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => handleReview(false)}
                                         disabled={isSubmitting}
-                                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-500 py-3 text-sm font-black text-white transition active:scale-[0.98] disabled:opacity-50"
+                                        className={cn(styles.decision, "flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl bg-red-700 px-2 py-3 text-white transition active:scale-[0.98] disabled:opacity-50")}
                                     >
-                                        <X size={18} />
-                                        یادم نیست
+                                        <span className="flex items-center gap-1"><X size={16} aria-hidden="true" />یادم نیست</span>
+                                        <span className={styles.schedule}>(جعبه ۱، مرور فردا)</span>
                                     </button>
                                     <button
                                         onClick={() => handleReview(true)}
                                         disabled={isSubmitting}
-                                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-emerald-500 py-3 text-sm font-black text-white transition active:scale-[0.98] disabled:opacity-50"
+                                        className={cn(styles.decision, "flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-700 px-2 py-3 text-white transition active:scale-[0.98] disabled:opacity-50")}
                                     >
-                                        <Check size={18} />
-                                        یادم هست
+                                        <span className="flex items-center gap-1"><Check size={16} aria-hidden="true" />یادم هست</span>
+                                        <span className={styles.schedule}>({BOX_STYLES[rememberedBox].label}، مرور {toPersianDigits(rememberedInterval)} روز بعد)</span>
                                     </button>
                                 </div>
                             </div>
@@ -462,17 +470,6 @@ export default function LeitnerReviewPage() {
                     )}
                 </section>
 
-                <div className="mt-4 flex justify-center gap-1.5">
-                    {cards.map((_, i) => (
-                        <span
-                            key={i}
-                            className={cn(
-                                "h-2 rounded-full transition-all",
-                                i === currentIndex ? "w-5 bg-[#155aa6]" : i < currentIndex ? "w-2 bg-emerald-400" : "w-2 bg-slate-300",
-                            )}
-                        />
-                    ))}
-                </div>
             </main>
         </div>
     );

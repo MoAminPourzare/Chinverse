@@ -8,7 +8,7 @@ changes several related modules at once.
 
 import asyncio
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from uuid import uuid4
 
@@ -26,6 +26,57 @@ from app.models.user import User, UserRole
 
 
 pytestmark = pytest.mark.integration
+
+
+async def test_leitner_collection_and_deletion_preserve_ownership_and_known_words():
+    from app.models.leitner import UserFlashcard
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+        _, owner = await create_verified_user(client, "leitner-delete-owner")
+        _, stranger = await create_verified_user(client, "leitner-delete-stranger")
+        async with SessionLocal() as db:
+            words = [DictionaryWord(chinese=f"删除{uuid4().hex[:10]}", pinyin="shānchú", level="HSK1", status="published") for _ in range(2)]
+            db.add_all(words)
+            await db.commit()
+            for word in words:
+                await db.refresh(word)
+            ids = [word.id for word in words]
+            names = [word.chinese for word in words]
+        # A previously known word must stay known when its Leitner card is removed.
+        assert (await client.post("/api/v1/vocabulary/known", headers=owner, json={"words": [names[0]]})).status_code == 200
+        cards = []
+        for word_id in ids:
+            response = await client.post("/api/v1/leitner/add", headers=owner, json={"word_id": word_id})
+            assert response.status_code == 200, response.text
+            cards.append(response.json())
+        async with SessionLocal() as db:
+            upcoming = await db.get(UserFlashcard, cards[1]["id"])
+            upcoming.next_review_at = datetime.now(UTC) + timedelta(days=3)
+            await db.commit()
+        collection = await client.get("/api/v1/leitner/cards", headers=owner)
+        assert collection.status_code == 200, collection.text
+        assert {card["id"] for card in collection.json()["cards"]} == {card["id"] for card in cards}
+        assert len((await client.get("/api/v1/leitner/cards?skip=1&limit=1", headers=owner)).json()["cards"]) == 1
+        assert (await client.get("/api/v1/leitner/review", headers=owner)).json()["cards"][0]["id"] == cards[0]["id"]
+        assert len((await client.get("/api/v1/leitner/review", headers=owner)).json()["cards"]) == 1
+        assert (await client.get("/api/v1/leitner/cards", headers=stranger)).json()["cards"] == []
+        deletion = f"/api/v1/leitner/cards/{cards[0]['id']}"
+        assert (await client.delete(deletion)).status_code == 401
+        assert (await client.delete(deletion, headers=stranger)).status_code == 404
+        assert (await client.get(f"/api/v1/leitner/check/{ids[0]}", headers=owner)).json()["in_leitner"] is True
+        assert (await client.delete(deletion, headers=owner)).status_code == 204
+        assert (await client.delete(deletion, headers=owner)).status_code == 404
+        assert (await client.get(f"/api/v1/leitner/check/{ids[0]}", headers=owner)).json()["in_leitner"] is False
+        knowledge = await client.post("/api/v1/vocabulary/knowledge", headers=owner, json={"words": names})
+        assert knowledge.json()["states"] == {names[0]: "known", names[1]: "leitner"}
+        stats = (await client.get("/api/v1/leitner/dashboard", headers=owner)).json()
+        assert stats["total_cards"] == 1 and stats["total_due"] == 0 and stats["upcoming_count"] == 1
+        # Upcoming cards can be deleted too; the shared dictionary remains intact.
+        assert (await client.delete(f"/api/v1/leitner/cards/{cards[1]['id']}", headers=owner)).status_code == 204
+        assert (await client.get("/api/v1/leitner/cards", headers=owner)).json()["cards"] == []
+        async with SessionLocal() as db:
+            assert await db.get(DictionaryWord, ids[0]) is not None
+            assert await db.get(DictionaryWord, ids[1]) is not None
 
 
 async def test_known_vocabulary_persists_per_user_and_preserves_leitner_cards():
