@@ -437,7 +437,7 @@ export default function AccountPage() {
                                 className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
                             />
                             <span className="text-[13px] font-bold leading-7 text-[#2f3238]">
-                                تایید میکنم اطلاعات پروفایل، عناوین شغلی، مهارت ها و خدماتم درست و واقعی است و مسئولیت آن ها با خودم است.
+                                تایید می‌کنم اطلاعات پروفایل، عناوین شغلی، مهارت‌ها و خدماتم درست و واقعی است و مسئولیت آن‌ها با خودم است.
                             </span>
                         </label>
                         <FieldError id="account-profile-truth-error" message={fieldErrors.profile_truth_confirmed} />

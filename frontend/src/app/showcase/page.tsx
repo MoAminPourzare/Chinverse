@@ -218,7 +218,8 @@ export default function ShowcasePage() {
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 placeholder={searchPlaceholder}
-                                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-800 outline-none placeholder:text-slate-500"
+                                dir="rtl"
+                                className="min-w-0 flex-1 bg-transparent text-right text-sm font-bold text-slate-800 outline-none placeholder:text-right placeholder:text-slate-500"
                             />
                             {searchQuery && (
                                 <button

@@ -66,7 +66,7 @@ function CommunityHub() {
             <nav aria-label="بخش‌های تالار گفتگو" className="mb-6 mt-4 flex gap-5 border-b border-slate-200">
                 {[{ id: "questions", label: "سوالات شما", Icon: MessageCircle }, { id: "articles", label: "مقالات", Icon: BookOpen }].map(({ id, label, Icon }) => <Link key={id} href={`/community?section=${id}`} scroll={false} aria-current={activeSection === id ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 border-b-2 px-1 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#155aa6]", activeSection === id ? "border-[#155aa6] text-[#155aa6]" : "border-transparent text-slate-500 hover:text-[#155aa6]")}><Icon aria-hidden className="size-4" />{label}</Link>)}
             </nav>
-            {loadError ? <div role="alert" className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600"><p>{loadError}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 rounded-xl bg-[#155aa6] px-4 font-bold text-white">تلاش دوباره</button></div> : isLoading ? <LoadingList /> : activeSection === "articles" ? <ArticleLibrary articles={articles} /> : <QuestionsSection questions={questions} isLoading={false} currentUserId={currentUserId} setQuestions={setQuestions} />}
+            {loadError ? <div role="alert" className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600"><p>{loadError}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 rounded-xl bg-[#155aa6] px-4 font-bold text-white">تلاش دوباره</button></div> : isLoading ? <LoadingList /> : activeSection === "articles" ? <section><SectionHeader title="مقالات" description="در این بخش، سوالات پرتکرار یا موضوعات جالب توسط تیم ما تبدیل به مقاله میشه. می‌تونی مقاله‌ها رو بخونی، زیرش نظر بدی یا سوال جدید مطرح کنی." /><div className="mt-4"><ArticleLibrary articles={articles} /></div></section> : <QuestionsSection questions={questions} isLoading={false} currentUserId={currentUserId} setQuestions={setQuestions} />}
         </section>
     </div>;
 }
@@ -241,7 +241,7 @@ function QuestionsSection({
         <section>
             <SectionHeader
                 title="سوالات شما"
-                description="اگه درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چینورس بهت پاسخ میدن."
+                description="اگه درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چین‌ورس بهت پاسخ می‌دن."
             />
 
             <div className="mt-4 flex items-stretch gap-2">
@@ -258,7 +258,7 @@ function QuestionsSection({
                     }}
                     rows={2}
                     dir={draft.trim() ? "auto" : "rtl"}
-                    placeholder="سوالت رو اینجا بنویس"
+                    placeholder="سوالت رو اینجا بنویس…"
                     disabled={isSubmitting}
                     maxLength={8000}
                     className={cn("min-h-[56px] min-w-0 flex-1 resize-none rounded-[10px] border bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 disabled:opacity-70", draftError ? "border-rose-500" : "border-[#d6e1ee]")}

@@ -1538,7 +1538,8 @@ function DictionaryTab(props: {
                             <input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className={`${fieldClass} pr-9`}
+                                dir="rtl"
+                                className={`${fieldClass} pr-9 text-right placeholder:text-right`}
                                 placeholder="جست‌وجوی کلمه، پین‌یین یا معنی فارسی"
                             />
                         </div>

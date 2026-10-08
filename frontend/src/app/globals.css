@@ -110,6 +110,11 @@ textarea {
   font: inherit;
 }
 
+input[type="search"]::placeholder {
+  direction: rtl;
+  text-align: right;
+}
+
 /* A shared reading layout for Persian, Chinese and mixed-language body copy. */
 :where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap):where(:not(.text-center)) {
   text-align: justify;

@@ -38,6 +38,7 @@ export default function SearchableOptionList({
                     <Search aria-hidden className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-[#155aa6]" />
                     <input
                         type="search"
+                        dir="rtl"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         onKeyDown={(event) => {
@@ -48,7 +49,7 @@ export default function SearchableOptionList({
                         }}
                         placeholder={`جست‌وجوی ${label}`}
                         aria-controls={id}
-                        className="h-11 w-full rounded-xl border border-[#d5e1ef] bg-white py-2 pl-3 pr-10 text-right text-sm text-slate-900 outline-none focus:border-[#155aa6] focus:ring-2 focus:ring-[#155aa6]/15"
+                        className="h-11 w-full rounded-xl border border-[#d5e1ef] bg-white py-2 pl-3 pr-10 text-right text-sm text-slate-900 outline-none placeholder:text-right focus:border-[#155aa6] focus:ring-2 focus:ring-[#155aa6]/15"
                     />
                 </label>
             )}

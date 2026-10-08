@@ -94,11 +94,13 @@ export default function ChatPage() {
                     <Search size={20} className="text-slate-700" />
                 )}
                 <input
+                    type="search"
+                    aria-label="جست‌وجو بین پیام‌ها"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    dir="auto"
-                    placeholder="جستجو بین پیام‌ها"
-                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    dir={query.trim() ? "auto" : "rtl"}
+                    placeholder="جست‌وجو بین پیام‌ها"
+                    className="min-w-0 flex-1 bg-transparent text-right text-sm outline-none placeholder:text-right placeholder:text-slate-400"
                 />
             </label>
 
@@ -200,11 +202,12 @@ function EmptyMessagesState() {
                 alt=""
                 width={168}
                 height={168}
+                loading="eager"
                 className="h-[168px] w-[168px] object-contain"
             />
             <h2 className="mt-7 text-lg font-black text-slate-900">هنوز پیامی دریافت نکردی!</h2>
             <p className="mt-3 max-w-[310px] text-sm leading-7 text-slate-500">
-                در این بخش میتونی با افراد شبکه ات در تماس باشی، با زبان آموز های دیگه گفت و گو کنی، از پشتیبانی کمک بگیری یا حتی پیام های شغلی از کارفرما ها دریافت کنی.
+                در این بخش می‌تونی با افراد شبکه‌ات در تماس باشی، با زبان‌آموزهای دیگه گفتگو کنی، از پشتیبانی کمک بگیری یا حتی پیام‌های شغلی از کارفرماها دریافت کنی.
             </p>
         </div>
     );

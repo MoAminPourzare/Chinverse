@@ -42,7 +42,7 @@ test.describe("phase four authenticated journeys", () => {
     await expect(page.getByText("هنوز درخواستی ثبت نکرده‌ای.")).toBeVisible();
     await page.getByLabel("پیام پشتیبانی").fill(ticket.message);
     await page.getByRole("button", { name: "ارسال پیام" }).click();
-    await expect(page.getByRole("heading", { name: "پیامت ثبت شد" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "پیامت به دست ما رسید!" })).toBeVisible();
     await page.getByRole("button", { name: "مشاهده درخواست‌ها" }).click();
     await expect(page.getByText(ticket.admin_reply)).toBeVisible();
     expect(submitted).toBe(true);

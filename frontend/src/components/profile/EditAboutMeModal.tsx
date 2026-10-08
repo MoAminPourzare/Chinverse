@@ -13,6 +13,7 @@ import {
 } from "@/lib/socialLinks";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites } from "@/lib/profileContent";
 import { normalizeWebsiteUrl, validateTextLength, validateWebsiteUrl } from "@/validation";
+import styles from "./EditAboutMeModal.module.css";
 
 interface EditAboutMeModalProps {
     isOpen: boolean;
@@ -198,9 +199,10 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                         <textarea
                                             {...register("bio")}
                                             rows={9}
-                                            dir="auto"
-                                            className="min-h-[210px] w-full rounded-[10px] border-2 border-[#155aa6] bg-white p-4 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
-                                            placeholder="در این بخش میتونی به سابقه کاری، مهارت ها، تخصص ها یا دستاورد های مهمت اشاره کنی. بعضی ها هم در مورد مسیر شغلی یا یا زمینه های مورد علاقشون توضیح میدن."
+                                            dir="rtl"
+                                            aria-label="متن درباره من"
+                                            className={`${styles.bio} min-h-[210px] w-full rounded-[10px] border-2 border-[#155aa6] bg-white p-4 text-slate-900 outline-none transition placeholder:text-slate-500 focus:ring-4 focus:ring-[#155aa6]/10`}
+                                            placeholder="در این بخش می‌تونی به سابقه کاری، مهارت‌ها، تخصص‌ها یا دستاوردهای مهمت اشاره کنی. بعضی‌ها هم در مورد مسیر شغلی یا زمینه‌های مورد علاقشون توضیح می‌دن."
                                         />
                                         {errors.bio?.message && (
                                             <p className="mt-2 text-xs leading-5 text-red-500">{errors.bio.message}</p>
@@ -277,7 +279,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                                 className="ml-auto flex items-center gap-1 text-right text-[14px] font-black text-[#155aa6]"
                                             >
                                                 <Plus className="h-4 w-4" />
-                                                اضافه کردن شبکه های اجتماعی
+                                                اضافه کردن شبکه‌های اجتماعی
                                             </button>
 
                                             {showSocialDropdown && (
@@ -393,7 +395,7 @@ export default function EditAboutMeModal({ isOpen, onClose, user, onUpdate }: Ed
                                         <button
                                             type="button"
                                             onClick={handleClose}
-                                            className="rounded-full bg-[#e7eaf0] py-3 text-sm font-bold text-slate-500 shadow-[0_5px_10px_rgba(15,23,42,0.16)] transition hover:bg-slate-200"
+                                            className="rounded-full bg-[#e7eaf0] py-3 text-sm font-bold text-slate-600 shadow-[0_5px_10px_rgba(15,23,42,0.16)] transition hover:bg-slate-200"
                                         >
                                             لغو کردن
                                         </button>

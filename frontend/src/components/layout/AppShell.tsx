@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Headphones } from "lucide-react";
+import Image from "next/image";
 import BottomNav from "@/components/layout/BottomNav";
 import NotificationToaster from "@/components/notifications/NotificationToaster";
 import RouteTransition from "@/components/layout/RouteTransition";
@@ -55,7 +55,7 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
                             className="app-support-button absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] right-[max(1.25rem,env(safe-area-inset-right))] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
                             aria-label="پشتیبانی"
                         >
-                            <Headphones className="h-6 w-6" />
+                            <Image src="/assets/chinverse/icons/support_agent_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg" alt="" width={28} height={28} className="h-7 w-7 brightness-0 invert" />
                         </Link>
                     )}
                     {showBottomNav && <BottomNav />}
