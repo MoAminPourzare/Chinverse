@@ -25,10 +25,14 @@ describe("daily study goal", () => {
         expect(slider).toHaveAttribute("step", "1");
         fireEvent.change(slider, { target: { value: "27" } });
         await waitFor(() => expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(27));
-        fireEvent.change(screen.getByLabelText("سایر دقایق"), { target: { value: "255" } });
+        fireEvent.change(screen.getByLabelText("سایر دقایق"), { target: { value: "۶۰۰" } });
         fireEvent.click(screen.getByRole("button", { name: "ثبت" }));
-        await waitFor(() => expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(255));
+        await waitFor(() => expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(600));
         expect(slider).toHaveValue("100");
-        expect(screen.getByText("۲۵۵ دقیقه")).toBeInTheDocument();
+        expect(screen.getAllByText("۶۰۰ دقیقه")).toHaveLength(2);
+        fireEvent.click(screen.getByRole("button", { name: "بیشتر" }));
+        await waitFor(() => expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(610));
+        fireEvent.click(screen.getByRole("button", { name: "کمتر" }));
+        await waitFor(() => expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(600));
     });
 });

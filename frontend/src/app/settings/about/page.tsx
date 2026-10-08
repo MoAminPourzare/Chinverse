@@ -20,7 +20,7 @@ export default function SettingsAboutPage() {
             />
 
             <main className="mx-auto flex w-full max-w-[430px] flex-col items-center text-center">
-                <Image src={logo} alt="چین ورس" width={118} height={118} className="mt-1 h-20 w-20 object-contain" priority />
+                <Image src={logo} alt="چین ورس" width={200} height={200} className="mt-3 h-[180px] w-[180px] object-contain" priority />
 
                 <div className="mt-5 space-y-4 text-right text-[13px] font-medium leading-7 text-[#2f3238]">
                     <p>
