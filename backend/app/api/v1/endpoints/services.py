@@ -20,6 +20,20 @@ from app.services.showcase_visibility import showcase_user_filters
 router = APIRouter()
 
 
+def _provider_filters(profile) -> dict:
+    resume = profile.resume or {}
+    educations = resume.get("educations") or []
+    first_education = educations[0] if educations else None
+    return {
+        "country": profile.country,
+        "city": profile.city,
+        "education": {key: first_education.get(key) for key in ("degree", "university", "field")} if first_education else None,
+        "job_titles": list(dict.fromkeys(
+            title for work in resume.get("work_experiences", []) if (title := (work.get("job_title") or "").strip())
+        )),
+    }
+
+
 async def _service_likes_count(db: AsyncSession, service_id: int) -> int:
     count = await db.scalar(
         select(func.count())
@@ -269,6 +283,7 @@ async def get_public_services(
                 "display_name": service.user.profile.display_name,
                 "avatar_url": service.user.profile.avatar_url,
                 "headline": service.user.profile.headline,
+                **_provider_filters(service.user.profile),
             }
         elif service.user:
             provider_info = {
@@ -322,6 +337,7 @@ async def get_public_service(
             "display_name": service.user.profile.display_name,
             "avatar_url": service.user.profile.avatar_url,
             "headline": service.user.profile.headline,
+            **_provider_filters(service.user.profile),
         }
     elif service.user:
         provider_info = {

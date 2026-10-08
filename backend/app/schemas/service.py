@@ -72,6 +72,10 @@ class ServiceProviderInfo(BaseModel):
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
     headline: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    education: Optional[dict] = None
+    job_titles: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

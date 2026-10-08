@@ -285,6 +285,10 @@ export interface ServiceProvider {
     display_name?: string;
     avatar_url?: string;
     headline?: string;
+    country?: string;
+    city?: string;
+    education?: EducationSummary;
+    job_titles?: string[];
 }
 
 export interface ServiceWithProvider {

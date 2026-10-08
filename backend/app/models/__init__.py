@@ -39,7 +39,7 @@ from app.models.social import (
 )
 from app.models.activity import StudySession
 from app.models.subscription import SubscriptionPlan, UserSubscription
-from app.models.leitner import UserFlashcard
+from app.models.leitner import UserFlashcard, UserKnownWord
 from app.models.service import UserService
 from app.models.operational import (
     SubscriptionOrder,

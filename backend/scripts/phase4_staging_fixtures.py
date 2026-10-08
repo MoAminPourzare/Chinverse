@@ -124,6 +124,7 @@ EXPECTED_USER_FOREIGN_KEYS = {
     ("user_follows", "followee_id", "NO ACTION"),
     ("user_follows", "follower_id", "NO ACTION"),
     ("user_gallery_items", "user_id", "NO ACTION"),
+    ("user_known_words", "user_id", "CASCADE"),
     ("user_language_settings", "user_id", "NO ACTION"),
     ("user_lesson_watch_progress", "user_id", "CASCADE"),
     ("user_notifications", "actor_user_id", "SET NULL"),

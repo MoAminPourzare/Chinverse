@@ -32,4 +32,12 @@ export const galleryService = {
     async deleteImage(id: number): Promise<void> {
         await api.delete(`/users/me/gallery/${id}`);
     },
+
+    async updateImage(id: number, caption: string, file?: File | null): Promise<GalleryItem> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
+        const formData = new FormData();
+        formData.append('caption', caption);
+        if (file) formData.append('file', file);
+        return (await api.patch<GalleryItem>(`/users/me/gallery/${id}`, formData)).data;
+    },
 };

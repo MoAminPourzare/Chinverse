@@ -21,6 +21,9 @@ import Surface from "@/components/ui/Surface";
 import { BackButton } from "@/components/ui/IconButton";
 import { dailyActivityService } from "@/services/dailyActivity.service";
 import { lessonPlaybackService } from "@/services/lessonPlayback.service";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
+import { vocabularyKnowledgeService, type VocabularyStates } from "@/services/vocabularyKnowledge.service";
+import LessonCompletionActions from "@/components/lms/LessonCompletionActions";
 
 const VocabularyModal = dynamic(() => import("@/components/lms/VocabularyModal"), { ssr: false });
 
@@ -107,6 +110,7 @@ export default function SharedWatchPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { preferences } = useLearningPreferences();
+    const currentUserId = useOptionalCurrentUserId();
     const domain = typeof params?.domain === "string" ? params.domain : "hsk";
     const courseId = typeof params?.courseId === "string" ? params.courseId : "";
     const lessonIdParam = searchParams.get("lesson");
@@ -129,6 +133,22 @@ export default function SharedWatchPage() {
     const [loadingVocabularyWord, setLoadingVocabularyWord] = useState<string | null>(null);
     const [vocabularyError, setVocabularyError] = useState<string | null>(null);
     const [vocabularyMatches, setVocabularyMatches] = useState<string[][]>([]);
+    const [wordStates, setWordStates] = useState<VocabularyStates>({});
+    const [knowledgeError, setKnowledgeError] = useState(false);
+    const [knowledgeVersion, setKnowledgeVersion] = useState(0);
+    const [wordMatchesLoading, setWordMatchesLoading] = useState(false);
+    const [wordMatchesFailed, setWordMatchesFailed] = useState(false);
+    const [wordMatchVersion, setWordMatchVersion] = useState(0);
+    const [lessonEnded, setLessonEnded] = useState(false);
+    const [allMatchedWords, setAllMatchedWords] = useState<string[]>([]);
+    const completionRef = useRef<HTMLDivElement>(null);
+    const playNextRef = useRef(false);
+    const knowledgeRequestRef = useRef(0);
+    const knowledgeUserRef = useRef<number | null>(null);
+    const onLeitnerChange = useCallback((word: { id: number; chinese: string }) => {
+        knowledgeRequestRef.current += 1;
+        setWordStates((current) => ({ ...current, [word.chinese]: "leitner" }));
+    }, []);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -159,6 +179,19 @@ export default function SharedWatchPage() {
             return;
         }
 
+        // Keep the same media element when advancing within the loaded course.
+        // Safari's user gesture permission belongs to that element.
+        if (course?.id === parsedCourseId) {
+            const lessons = course.sections?.flatMap((section) => section.lessons || []) || [];
+            const requested = lessons.find((lesson) => lesson.id === Number(lessonIdParam));
+            const next = requested || lessons[0] || null;
+            setCurrentLesson((current) => current?.id === next?.id ? current : next);
+            setCourseError(null);
+            setCourseLoading(false);
+            if (lessonIdParam && !requested && next) router.replace(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${next.id}`);
+            return;
+        }
+
         const controller = new AbortController();
         setCourseLoading(true);
         setCourseError(null);
@@ -186,7 +219,7 @@ export default function SharedWatchPage() {
                 if (!controller.signal.aborted) setCourseLoading(false);
             });
         return () => controller.abort();
-    }, [courseId, domain, lessonIdParam, router]);
+    }, [course, courseId, domain, lessonIdParam, router]);
 
     const loadPlayback = useCallback(async (
         lessonId: number,
@@ -241,6 +274,7 @@ export default function SharedWatchPage() {
         }
         const controller = new AbortController();
         pendingResumeRef.current = null;
+        setLessonEnded(false);
         setCurrentTime(0);
         setDuration(Math.max((currentLesson.duration_minutes || 0) * 60, 0));
         currentTimeRef.current = 0;
@@ -480,20 +514,60 @@ export default function SharedWatchPage() {
     const baseTranscript = useMemo(() => selectedTrack?.cues || [], [selectedTrack]);
 
     useEffect(() => {
-        if (baseTranscript.length === 0 || !baseTranscript.some((entry) => entry.chinese)) {
+        const texts = [...new Set((playback?.subtitles || []).flatMap((track) => track.cues.map((cue) => cue.chinese)).filter(Boolean))];
+        if (texts.length === 0) {
             setVocabularyMatches([]);
+            setAllMatchedWords([]);
+            setWordMatchesLoading(false);
+            setWordMatchesFailed(false);
             return;
         }
         const controller = new AbortController();
-        api.post<VocabularyMatchesResponse>("/vocabulary/matches", {
-            texts: baseTranscript.map((entry) => entry.chinese),
-        }, { signal: controller.signal })
-            .then((response) => setVocabularyMatches(Array.isArray(response.data.matches) ? response.data.matches : []))
+        setWordMatchesLoading(true);
+        setWordMatchesFailed(false);
+        const batches = Array.from({ length: Math.ceil(texts.length / 300) }, (_, index) => texts.slice(index * 300, (index + 1) * 300));
+        Promise.all(batches.map((batch) => api.post<VocabularyMatchesResponse>("/vocabulary/matches", { texts: batch }, { signal: controller.signal })))
+            .then((responses) => {
+                if (controller.signal.aborted) return;
+                const matches = responses.flatMap((response) => response.data.matches || []);
+                const byText = new Map(texts.map((text, index) => [text, matches[index] || []]));
+                setVocabularyMatches(baseTranscript.map((entry) => byText.get(entry.chinese) || entry.highlightedWords));
+                setAllMatchedWords([...new Set(matches.flat())]);
+            })
             .catch(() => {
-                if (!controller.signal.aborted) setVocabularyMatches([]);
-            });
+                if (!controller.signal.aborted) { setVocabularyMatches([]); setAllMatchedWords([]); setWordMatchesFailed(true); }
+            })
+            .finally(() => { if (!controller.signal.aborted) setWordMatchesLoading(false); });
         return () => controller.abort();
-    }, [baseTranscript]);
+    }, [baseTranscript, playback, wordMatchVersion]);
+
+    const lessonWords = useMemo(() => [...new Set([
+        ...allMatchedWords,
+        ...(playback?.subtitles || []).flatMap((track) => track.cues.flatMap((cue) => cue.highlightedWords)),
+    ].filter(Boolean))], [allMatchedWords, playback]);
+
+    useEffect(() => {
+        if (knowledgeUserRef.current !== currentUserId) {
+            knowledgeUserRef.current = currentUserId;
+            setWordStates({});
+        }
+        setKnowledgeError(false);
+        if (!currentUserId || lessonWords.length === 0) return;
+        const controller = new AbortController();
+        const refresh = () => {
+            const requestId = ++knowledgeRequestRef.current;
+            void vocabularyKnowledgeService.get(lessonWords, controller.signal).then((states) => {
+                if (!controller.signal.aborted && requestId === knowledgeRequestRef.current) { setWordStates((current) => ({ ...current, ...states })); setKnowledgeError(false); }
+            }).catch(() => { if (!controller.signal.aborted && requestId === knowledgeRequestRef.current) setKnowledgeError(true); });
+        };
+        refresh();
+        window.addEventListener("focus", refresh);
+        return () => { controller.abort(); window.removeEventListener("focus", refresh); };
+    }, [currentUserId, lessonWords, knowledgeVersion]);
+
+    useEffect(() => {
+        if (lessonEnded) completionRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, [lessonEnded]);
 
     const syncedTranscript = useMemo(() => baseTranscript.map((entry, index) => ({
         ...entry,
@@ -527,7 +601,13 @@ export default function SharedWatchPage() {
 
         const resume = pendingResumeRef.current;
         pendingResumeRef.current = null;
-        if (!resume) return;
+        if (!resume) {
+            if (playNextRef.current) {
+                playNextRef.current = false;
+                void video.play().catch(() => setPlaybackError({ kind: "media", message: "برای شروع درس بعدی، دوباره روی پخش بزن.", retryable: true }));
+            }
+            return;
+        }
         const position = Math.min(Math.max(resume.position, 0), Math.max(nextDuration - 0.1, 0));
         video.currentTime = position;
         setCurrentTime(position);
@@ -654,7 +734,9 @@ export default function SharedWatchPage() {
                     disabled={loadingVocabularyWord === foundWord}
                     aria-busy={loadingVocabularyWord === foundWord}
                     className="font-cjk px-1.5 transition brightness-100 hover:brightness-95 disabled:cursor-wait disabled:opacity-55"
-                    style={getHighlightStyle(preferences.newWordHighlightColor)}
+                    data-vocabulary-word={foundWord}
+                    data-vocabulary-state={wordStates[foundWord] || (currentUserId === null ? "new" : "loading")}
+                    style={wordStates[foundWord] === "known" || (currentUserId !== null && !wordStates[foundWord]) ? undefined : getHighlightStyle(wordStates[foundWord] === "leitner" ? preferences.leitnerHighlightColor : preferences.newWordHighlightColor)}
                     lang="zh-CN"
                 >
                     {foundWord}
@@ -682,9 +764,13 @@ export default function SharedWatchPage() {
     const posterUrl = playback?.media.posterUrl || undefined;
 
     const handleVideoEnded = () => {
+        setIsPlaying(false);
+        setLessonEnded(true);
         void flushWatchProgress(true);
-        if (preferences.autoplayNext && nextLesson) {
-            router.push(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`);
+        if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+        if (isPseudoFullscreen) {
+            setIsPseudoFullscreen(false);
+            if (pseudoFullscreenHistoryRef.current) { pseudoFullscreenHistoryRef.current = false; window.history.back(); }
         }
     };
 
@@ -731,7 +817,7 @@ export default function SharedWatchPage() {
                                 currentTimeRef.current = time;
                             }}
                             onLoadedMetadata={handleLoadedMetadata}
-                            onPlay={() => setIsPlaying(true)}
+                            onPlay={() => { setIsPlaying(true); setLessonEnded(false); }}
                             onPause={() => {
                                 setIsPlaying(false);
                                 void flushWatchProgress(true);
@@ -787,7 +873,18 @@ export default function SharedWatchPage() {
                     </div>
                 </section>
 
+                {lessonEnded && <div ref={completionRef}><LessonCompletionActions
+                    key={currentLesson.id}
+                    words={lessonWords}
+                    loadingWords={wordMatchesLoading}
+                    wordsFailed={wordMatchesFailed}
+                    onRetryWords={() => setWordMatchVersion((value) => value + 1)}
+                    onKnown={(states) => { knowledgeRequestRef.current += 1; setWordStates((current) => ({ ...current, ...states })); }}
+                    onLogin={currentUserId ? undefined : () => router.push(`/login?next=${encodeURIComponent(`/watch/${domain}/${course.id}?lesson=${currentLesson.id}`)}`)}
+                    onNext={nextLesson ? () => { playNextRef.current = true; router.push(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`); } : undefined}
+                /></div>}
                 <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
+                    {knowledgeError && <div role="alert" className="mb-3 rounded-xl bg-rose-50 p-3 text-xs leading-6 text-rose-700">وضعیت واژه‌ها دریافت نشد. <button type="button" onClick={() => setKnowledgeVersion((value) => value + 1)} className="min-h-11 font-bold underline">دوباره تلاش کن</button></div>}
                     {playback && playback.subtitles.length > 1 && (
                         <label className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600">
                             زبان زیرنویس
@@ -838,7 +935,7 @@ export default function SharedWatchPage() {
                 </Surface>
             </main>
 
-            {selectedWord && <VocabularyModal key={selectedWord.id} word={selectedWord} isOpen={showVocabModal} onClose={() => { setShowVocabModal(false); resumeVideoAfterVocabulary(); }} />}
+            {selectedWord && <VocabularyModal key={selectedWord.id} word={selectedWord} isOpen={showVocabModal} onLeitnerChange={onLeitnerChange} onClose={() => { setShowVocabModal(false); resumeVideoAfterVocabulary(); }} />}
             {vocabularyError && <button type="button" onClick={() => setVocabularyError(null)} className="fixed bottom-24 left-1/2 z-[950] w-[min(360px,calc(100%-32px))] -translate-x-1/2 rounded-2xl bg-red-50 px-4 py-3 text-center text-xs font-bold leading-5 text-red-600 shadow-lg" role="alert">{vocabularyError}</button>}
         </div>
     );

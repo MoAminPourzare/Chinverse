@@ -3,22 +3,20 @@
 import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogPanel } from "@headlessui/react";
 import {
     BriefcaseBusiness,
     ChevronLeft,
-    GraduationCap,
     ImageIcon,
-    Landmark,
     MapPin,
     MessageCircle,
     Search,
-    SlidersHorizontal,
-    Tag,
     Users,
     X,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import SearchableOptionList from "@/components/ui/SearchableOptionList";
+import LocationFilterOptions from "@/components/showcase/LocationFilterOptions";
 import LikeButton from "@/components/engagement/LikeButton";
 import { BackButton, IconButton } from "@/components/ui/IconButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
@@ -48,27 +46,27 @@ const filterOrder: FilterKey[] = ["jobTitles", "locations", "degrees", "universi
 
 const filterConfig: Record<FilterKey, {
     label: string;
-    icon: typeof Tag;
+    icon: string;
     options: string[];
 }> = {
     jobTitles: {
         label: "عنوان شغلی",
-        icon: Tag,
+        icon: "Title.svg",
         options: PROFILE_HEADLINE_OPTIONS,
     },
     locations: {
         label: "لوکیشن",
-        icon: MapPin,
+        icon: "Location 2.svg",
         options: LOCATION_FILTER_OPTIONS,
     },
     degrees: {
         label: "مقطع تحصیلی",
-        icon: GraduationCap,
+        icon: "Graduation.svg",
         options: EDUCATION_DEGREE_OPTIONS,
     },
     universities: {
         label: "دانشگاه محل تحصیل",
-        icon: Landmark,
+        icon: "University.svg",
         options: UNIVERSITY_OPTIONS,
     },
 };
@@ -147,19 +145,23 @@ export default function ShowcasePage() {
 
     const filteredServices = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
-        if (!query) return services;
-
-        return services.filter((service) =>
-            [
+        return services.filter((service) => {
+            const provider = service.provider;
+            if (!provider && activeFilterCount > 0) return false;
+            if (provider && (!matchesAnyJobTitle(provider, talentFilters.jobTitles)
+                || !matchesAnyLocation(provider, talentFilters.locations)
+                || !matchesValue(provider.education?.degree, talentFilters.degrees)
+                || !matchesValue(provider.education?.university, talentFilters.universities))) return false;
+            return !query || [
                 service.title,
                 service.description,
                 service.provider?.display_name,
                 service.provider?.headline,
             ]
                 .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(query)),
-        );
-    }, [searchQuery, services]);
+                .some((value) => String(value).toLowerCase().includes(query));
+        });
+    }, [searchQuery, services, talentFilters, activeFilterCount]);
 
     const searchPlaceholder = activeTab === "talents" ? "جستجو بین استعدادها" : "جستجو بین خدمات";
 
@@ -174,6 +176,12 @@ export default function ShowcasePage() {
             const nextValues = values.includes(value)
                 ? values.filter((item) => item !== value)
                 : [...values, value];
+            if (filterKey === "locations" && !values.includes(value)) {
+                const country = value.split(" / ")[0];
+                return { ...current, locations: value.includes(" / ")
+                    ? nextValues.filter((item) => item !== country)
+                    : nextValues.filter((item) => !item.startsWith(country + " / ")) };
+            }
             return { ...current, [filterKey]: nextValues };
         });
     };
@@ -233,7 +241,7 @@ export default function ShowcasePage() {
                             )}
                         </label>
 
-                        {activeTab === "talents" && (
+                        {(
                             <button
                                 type="button"
                                 onClick={() => {
@@ -248,7 +256,7 @@ export default function ShowcasePage() {
                                 )}
                                 aria-label="فیلترها"
                             >
-                                <SlidersHorizontal size={18} />
+                                <Image src="/assets/chinverse/icons/Filter.svg" alt="" width={24} height={24} className="h-6 w-6 object-contain" />
                                 <span>{activeFilterCount > 0 ? `${toPersianDigits(activeFilterCount)} فیلتر` : "فیلتر"}</span>
                                 {activeFilterCount > 0 && (
                                     <span className="absolute -left-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-[#ffb74d]" />
@@ -335,11 +343,11 @@ function TalentFilterPanel({
     const currentConfig = activeFilterKey ? filterConfig[activeFilterKey] : null;
 
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[120] bg-[#f7f8fa] px-5 pb-24 pt-5" dir="rtl">
-            <div className="mx-auto flex h-full w-full max-w-[430px] flex-col">
+        <Dialog open onClose={onClose} aria-labelledby="showcase-filter-title" className="modal-backdrop-motion fixed inset-0 z-[1100] bg-[#f7f8fa] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5" dir="rtl">
+            <DialogPanel className="mx-auto flex h-full w-full max-w-[430px] flex-col">
                 <header className="relative flex h-11 items-center justify-center">
                     <BackButton onClick={onBack} className="absolute left-0 top-0" />
-                    <h2 className="text-center text-[18px] font-black text-[#25272d]">
+                    <h2 id="showcase-filter-title" className="text-center text-[18px] font-black text-[#25272d]">
                         {currentConfig?.label || "فیلترها"}
                     </h2>
                     <IconButton onClick={onClose} label="بستن" className="absolute right-0 top-0">
@@ -352,7 +360,6 @@ function TalentFilterPanel({
                         <div className="mt-8 space-y-1">
                             {filterOrder.map((filterKey) => {
                                 const config = filterConfig[filterKey];
-                                const Icon = config.icon;
                                 const selectedValues = filters[filterKey];
                                 return (
                                     <button
@@ -361,7 +368,7 @@ function TalentFilterPanel({
                                         onClick={() => onOpenFilter(filterKey)}
                                         className="flex min-h-[56px] w-full items-center gap-3 border-b border-slate-300/80 py-2 text-right transition hover:bg-white/70"
                                     >
-                                        <ChevronLeft className="h-5 w-5 shrink-0 text-slate-700" />
+                                        <Image src={`/assets/chinverse/icons/${config.icon}`} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-[15px] font-black text-[#25272d]">{config.label}</p>
                                             {selectedValues.length > 0 && (
@@ -371,13 +378,14 @@ function TalentFilterPanel({
                                                 </p>
                                             )}
                                         </div>
-                                        <Icon className="h-6 w-6 shrink-0 text-[#155aa6]" strokeWidth={1.7} />
+                                        <ChevronLeft className="h-5 w-5 shrink-0 text-slate-700" />
                                     </button>
                                 );
                             })}
                         </div>
 
-                        <div className="mt-auto flex gap-3 pt-6">
+                        <div className="flex min-h-0 flex-1 items-center justify-center py-5" aria-hidden="true"><Image src="/assets/chinverse/icons/Filter.svg" alt="" width={192} height={192} className="h-full max-h-[210px] w-[192px] object-contain" /></div>
+                        <div className="mt-auto flex flex-row-reverse gap-3 pt-3">
                             <button
                                 type="button"
                                 onClick={onClearAll}
@@ -403,7 +411,7 @@ function TalentFilterPanel({
                                     عنوان شغلی توسط خود کاربر انتخاب می‌شود و به معنی تأیید تخصص، مجوز یا سابقه کاری فرد توسط چین‌ورس نیست.
                                 </p>
                             )}
-                            <SearchableOptionList
+                            {activeFilterKey === "locations" ? <LocationFilterOptions values={filters.locations} onToggle={(value) => onToggleValue("locations", value)} onClear={() => onClearFilter("locations")} /> : <SearchableOptionList
                                 key={activeFilterKey}
                                 label={filterConfig[activeFilterKey].label}
                                 options={filterConfig[activeFilterKey].options}
@@ -412,12 +420,12 @@ function TalentFilterPanel({
                                 clearLabel="همه موارد"
                                 onClear={() => onClearFilter(activeFilterKey)}
                                 scrollClassName="flex-1"
-                            />
+                            />}
                         </div>
                     </div>
                 )}
-            </div>
-        </div>
+            </DialogPanel>
+        </Dialog>
     );
 }
 
@@ -592,7 +600,7 @@ function ShowcaseSkeleton({ activeTab }: { activeTab: TabType }) {
     );
 }
 
-function matchesAnyJobTitle(user: ShowcaseUser, selectedJobTitles: string[]) {
+function matchesAnyJobTitle(user: Pick<ShowcaseUser, "headline" | "job_titles">, selectedJobTitles: string[]) {
     if (selectedJobTitles.length === 0) return true;
     const userTitles = [user.headline, ...(user.job_titles || [])]
         .map((title) => title?.trim())
@@ -600,7 +608,7 @@ function matchesAnyJobTitle(user: ShowcaseUser, selectedJobTitles: string[]) {
     return selectedJobTitles.some((title) => userTitles.includes(title));
 }
 
-function matchesAnyLocation(user: ShowcaseUser, selectedLocations: string[]) {
+function matchesAnyLocation(user: Pick<ShowcaseUser, "country" | "city">, selectedLocations: string[]) {
     if (selectedLocations.length === 0) return true;
     const country = user.country?.trim();
     const city = user.city?.trim();

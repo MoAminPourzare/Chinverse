@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogPanel } from "@headlessui/react";
 import { Check, Volume2, X } from "lucide-react";
 import api from "@/lib/api";
-import { getMediaUrl } from "@/lib/media";
+import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
 import { dictionaryLevelLabel } from "@/lib/dictionaryLevels";
 
 interface VocabularyDefinition {
@@ -54,6 +55,7 @@ interface VocabularyModalProps {
     word: VocabularyWord;
     isOpen: boolean;
     onClose: () => void;
+    onLeitnerChange?: (word: VocabularyWord) => void;
 }
 
 type TabType = "persian" | "chinese" | "composition" | "examples";
@@ -86,7 +88,8 @@ const splitLines = (value?: string | null) =>
         .map((line) => line.trim())
         .filter(Boolean);
 
-export default function VocabularyModal({ word, isOpen, onClose }: VocabularyModalProps) {
+export default function VocabularyModal({ word, isOpen, onClose, onLeitnerChange }: VocabularyModalProps) {
+    const pronunciation = useVocabularyPronunciation(word, isOpen);
     const [activeTab, setActiveTab] = useState<TabType>("persian");
     const [isInLeitner, setIsInLeitner] = useState(false);
     const [isCheckingLeitner, setIsCheckingLeitner] = useState(false);
@@ -129,6 +132,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 const response = await api.get(`/leitner/check/${word.id}`);
                 if (!cancelled) {
                     setIsInLeitner(Boolean(response.data.in_leitner));
+                    if (response.data.in_leitner) onLeitnerChange?.(word);
                 }
             } catch (error) {
                 console.error("Failed to check leitner status:", error);
@@ -147,33 +151,9 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         return () => {
             cancelled = true;
         };
-    }, [isOpen, word.id]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const previousBodyOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            document.body.style.overflow = previousBodyOverflow;
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isOpen, onClose]);
+    }, [isOpen, word, onLeitnerChange]);
 
     if (!isOpen) return null;
-
-    const playAudio = () => {
-        if (!word.audio_url) return;
-        void new Audio(getMediaUrl(word.audio_url)).play().catch((error) => {
-            console.error("Failed to play vocabulary audio:", error);
-        });
-    };
 
     const handleAddToLeitner = async () => {
         if (word.id === undefined || word.id === null || isInLeitner || isAdding || isCheckingLeitner) return;
@@ -182,6 +162,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         try {
             await api.post("/leitner/add", { word_id: word.id });
             setIsInLeitner(true);
+            onLeitnerChange?.(word);
         } catch (error) {
             console.error("Failed to add to leitner:", error);
             setLeitnerError("افزودن واژه انجام نشد. اتصال را بررسی و دوباره تلاش کن.");
@@ -210,13 +191,10 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
     );
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden overscroll-none px-4 py-5">
+        <Dialog open={isOpen} onClose={onClose} aria-labelledby="vocabulary-word-title" className="fixed inset-0 z-[1100] flex items-center justify-center overflow-hidden overscroll-none px-4 py-5" dir="rtl">
             <div className="modal-backdrop-motion absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} />
 
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="vocabulary-word-title"
+            <DialogPanel
                 className="modal-panel-motion relative flex h-[min(720px,calc(100dvh-40px))] w-full max-w-[390px] flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
             >
                 <div className="shrink-0 border-b border-slate-100 px-5 pb-4 pt-5 text-center">
@@ -224,6 +202,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                         onClick={onClose}
                         className="absolute right-4 top-4 rounded-2xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                         aria-label="بستن اطلاعات واژه"
+                        data-autofocus
                     >
                         <X size={24} />
                     </button>
@@ -233,10 +212,10 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                             {word.chinese}
                         </h2>
                         <button
-                            onClick={playAudio}
-                            disabled={!word.audio_url}
+                            onClick={() => pronunciation.playing ? pronunciation.stop() : void pronunciation.play()}
+                            aria-pressed={pronunciation.playing}
                             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#155aa6] transition-colors hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="پخش تلفظ"
+                            aria-label={pronunciation.playing ? "توقف تلفظ" : "پخش تلفظ"}
                         >
                             <Volume2 size={20} />
                         </button>
@@ -245,6 +224,8 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     <p className="font-latin text-base text-gray-600 sm:text-lg" dir="ltr" lang="en">
                         {word.pinyin}
                     </p>
+                    {pronunciation.deviceVoice && <p className="mt-1 text-xs text-slate-600" role="status">تلفظ با صدای چینی دستگاه</p>}
+                    {pronunciation.error && <p className="mt-2 text-xs leading-6 text-rose-700" role="alert" dir="rtl">{pronunciation.error}</p>}
                     {word.audio_url && word.audio_pinyin && /[/|,，;；]/.test(word.pinyin) && (
                         <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{word.audio_pinyin}</span></p>
                     )}
@@ -448,7 +429,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                         )}
                     </button>
                 </div>
-            </div>
-        </div>
+            </DialogPanel>
+        </Dialog>
     );
 }

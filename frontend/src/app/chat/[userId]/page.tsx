@@ -468,9 +468,9 @@ export default function ChatRoomPage() {
                             height={150}
                             className="h-[150px] w-[150px] object-contain"
                         />
-                        <h2 className="mt-6 text-lg font-black text-slate-900">هنوز گفت‌وگویی شروع نشده</h2>
+                        <h2 className="mt-6 text-lg font-black text-slate-900">هنوز مکالمه‌ای شروع نشده</h2>
                         <p className="mt-2 max-w-[260px] text-sm leading-7 text-slate-500">
-                            اولین پیام را بنویس تا مکالمه‌ات با این کاربر آغاز شود.
+                            برای شروع گفت‌وگو، اولین پیام رو بفرست.
                         </p>
                     </div>
                 ) : (
@@ -525,14 +525,14 @@ export default function ChatRoomPage() {
                         type="text"
                         aria-label="پیام"
                         value={newMessage}
-                        dir="auto"
+                        dir={newMessage.trim() ? "auto" : "rtl"}
                         onChange={(event) => {
                             setNewMessage(event.target.value);
                             if (sendError) setSendError('');
                         }}
                         onKeyDown={(event) => event.key === 'Enter' && !event.shiftKey && handleSend()}
                         placeholder="پیام خود را بنویس"
-                        className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-slate-800 placeholder:text-slate-500"
+                        className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-right text-slate-800 placeholder:text-right placeholder:text-slate-500"
                     />
                     <button
                         type="button"

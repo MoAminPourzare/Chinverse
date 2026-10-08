@@ -1,10 +1,10 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
-import { CalendarDays, ImageIcon, MessageCircle, User as UserIcon, X } from "lucide-react";
+import { CalendarDays, ImageIcon, MessageCircle, Pencil, Trash2, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getProfileHref } from "@/utils/profileHref";
@@ -22,6 +22,7 @@ export interface PostViewerProvider {
 
 export interface PostViewerData {
     id: number;
+    user_id?: number;
     image_url?: string | null;
     caption?: string | null;
     created_at?: string | null;
@@ -36,6 +37,8 @@ interface PostViewerModalProps {
     post: PostViewerData | null;
     onCommentCountChange?: (count: number) => void;
     fallbackTitle?: string;
+    onEdit?: () => void;
+    onDelete?: () => Promise<void>;
 }
 
 export default function PostViewerModal({
@@ -44,9 +47,15 @@ export default function PostViewerModal({
     post,
     onCommentCountChange,
     fallbackTitle = "پست گالری",
+    onEdit,
+    onDelete,
 }: PostViewerModalProps) {
     const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
     const currentUserId = useOptionalCurrentUserId();
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
+    useEffect(() => { setConfirmDelete(false); setDeleteError(""); }, [post?.id, isOpen]);
     const liveCommentsCount = post ? commentCounts[post.id] ?? (post.comments_count || 0) : 0;
 
     const handleCommentCountChange = (count: number) => {
@@ -59,6 +68,16 @@ export default function PostViewerModal({
     if (!post) return null;
 
     const provider = post.provider;
+    const ownerId = post.user_id ?? provider?.id;
+    const isOwner = currentUserId !== null && currentUserId === ownerId;
+    const deletePost = async () => {
+        if (!onDelete || deleting) return;
+        setDeleting(true);
+        setDeleteError("");
+        try { await onDelete(); setConfirmDelete(false); }
+        catch { setDeleteError("حذف تصویر انجام نشد. دوباره تلاش کن."); }
+        finally { setDeleting(false); }
+    };
     const hasProvider = Boolean(provider?.display_name || provider?.headline || provider?.avatar_url);
 
     return (
@@ -150,6 +169,18 @@ export default function PostViewerModal({
                                 </div>
 
                                 <section className="px-4 pb-5 pt-3">
+                                    {isOwner && (onEdit || onDelete) && <div className="mb-3 flex gap-2">
+                                        {onEdit && <button type="button" onClick={onEdit} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-blue-50 px-3 text-sm text-[#155aa6]"><Pencil size={17} />ویرایش عکس</button>}
+                                        {onDelete && <button type="button" onClick={() => { setConfirmDelete(true); setDeleteError(""); }} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-rose-50 px-3 text-sm text-rose-700"><Trash2 size={17} />حذف عکس</button>}
+                                    </div>}
+                                    {confirmDelete && <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-3" role="group" aria-label="تأیید حذف عکس">
+                                        <p className="text-sm leading-7 text-slate-800">این عکس و دیدگاه‌های آن حذف می‌شن. ادامه می‌دی؟</p>
+                                        <div className="mt-2 flex gap-3">
+                                            <button type="button" disabled={deleting} onClick={() => void deletePost()} className="min-h-12 rounded-xl bg-rose-700 px-4 text-sm text-white">{deleting ? "در حال حذف…" : "حذف تصویر"}</button>
+                                            <button type="button" disabled={deleting} onClick={() => setConfirmDelete(false)} className="min-h-12 rounded-xl bg-white px-4 text-sm text-slate-700">انصراف</button>
+                                        </div>
+                                    </div>}
+                                    {deleteError && <p role="alert" className="mb-3 text-sm leading-7 text-rose-700">{deleteError}</p>}
                                     <div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
                                         <div className="flex items-center gap-2">
                                             <LikeButton targetType="post" targetId={post.id} initialCount={post.likes_count || 0} compact />
@@ -182,6 +213,7 @@ export default function PostViewerModal({
                                         </div>
                                         <PostComments
                                             postId={post.id}
+                                            ownerId={ownerId ?? undefined}
                                             initialCount={liveCommentsCount}
                                             onCountChange={handleCommentCountChange}
                                             defaultOpen

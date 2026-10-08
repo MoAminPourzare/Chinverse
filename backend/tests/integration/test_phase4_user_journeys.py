@@ -27,6 +27,66 @@ from app.models.user import User, UserRole
 
 pytestmark = pytest.mark.integration
 
+
+async def test_known_vocabulary_persists_per_user_and_preserves_leitner_cards():
+    from sqlalchemy import func, select
+    from app.models.leitner import UserFlashcard, UserKnownWord
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+        owner_id, owner = await create_verified_user(client, "knowledge-owner")
+        _, other = await create_verified_user(client, "knowledge-other")
+        suffix = uuid4().hex[:8]
+        async with SessionLocal() as db:
+            words = [DictionaryWord(chinese=f"测试{suffix}{index}", pinyin="cèshì", level="HSK1", status="published" if index < 2 else "draft") for index in range(3)]
+            db.add_all(words)
+            await db.commit()
+            for word in words:
+                await db.refresh(word)
+            word_ids = [word.id for word in words]
+            names = [word.chinese for word in words]
+        assert (await client.post("/api/v1/leitner/add", headers=owner, json={"word_id": word_ids[1]})).status_code == 200
+        payload = {"words": names + [names[0], "不存在的测试词"]}
+        for _ in range(2):
+            response = await client.post("/api/v1/vocabulary/known", headers=owner, json=payload)
+            assert response.status_code == 200, response.text
+            assert response.json()["states"] == {names[0]: "known", names[1]: "leitner"}
+        persisted = await client.post("/api/v1/vocabulary/knowledge", headers=owner, json=payload)
+        assert persisted.json()["states"] == {names[0]: "known", names[1]: "leitner"}
+        isolated = await client.post("/api/v1/vocabulary/knowledge", headers=other, json=payload)
+        assert isolated.json()["states"] == {names[0]: "new", names[1]: "new"}
+        async with SessionLocal() as db:
+            assert await db.scalar(select(func.count()).select_from(UserKnownWord).where(UserKnownWord.user_id == owner_id)) == 1
+            assert await db.scalar(select(func.count()).select_from(UserFlashcard).where(UserFlashcard.user_id == owner_id)) == 1
+        assert (await client.post("/api/v1/leitner/add", headers=owner, json={"word_id": word_ids[0]})).status_code == 200
+        assert (await client.post("/api/v1/vocabulary/knowledge", headers=owner, json={"words": [names[0]]})).json()["states"][names[0]] == "leitner"
+
+
+async def test_gallery_edit_and_comment_deletion_enforce_ownership():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+        _, owner = await create_verified_user(client, "edit-gallery-owner")
+        _, author = await create_verified_user(client, "edit-comment-author")
+        _, stranger = await create_verified_user(client, "edit-gallery-stranger")
+        uploaded = await client.post("/api/v1/users/me/gallery", headers=owner, files={"file": ("original.png", png_bytes(), "image/png")}, data={"caption": "قبل از ویرایش"})
+        assert uploaded.status_code == 201, uploaded.text
+        item = uploaded.json()
+        path = f"/api/v1/users/me/gallery/{item['id']}"
+        assert (await client.patch(path, headers=stranger, data={"caption": "تغییر غیرمجاز"})).status_code == 404
+        replacement = BytesIO()
+        Image.new("RGB", (8, 8), (250, 70, 100)).save(replacement, format="PNG")
+        edited = await client.patch(path, headers=owner, data={"caption": "بعد از ویرایش"}, files={"file": ("replacement.png", replacement.getvalue(), "image/png")})
+        assert edited.status_code == 200, edited.text
+        assert edited.json()["caption"] == "بعد از ویرایش"
+        assert edited.json()["image_url"] != item["image_url"]
+        assert (await client.patch(path, headers=owner, data={"caption": ""})).json()["caption"] is None
+        comments_path = f"/api/v1/engagements/post/{item['id']}/comments"
+        for deleting_user in (author, owner):
+            comment = await client.post(comments_path, headers=author, json={"content": "دیدگاه آزمایشی"})
+            assert comment.status_code == 201, comment.text
+            deletion = f"{comments_path}/{comment.json()['id']}"
+            assert (await client.delete(deletion, headers=stranger)).status_code == 404
+            assert (await client.delete(deletion, headers=deleting_user)).status_code == 204
+            assert (await client.get(comments_path)).json() == []
+
 PASSWORD = "Secure phase four passphrase 123!"
 LEGAL_ACCEPTANCE = {
     "accept_terms": True,
@@ -173,6 +233,10 @@ async def test_profile_gallery_services_feed_engagement_and_ownership():
                 "city": "تهران",
                 "websites": ["example.org", "https://example.net"],
                 "socials": [{"platform": "instagram", "handle": "chinverse_qa"}],
+                "resume": {
+                    "work_experiences": [{"company": "مرکز زبان", "job_title": "مدرس HSK", "start_date": "", "end_date": ""}],
+                    "educations": [{"university": "دانشگاه پکن", "degree": "کارشناسی", "field": "زبان چینی", "start_date": "", "end_date": ""}],
+                },
             },
         )
         assert profile.status_code == 200, profile.text
@@ -213,6 +277,16 @@ async def test_profile_gallery_services_feed_engagement_and_ownership():
         public_services = await client.get(f"/api/v1/users/{owner_id}/services")
         assert public_services.status_code == 200, public_services.text
         assert public_services.json()[0]["id"] == service_id
+
+        catalogue = await client.get("/api/v1/users/me/services/public?limit=100")
+        assert catalogue.status_code == 200, catalogue.text
+        provider = next(item["provider"] for item in catalogue.json() if item["id"] == service_id)
+        assert provider["country"] == "ایران" and provider["city"] == "تهران"
+        assert provider["job_titles"] == ["مدرس HSK"]
+        assert provider["education"] == {"university": "دانشگاه پکن", "degree": "کارشناسی", "field": "زبان چینی"}
+        detail = await client.get(f"/api/v1/users/me/services/public/{service_id}")
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["provider"] == provider
 
         followed = await client.post(f"/api/v1/users/{owner_id}/follow", headers=viewer)
         assert followed.status_code == 201, followed.text

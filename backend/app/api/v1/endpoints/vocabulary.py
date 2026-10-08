@@ -1,15 +1,19 @@
-from typing import Any, List, Optional
+from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.dialects.postgresql import insert
 
 from app.api import deps
 from app.api.errors import not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.models.dictionary import DictionaryWord
+from app.models.leitner import UserFlashcard, UserKnownWord
+from app.models.user import User
+from app.api.rate_limit import write_rate_limit
 
 router = APIRouter()
 
@@ -73,6 +77,54 @@ class VocabularyMatchRequest(BaseModel):
 
 class VocabularyMatchResponse(BaseModel):
     matches: List[List[str]]
+
+
+class VocabularyKnowledgeRequest(BaseModel):
+    words: List[Annotated[str, Field(min_length=1, max_length=80)]] = Field(max_length=5000)
+
+
+async def vocabulary_knowledge(db: AsyncSession, user_id: int, words: List[str]) -> dict[str, str]:
+    rows = (await db.execute(
+        select(DictionaryWord.chinese, UserFlashcard.word_id, UserKnownWord.word_id)
+        .outerjoin(UserFlashcard, (UserFlashcard.word_id == DictionaryWord.id) & (UserFlashcard.user_id == user_id))
+        .outerjoin(UserKnownWord, (UserKnownWord.word_id == DictionaryWord.id) & (UserKnownWord.user_id == user_id))
+        .where(DictionaryWord.status == "published", DictionaryWord.chinese.in_(words))
+    )).all()
+    return {chinese: "leitner" if card else "known" if known else "new" for chinese, card, known in rows}
+
+
+@router.post("/knowledge")
+async def read_vocabulary_knowledge(
+    payload: VocabularyKnowledgeRequest,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    return {"states": await vocabulary_knowledge(db, current_user.id, payload.words)}
+
+
+@router.post("/known", dependencies=[Depends(write_rate_limit)])
+async def mark_vocabulary_known(
+    payload: VocabularyKnowledgeRequest,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    # Keep words explicitly chosen for Leitner review in their existing boxes.
+    word_ids = (await db.scalars(
+        select(DictionaryWord.id).where(
+            DictionaryWord.status == "published",
+            DictionaryWord.chinese.in_(payload.words),
+            ~select(UserFlashcard.word_id).where(
+                UserFlashcard.word_id == DictionaryWord.id,
+                UserFlashcard.user_id == current_user.id,
+            ).exists(),
+        )
+    )).all()
+    if word_ids:
+        await db.execute(insert(UserKnownWord).values([
+            {"user_id": current_user.id, "word_id": word_id} for word_id in word_ids
+        ]).on_conflict_do_nothing(index_elements=["user_id", "word_id"]))
+    await db.commit()
+    return {"states": await vocabulary_knowledge(db, current_user.id, payload.words)}
 
 
 def _word_options():

@@ -82,7 +82,7 @@ test("showcase searches job and country filters and filters by both headline and
     await expect(page.getByRole("heading", { name: "مدرس آزمایشی", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "فیلترها", exact: true }).click();
     await page.getByRole("button", { name: "لوکیشن", exact: true }).click();
-    await page.getByRole("searchbox", { name: "جست‌وجوی لوکیشن", exact: true }).fill("كانادا");
+    await page.getByRole("searchbox", { name: "جست‌وجوی کشور/منطقه", exact: true }).fill("كانادا");
     await page.getByRole("button", { name: "کانادا", exact: true }).click();
     await page.getByRole("button", { name: "بستن", exact: true }).click();
     await expect(page.getByRole("heading", { name: "متخصص مطالعات", exact: true })).toBeVisible();
@@ -112,6 +112,7 @@ for (const width of [320, 390]) {
         expect(Math.abs((await box.boundingBox())!.height - initial!.height)).toBeLessThan(1);
         await noOverflow(page);
         if (width === 390) {
+            await expect(box.locator(".tab-content-motion")).toHaveCSS("opacity", "1");
             const audit = await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
             expect(audit.violations).toEqual([]);
         }

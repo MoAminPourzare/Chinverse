@@ -19,6 +19,7 @@ export default function GalleryTab() {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+    const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
 
     const fetchGallery = async () => {
         try {
@@ -126,10 +127,24 @@ export default function GalleryTab() {
                 onUploadSuccess={handleUploadSuccess}
             />
 
+            <AddPhotoModal
+                isOpen={!!editingItem}
+                item={editingItem}
+                onClose={() => setEditingItem(null)}
+                onUploadSuccess={handleUploadSuccess}
+            />
+
             <ImageDetailModal
                 isOpen={!!selectedItem}
                 onClose={() => setSelectedItem(null)}
                 item={selectedItem}
+                onEdit={() => { setEditingItem(selectedItem); setSelectedItem(null); }}
+                onDelete={async () => {
+                    if (!selectedItem) return;
+                    await galleryService.deleteImage(selectedItem.id);
+                    setGalleryItems((items) => items.filter((item) => item.id !== selectedItem.id));
+                    setSelectedItem(null);
+                }}
             />
         </>
     );
