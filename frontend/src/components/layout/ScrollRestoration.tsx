@@ -11,7 +11,6 @@ export default function ScrollRestoration({ scrollRef }: { scrollRef: RefObject<
     const positions = useRef(new Map<string, number>());
 
     useLayoutEffect(() => {
-        window.dispatchEvent(new Event("chinverse:navigation"));
         const scroll = scrollRef.current;
         if (!scroll) return;
         const target = positions.current.get(key) || 0;

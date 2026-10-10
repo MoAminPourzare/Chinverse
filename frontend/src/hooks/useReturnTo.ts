@@ -1,22 +1,12 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { getSafeReturnTo } from "@/lib/returnTo";
 
-function subscribe(callback: () => void) {
-    window.addEventListener("popstate", callback);
-    window.addEventListener("chinverse:navigation", callback);
-    return () => {
-        window.removeEventListener("popstate", callback);
-        window.removeEventListener("chinverse:navigation", callback);
-    };
-}
-
-const snapshot = () => `${window.location.pathname}${window.location.search}`;
-const serverSnapshot = () => "";
-
 export function useCurrentReturnPath() {
-    return useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+    const pathname = usePathname() || "";
+    const search = useSearchParams()?.toString() || "";
+    return `${pathname}${search ? `?${search}` : ""}`;
 }
 
 export function useReturnTo(fallback: string) {

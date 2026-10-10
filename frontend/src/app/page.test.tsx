@@ -5,7 +5,7 @@ import HomePage from "@/app/page";
 const mocks = vi.hoisted(() => ({ get: vi.fn(), search: "" }));
 
 vi.mock("@/lib/api", () => ({ default: { get: mocks.get } }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(mocks.search) }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/", useSearchParams: () => new URLSearchParams(mocks.search) }));
 vi.mock("@/components/ui/PublicMediaImage", () => ({
     default: ({ alt }: { alt: string }) => <span aria-label={alt} />,
 }));
