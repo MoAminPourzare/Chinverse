@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useReturnTo } from "@/hooks/useReturnTo";
 
 const baseIconButtonClass =
     "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#d5e1ef] bg-white/90 text-slate-600 shadow-sm transition hover:bg-[#eef6ff] hover:text-[#155aa6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155aa6]/30 dark:border-[#344050] dark:bg-[#1b232e]/90 dark:text-[#aeb9c7] dark:hover:bg-[#243142] dark:hover:text-[#72b6ff]";
@@ -22,10 +25,11 @@ export function BackButton({
     iconSize = 21,
 }: BackButtonProps) {
     const classes = cn(baseIconButtonClass, className);
+    const returnHref = useReturnTo(href || "");
 
     if (href) {
         return (
-            <Link href={href} className={classes} aria-label={label}>
+            <Link href={returnHref} className={classes} aria-label={label}>
                 <ArrowLeft size={iconSize} />
             </Link>
         );
@@ -108,7 +112,7 @@ export function AppHeader({
     iconClassName,
 }: AppHeaderProps) {
     return (
-        <header
+        <header data-page-header
             className={cn(
                 "sticky top-3 z-40 mb-5 min-h-[66px] rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-[#303a48] dark:bg-[#171d26]/92 dark:shadow-[0_18px_48px_rgba(0,0,0,0.3)]",
                 className,

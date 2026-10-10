@@ -95,8 +95,8 @@ export default function PostViewerModal({
                     <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md" />
                 </Transition.Child>
 
-                <div className="fixed inset-0 overflow-y-auto px-3 py-4 sm:px-5 sm:py-7">
-                    <div className="flex min-h-full items-start justify-center">
+                <div className="fixed inset-0 px-3 py-4 sm:px-5 sm:py-7">
+                    <div className="flex h-full items-start justify-center">
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"
@@ -106,8 +106,8 @@ export default function PostViewerModal({
                             leaveFrom="translate-y-0 opacity-100 scale-100"
                             leaveTo="-translate-y-2 opacity-0 scale-[0.98]"
                         >
-                            <Dialog.Panel className="modal-panel-motion w-full max-w-[430px] overflow-hidden rounded-[10px] border border-white/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] sm:max-w-[520px]">
-                                <header className="relative bg-[#dfe3eb] px-3 py-3">
+                            <Dialog.Panel className="modal-panel-motion flex max-h-full w-full max-w-[430px] flex-col overflow-hidden rounded-[10px] border border-white/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] sm:max-w-[520px]">
+                                <header className="relative shrink-0 bg-[#dfe3eb] px-3 py-3">
                                     <button
                                         type="button"
                                         onClick={onClose}
@@ -151,6 +151,7 @@ export default function PostViewerModal({
                                     </div>
                                 </header>
 
+                                <div className="min-h-0 overflow-y-auto overscroll-contain">
                                 <div className="relative aspect-[1/1.08] w-full bg-slate-100 sm:aspect-square">
                                     {post.image_url ? (
                                         <Image
@@ -222,6 +223,7 @@ export default function PostViewerModal({
                                         />
                                     </div>
                                 </section>
+                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>

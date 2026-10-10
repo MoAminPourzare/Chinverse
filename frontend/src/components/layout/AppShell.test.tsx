@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
 import AppShell from "./AppShell";
 
 const route = vi.hoisted(() => ({ pathname: "/" }));
-vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
+vi.mock("next/navigation", () => ({ usePathname: () => route.pathname, useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/components/layout/BottomNav", () => ({ default: () => <nav aria-label="ناوبری اصلی" /> }));
 vi.mock("@/components/layout/RouteTransition", () => ({ default: ({ children }: { children: ReactNode }) => children }));
 vi.mock("@/components/pwa/PwaProvider", () => ({ PwaProvider: ({ children }: { children: ReactNode }) => children }));

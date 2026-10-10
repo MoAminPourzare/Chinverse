@@ -28,6 +28,7 @@ const collections = [
 ];
 
 test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.route("**/api/backend/**", (route) => route.fulfill({ json: [] }));
 });
 

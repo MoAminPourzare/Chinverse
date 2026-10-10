@@ -180,7 +180,7 @@ export default function CourseDetailPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-4 py-5">
-                <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
+                <header data-page-header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2" dir="ltr">
                         <BackButton href={explorePath} className="justify-self-end" />
                         <div className="min-w-0 flex-1 text-center" dir="rtl">
@@ -251,7 +251,7 @@ export default function CourseDetailPage({
 
                         <div className="mt-5 flex flex-wrap gap-2">
                             {lessons[0] && (
-                                <PrimaryButton href={`/watch/${domain}/${course.id}?lesson=${lessons[0].id}`} leadingIcon={<Play size={16} />}>
+                                <PrimaryButton carryReturnTo href={`/watch/${domain}/${course.id}?lesson=${lessons[0].id}`} leadingIcon={<Play size={16} />}>
                                     شروع
                                 </PrimaryButton>
                             )}

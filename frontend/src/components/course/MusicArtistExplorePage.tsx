@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { BackButton } from "@/components/ui/IconButton";
 import { MUSIC_ARTIST_CATALOG } from "@/lib/musicArtistCatalog";
 
@@ -7,7 +7,7 @@ export default function MusicArtistExplorePage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
-                <header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
+                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
                     <BackButton href="/explore" label="بازگشت به کاوش" />
                     <h1 className="text-center text-[22px] font-black text-[#343941] dark:text-white">موسیقی</h1>
                     <span aria-hidden />

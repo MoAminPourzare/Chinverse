@@ -898,7 +898,7 @@ export default function AdminPanelPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fb] pb-10" dir="rtl">
-            <header className="sticky top-0 z-30 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+            <header data-page-header className="sticky top-0 z-30 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
                 <div className="mx-auto flex max-w-6xl flex-col gap-3">
                     <div className="flex min-w-0 items-center gap-3" dir="ltr">
                         <BackButton href="/" />

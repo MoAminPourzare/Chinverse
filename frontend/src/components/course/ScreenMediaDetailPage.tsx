@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Play, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
@@ -72,7 +72,7 @@ export default function ScreenMediaDetailPage({
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fa] p-5 dark:bg-[#10151c]" dir="rtl">
                 <div className="rounded-[24px] border border-[#dfe6f0] bg-white p-8 text-center dark:border-slate-700 dark:bg-[#18212b]">
                     <h1 className="text-lg font-black text-slate-900 dark:text-white">این {itemNoun} پیدا نشد</h1>
-                    <Link href={`/explore/${domain}`} className="mt-5 inline-flex rounded-[14px] bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white">بازگشت به {title}</Link>
+                    <Link back href={`/explore/${domain}`} className="mt-5 inline-flex rounded-[14px] bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white">بازگشت به {title}</Link>
                 </div>
             </div>
         );
@@ -112,7 +112,7 @@ export default function ScreenMediaDetailPage({
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                    <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                    <header data-page-header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                         <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                         <div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />
@@ -158,7 +158,7 @@ export default function ScreenMediaDetailPage({
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                    <div className={showAnimationCards ? "sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]" : undefined}>
+                    <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
                         <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                             <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                             <div className="flex items-center gap-1">
@@ -234,7 +234,7 @@ export default function ScreenMediaDetailPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
+                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
                     <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                     <div className="flex items-center gap-1">
                         <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />

@@ -1,16 +1,20 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { ChevronLeft } from "lucide-react";
 import { exploreSections } from "@/components/explore/exploreData";
 import ExploreItemLink from "@/components/explore/ExploreItemLink";
 import styles from "@/components/explore/ExploreGallery.module.css";
+import { BackButton } from "@/components/ui/IconButton";
+import { useReturnTo } from "@/hooks/useReturnTo";
 
 export default function ExplorePage() {
+    const returnTo = useReturnTo("/");
     return (
         <div className={styles.page} dir="rtl">
             <main className={styles.main}>
-                <header className={styles.header}>
+                <header data-page-header className={`${styles.header} relative`}>
+                    {returnTo !== "/" && <BackButton href={returnTo} className="absolute left-0 top-1" />}
                     <h1 className={styles.title}>کاوش</h1>
                     <p className={styles.subtitle}>چی دوست داری امروز یاد بگیری یا ببینی؟</p>
                 </header>
@@ -32,7 +36,7 @@ export default function ExplorePage() {
                         </div>
 
                         <ul className={section.id === "learning" ? styles.tiles : styles.list}>
-                            {section.items.slice(0, 4).map((item, index) => (
+                            {(section.id === "entertainment" ? section.items : section.items.slice(0, 4)).map((item, index) => (
                                 <li key={item.id}><ExploreItemLink item={item} layout={section.id === "learning" ? "tile" : "row"} preload={section.id === "learning" && index === 0} eager={section.id === "learning" || (section.id === "entertainment" && index === 0)} /></li>
                             ))}
                         </ul>

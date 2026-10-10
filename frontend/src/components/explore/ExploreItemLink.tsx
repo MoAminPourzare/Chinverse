@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 import type { ExploreItem } from "./exploreData";

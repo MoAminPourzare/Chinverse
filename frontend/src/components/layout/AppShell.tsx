@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { Suspense, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -10,6 +10,7 @@ import RouteTransition from "@/components/layout/RouteTransition";
 import ThemeController from "@/components/layout/ThemeController";
 import MobileUxController from "@/components/layout/MobileUxController";
 import { PwaProvider } from "@/components/pwa/PwaProvider";
+import ScrollRestoration from "@/components/layout/ScrollRestoration";
 
 const navHiddenPrefixes = [
     "/login",
@@ -35,10 +36,6 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
     const isChatRoom = pathname.startsWith("/chat/");
     const showSupportButton = pathname === "/chat";
 
-    useEffect(() => {
-        scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    }, [pathname]);
-
     return (
         <PwaProvider releaseSha={releaseSha} showActionCards={!isChatRoom}>
             <div className="app-viewport">
@@ -46,6 +43,7 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
                     <ThemeController />
                     <MobileUxController />
                     <NotificationToaster />
+                    <Suspense fallback={null}><ScrollRestoration scrollRef={scrollRef} /></Suspense>
                     <div ref={scrollRef} data-scroll-mode={isChatRoom ? "conversation" : undefined} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
                         <RouteTransition>{children}</RouteTransition>
                     </div>

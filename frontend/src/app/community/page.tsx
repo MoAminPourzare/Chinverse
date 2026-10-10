@@ -52,7 +52,7 @@ function CommunityHub() {
     }, [load, invalidate]);
 
     return <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
-        <header className="relative mb-6 flex h-12 items-center justify-center">
+        <header data-page-header className="relative mb-6 flex h-12 items-center justify-center">
             <BackButton href="/profile" className="absolute left-0" />
             <h1 className="text-lg font-black text-slate-900">گفتگو</h1>
         </header>

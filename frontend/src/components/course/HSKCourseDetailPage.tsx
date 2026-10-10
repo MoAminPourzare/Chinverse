@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
@@ -48,7 +48,7 @@ export default function HSKCourseDetailPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
+                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
                     <BackButton href="/explore/hsk" label="بازگشت به فهرست HSK" />
                     <div className="flex items-center gap-1.5">
                         <CollectionBookmarkButton domain="hsk" slug={course.slug} courseId={publishedCourse?.id} />

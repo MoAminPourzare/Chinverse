@@ -11,6 +11,7 @@ import { LEITNER_STAGES } from "@/lib/leitnerStages";
 import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
 import styles from "./review.module.css";
 import { BackButton } from "@/components/ui/IconButton";
+import { useReturnTo } from "@/hooks/useReturnTo";
 import {
     getChineseTextStyle,
     getHighlightStyle,
@@ -96,6 +97,7 @@ const backTabs: { key: BackTabType; label: string }[] = [
 
 export default function LeitnerReviewPage() {
     const router = useRouter();
+    const returnTo = useReturnTo("/leitner");
     const { preferences } = useLearningPreferences();
     const [cards, setCards] = useState<Flashcard[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -181,15 +183,15 @@ export default function LeitnerReviewPage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-full items-center justify-center">
+            <ReviewState returnTo={returnTo}>
                 <Loader2 className="h-7 w-7 animate-spin text-[#155aa6]" />
-            </div>
+            </ReviewState>
         );
     }
 
     if (loadError && cards.length === 0) {
         return (
-            <div className="flex min-h-full flex-col items-center justify-center bg-[#f7f8fa] p-6 text-center" dir="rtl">
+            <ReviewState returnTo={returnTo}>
                 <p className="max-w-xs text-sm font-bold leading-7 text-red-600">{loadError}</p>
                 <button
                     type="button"
@@ -198,13 +200,13 @@ export default function LeitnerReviewPage() {
                 >
                     تلاش دوباره
                 </button>
-            </div>
+            </ReviewState>
         );
     }
 
     if (sessionComplete) {
         return (
-            <div className="flex min-h-full flex-col items-center justify-center bg-[#f7f8fa] p-6 text-center" dir="rtl">
+            <ReviewState returnTo={returnTo}>
                 <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ff]">
                     <Image
                         src="/assets/chinverse/icons/Laitner.svg"
@@ -220,12 +222,12 @@ export default function LeitnerReviewPage() {
                     برای امروز کارتی برای مرور نداری. وقتی زمان مرور بعدی برسد، کارت‌ها دوباره اینجا می‌آیند.
                 </p>
                 <button
-                    onClick={() => router.push("/leitner")}
+                    onClick={() => router.push(returnTo)}
                     className="rounded-full bg-[#155aa6] px-8 py-3 text-base font-black text-white shadow-[0_10px_18px_rgba(21,90,166,0.28)] transition hover:bg-[#0f4e92]"
                 >
-                    بازگشت به لایتنر
+                    {returnTo === "/leitner" ? "بازگشت به لایتنر" : "بازگشت به روند یادگیری"}
                 </button>
-            </div>
+            </ReviewState>
         );
     }
 
@@ -246,8 +248,8 @@ export default function LeitnerReviewPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-28 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="ltr">
-                    <BackButton onClick={() => router.push("/leitner")} className="justify-self-end" />
+                <header data-page-header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="ltr">
+                    <BackButton href={returnTo} className="justify-self-end" />
                     <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
                     <div className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#155aa6] shadow-sm">
                         {toPersianDigits(currentIndex + 1)} / {toPersianDigits(cards.length)}
@@ -471,6 +473,19 @@ export default function LeitnerReviewPage() {
                 </section>
 
             </main>
+        </div>
+    );
+}
+
+function ReviewState({ returnTo, children }: { returnTo: string; children: ReactNode }) {
+    return (
+        <div className="min-h-full bg-[#f7f8fa] px-4 pb-8 pt-4" dir="rtl">
+            <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
+                <BackButton href={returnTo} />
+                <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
+                <span aria-hidden />
+            </header>
+            <div className="flex min-h-[calc(100dvh-160px)] flex-col items-center justify-center p-6 text-center">{children}</div>
         </div>
     );
 }

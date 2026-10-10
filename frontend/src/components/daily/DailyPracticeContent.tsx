@@ -174,20 +174,20 @@ export default function DailyPracticeContent() {
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                         <ActionCard
-                            href="/leitner/review"
+                            href="/leitner/review?returnTo=%2F%3Ftab%3Ddaily"
                             icon={<BookOpenCheck size={19} />}
                             title="مرور لغات"
                             accent="from-emerald-500 to-teal-500"
                         />
                         <ActionCard
-                            href="/explore"
+                            href="/explore?returnTo=%2F%3Ftab%3Ddaily"
                             icon={<PlayCircle size={19} />}
                             title="دیدن ویدیو"
                             accent="from-[#155aa6] to-[#0f4e92]"
                         />
                     </div>
                     <Link
-                        href="/settings/daily"
+                        href="/settings/daily?returnTo=%2F%3Ftab%3Ddaily"
                         className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50"
                     >
                         <Settings size={15} />

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Music2, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
@@ -38,7 +38,7 @@ export default function MusicArtistDetailPage() {
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fa] p-5 dark:bg-[#10151c]" dir="rtl">
                 <div className="rounded-[24px] border border-[#dfe6f0] bg-white p-8 text-center dark:border-slate-700 dark:bg-[#18212b]">
                     <h1 className="text-lg font-black text-slate-900 dark:text-white">این هنرمند پیدا نشد</h1>
-                    <Link href="/explore/music" className="mt-5 inline-flex rounded-[14px] bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white">بازگشت به موسیقی</Link>
+                    <Link back href="/explore/music" className="mt-5 inline-flex rounded-[14px] bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white">بازگشت به موسیقی</Link>
                 </div>
             </div>
         );
@@ -48,7 +48,7 @@ export default function MusicArtistDetailPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                <div className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
+                <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
                     <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
                         <BackButton href="/explore/music" label="بازگشت به فهرست موسیقی" />
                         <div className="flex items-center gap-1">

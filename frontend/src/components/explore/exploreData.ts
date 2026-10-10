@@ -37,12 +37,12 @@ export const learningItems: ExploreItem[] = [
 ];
 
 export const entertainmentItems: ExploreItem[] = [
-    createExploreItem({ title: "سریال", id: "series", description: "تماشای سریال‌های چینی", tone: "rose", scene: true, imagePosition: "center 60%" }),
-    createExploreItem({ title: "فیلم", id: "movies", description: "فیلم‌های جذاب چینی", tone: "amber", scene: true, imagePosition: "center 58%" }),
-    createExploreItem({ title: "کارتون و انیمیشن", id: "cartoons", description: "دنیای انیمیشن چینی", tone: "sky", scene: true, imagePosition: "center 54%" }),
-    createExploreItem({ title: "پادکست", id: "podcasts", description: "گوش دادن به گفت‌وگوهای چینی", tone: "sky" }),
     createExploreItem({ title: "موسیقی", id: "music", description: "یادگیری با ترانه‌های چینی", tone: "violet" }),
+    createExploreItem({ title: "پادکست", id: "podcasts", description: "گوش دادن به گفت‌وگوهای چینی", tone: "sky" }),
     createExploreItem({ title: "گفتارهای موضوعی", id: "topic-talks", description: "گفت‌وگو دربارهٔ موضوع‌های متنوع", tone: "sky" }),
+    createExploreItem({ title: "فیلم", id: "movies", description: "فیلم‌های جذاب چینی", tone: "amber", scene: true, imagePosition: "center 58%" }),
+    createExploreItem({ title: "سریال", id: "series", description: "تماشای سریال‌های چینی", tone: "rose", scene: true, imagePosition: "center 60%" }),
+    createExploreItem({ title: "کارتون و انیمیشن", id: "cartoons", description: "دنیای انیمیشن چینی", tone: "sky", scene: true, imagePosition: "center 54%" }),
 ];
 
 export const artSkillItems: ExploreItem[] = [

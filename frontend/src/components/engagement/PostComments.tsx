@@ -18,6 +18,7 @@ interface PostCommentsProps {
     showToggle?: boolean;
     className?: string;
     ownerId?: number;
+    contained?: boolean;
 }
 
 export default function PostComments({
@@ -28,6 +29,7 @@ export default function PostComments({
     showToggle = true,
     className,
     ownerId,
+    contained = false,
 }: PostCommentsProps) {
     const [open, setOpen] = useState(defaultOpen);
     const [comments, setComments] = useState<EngagementComment[]>([]);
@@ -36,6 +38,9 @@ export default function PostComments({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [loadError, setLoadError] = useState(false);
+    const [retry, setRetry] = useState(0);
+    const listRef = useRef<HTMLDivElement>(null);
     const currentUserId = useOptionalCurrentUserId();
     const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -76,6 +81,7 @@ export default function PostComments({
         let cancelled = false;
         const loadComments = async () => {
             setLoading(true);
+            setLoadError(false);
             try {
                 const data = await engagementService.getComments("post", postId);
                 if (!cancelled) {
@@ -83,8 +89,8 @@ export default function PostComments({
                     setDisplayCount(data.length);
                     onCountChangeRef.current?.(data.length);
                 }
-            } catch (error) {
-                console.error("Failed to load comments", error);
+            } catch {
+                if (!cancelled) setLoadError(true);
             } finally {
                 if (!cancelled) {
                     setLoading(false);
@@ -95,7 +101,7 @@ export default function PostComments({
         return () => {
             cancelled = true;
         };
-    }, [open, postId]);
+    }, [open, postId, retry]);
 
     const submitComment = async () => {
         const content = draft.trim();
@@ -111,6 +117,7 @@ export default function PostComments({
             onCountChangeRef.current?.(nextComments.length);
             setDraft("");
             setError("");
+            if (contained) requestAnimationFrame(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }));
         } catch (error) {
             console.error("Failed to create comment", error);
             setError("ثبت دیدگاه انجام نشد. لطفا دوباره تلاش کن.");
@@ -120,7 +127,7 @@ export default function PostComments({
     };
 
     return (
-        <div className={cn("mt-3 border-t border-slate-100 pt-3", className)}>
+        <div className={cn(contained ? "flex min-h-0 flex-1 flex-col" : "mt-3 border-t border-slate-100 pt-3", className)}>
             {showToggle && (
             <button
                 type="button"
@@ -133,8 +140,8 @@ export default function PostComments({
             )}
 
             {open && (
-                <div className={cn("space-y-3", showToggle && "mt-3")}>
-                    <div className="flex items-center gap-2 rounded-[22px] border border-slate-200 bg-white px-3 py-2">
+                <div className={cn(contained ? "flex min-h-0 flex-1 flex-col gap-3" : "space-y-3", showToggle && "mt-3")}>
+                    <div className={cn("flex items-center gap-2 rounded-[22px] border border-slate-200 bg-white px-3 py-2", contained && "order-2 shrink-0")}>
                         <input
                             value={draft}
                             dir={draft.trim() ? "auto" : "rtl"}
@@ -148,24 +155,32 @@ export default function PostComments({
                                     void submitComment();
                                 }
                             }}
-                            placeholder="دیدگاهت را بنویس"
+                            placeholder="دیدگاهت رو بنویس"
+                            aria-label="دیدگاهت رو بنویس"
                             className="min-w-0 flex-1 bg-transparent text-right text-sm text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
                         />
                         <button
                             type="button"
                             onClick={() => void submitComment()}
                             disabled={!draft.trim() || submitting}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#155aa6] text-white transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-200"
+                            aria-label="ارسال دیدگاه"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#155aa6] text-white transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-200"
                         >
                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         </button>
                     </div>
-                    {error && <p role="alert" className="text-xs font-bold leading-5 text-rose-600">{error}</p>}
+                    {error && <p role="alert" className={cn("text-xs font-bold leading-5 text-rose-600", contained && "order-1 shrink-0")}>{error}</p>}
 
+                    <div ref={listRef} role="region" aria-label="فهرست دیدگاه‌ها" tabIndex={contained ? 0 : undefined} className={cn(contained && "min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl focus-visible:outline-2 focus-visible:outline-[#155aa6]")}>
                     {loading ? (
                         <div className="flex items-center justify-center py-4 text-xs font-bold text-slate-400">
                             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                             در حال دریافت دیدگاه‌ها…
+                        </div>
+                    ) : loadError ? (
+                        <div role="alert" className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+                            <p>دیدگاه‌ها دریافت نشد. دوباره تلاش کن.</p>
+                            <button type="button" onClick={() => setRetry(value => value + 1)} className="mt-3 min-h-11 rounded-xl bg-white px-4 font-bold">تلاش دوباره</button>
                         </div>
                     ) : comments.length > 0 ? (
                         <div className="space-y-2">
@@ -187,6 +202,7 @@ export default function PostComments({
                             هنوز دیدگاهی ثبت نشده است.
                         </p>
                     )}
+                    </div>
                 </div>
             )}
         </div>

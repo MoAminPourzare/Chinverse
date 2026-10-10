@@ -12,6 +12,7 @@ vi.mock("@/components/ui/PublicMediaImage", () => ({
 vi.mock("@/components/daily/DailyPracticeContent", () => ({ default: () => <span>روند یادگیری آزمایشی</span> }));
 vi.mock("@/components/engagement/LikeButton", () => ({ default: () => <button>لایک آزمایشی</button> }));
 vi.mock("@/components/engagement/PostViewerModal", () => ({ default: () => <div role="dialog">پست باز شد</div> }));
+vi.mock("@/components/engagement/PostCommentsSheet", () => ({ default: () => <div role="dialog">دیدگاه‌های پست</div> }));
 
 const provider = { id: 9, display_name: "عرفان", headline: "مدرس زبان چینی" };
 const service = { id: "service_41", type: "service", provider, data: { id: 41, title: "آموزش چینی", description: "کلاس زبان چینی", price_label: "جلسه‌ای" } };
@@ -62,7 +63,8 @@ describe("home activities feed", () => {
         expect(screen.getByRole("link", { name: "مشاهدهٔ خدمت" })).toHaveAttribute("href", "/services/41");
         expect(screen.getAllByRole("link", { name: "پروفایل عرفان" })[0]).toHaveAttribute("href", "/users/9");
         fireEvent.click(screen.getByRole("button", { name: "دیدگاه‌های پست" }));
-        expect(screen.getByRole("dialog")).toHaveTextContent("پست باز شد");
+        expect(screen.getByRole("dialog")).toHaveTextContent("دیدگاه‌های پست");
+        expect(screen.queryByText("پست باز شد")).not.toBeInTheDocument();
     });
 
     it("filters on the server and ignores a response from the previous filter", async () => {

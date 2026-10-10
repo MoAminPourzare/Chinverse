@@ -18,7 +18,7 @@ export default function ExploreGroupPage() {
     return (
         <div className={styles.page} dir="rtl">
             <main className={styles.main}>
-                <header>
+                <header data-page-header>
                     <div className={styles.groupHeader} dir="ltr">
                         <BackButton href="/explore" label="بازگشت به کاوش" />
                         <h1 className={styles.groupTitle} dir="rtl">{section.title}</h1>

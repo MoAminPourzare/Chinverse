@@ -6,6 +6,7 @@ import { ArrowLeft, BriefcaseBusiness, ImageIcon, Loader2, MessageCircle, Refres
 import Image from "@/components/ui/PublicMediaImage";
 import LikeButton from "@/components/engagement/LikeButton";
 import PostViewerModal from "@/components/engagement/PostViewerModal";
+import PostCommentsSheet from "@/components/engagement/PostCommentsSheet";
 import api from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
@@ -173,6 +174,7 @@ function GalleryCard({ item }: { item: Extract<FeedItem, { type: "gallery" }> })
     const gallery = item.data;
     const [commentsCount, setCommentsCount] = useState(item.comments_count || 0);
     const [open, setOpen] = useState(false);
+    const [commentsOpen, setCommentsOpen] = useState(false);
     return (
         <>
             <article className={cardClass} aria-label={`پست ${item.provider?.display_name || "کاربر چین‌ورس"}`}>
@@ -185,13 +187,14 @@ function GalleryCard({ item }: { item: Extract<FeedItem, { type: "gallery" }> })
                     <div className="mt-3 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                             <LikeButton targetType="post" targetId={gallery.id} initialCount={item.likes_count || 0} compact />
-                            <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2 text-xs text-slate-500" aria-label="دیدگاه‌های پست"><MessageCircle size={17} />{commentsCount.toLocaleString("fa-IR")}</button>
+                            <button type="button" onClick={() => setCommentsOpen(true)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-xs text-slate-500" aria-label="دیدگاه‌های پست"><MessageCircle size={17} />{commentsCount.toLocaleString("fa-IR")}</button>
                         </div>
                         <PublishedDate value={item.created_at} />
                     </div>
                 </div>
             </article>
             {open ? <PostViewerModal isOpen={open} onClose={() => setOpen(false)} post={{ ...gallery, created_at: item.created_at, likes_count: item.likes_count, comments_count: commentsCount, provider: item.provider }} onCommentCountChange={setCommentsCount} /> : null}
+            {commentsOpen && <PostCommentsSheet postId={gallery.id} ownerId={item.provider?.id} initialCount={commentsCount} onCountChange={setCommentsCount} onClose={() => setCommentsOpen(false)} />}
         </>
     );
 }

@@ -64,7 +64,7 @@ export function ArticleReader({ identifier }: { identifier: string }) {
 
     const headings = article?.document?.blocks.flatMap((block, index) => block.type === "heading" ? [{ text: block.text, id: `section-${index}` }] : []) || [];
     return <div className="min-h-full bg-[#f9fafc] px-5 pb-10 pt-4" dir="rtl">
-        <header className="relative mb-6 flex h-12 items-center justify-center">
+        <header data-page-header className="relative mb-6 flex h-12 items-center justify-center">
             <BackButton href="/community?section=articles" className="absolute left-0" />
             <span className="text-sm font-bold text-slate-600">مقالات چین‌ورس</span>
         </header>
@@ -94,7 +94,7 @@ export function ArticleReader({ identifier }: { identifier: string }) {
                 {!article.comments.length && <p className="mb-5 text-xs leading-7 text-slate-500">اولین دیدگاه دربارهٔ این مقاله را تو بنویس.</p>}
                 {currentUserId ? <form onSubmit={sendComment} className="mt-5 space-y-3">
                     <label htmlFor="article-comment" className="block text-xs font-bold text-slate-700">دیدگاه شما</label>
-                    <textarea id="article-comment" value={draft} onChange={event => { setDraft(event.target.value); setCommentSaved(false); }} maxLength={8000} rows={3} placeholder="تجربه یا نظرت را بنویس…" disabled={submitting} className="w-full resize-y rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-7 outline-none focus:border-[#155aa6] focus:ring-2 focus:ring-blue-100" />
+                    <textarea id="article-comment" value={draft} onChange={event => { setDraft(event.target.value); setCommentSaved(false); }} maxLength={8000} rows={3} placeholder="دیدگاهت رو بنویس" dir="rtl" disabled={submitting} className="w-full resize-y rounded-2xl border border-slate-200 bg-white p-4 text-right text-sm leading-7 outline-none placeholder:text-right focus:border-[#155aa6] focus:ring-2 focus:ring-blue-100" />
                     {commentError && <p role="alert" className="text-xs leading-6 text-red-600">{commentError}</p>}
                     {commentSaved && <p role="status" className="text-xs leading-6 text-[#155aa6]">دیدگاهت ثبت شد.</p>}
                     <button type="submit" disabled={submitting || !draft.trim()} className="min-h-11 rounded-xl bg-[#155aa6] px-5 text-sm font-bold text-white disabled:opacity-50">{submitting ? "در حال ثبت…" : "ثبت دیدگاه"}</button>

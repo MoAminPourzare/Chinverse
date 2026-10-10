@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "@/components/ui/PublicMediaImage";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ActivitiesFeed from "@/components/home/ActivitiesFeed";
 import { cn } from "@/lib/cn";
@@ -20,13 +20,18 @@ export default function HomePage() {
 
 function HomeContent() {
     const requestedTab = useSearchParams().get("tab");
-    const [selectedTab, setActiveTab] = useState<HomeTab | null>(null);
-    const activeTab = selectedTab ?? (requestedTab === "daily" ? "daily" : "activities");
+    const activeTab = requestedTab === "daily" ? "daily" : "activities";
+
+    const selectTab = (tab: HomeTab) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+    };
 
     return (
         <div className="min-h-full bg-[#fafafb] pb-24" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col px-4 pt-4">
-                <header className="flex flex-col items-center">
+                <header data-page-header className="flex flex-col items-center">
                     <Image
                         src="/assets/chinverse/logos/chinverse-wordmark.png"
                         alt="چین ورس"
@@ -41,7 +46,8 @@ function HomeContent() {
                             <button
                                 key={tab.id}
                                 type="button"
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => selectTab(tab.id)}
+                                aria-pressed={activeTab === tab.id}
                                 className={cn(
                                     "relative text-center text-[15px] font-black transition focus:outline-none",
                                     activeTab === tab.id ? "text-[#155aa6]" : "text-slate-700",

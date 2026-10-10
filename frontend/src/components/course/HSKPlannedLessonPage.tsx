@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { useParams } from "next/navigation";
 import { Clock3, Play } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
@@ -21,7 +21,7 @@ export default function HSKPlannedLessonPage() {
             <div className="flex min-h-full items-center justify-center bg-[#f7f8fa] p-5 dark:bg-[#10151c]" dir="rtl">
                 <div className="rounded-[24px] border border-[#dfe6f0] bg-white p-8 text-center dark:border-slate-700 dark:bg-[#18212b]">
                     <h1 className="text-lg font-black text-slate-900 dark:text-white">این درس پیدا نشد</h1>
-                    <Link href="/explore/hsk" className="mt-5 inline-flex rounded-[14px] bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white">بازگشت به HSK</Link>
+                    <Link back href="/explore/hsk" className="mt-5 inline-flex rounded-[14px] bg-[#155aa6] px-4 py-2.5 text-sm font-black text-white">بازگشت به HSK</Link>
                 </div>
             </div>
         );
@@ -35,7 +35,7 @@ export default function HSKPlannedLessonPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                <header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
+                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
                     <BackButton href={`/hsk/${course.slug}`} label={`بازگشت به ${course.title}`} />
                     <div className="min-w-0 text-center" dir="rtl">
                         <p className="truncate text-[10px] font-black text-[#155aa6]" dir="ltr">{course.title}</p>

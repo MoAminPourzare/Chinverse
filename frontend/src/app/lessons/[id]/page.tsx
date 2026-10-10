@@ -141,7 +141,7 @@ export default function LessonPlayerPage() {
 
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-4 pb-5 pt-4" dir="rtl">
-            <header className="grid shrink-0 grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
+            <header data-page-header className="grid shrink-0 grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
                 <SafeBackButton fallback="/explore" className="justify-self-end" />
                 <div className="min-w-0 text-center" dir="rtl">
                     <h1 className="truncate text-base font-black text-slate-900">{playback?.lesson.title || "درس"}</h1>

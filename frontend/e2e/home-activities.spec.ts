@@ -24,8 +24,8 @@ test("home shows services and posts with filters, details, comments and stable m
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     await testInfo.attach("home-activities", { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
     await page.getByRole("button", { name: "دیدگاه‌های پست" }).click();
-    await expect(page.getByRole("dialog").getByRole("button", { name: "بستن", exact: true })).toBeVisible();
-    await page.getByRole("dialog").getByRole("button", { name: "بستن", exact: true }).click();
+    await expect(page.getByRole("dialog").getByRole("button", { name: "بستن دیدگاه‌ها", exact: true })).toBeVisible();
+    await page.getByRole("dialog").getByRole("button", { name: "بستن دیدگاه‌ها", exact: true }).click();
     await page.getByRole("button", { name: "خدمات", exact: true }).click();
     await expect(page.getByRole("heading", { name: service.data.title })).toBeVisible();
     await expect(page.getByText(post.data.caption)).toHaveCount(0);

@@ -444,7 +444,7 @@ export default function PublicProfilePage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             {/* Header */}
-            <header className="sticky top-3 z-50 grid grid-cols-[44px_1fr_44px] items-center rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl" dir="ltr">
+            <header data-page-header className="sticky top-3 z-50 grid grid-cols-[44px_1fr_44px] items-center rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl" dir="ltr">
                 <BackButton href="/showcase" className="justify-self-end" />
                 <div className="min-w-0 text-center" dir="rtl">
                     <span className="block truncate text-center text-lg font-black tracking-tight text-slate-950">پروفایل کاربر</span>

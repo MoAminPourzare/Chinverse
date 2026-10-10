@@ -71,7 +71,7 @@ export default function ServiceDetailPage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-                <header className="flex items-center justify-between" dir="ltr">
+                <header data-page-header className="flex items-center justify-between" dir="ltr">
                     <SafeBackButton fallback="/showcase" />
                     <Link href="/showcase" className="text-xs font-bold text-[#155aa6]">
                         ویترین خدمات

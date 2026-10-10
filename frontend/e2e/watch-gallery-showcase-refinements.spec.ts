@@ -40,6 +40,35 @@ async function mediaAndSession(page: Page) {
     });
 }
 
+test("a published video and its next lesson keep the journey back to learning progress", async ({ page }) => {
+    await setup(page);
+    await page.route("**/api/backend/engagements/course/121", route => route.fulfill({ json: { liked: false, likes_count: 0, comments_count: 0 } }));
+    const today = { date: "2026-10-08", minutes: 15, watched_seconds: 900, learned_words_count: 4, reviewed_words_count: 2, is_active: true };
+    await page.route("**/api/backend/daily-activity/summary**", route => route.fulfill({ json: { today, streak: { current_days: 2, longest_days: 3, last_active_date: today.date }, totals: { ...today, active_days: 2 }, calendar: [], weekly_chart: [], learning: { due_flashcards: 1, mastered_words: 2, total_flashcards: 3 } } }));
+    const explore = "/explore?returnTo=%2F%3Ftab%3Ddaily";
+    const course = `/pronunciation/121?returnTo=${encodeURIComponent(explore)}`;
+    await ready(page, course);
+    await page.getByRole("link", { name: "شروع", exact: true }).click();
+    await expect(page).toHaveURL(url => url.pathname === "/watch/pronunciation/121" && url.searchParams.get("lesson") === "501");
+    const back = page.getByRole("link", { name: "بازگشت", exact: true });
+    await expect(back).toHaveAttribute("href", course);
+    await page.locator("video").evaluate(element => element.dispatchEvent(new Event("ended")));
+    await page.getByRole("region", { name: "پایان درس", exact: true }).getByRole("button", { name: "پخش درس بعدی", exact: true }).click();
+    await expect(page).toHaveURL(url => url.searchParams.get("lesson") === "502");
+    await expect(back).toHaveAttribute("href", course);
+    await back.click();
+    await expect(page).toHaveURL(url => url.pathname === "/pronunciation/121");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("دورهٔ آزمایشی");
+    await expect(back).toHaveAttribute("href", explore);
+    await back.click();
+    await expect(page).toHaveURL(url => url.pathname === "/explore");
+    await expect(page.getByRole("heading", { name: "کاوش", exact: true })).toBeVisible();
+    await expect(back).toHaveAttribute("href", "/?tab=daily");
+    await back.click();
+    await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("link", { name: "مرور لغات", exact: true })).toBeVisible();
+});
+
 async function ready(page: Page, url: string) {
     await page.goto(url);
     await page.waitForLoadState("networkidle");

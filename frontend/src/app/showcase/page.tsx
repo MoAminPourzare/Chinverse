@@ -197,7 +197,7 @@ export default function ShowcasePage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-6" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header className="space-y-3">
+                <header data-page-header className="space-y-3">
                     <div className="rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
                         <div className="grid grid-cols-2 gap-1.5">
                             {tabs.map((tab) => (
@@ -345,7 +345,7 @@ function TalentFilterPanel({
     return (
         <Dialog open onClose={onClose} aria-labelledby="showcase-filter-title" className="modal-backdrop-motion fixed inset-0 z-[1100] bg-[#f7f8fa] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5" dir="rtl">
             <DialogPanel className="mx-auto flex h-full w-full max-w-[430px] flex-col">
-                <header className="relative flex h-11 items-center justify-center">
+                <header data-page-header className="relative flex h-11 items-center justify-center">
                     <BackButton onClick={onBack} className="absolute left-0 top-0" />
                     <h2 id="showcase-filter-title" className="text-center text-[18px] font-black text-[#25272d]">
                         {currentConfig?.label || "فیلترها"}

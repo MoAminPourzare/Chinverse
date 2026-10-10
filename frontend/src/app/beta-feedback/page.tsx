@@ -133,7 +133,7 @@ export default function BetaFeedbackPage() {
 
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5 dark:bg-[#10151c]" dir="rtl">
-            <header className="grid grid-cols-[44px_1fr_44px] items-center">
+            <header data-page-header className="grid grid-cols-[44px_1fr_44px] items-center">
                 <IconButton onClick={close} label="بستن"><X size={20} /></IconButton>
                 <h1 className="text-center text-lg font-black text-slate-900 dark:text-white">بازخورد بتای چین‌ورس</h1>
                 <span aria-hidden />

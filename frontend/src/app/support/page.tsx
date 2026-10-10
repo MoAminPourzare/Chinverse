@@ -76,7 +76,7 @@ export default function SupportPage() {
 
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
-            <header className="grid grid-cols-[44px_1fr_44px] items-center" dir="ltr">
+            <header data-page-header className="grid grid-cols-[44px_1fr_44px] items-center" dir="ltr">
                 <IconButton onClick={closeSupport} label="بستن" className="justify-self-end">
                     <X size={20} />
                 </IconButton>

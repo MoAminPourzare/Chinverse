@@ -131,7 +131,7 @@ export default function LeitnerDashboard() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
             <main className="motion-list mx-auto flex w-full max-w-[430px] flex-col gap-4">
-                <header className="pt-1 text-center">
+                <header data-page-header className="pt-1 text-center">
                     <h1 className="text-xl font-black text-slate-950">لایتنر</h1>
                 </header>
 

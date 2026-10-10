@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import dynamic from "next/dynamic";
 import { FastForward, Maximize, Minimize, MoreVertical, Pause, Play, Rewind } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -15,7 +15,7 @@ import {
     type LessonPlayback,
 } from "@/lib/lessonPlayback";
 import { getDirectionalTextProps } from "@/lib/textDirection";
-import { getReturnToHref } from "@/lib/returnTo";
+import { getJourneyHref, getReturnToHref } from "@/lib/returnTo";
 import { getHighlightStyle, useLearningPreferences } from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
 import { BackButton } from "@/components/ui/IconButton";
@@ -188,7 +188,7 @@ export default function SharedWatchPage() {
             setCurrentLesson((current) => current?.id === next?.id ? current : next);
             setCourseError(null);
             setCourseLoading(false);
-            if (lessonIdParam && !requested && next) router.replace(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${next.id}`);
+            if (lessonIdParam && !requested && next) router.replace(getJourneyHref(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${next.id}`));
             return;
         }
 
@@ -206,7 +206,7 @@ export default function SharedWatchPage() {
                 setCourse(courseData);
                 setCurrentLesson(requestedLesson || lessons[0] || null);
                 if (lessonIdParam && !requestedLesson && lessons[0]) {
-                    router.replace(`/watch/${encodeURIComponent(domain)}/${courseData.id}?lesson=${lessons[0].id}`);
+                    router.replace(getJourneyHref(`/watch/${encodeURIComponent(domain)}/${courseData.id}?lesson=${lessons[0].id}`));
                 }
             })
             .catch((error) => {
@@ -785,7 +785,7 @@ export default function SharedWatchPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
-                <header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
+                <header data-page-header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2" dir="ltr">
                         <BackButton href={`/${encodeURIComponent(domain)}/${course.id}`} className="justify-self-end" />
                         <div className="min-w-0 text-center" dir="rtl">
@@ -881,7 +881,7 @@ export default function SharedWatchPage() {
                     onRetryWords={() => setWordMatchVersion((value) => value + 1)}
                     onKnown={(states) => { knowledgeRequestRef.current += 1; setWordStates((current) => ({ ...current, ...states })); }}
                     onLogin={currentUserId ? undefined : () => router.push(`/login?next=${encodeURIComponent(`/watch/${domain}/${course.id}?lesson=${currentLesson.id}`)}`)}
-                    onNext={nextLesson ? () => { playNextRef.current = true; router.push(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`); } : undefined}
+                    onNext={nextLesson ? () => { playNextRef.current = true; router.push(getJourneyHref(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`)); } : undefined}
                 /></div>}
                 <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
                     {knowledgeError && <div role="alert" className="mb-3 rounded-xl bg-rose-50 p-3 text-xs leading-6 text-rose-700">وضعیت واژه‌ها دریافت نشد. <button type="button" onClick={() => setKnowledgeVersion((value) => value + 1)} className="min-h-11 font-bold underline">دوباره تلاش کن</button></div>}

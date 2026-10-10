@@ -82,7 +82,7 @@ export default function PostDetailPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-4">
-                <header className="flex items-center justify-between" dir="ltr">
+                <header data-page-header className="flex items-center justify-between" dir="ltr">
                     <SafeBackButton fallback="/community" />
                     <Link href="/" className="text-xs font-black text-[#155aa6]">
                         خانه
