@@ -1,0 +1,95 @@
+.slider {
+    display: block;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    touch-action: pan-y;
+}
+
+.slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(to right, #155aa6 0%, #155aa6 var(--goal-progress), #fff6f2 var(--goal-progress), #fff6f2 100%);
+}
+
+.slider::-moz-range-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #fff6f2;
+}
+
+.slider::-moz-range-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: #155aa6;
+}
+
+.slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+    margin-top: -8px;
+    border: 3px solid white;
+    border-radius: 50%;
+    appearance: none;
+    background: #155aa6;
+    box-shadow: 0 2px 8px rgb(21 90 166 / 25%);
+}
+
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 3px solid white;
+    border-radius: 50%;
+    background: #155aa6;
+    box-shadow: 0 2px 8px rgb(21 90 166 / 25%);
+}
+
+.slider:focus-visible {
+    outline: 2px solid #155aa6;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.ticks {
+    display: flex;
+    justify-content: space-between;
+    margin: -8px 0 0;
+}
+
+.tick {
+    display: flex;
+    min-width: 0;
+    width: 24px;
+    min-height: 44px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    border-radius: 6px;
+    color: #334155;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tick:hover, .tick[aria-pressed="true"] {
+    color: #155aa6;
+    background: rgb(255 255 255 / 60%);
+}
+
+.tick:focus-visible {
+    outline: 2px solid #155aa6;
+    outline-offset: 1px;
+}
+
+.tickMark {
+    width: 2px;
+    height: 9px;
+    border-radius: 1px;
+    background: currentColor;
+}

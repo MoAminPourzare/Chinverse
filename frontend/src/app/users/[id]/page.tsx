@@ -1,6 +1,6 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -23,9 +23,10 @@ import PostViewerModal from "@/components/engagement/PostViewerModal";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
-import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import ProfileSocialLink from "@/components/profile/ProfileSocialLink";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
 import { BackButton } from "@/components/ui/IconButton";
+import { getSocialActionError } from "@/lib/socialActionError";
 
 interface Tab {
     id: string;
@@ -55,6 +56,7 @@ export default function PublicProfilePage() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followersCount, setFollowersCount] = useState(0);
     const [followLoading, setFollowLoading] = useState(false);
+    const [followError, setFollowError] = useState('');
 
     useEffect(() => {
         if (isOwnProfile) {
@@ -95,14 +97,15 @@ export default function PublicProfilePage() {
     }, [isOwnProfile, userId]);
 
     const handleFollowToggle = async () => {
-        if (isOwnProfile) return;
+        if (isOwnProfile || followLoading) return;
 
+        setFollowError('');
         setFollowLoading(true);
         try {
             if (isFollowing) {
                 await userService.unfollowUser(userId);
                 setIsFollowing(false);
-                setFollowersCount(prev => prev - 1);
+                setFollowersCount(prev => Math.max(0, prev - 1));
             } else {
                 await userService.followUser(userId);
                 setIsFollowing(true);
@@ -110,6 +113,7 @@ export default function PublicProfilePage() {
             }
         } catch (error) {
             console.error("Failed to toggle follow", error);
+            setFollowError(getSocialActionError(error, 'network'));
         } finally {
             setFollowLoading(false);
         }
@@ -185,28 +189,7 @@ export default function PublicProfilePage() {
                                 ✏️ شبکه‌های اجتماعی
                             </h3>
                             <div className="grid gap-2">
-                                {socials.map((social, idx) => {
-                                    const platform = getSocialPlatform(social.platform);
-                                    const Icon = platform.icon;
-                                    const href = getSocialProfileUrl(social.platform, social.handle);
-                                    const target = getSocialLinkTarget(social.platform);
-                                    const rel = getSocialLinkRel(social.platform);
-                                    return (
-                                        <a
-                                            key={idx}
-                                            href={href}
-                                            target={target}
-                                            rel={rel}
-                                            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]"
-                                        >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-sm">
-                                                <Icon className="h-4 w-4" />
-                                            </span>
-                                            <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
-                                            <span className="dir-ltr truncate text-left text-xs text-slate-500">{social.handle}</span>
-                                        </a>
-                                    );
-                                })}
+                                {socials.map((social, idx) => <ProfileSocialLink key={idx} platformId={social.platform} handle={social.handle} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-[#d5e1ef] hover:bg-[#eef6ff] hover:text-[#155aa6]" />)}
                             </div>
                         </div>
                     )}
@@ -419,6 +402,7 @@ export default function PublicProfilePage() {
                                     src={getMediaUrl(item.image_url)}
                                     alt={item.caption || "Gallery image"}
                                     fill
+                                    sizes="(max-width: 430px) 50vw, 215px"
                                     className="object-cover"
                                     unoptimized
                                 />
@@ -460,9 +444,9 @@ export default function PublicProfilePage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             {/* Header */}
-            <header className="sticky top-3 z-50 grid grid-cols-[44px_1fr_44px] items-center rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+            <header data-page-header className="sticky top-3 z-50 grid grid-cols-[44px_1fr_44px] items-center rounded-[28px] border border-white/70 bg-white/90 px-4 py-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl" dir="ltr">
                 <BackButton href="/showcase" className="justify-self-end" />
-                <div className="min-w-0 text-center">
+                <div className="min-w-0 text-center" dir="rtl">
                     <span className="block truncate text-center text-lg font-black tracking-tight text-slate-950">پروفایل کاربر</span>
                 </div>
                 <div className="w-9" />
@@ -479,6 +463,7 @@ export default function PublicProfilePage() {
                             {user.profile?.avatar_url ? (
                                 <Image
                                     src={getMediaUrl(user.profile.avatar_url)}
+                                    fallbackSrc={profileIcon}
                                     alt="Avatar"
                                     fill
                                     className="object-cover"
@@ -495,7 +480,7 @@ export default function PublicProfilePage() {
                         {user.profile?.display_name || "کاربر"}
                     </h1>
 
-                    <p className="mb-2 text-sm font-medium text-white/70" {...getDirectionalTextProps(user.profile?.headline)}>
+                    <p className="mb-2 text-center text-sm font-medium text-white/70" {...getDirectionalTextProps(user.profile?.headline)}>
                         {user.profile?.headline || ""}
                     </p>
 
@@ -506,37 +491,40 @@ export default function PublicProfilePage() {
                     />
 
                     {/* Action Buttons */}
-                    <div className="grid w-full max-w-lg grid-cols-3 gap-3">
+                    <div className="grid w-full max-w-lg grid-cols-3 gap-2 sm:gap-3">
                         <button
                             onClick={handleShare}
                             className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
                         >
-                            <Share2 className="w-4 h-4" />
+                            <Share2 className="hidden h-4 w-4 shrink-0 min-[360px]:block" />
                             اشتراک
                         </button>
                         <Link
                             href={`/chat/${userId}`}
                             className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
                         >
-                            <MessageCircle className="w-4 h-4" />
+                            <MessageCircle className="hidden h-4 w-4 shrink-0 min-[360px]:block" />
                             پیام
                         </Link>
                         <button
                             onClick={handleFollowToggle}
                             disabled={followLoading}
-                            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors ${isFollowing
+                            className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl px-2 py-2.5 text-sm font-bold transition-colors ${isFollowing
                                 ? "bg-red-100 text-red-600 hover:bg-red-200"
                                 : "bg-white text-[#155aa6] shadow-[0_12px_28px_rgba(255,255,255,0.22)] hover:bg-[#eef6ff]"
                                 } ${followLoading ? "opacity-50" : ""}`}
                         >
-                            <Users className="w-4 h-4" />
-                            {followLoading ? "…" : isFollowing ? "لغو" : "شبکه"}
+                            <Users className="hidden h-4 w-4 shrink-0 min-[360px]:block" />
+                            {followLoading ? "…" : isFollowing ? "لغو شبکه" : "شبکه"}
                         </button>
                     </div>
                     </div>
                 </section>
 
                 {/* Tab Navigation */}
+                {followError && (
+                    <p role="alert" className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">{followError}</p>
+                )}
                 <div className="sticky top-[76px] z-40 rounded-[28px] border border-white/70 bg-white/90 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
                     <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar">
                         {tabs.map((tab) => (

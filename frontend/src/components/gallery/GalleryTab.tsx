@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { galleryService, GalleryItem } from "@/services/gallery.service";
@@ -19,6 +19,7 @@ export default function GalleryTab() {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+    const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
 
     const fetchGallery = async () => {
         try {
@@ -102,6 +103,7 @@ export default function GalleryTab() {
                                 src={getMediaUrl(item.image_url)}
                                 alt={item.caption || "Gallery image"}
                                 fill
+                                sizes="(max-width: 430px) 50vw, 215px"
                                 className="object-cover"
                                 unoptimized
                             />
@@ -125,10 +127,24 @@ export default function GalleryTab() {
                 onUploadSuccess={handleUploadSuccess}
             />
 
+            <AddPhotoModal
+                isOpen={!!editingItem}
+                item={editingItem}
+                onClose={() => setEditingItem(null)}
+                onUploadSuccess={handleUploadSuccess}
+            />
+
             <ImageDetailModal
                 isOpen={!!selectedItem}
                 onClose={() => setSelectedItem(null)}
                 item={selectedItem}
+                onEdit={() => { setEditingItem(selectedItem); setSelectedItem(null); }}
+                onDelete={async () => {
+                    if (!selectedItem) return;
+                    await galleryService.deleteImage(selectedItem.id);
+                    setGalleryItems((items) => items.filter((item) => item.id !== selectedItem.id));
+                    setSelectedItem(null);
+                }}
             />
         </>
     );

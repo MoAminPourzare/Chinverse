@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import TeaCultureDetailPage from "@/components/course/TeaCultureDetailPage";
 
-export default function TeaCultureDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="tea-culture"
-            explorePath="/explore/tea-culture"
-            eyebrow="فرهنگ چای"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-amber-700"
-        />
-    );
+export default function TeaCulturePage() {
+    return <TeaCultureDetailPage />;
 }

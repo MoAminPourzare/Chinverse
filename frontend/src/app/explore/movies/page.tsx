@@ -1,14 +1,5 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import MovieExplorePage from "@/components/course/MovieExplorePage";
 
 export default function MoviesExplorePage() {
-    return (
-        <CourseExplorePage
-            title="فیلم"
-            subcategorySlug="movies"
-            detailPath="/movies"
-            layout="portrait"
-            countKeys={["episodes_count"]}
-            countLabel="بخش"
-        />
-    );
+    return <MovieExplorePage />;
 }

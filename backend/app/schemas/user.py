@@ -1,17 +1,66 @@
 import re
-from typing import Optional
+from typing import Literal, Optional
 from urllib.parse import urlparse
 from email_validator import EmailNotValidError, validate_email as validate_email_address
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.core.passwords import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validate_new_password
 
 
 PERSIAN_NAME_PATTERN = re.compile(r"^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءئؤۀة\s‌]+$")
 
 ALLOWED_PROFILE_HEADLINES = {
-    "مترجم زبان چینی",
     "مدرس زبان چینی",
-    "زبان‌آموز چینی",
+    "مدرس HSK",
+    "مدرس تای‌چی / چی‌گونگ",
+    "استاد دانشگاه",
+    "عضو هیئت علمی دانشگاه",
+    "تولیدکننده محتوای آموزشی زبان چینی",
+    "بلاگر حوزه چین",
+    "مدیر آموزشگاه زبان",
+    "مترجم",
+    "مترجم شفاهی چینی",
+    "مترجم کتبی چینی",
+    "مترجم رسمی چینی",
     "دانشجوی زبان چینی",
+    "زبان‌آموز چینی",
+    "علاقه‌مند به چین و زبان چینی",
+    "مشاور بازرگانی چین",
+    "کارشناس واردات از چین",
+    "کارشناس صادرات به چین",
+    "کارشناس تأمین کالا از چین",
+    "کارشناس امور گمرکی چین",
+    "کارشناس ترخیص کالا",
+    "کارشناس لجستیک چین",
+    "مشاور ثبت شرکت در چین",
+    "مشاور نمایشگاه‌های تجاری چین",
+    "هماهنگ‌کننده تورهای نمایشگاهی چین",
+    "کارشناس حمل‌ونقل بین‌المللی",
+    "سورسینگ ایجنت / کارگزار خرید از چین",
+    "توسعه‌دهنده بازار چین",
+    "تورلیدر چین",
+    "راهنمای گردشگری چینی‌زبان",
+    "راهنمای فارسی‌زبان در چین",
+    "کارشناس ویزای چین",
+    "کارشناس پذیرش دانشگاه‌های چین",
+    "مشاور بورسیه چین",
+    "مشاور اپلای دانشگاه‌های چین",
+    "صراف",
+    "کارشناس حواله یوان",
+    "مشاور قراردادهای چین",
+    "مشاور حقوقی امور چین",
+    "کارمند شرکت چینی",
+    "کارآفرین حوزه چین",
+    "فعال تجاری ایران و چین",
+    "مقیم چین",
+    "چینی‌زبان بومی",
+    "پژوهشگر زبان/فرهنگ چین",
+    "کارشناس مطالعات چین",
+}
+
+# Keep previously saved titles valid when an existing profile is edited.
+LEGACY_PROFILE_HEADLINES = {
+    "مترجم زبان چینی",
     "راهنمای تور چین",
     "تولیدکننده محتوای چینی",
     "مشاور تحصیل در چین",
@@ -51,13 +100,7 @@ def _normalize_iran_mobile(value: str) -> str:
 
 
 def _validate_password_strength(value: str) -> str:
-    if len(value) < 8:
-        raise ValueError("رمز عبور باید حداقل ۸ کاراکتر باشد")
-    if len(value.encode("utf-8")) > 72:
-        raise ValueError("رمز عبور نباید بیشتر از ۷۲ بایت باشد")
-    if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
-        raise ValueError("رمز عبور باید حداقل یک حرف انگلیسی و یک عدد داشته باشد")
-    return value
+    return validate_new_password(value)
 
 
 def _normalize_persian_name(value: str) -> str:
@@ -165,10 +208,13 @@ class UserBase(BaseModel):
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=72)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
     phone: str = Field(min_length=5, max_length=32)
     display_name: str = Field(min_length=1, max_length=120)
     referral_code: Optional[str] = Field(default=None, min_length=4, max_length=32)
+    accept_terms: Literal[True]
+    accept_privacy: Literal[True]
+    accept_community_guidelines: Literal[True]
 
     @field_validator("email", mode="before")
     @classmethod
@@ -205,7 +251,11 @@ class UserCreate(UserBase):
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
-    password: Optional[str] = Field(default=None, min_length=8, max_length=72)
+    password: Optional[str] = Field(
+        default=None,
+        min_length=PASSWORD_MIN_LENGTH,
+        max_length=PASSWORD_MAX_LENGTH,
+    )
 
     @field_validator("password", mode="before")
     @classmethod
@@ -223,6 +273,11 @@ class UserUpdate(UserBase):
         if not re.fullmatch(r"09\d{9}", phone):
             raise ValueError("شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567")
         return phone
+
+
+class AccountDeletionRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)
+    confirm: Literal[True]
 
 class UserInDBBase(UserBase):
     id: Optional[int] = None
@@ -391,7 +446,7 @@ class UserProfileUpdate(UserProfileBase):
         normalized = value.strip()
         if not normalized:
             return None
-        if normalized not in ALLOWED_PROFILE_HEADLINES:
+        if normalized not in ALLOWED_PROFILE_HEADLINES | LEGACY_PROFILE_HEADLINES:
             raise ValueError("Invalid profile headline")
         return normalized
 

@@ -1,217 +1,74 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    BookOpen,
-    ChevronDown,
-    ChevronUp,
-    Loader2,
-    PenLine,
-    Search,
-    Send,
-    Trash2,
-    User as UserIcon,
-    X,
-} from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, Loader2, MessageCircle, MessagesSquare, PenLine, Send, Trash2, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
+import { ArticleLibrary } from "@/components/articles/ArticleLibrary";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { validateTextLength, validationMessage } from "@/validation";
-import { chatService, ConversationPreview } from "@/services/chat.service";
-import {
-    Article,
-    ArticleComment,
-    ArticleDetail,
-    communityService,
-    ForumAnswer,
-    ForumQuestion,
-    ForumQuestionDetail,
-} from "@/services/community.service";
-
-type MainTab = "forum" | "messages";
-type ForumSubTab = "questions" | "articles";
-
-const tabs: Array<{ id: MainTab; label: string }> = [
-    { id: "messages", label: "پیام‌ها" },
-    { id: "forum", label: "تالار گفتگو" },
-];
-
-const forumTabs: Array<{ id: ForumSubTab; label: string }> = [
-    { id: "questions", label: "سوالات شما" },
-    { id: "articles", label: "مقالات" },
-];
+import { Article, ArticleComment, communityService, ForumAnswer, ForumQuestion, ForumQuestionDetail } from "@/services/community.service";
 
 export default function CommunityPage() {
-    const currentUserId = useOptionalCurrentUserId();
-    const [activeTab, setActiveTab] = useState<MainTab>("messages");
-    const [questions, setQuestions] = useState<ForumQuestion[]>([]);
-    const [articles, setArticles] = useState<Article[]>([]);
-    const [conversations, setConversations] = useState<ConversationPreview[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const fetchForumData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const [questionsData, articlesData] = await Promise.all([
-                communityService.getForumQuestions(),
-                communityService.getArticles(),
-            ]);
-            setQuestions(questionsData);
-            setArticles(articlesData);
-        } catch (error) {
-            console.error("Failed to fetch forum data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    const fetchConversations = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            setConversations(await chatService.getConversations());
-        } catch (error) {
-            console.error("Failed to fetch conversations:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (activeTab === "forum") {
-            void fetchForumData();
-        } else {
-            void fetchConversations();
-        }
-    }, [activeTab, fetchConversations, fetchForumData]);
-
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-
-    const visibleConversations = useMemo(() => {
-        if (!normalizedQuery) return conversations;
-        return conversations.filter((conversation) =>
-            [conversation.user.display_name, conversation.last_message]
-                .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(normalizedQuery)),
-        );
-    }, [conversations, normalizedQuery]);
-
-    return (
-        <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
-            <header className="relative flex h-12 items-center justify-center">
-                <BackButton href="/profile" className="absolute right-0" />
-            </header>
-
-            <nav className="mt-6 grid grid-cols-2 gap-1.5 rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                            "h-[48px] rounded-[18px] text-center text-[14px] font-black leading-5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/12",
-                            activeTab === tab.id
-                                ? "bg-white text-[#155aa6] shadow-[0_10px_22px_rgba(21,90,166,0.13)]"
-                                : "text-[#2f3238] hover:bg-white/55 hover:text-[#155aa6]",
-                        )}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </nav>
-
-            {activeTab === "messages" && (
-                <div className="mt-5 flex items-center gap-3 rounded-full bg-[#e6e9ef] px-4 py-3">
-                    {searchQuery ? (
-                        <button
-                            type="button"
-                            onClick={() => setSearchQuery("")}
-                            className="text-[#2f3238]"
-                            aria-label="پاک کردن جستجو"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
-                    ) : (
-                        <Search className="h-5 w-5 text-[#2f3238]" />
-                    )}
-                    <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        dir="rtl"
-                        placeholder="جستجو بین پیام‌ها"
-                        className="min-w-0 flex-1 bg-transparent text-right text-sm text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
-                    />
-                </div>
-            )}
-
-            <main className="mt-7">
-                {activeTab === "messages" ? (
-                    <MessagesTab conversations={visibleConversations} isLoading={isLoading} />
-                ) : (
-                    <ForumTab
-                        questions={questions}
-                        articles={articles}
-                        isLoading={isLoading}
-                        currentUserId={currentUserId}
-                        setQuestions={setQuestions}
-                        setArticles={setArticles}
-                    />
-                )}
-            </main>
-
-        </div>
-    );
+    return <Suspense fallback={<LoadingList count={2} />}><CommunityHub /></Suspense>;
 }
 
-function ForumTab({
-    questions,
-    articles,
-    isLoading,
-    currentUserId,
-    setQuestions,
-    setArticles,
-}: {
-    questions: ForumQuestion[];
-    articles: Article[];
-    isLoading: boolean;
-    currentUserId: number | null;
-    setQuestions: React.Dispatch<React.SetStateAction<ForumQuestion[]>>;
-    setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
-}) {
-    const [activeForumTab, setActiveForumTab] = useState<ForumSubTab>("questions");
+function CommunityHub() {
+    const currentUserId = useOptionalCurrentUserId();
+    const searchParams = useSearchParams();
+    const activeSection = searchParams.get("section") === "articles" ? "articles" : "questions";
+    const [questions, setQuestions] = useState<ForumQuestion[]>([]);
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
+    const requestId = useRef(0);
+    const load = useCallback(async () => {
+        const request = ++requestId.current;
+        setIsLoading(true);
+        setLoadError("");
+        try {
+            if (activeSection === "articles") {
+                const result = await communityService.getArticles();
+                if (request === requestId.current) setArticles(result);
+            } else {
+                const result = await communityService.getForumQuestions();
+                if (request === requestId.current) setQuestions(result);
+            }
+        } catch {
+            if (request === requestId.current) setLoadError("این بخش باز نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.");
+        } finally {
+            if (request === requestId.current) setIsLoading(false);
+        }
+    }, [activeSection]);
+    const invalidate = useCallback(() => { requestId.current++; }, []);
+    useEffect(() => {
+        void load();
+        return invalidate;
+    }, [load, invalidate]);
 
-    return (
-        <div className="space-y-6">
-            <nav className="grid grid-cols-2 gap-1.5 rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
-                {forumTabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveForumTab(tab.id)}
-                        className={cn(
-                            "h-[46px] rounded-[18px] text-center text-[14px] font-black leading-5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#155aa6]/12",
-                            activeForumTab === tab.id
-                                ? "bg-white text-[#155aa6] shadow-[0_10px_22px_rgba(21,90,166,0.13)]"
-                                : "text-[#2f3238] hover:bg-white/55 hover:text-[#155aa6]",
-                        )}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
+    return <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
+        <header data-page-header className="relative mb-6 flex h-12 items-center justify-center">
+            <BackButton href="/profile" className="absolute left-0" />
+            <h1 className="text-lg font-black text-slate-900">گفتگو</h1>
+        </header>
+        <Link href="/chat" className="flex min-h-24 items-center gap-3 rounded-[24px] border border-blue-100 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition hover:border-blue-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#155aa6]">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-[#155aa6]"><MessagesSquare aria-hidden className="size-6" /></span>
+            <span className="min-w-0 flex-1"><span className="block text-sm font-black text-slate-900">پیام‌های من</span><span className="mt-1 block text-xs leading-6 text-slate-500">گفتگوهای خصوصی و پشتیبانی</span></span>
+            <ArrowLeft aria-hidden className="size-4 shrink-0 text-[#155aa6]" />
+        </Link>
+        <section className="mt-8" aria-labelledby="forum-title">
+            <h2 id="forum-title" className="text-base font-black text-slate-900">تالار گفتگو</h2>
+            <nav aria-label="بخش‌های تالار گفتگو" className="mb-6 mt-4 flex gap-5 border-b border-slate-200">
+                {[{ id: "questions", label: "سوالات شما", Icon: MessageCircle }, { id: "articles", label: "مقالات", Icon: BookOpen }].map(({ id, label, Icon }) => <Link key={id} href={`/community?section=${id}`} scroll={false} aria-current={activeSection === id ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 border-b-2 px-1 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#155aa6]", activeSection === id ? "border-[#155aa6] text-[#155aa6]" : "border-transparent text-slate-500 hover:text-[#155aa6]")}><Icon aria-hidden className="size-4" />{label}</Link>)}
             </nav>
-
-            {activeForumTab === "questions" ? (
-                <QuestionsSection questions={questions} isLoading={isLoading} currentUserId={currentUserId} setQuestions={setQuestions} />
-            ) : (
-                <ArticlesSection articles={articles} isLoading={isLoading} setArticles={setArticles} />
-            )}
-        </div>
-    );
+            {loadError ? <div role="alert" className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600"><p>{loadError}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 rounded-xl bg-[#155aa6] px-4 font-bold text-white">تلاش دوباره</button></div> : isLoading ? <LoadingList /> : activeSection === "articles" ? <section><SectionHeader title="مقالات" description="در این بخش، سوالات پرتکرار یا موضوعات جالب توسط تیم ما تبدیل به مقاله میشه. می‌تونی مقاله‌ها رو بخونی، زیرش نظر بدی یا سوال جدید مطرح کنی." /><div className="mt-4"><ArticleLibrary articles={articles} /></div></section> : <QuestionsSection questions={questions} isLoading={false} currentUserId={currentUserId} setQuestions={setQuestions} />}
+        </section>
+    </div>;
 }
 
 function QuestionsSection({
@@ -236,13 +93,15 @@ function QuestionsSection({
     const [details, setDetails] = useState<Record<number, ForumQuestionDetail>>({});
     const [answerInputs, setAnswerInputs] = useState<Record<number, string>>({});
     const [draftError, setDraftError] = useState("");
+    const [submittedMessage, setSubmittedMessage] = useState("");
     const [answerErrors, setAnswerErrors] = useState<Record<number, string>>({});
     const [submittingAnswerId, setSubmittingAnswerId] = useState<number | null>(null);
 
     const submitQuestion = async () => {
         const content = draft.trim();
-        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 8, max: 8000 }));
+        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 3, max: 8000 }));
         setDraftError(validationError);
+        setSubmittedMessage("");
         if (validationError || isSubmitting) return;
 
         setIsSubmitting(true);
@@ -253,9 +112,10 @@ function QuestionsSection({
             setDraft("");
             setOpenQuestionId(created.id);
             setDetails((current) => ({ ...current, [created.id]: { ...created, answers: [] } }));
+            setSubmittedMessage("سوالت ثبت شد.");
         } catch (error) {
             console.error("Failed to create question:", error);
-            alert("ثبت سوال انجام نشد. لطفا دوباره تلاش کن.");
+            setDraftError(getCommunityErrorMessage(error, "ثبت سوال انجام نشد. لطفا دوباره تلاش کن.", "create"));
         } finally {
             setIsSubmitting(false);
         }
@@ -289,7 +149,7 @@ function QuestionsSection({
 
     const submitQuestionEdit = async (questionId: number) => {
         const content = editDraft.trim();
-        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 8, max: 8000 }));
+        const validationError = validationMessage(validateTextLength(content, "متن سوال", { required: true, min: 3, max: 8000 }));
         setEditError(validationError);
         if (validationError || savingQuestionId) return;
 
@@ -371,7 +231,7 @@ function QuestionsSection({
             setAnswerErrors((current) => ({ ...current, [questionId]: "" }));
         } catch (error) {
             console.error("Failed to submit answer:", error);
-            alert("ارسال پاسخ انجام نشد. لطفا دوباره تلاش کن.");
+            setAnswerErrors((current) => ({ ...current, [questionId]: getCommunityErrorMessage(error, "ارسال پاسخ انجام نشد. لطفا دوباره تلاش کن.", "create") }));
         } finally {
             setSubmittingAnswerId(null);
         }
@@ -381,20 +241,27 @@ function QuestionsSection({
         <section>
             <SectionHeader
                 title="سوالات شما"
-                description="اگه درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چینورس بهت پاسخ میدن."
+                description="اگه درباره هر درس یا مبحثی سوال داری، اینجا مطرحش کن. سایر کاربران یا تیم پشتیبانی چین‌ورس بهت پاسخ می‌دن."
             />
 
             <div className="mt-4 flex items-stretch gap-2">
                 <textarea
+                    id="question-draft"
+                    aria-label="متن سوال"
+                    aria-invalid={Boolean(draftError)}
+                    aria-describedby={draftError ? "question-draft-error" : undefined}
                     value={draft}
                     onChange={(event) => {
                         setDraft(event.target.value);
                         if (draftError) setDraftError("");
+                        setSubmittedMessage("");
                     }}
                     rows={2}
                     dir={draft.trim() ? "auto" : "rtl"}
-                    placeholder="سوالت رو اینجا بنویس"
-                    className="min-h-[56px] flex-1 resize-none rounded-[10px] border border-[#ef7f66] bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                    placeholder="سوالت رو اینجا بنویس…"
+                    disabled={isSubmitting}
+                    maxLength={8000}
+                    className={cn("min-h-[56px] min-w-0 flex-1 resize-none rounded-[10px] border bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 disabled:opacity-70", draftError ? "border-rose-500" : "border-[#d6e1ee]")}
                 />
                 <button
                     type="button"
@@ -406,7 +273,8 @@ function QuestionsSection({
                     {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-6 w-6" />}
                 </button>
             </div>
-            {draftError && <p className="mt-2 text-xs font-bold leading-5 text-rose-600">{draftError}</p>}
+            {draftError && <p id="question-draft-error" role="alert" className="mt-2 text-xs font-bold leading-5 text-rose-600">{draftError}</p>}
+            {submittedMessage && <p role="status" className="mt-2 text-xs font-bold leading-5 text-emerald-700">{submittedMessage}</p>}
 
             <div className="motion-list mt-4 space-y-3">
                 {isLoading ? (
@@ -451,106 +319,6 @@ function QuestionsSection({
     );
 }
 
-function ArticlesSection({
-    articles,
-    isLoading,
-    setArticles,
-}: {
-    articles: Article[];
-    isLoading: boolean;
-    setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
-}) {
-    const [openArticleId, setOpenArticleId] = useState<number | null>(null);
-    const [details, setDetails] = useState<Record<number, ArticleDetail>>({});
-    const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
-    const [commentErrors, setCommentErrors] = useState<Record<number, string>>({});
-    const [submittingCommentId, setSubmittingCommentId] = useState<number | null>(null);
-
-    const toggleArticle = async (articleId: number) => {
-        const shouldOpen = openArticleId !== articleId;
-        setOpenArticleId(shouldOpen ? articleId : null);
-        if (!shouldOpen || details[articleId]) return;
-
-        try {
-            const detail = await communityService.getArticle(articleId);
-            setDetails((current) => ({ ...current, [articleId]: detail }));
-        } catch (error) {
-            console.error("Failed to fetch article detail:", error);
-        }
-    };
-
-    const submitComment = async (articleId: number) => {
-        const content = commentInputs[articleId]?.trim();
-        const validationError = validationMessage(validateTextLength(content || "", "کامنت", { required: true, max: 8000 }));
-        setCommentErrors((current) => ({ ...current, [articleId]: validationError }));
-        if (validationError || submittingCommentId) return;
-
-        setSubmittingCommentId(articleId);
-        try {
-            const created = await communityService.createArticleComment(articleId, { content });
-            setDetails((current) => {
-                const detail = current[articleId];
-                if (!detail) return current;
-                return {
-                    ...current,
-                    [articleId]: {
-                        ...detail,
-                        comments: [...detail.comments, created],
-                        comments_count: detail.comments_count + 1,
-                    },
-                };
-            });
-            setArticles((current) =>
-                current.map((article) =>
-                    article.id === articleId ? { ...article, comments_count: article.comments_count + 1 } : article,
-                ),
-            );
-            setCommentInputs((current) => ({ ...current, [articleId]: "" }));
-            setCommentErrors((current) => ({ ...current, [articleId]: "" }));
-        } catch (error) {
-            console.error("Failed to submit comment:", error);
-            alert("ارسال کامنت انجام نشد. لطفا دوباره تلاش کن.");
-        } finally {
-            setSubmittingCommentId(null);
-        }
-    };
-
-    return (
-        <section>
-            <SectionHeader
-                title="مقالات"
-                description="در این بخش، سوالات پر تکرار یا موضوعات جالب توسط تیم ما تبدیل به مقاله میشه. میتونی مقاله ها رو بخونی، زیرش نظر بدی یا سوال جدید مطرح کنی."
-            />
-
-            <div className="motion-list mt-4 space-y-3">
-                {isLoading ? (
-                    <LoadingList count={2} />
-                ) : articles.length > 0 ? (
-                    articles.map((article) => (
-                        <ArticleCard
-                            key={article.id}
-                            article={article}
-                            detail={details[article.id]}
-                            isOpen={openArticleId === article.id}
-                            commentText={commentInputs[article.id] || ""}
-                            commentError={commentErrors[article.id] || ""}
-                            isSubmittingComment={submittingCommentId === article.id}
-                            onToggle={() => toggleArticle(article.id)}
-                            onCommentChange={(value) => {
-                                setCommentInputs((current) => ({ ...current, [article.id]: value }));
-                                setCommentErrors((current) => ({ ...current, [article.id]: "" }));
-                            }}
-                            onSubmitComment={() => submitComment(article.id)}
-                        />
-                    ))
-                ) : (
-                    <SmallEmpty text="هنوز مقاله‌ای منتشر نشده." />
-                )}
-            </div>
-        </section>
-    );
-}
-
 function SectionHeader({
     title,
     description,
@@ -575,9 +343,9 @@ function SectionHeader({
     );
 }
 
-function getCommunityErrorMessage(error: unknown, fallback: string) {
+function getCommunityErrorMessage(error: unknown, fallback: string, action: "create" | "manage" = "manage") {
     const axiosError = error as {
-        response?: { status?: number; data?: { detail?: string } };
+        response?: { status?: number; data?: { detail?: unknown; error?: { message?: string } } };
     };
 
     if (!axiosError.response) {
@@ -587,13 +355,17 @@ function getCommunityErrorMessage(error: unknown, fallback: string) {
         return "برای انجام این کار باید وارد حساب شوی.";
     }
     if (axiosError.response.status === 403) {
+        if (action === "create") return "برای ثبت سوال یا پاسخ، تأیید حساب کاربری‌ات را کامل کن.";
         return "فقط نویسنده سوال می‌تواند آن را ویرایش یا حذف کند.";
     }
     if (axiosError.response.status === 429) {
         return "درخواست‌ها زیاد شده؛ کمی صبر کن و دوباره امتحان کن.";
     }
 
-    return axiosError.response.data?.detail || fallback;
+    if (axiosError.response.status === 422) return "متن سوال یا پاسخ معتبر نیست. متن را بررسی کن و دوباره بفرست.";
+    if ((axiosError.response.status || 0) >= 500) return fallback;
+    const detail = axiosError.response.data?.detail;
+    return typeof detail === "string" && /[\u0600-\u06FF]/.test(detail) ? detail : fallback;
 }
 
 function QuestionCard({
@@ -639,6 +411,8 @@ function QuestionCard({
     onAnswerChange: (value: string) => void;
     onSubmitAnswer: () => void;
 }) {
+    const hasAdditionalContent = question.content.trim() !== question.title.trim();
+
     return (
         <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white text-right shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
             <div className="p-4">
@@ -651,7 +425,7 @@ function QuestionCard({
                             <p className={cn("text-xs font-black text-[#155aa6]", getTextAlign(question.author?.display_name))} {...getDirectionalTextProps(question.author?.display_name)}>{question.author?.display_name || "کاربر چین‌ورس"}</p>
                             <span className="text-[11px] text-slate-400">{formatDate(question.created_at)}</span>
                         </div>
-                        <h3 className={cn("mt-2 line-clamp-2 text-sm font-black leading-7 text-slate-900", getTextAlign(question.title))} {...getDirectionalTextProps(question.title)}>{question.title}</h3>
+                        <h3 className={cn("mt-2 text-sm font-black leading-7 text-slate-900", !isOpen && "line-clamp-2", getTextAlign(question.title))} {...getDirectionalTextProps(question.title)}>{question.title}</h3>
                         <div className="mt-3 flex items-center justify-between">
                             <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
                                 {question.answers_count} پاسخ
@@ -686,6 +460,7 @@ function QuestionCard({
 
             {isOpen && (
                 <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
+                    {hasAdditionalContent && <p className={cn("whitespace-pre-wrap break-words text-sm leading-7 text-slate-700", getTextAlign(question.content))} {...getDirectionalTextProps(question.content)}>{question.content}</p>}
                     {isEditing && (
                         <div className="mb-4 rounded-[18px] border border-[#d6e1ee] bg-white p-3 shadow-sm">
                             <textarea
@@ -718,7 +493,7 @@ function QuestionCard({
                             </div>
                         </div>
                     )}
-                    <div className="mt-4 space-y-3">
+                    <div className={cn("space-y-3", (hasAdditionalContent || isEditing) && "mt-4")}>
                         {detail ? (
                             detail.answers.length > 0 ? (
                                 detail.answers.map((answer) => <ThreadBubble key={answer.id} item={answer} />)
@@ -741,84 +516,6 @@ function QuestionCard({
     );
 }
 
-function ArticleCard({
-    article,
-    detail,
-    isOpen,
-    commentText,
-    commentError,
-    isSubmittingComment,
-    onToggle,
-    onCommentChange,
-    onSubmitComment,
-}: {
-    article: Article;
-    detail?: ArticleDetail;
-    isOpen: boolean;
-    commentText: string;
-    commentError: string;
-    isSubmittingComment: boolean;
-    onToggle: () => void;
-    onCommentChange: (value: string) => void;
-    onSubmitComment: () => void;
-}) {
-    return (
-        <article className="overflow-hidden rounded-[22px] border border-[#d6e1ee] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-            <button type="button" onClick={onToggle} className="w-full p-4 text-right">
-                <div className="flex gap-3">
-                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px] bg-[#eef6ff] text-[#155aa6]">
-                        {article.cover_image ? (
-                            <Image src={getMediaUrl(article.cover_image)} alt={article.title} fill className="object-cover" unoptimized />
-                        ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                                <BookOpen className="h-8 w-8" />
-                            </div>
-                        )}
-                    </div>
-                    <div className="min-w-0 flex-1 text-right">
-                        <p className={cn("text-right text-[11px] font-bold text-slate-400", getTextAlign(article.author?.display_name))} {...getDirectionalTextProps(article.author?.display_name)}>{article.author?.display_name || "نویسنده چین‌ورس"} · {formatDate(article.created_at)}</p>
-                        <h3 className={cn("mt-1 line-clamp-2 text-sm font-black leading-7 text-slate-900", getTextAlign(article.title))} {...getDirectionalTextProps(article.title)}>{article.title}</h3>
-                        {article.summary && <p className={cn("mt-1 line-clamp-2 text-xs leading-6 text-slate-500", getTextAlign(article.summary))} {...getDirectionalTextProps(article.summary)}>{article.summary}</p>}
-                        <div className="mt-2 flex items-center justify-between">
-                            <span className="rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
-                                {article.comments_count} کامنت
-                            </span>
-                            {isOpen ? <ChevronUp className="h-4 w-4 text-[#155aa6]" /> : <ChevronDown className="h-4 w-4 text-[#155aa6]" />}
-                        </div>
-                    </div>
-                </div>
-            </button>
-
-            {isOpen && (
-                <div className="border-t border-[#e8edf4] bg-[#f8fafc] p-4">
-                    <div className="rounded-2xl bg-white p-4">
-                        <p className={cn("whitespace-pre-wrap text-sm leading-8 text-slate-700", getTextAlign(detail?.content || article.content))} {...getDirectionalTextProps(detail?.content || article.content)}>{detail?.content || article.content}</p>
-                    </div>
-                    <div className="mt-4 space-y-3">
-                        {detail ? (
-                            detail.comments.length > 0 ? (
-                                detail.comments.map((comment) => <ThreadBubble key={comment.id} item={comment} />)
-                            ) : (
-                                <SmallEmpty text="هنوز کامنتی ثبت نشده. اولین نظر را بنویس." />
-                            )
-                        ) : (
-                            <LoadingInline text="در حال بارگذاری مقاله" />
-                        )}
-                    </div>
-                    <ReplyComposer
-                        value={commentText}
-                        error={commentError}
-                        placeholder="کامنتت را بنویس"
-                        disabled={isSubmittingComment}
-                        onChange={onCommentChange}
-                        onSubmit={onSubmitComment}
-                    />
-                </div>
-            )}
-        </article>
-    );
-}
-
 function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
     return (
         <div className="rounded-[18px] bg-white p-3 text-right shadow-sm">
@@ -827,7 +524,9 @@ function ThreadBubble({ item }: { item: ForumAnswer | ArticleComment }) {
                 <div className="min-w-0 flex-1 text-right">
                     <div className="flex items-center justify-between gap-2">
                         <p className={cn("truncate text-xs font-black text-slate-900", getTextAlign(item.author?.display_name))} {...getDirectionalTextProps(item.author?.display_name)}>{item.author?.display_name || "کاربر چین‌ورس"}</p>
-                        <span className="shrink-0 text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
+                        <div className="flex shrink-0 items-center gap-1">
+                            <span className="text-[11px] text-slate-400">{formatDate(item.created_at)}</span>
+                        </div>
                     </div>
                     <p className={cn("mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-600", getTextAlign(item.content))} {...getDirectionalTextProps(item.content)}>{item.content}</p>
                 </div>
@@ -859,76 +558,22 @@ function ReplyComposer({
                     onChange={(event) => onChange(event.target.value)}
                     placeholder={placeholder}
                     rows={2}
+                    disabled={disabled}
                     dir={value.trim() ? "auto" : "rtl"}
                     className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
                 />
                 <button
                     type="button"
                     onClick={onSubmit}
+                    aria-label="ارسال پاسخ"
                     disabled={!value.trim() || disabled}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#155aa6] text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                     {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-5 w-5" />}
                 </button>
             </div>
-            {error && <p className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
+            {error && <p role="alert" className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
         </>
-    );
-}
-
-function MessagesTab({
-    conversations,
-    isLoading,
-}: {
-    conversations: ConversationPreview[];
-    isLoading: boolean;
-}) {
-    if (isLoading) {
-        return <LoadingList count={4} />;
-    }
-
-    if (conversations.length === 0) {
-        return (
-            <div className="flex min-h-[460px] flex-col items-center justify-center px-6 text-center">
-                <div className="relative mb-8 h-[150px] w-[150px]">
-                    <Image src="/assets/chinverse/icons/chat-message-hover-pinch.svg" alt="" fill sizes="150px" className="object-contain" />
-                </div>
-                <h2 className="text-[17px] font-black text-[#25272d]">هنوز پیامی دریافت نکردی!</h2>
-                <p className="mt-3 max-w-[310px] text-sm leading-7 text-slate-500">
-                    در این بخش میتونی با افراد شبکه ات در تماس باشی، با زبان آموز های دیگه گفت و گو کنی، از پشتیبانی کمک بگیری یا حتی پیام های شغلی از کارفرما ها دریافت کنی.
-                </p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="motion-list space-y-3">
-            {conversations.map((conversation) => (
-                <Link
-                    key={conversation.user.id}
-                    href={`/chat/${conversation.user.id}`}
-                    className="block rounded-[22px] border border-[#d6e1ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5"
-                >
-                    <div className="flex items-center gap-3">
-                        <Avatar src={conversation.user.avatar_url} name={conversation.user.display_name} />
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-3">
-                                <h3 className="truncate text-sm font-black text-slate-950">
-                                    <span className="block" {...getDirectionalTextProps(conversation.user.display_name)}>{conversation.user.display_name || "کاربر چین‌ورس"}</span>
-                                </h3>
-                                <span className="shrink-0 text-xs text-slate-400">{formatDate(conversation.last_message_time)}</span>
-                            </div>
-                            <p className={cn("mt-1 truncate text-sm text-slate-500", getTextAlign(conversation.last_message))} {...getDirectionalTextProps(conversation.last_message)}>{conversation.last_message}</p>
-                        </div>
-                        {conversation.unread_count > 0 && (
-                            <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#155aa6] px-2 text-xs font-bold text-white">
-                                {conversation.unread_count}
-                            </span>
-                        )}
-                    </div>
-                </Link>
-            ))}
-        </div>
     );
 }
 
@@ -951,7 +596,7 @@ function Avatar({ src, name, size = "md" }: { src?: string | null; name?: string
     );
 }
 
-function LoadingList({ count }: { count: number }) {
+function LoadingList({ count = 2 }: { count?: number }) {
     return (
         <div className="space-y-3">
             {Array.from({ length: count }).map((_, index) => (

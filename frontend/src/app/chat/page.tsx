@@ -1,45 +1,64 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Search, User as UserIcon, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RefreshCw, Search, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { BackButton } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
 import { chatService, ConversationPreview } from "@/services/chat.service";
+import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
 
 export default function ChatPage() {
     const [conversations, setConversations] = useState<ConversationPreview[]>([]);
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const requestSequence = useRef(0);
+    const hasLoadedRef = useRef(false);
+    const fingerprintRef = useRef("");
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchConversations = async () => {
-            try {
-                const data = await chatService.getConversations();
-                if (isMounted) {
-                    setConversations(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch conversations", error);
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
+    const fetchConversations = useCallback(async (showLoading = false, signal?: AbortSignal) => {
+        const requestId = ++requestSequence.current;
+        if (showLoading) setIsLoading(true);
+        try {
+            const items = await chatService.getConversations(signal);
+            if (requestId !== requestSequence.current) return;
+            const fingerprint = items.map((item) => [
+                item.user.id,
+                item.last_message_time,
+                item.unread_count,
+                item.is_online ? 1 : 0,
+            ].join(":")).join("|");
+            const changed = fingerprint !== fingerprintRef.current;
+            fingerprintRef.current = fingerprint;
+            setConversations(items);
+            setError(null);
+            return changed;
+        } catch (requestError) {
+            console.error("Failed to fetch conversations", requestError);
+            if (requestId === requestSequence.current && (showLoading || !hasLoadedRef.current)) {
+                setError("ارتباط با پیام‌ها برقرار نشد. اتصال را بررسی کن و دوباره تلاش کن.");
             }
-        };
+            throw requestError;
+        } finally {
+            if (requestId === requestSequence.current) {
+                hasLoadedRef.current = true;
+                setIsLoading(false);
+            }
+        }
+    }, []);
 
-        fetchConversations();
-        const interval = window.setInterval(fetchConversations, 12_000);
+    useAdaptivePolling({
+        task: (signal) => fetchConversations(false, signal),
+        baseIntervalMs: 12_000,
+        maxIntervalMs: 60_000,
+    });
 
-        return () => {
-            isMounted = false;
-            window.clearInterval(interval);
-        };
+    useEffect(() => () => {
+        requestSequence.current += 1;
     }, []);
 
     const filteredConversations = useMemo(() => {
@@ -54,10 +73,10 @@ export default function ChatPage() {
     }, [conversations, query]);
 
     return (
-        <div className="min-h-full bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
-            <header className="grid grid-cols-[44px_1fr_44px] items-center">
+        <div className="min-h-full bg-[#f7f8fa] px-5 pb-24 pt-5" dir="rtl">
+            <header data-page-header className="grid grid-cols-[44px_1fr_44px] items-center" dir="ltr">
                 <BackButton href="/community" className="justify-self-end" />
-                <h1 className="text-center text-lg font-black text-slate-900">پیام‌ها</h1>
+                <h1 className="text-center text-lg font-black text-slate-900" dir="rtl">پیام‌ها</h1>
                 <span aria-hidden />
             </header>
 
@@ -75,11 +94,13 @@ export default function ChatPage() {
                     <Search size={20} className="text-slate-700" />
                 )}
                 <input
+                    type="search"
+                    aria-label="جست‌وجو بین پیام‌ها"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    dir="auto"
-                    placeholder="جستجو بین پیام‌ها"
-                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    dir={query.trim() ? "auto" : "rtl"}
+                    placeholder="جست‌وجو بین پیام‌ها"
+                    className="min-w-0 flex-1 bg-transparent text-right text-sm outline-none placeholder:text-right placeholder:text-slate-400"
                 />
             </label>
 
@@ -87,6 +108,22 @@ export default function ChatPage() {
                 {isLoading ? (
                     <div className="flex min-h-[340px] items-center justify-center">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#155aa6] border-t-transparent" />
+                    </div>
+                ) : error ? (
+                    <div className="flex min-h-[340px] flex-col items-center justify-center px-5 text-center">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6]">
+                            <RefreshCw className="h-9 w-9" />
+                        </div>
+                        <h2 className="mt-6 text-lg font-black text-slate-900">پیام‌ها باز نشد</h2>
+                        <p className="mt-2 max-w-[290px] text-sm leading-7 text-slate-500">{error}</p>
+                        <button
+                            type="button"
+                            onClick={() => void fetchConversations(true)}
+                            className="mt-6 inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#155aa6] px-5 text-sm font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.22)] transition hover:bg-[#0f4e92]"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            تلاش دوباره
+                        </button>
                     </div>
                 ) : filteredConversations.length > 0 ? (
                     <div className="space-y-3">
@@ -120,6 +157,7 @@ function ConversationRow({ conversation }: { conversation: ConversationPreview }
                 {conversation.user.avatar_url ? (
                     <Image
                         src={getMediaUrl(conversation.user.avatar_url)}
+                        fallbackSrc="/assets/chinverse/icons/profile.svg"
                         alt={displayName}
                         fill
                         className="object-cover"
@@ -164,11 +202,12 @@ function EmptyMessagesState() {
                 alt=""
                 width={168}
                 height={168}
+                loading="eager"
                 className="h-[168px] w-[168px] object-contain"
             />
             <h2 className="mt-7 text-lg font-black text-slate-900">هنوز پیامی دریافت نکردی!</h2>
             <p className="mt-3 max-w-[310px] text-sm leading-7 text-slate-500">
-                در این بخش میتونی با افراد شبکه ات در تماس باشی، با زبان آموز های دیگه گفت و گو کنی، از پشتیبانی کمک بگیری یا حتی پیام های شغلی از کارفرما ها دریافت کنی.
+                در این بخش می‌تونی با افراد شبکه‌ات در تماس باشی، با زبان‌آموزهای دیگه گفتگو کنی، از پشتیبانی کمک بگیری یا حتی پیام‌های شغلی از کارفرماها دریافت کنی.
             </p>
         </div>
     );

@@ -1,10 +1,11 @@
 "use client";
 
-import { Fragment, useState, type ChangeEvent } from "react";
+import { Fragment, useEffect, useState, type ChangeEvent } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
-import { galleryService } from "@/services/gallery.service";
+import { galleryService, type GalleryItem } from "@/services/gallery.service";
+import { getMediaUrl } from "@/lib/media";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { IconButton } from "@/components/ui/IconButton";
 import {
@@ -22,15 +23,23 @@ interface AddPhotoModalProps {
     isOpen: boolean;
     onClose: () => void;
     onUploadSuccess: () => void;
+    item?: GalleryItem | null;
 }
 
-export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddPhotoModalProps) {
+export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess, item }: AddPhotoModalProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [pendingFile, setPendingFile] = useState<File | null>(null);
     const [caption, setCaption] = useState("");
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState("");
+    useEffect(() => {
+        if (!isOpen) return;
+        setCaption(item?.caption || "");
+        setSelectedFile(null);
+        setPreview(item ? getMediaUrl(item.image_url) : null);
+        setError("");
+    }, [isOpen, item]);
 
     const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -53,26 +62,29 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
     };
 
     const handleUpload = async () => {
-        const fileValidation = validateImageFile(selectedFile, { required: true, maxMb: 5 });
+        const fileValidation = validateImageFile(selectedFile, { required: !item, maxMb: 5 });
         const captionValidation = validateTextLength(caption, "متن عکس", { max: 500 });
         const validationError = validationMessage(fileValidation) || validationMessage(captionValidation);
         if (validationError) {
             setError(validationError);
             return;
         }
-        if (!selectedFile) return;
+        if (!selectedFile && !item) return;
 
         setUploading(true);
         setError("");
         try {
-            await galleryService.uploadImage(selectedFile, caption.trim());
+            if (item) await galleryService.updateImage(item.id, caption.trim(), selectedFile);
+            else if (selectedFile) await galleryService.uploadImage(selectedFile, caption.trim());
             onUploadSuccess();
             handleClose();
         } catch (error) {
             console.error("Failed to upload image", error);
-            const requestError = error as { response?: { data?: { detail?: string } } };
+            const requestError = error as { response?: { status?: number; data?: { detail?: string } } };
             const detail = requestError.response?.data?.detail;
-            setError(detail ? cleanApiValidationMessage(detail) : "بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
+            setError(requestError.response?.status === 401
+                ? "نشست کاربری منقضی شده؛ دوباره وارد حساب شو و عکس را بارگذاری کن."
+                : detail ? cleanApiValidationMessage(detail) : "بارگذاری عکس انجام نشد. لطفا دوباره تلاش کن.");
         } finally {
             setUploading(false);
         }
@@ -129,7 +141,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                     <IconButton onClick={handleClose} label="بستن" className="justify-self-end">
                                         <X className="h-5 w-5" />
                                     </IconButton>
-                                    <h2 className="text-center text-base font-black text-slate-900">افزودن عکس جدید</h2>
+                                    <Dialog.Title className="text-center text-base font-black text-slate-900">{item ? "ویرایش عکس" : "افزودن عکس جدید"}</Dialog.Title>
                                     <span aria-hidden />
                                 </div>
 
@@ -138,6 +150,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                         {preview ? (
                                             <button
                                                 type="button"
+                                                aria-label={item ? "انتخاب عکس جایگزین" : "تغییر عکس انتخاب‌شده"}
                                                 onClick={() => {
                                                     setSelectedFile(null);
                                                     setPreview(null);
@@ -172,6 +185,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                                 <span className="mt-2 text-xs text-slate-400">{IMAGE_FILE_FORMAT_LABEL}</span>
                                                 <input
                                                     type="file"
+                                                    aria-label="انتخاب عکس گالری"
                                                     accept={IMAGE_FILE_ACCEPT}
                                                     onChange={handleFileSelect}
                                                     className="hidden"
@@ -191,7 +205,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                             placeholder="هر عکسی یه داستانی داره؛ داستانتو اینجا بنویس!"
                                         />
                                         {error && (
-                                            <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
+                                            <p role="alert" className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">
                                                 {error}
                                             </p>
                                         )}
@@ -202,10 +216,10 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess }: AddP
                                     <button
                                         type="button"
                                         onClick={handleUpload}
-                                        disabled={!selectedFile || uploading}
+                                        disabled={(!selectedFile && !item) || uploading}
                                         className="w-full rounded-full bg-[#155aa6] py-3 text-sm font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.32)] transition hover:bg-[#0f4e92] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                                     >
-                                        {uploading ? "در حال بارگذاری…" : "اشتراک گذاری"}
+                                        {uploading ? "در حال ذخیره…" : item ? "ذخیرهٔ تغییرات" : "اشتراک‌گذاری"}
                                     </button>
                                 </div>
                             </Dialog.Panel>

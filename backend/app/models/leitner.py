@@ -30,3 +30,11 @@ class UserFlashcard(Base, TimestampMixin):
         Index("ix_user_flashcards_user_next_review", "user_id", "next_review_at"),
         Index("ix_user_flashcards_user_box", "user_id", "box_number"),
     )
+
+
+class UserKnownWord(Base, TimestampMixin):
+    """Explicit vocabulary knowledge, separate from scheduled review cards."""
+    __tablename__ = "user_known_words"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    word_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("dictionary_words.id", ondelete="CASCADE"), primary_key=True)

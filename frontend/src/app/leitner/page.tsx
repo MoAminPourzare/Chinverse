@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Volume2 } from "lucide-react";
+import { Dialog, DialogDescription, DialogPanel, DialogTitle } from "@headlessui/react";
+import { Play, Trash2, Volume2 } from "lucide-react";
 import api from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { getMediaUrl } from "@/lib/media";
+import { LEITNER_STAGES } from "@/lib/leitnerStages";
+import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
 
 interface Word {
     id: number;
@@ -39,91 +41,34 @@ interface LeitnerReviewResponse {
     cards: Flashcard[];
 }
 
-const BOX_INFO: Record<number, {
-    title: string;
-    subtitle: string;
-    shortLabel: string;
-    image: string;
-    soft: string;
-    border: string;
-    header: string;
-    body: string;
-    accent: string;
-}> = {
-    1: {
-        title: "بذر",
-        subtitle: "نیازمند یادآوری",
-        shortLabel: "شروع مسیر",
-        image: "/assets/chinverse/leitner/stage-seed.svg",
-        soft: "bg-[#ffe9ec] text-[#be123c]",
-        border: "border-[#e51f35]",
-        header: "bg-[#e51f35]",
-        body: "bg-[#f1f3f7]",
-        accent: "text-[#e51f35]",
-    },
-    2: {
-        title: "جوانه",
-        subtitle: "حافظه کوتاه مدت",
-        shortLabel: "تثبیت اولیه",
-        image: "/assets/chinverse/leitner/stage-sprout.svg",
-        soft: "bg-[#fff3ce] text-[#a16207]",
-        border: "border-[#f4aa16]",
-        header: "bg-[#f4aa16]",
-        body: "bg-[#f1f3f7]",
-        accent: "text-[#c47a00]",
-    },
-    3: {
-        title: "نهال",
-        subtitle: "حافظه میان مدت",
-        shortLabel: "رو به رشد",
-        image: "/assets/chinverse/leitner/stage-branch.svg",
-        soft: "bg-emerald-50 text-emerald-700",
-        border: "border-[#39aa20]",
-        header: "bg-[#39aa20]",
-        body: "bg-[#f1f3f7]",
-        accent: "text-[#238316]",
-    },
-    4: {
-        title: "درخت جوان",
-        subtitle: "حافظه بلند مدت",
-        shortLabel: "قوی تر",
-        image: "/assets/chinverse/leitner/stage-tree.svg",
-        soft: "bg-[#eef6ff] text-[#155aa6]",
-        border: "border-[#88c7ee]",
-        header: "bg-[#88c7ee]",
-        body: "bg-[#edf7ff]",
-        accent: "text-[#0f4e92]",
-    },
-    5: {
-        title: "درخت تنومند",
-        subtitle: "آموخته شده",
-        shortLabel: "تقریبا قطعی",
-        image: "/assets/chinverse/leitner/stage-mastered.svg",
-        soft: "bg-[#e9f2ff] text-[#0f4e92]",
-        border: "border-[#155aa6]",
-        header: "bg-[#155aa6]",
-        body: "bg-[#e7eef8]",
-        accent: "text-[#155aa6]",
-    },
-};
+const BOX_INFO = LEITNER_STAGES;
 
 export default function LeitnerDashboard() {
     const [stats, setStats] = useState<LeitnerStats | null>(null);
-    const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+    const [cards, setCards] = useState<Flashcard[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [cardToDelete, setCardToDelete] = useState<Flashcard | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const fetchLeitner = useCallback(async () => {
         setLoading(true);
         setLoadError(null);
         try {
-            const [statsResponse, reviewResponse] = await Promise.all([
+            const [statsResponse, cardsResponse] = await Promise.all([
                 api.get<LeitnerStats>("/leitner/dashboard"),
-                api.get<LeitnerReviewResponse>("/leitner/review", { params: { limit: 1000 } }),
+                api.get<LeitnerReviewResponse>("/leitner/cards", { params: { limit: 1000 } }),
             ]);
-
+            const nextCards = [...cardsResponse.data.cards];
+            // Include cards scheduled for later, and paginate large personal collections.
+            while (nextCards.length < statsResponse.data.total_cards) {
+                const response = await api.get<LeitnerReviewResponse>("/leitner/cards", { params: { limit: 1000, skip: nextCards.length } });
+                if (!response.data.cards.length) break;
+                nextCards.push(...response.data.cards);
+            }
             setStats(statsResponse.data);
-            setDueCards(Array.isArray(reviewResponse.data.cards) ? reviewResponse.data.cards : []);
+            setCards(nextCards);
         } catch (error) {
             console.error("Failed to fetch leitner dashboard:", error);
             setLoadError("اطلاعات لایتنر دریافت نشد. اتصال را بررسی و دوباره تلاش کن.");
@@ -136,11 +81,20 @@ export default function LeitnerDashboard() {
         void fetchLeitner();
     }, [fetchLeitner]);
 
-    const playAudio = (url?: string) => {
-        if (!url) return;
-        void new Audio(getMediaUrl(url)).play().catch((error) => {
-            console.error("Failed to play vocabulary audio:", error);
-        });
+    const deleteCard = async () => {
+        if (!cardToDelete || deleting) return;
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+            await api.delete(`/leitner/cards/${cardToDelete.id}`);
+            setCards((previous) => previous.filter((card) => card.id !== cardToDelete.id));
+            setCardToDelete(null);
+            await fetchLeitner();
+        } catch {
+            setDeleteError("لغت حذف نشد. دوباره تلاش کن.");
+        } finally {
+            setDeleting(false);
+        }
     };
 
     if (loading) {
@@ -172,23 +126,20 @@ export default function LeitnerDashboard() {
     }
 
     const hasCards = stats.total_cards > 0;
-    const hasDueCards = dueCards.length > 0;
+    const hasDueCards = stats.total_due > 0;
 
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-4" dir="rtl">
             <main className="motion-list mx-auto flex w-full max-w-[430px] flex-col gap-4">
-                <header className="pt-1 text-center">
+                <header data-page-header className="pt-1 text-center">
                     <h1 className="text-xl font-black text-slate-950">لایتنر</h1>
                 </header>
 
-                <section className="px-1">
-                    <div className="grid grid-cols-3 gap-1.5">
-                        {[1, 2, 3].map((boxNumber) => (
-                            <BoxStageCard key={boxNumber} boxNumber={boxNumber} stats={stats} compact />
-                        ))}
-                    </div>
-                    <div className="mx-auto mt-1.5 grid w-[68%] grid-cols-2 gap-1.5">
-                        {[4, 5].map((boxNumber) => (
+                {loadError && <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{loadError} <button type="button" onClick={() => void fetchLeitner()} className="underline">تلاش دوباره</button></div>}
+
+                <section aria-label="جعبه‌های لایتنر">
+                    <div className="grid grid-cols-6 gap-2">
+                        {[1, 2, 3, 4, 5].map((boxNumber) => (
                             <BoxStageCard key={boxNumber} boxNumber={boxNumber} stats={stats} />
                         ))}
                     </div>
@@ -212,55 +163,72 @@ export default function LeitnerDashboard() {
                             </div>
                         )}
 
-                        {hasDueCards && (
+                        {cards.length > 0 && (
                             <div className="motion-list space-y-2.5">
-                                {dueCards.map((card) => (
-                                    <ReviewWordRow key={card.id} card={card} onPlayAudio={playAudio} />
+                                {cards.map((card) => (
+                                    <ReviewWordRow key={card.id} card={card} onDelete={() => { setDeleteError(null); setCardToDelete(card); }} />
                                 ))}
                             </div>
                         )}
                     </section>
                 )}
             </main>
+            <Dialog open={Boolean(cardToDelete)} onClose={() => { if (!deleting) setCardToDelete(null); }} className="relative z-[1100]" dir="rtl">
+                <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm" aria-hidden="true" />
+                <div className="fixed inset-0 flex items-center justify-center overflow-y-auto p-5">
+                    <DialogPanel className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+                        <DialogTitle className="text-lg font-black text-slate-950">حذف لغت از لایتنر</DialogTitle>
+                        <DialogDescription className="mt-4 text-sm leading-7 text-slate-600">آیا مطمئنی که می‌خوای این لغت رو از لایتنرت حذف کنی؟</DialogDescription>
+                        <div className="font-cjk mt-3 text-center text-2xl text-slate-900" lang="zh-CN" dir="ltr">{cardToDelete?.word.chinese}</div>
+                        {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => void deleteCard()} disabled={deleting} className="min-h-12 rounded-full bg-red-700 font-bold text-white disabled:opacity-60">آره</button>
+                            <button type="button" data-autofocus onClick={() => setCardToDelete(null)} disabled={deleting} className="min-h-12 rounded-full bg-slate-100 font-bold text-slate-700 disabled:opacity-60">نه</button>
+                        </div>
+                    </DialogPanel>
+                </div>
+            </Dialog>
         </div>
     );
 }
 
 function EmptyLeitnerState() {
     return (
-        <section className="flex min-h-[360px] flex-col items-center justify-center px-6 pb-8 pt-10 text-center">
+        <section className="flex flex-col items-center px-1 pb-6 pt-8 text-center">
             <Image
-                src="/assets/chinverse/icons/Hub Connection.svg"
+                src="/assets/chinverse/leitner/empty-connections.svg"
                 alt=""
-                width={88}
-                height={88}
-                className="h-20 w-20 object-contain"
+                width={112}
+                height={112}
+                className="h-28 w-28 object-contain"
                 unoptimized
             />
-            <h2 className="mt-7 text-[18px] font-black leading-8 text-[#25272d]">
+            <h2 className="mt-5 text-[16px] font-black leading-7 text-[#434343]">
                 هنوز هیچ واژه‌ای به لایتنرت اضافه نکردی!
             </h2>
-            <p className="mt-3 max-w-[310px] text-[12px] font-medium leading-7 text-[#888e99]">
-                با دیدن درس‌ها، هر واژه‌ای که برایت تازه یا مهم بود به لایتنر بفرست. اینجا همان واژه‌ها برای مرور منظم و ماندگار آماده می‌شوند.
+            <p className="mt-2 max-w-[310px] text-[12px] font-medium leading-[22px] text-[#888888]">
+                با لایتنر، هر بار که مرور می‌کنی، اتصال‌های مغزت قوی‌تر می‌شن.
+                این یعنی کمتر فراموش می‌کنی، بیشتر توی حافظه‌ات موندگار می‌شن.
+                هر وقت واژه‌ای برات چالش‌برانگیز بود، بیارش اینجا تا دیگه هیچ‌وقت فراموشش نکنی!
             </p>
         </section>
     );
 }
 
-function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (url?: string) => void }) {
+function ReviewWordRow({ card, onDelete }: { card: Flashcard; onDelete: () => void }) {
     const boxNumber = normalizeBoxNumber(card.box_number);
     const box = BOX_INFO[boxNumber];
+    const pronunciation = useVocabularyPronunciation(card.word, true);
 
     return (
         <article className={cn("overflow-hidden rounded-[14px] border-2 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)]", box.border)}>
-            <div className="flex min-h-[58px] items-center justify-between gap-3 px-3 py-2">
-                <div className="flex min-w-0 items-center gap-3">
+            <div className="grid min-h-[68px] grid-cols-[76px_minmax(0,1fr)_76px] items-center gap-1 px-2 py-2">
+                <div className="flex min-w-0 items-center gap-1">
                     <button
                         type="button"
-                        onClick={() => onPlayAudio(card.word.audio_url)}
-                        disabled={!card.word.audio_url}
+                        onClick={() => pronunciation.playing ? pronunciation.stop() : void pronunciation.play()}
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eef6ff] text-[#155aa6] transition hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-35"
-                        aria-label="پخش تلفظ"
+                        aria-label={pronunciation.playing ? "توقف تلفظ" : "پخش تلفظ"}
                     >
                         <Volume2 size={19} />
                     </button>
@@ -274,15 +242,14 @@ function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (u
                     />
                 </div>
 
-                <div className="min-w-0 flex-1 text-left" dir="ltr">
-                    <p className="font-cjk truncate text-[19px] font-bold text-slate-900" lang="zh-CN">
+                <div className="min-w-0 text-center" dir="ltr">
+                    <p className="font-cjk break-words text-center! text-[23px] font-bold text-slate-900" lang="zh-CN">
                         {card.word.chinese}
                     </p>
-                    <p className="font-latin truncate text-[11px] font-semibold text-slate-400">
-                        {card.word.pinyin}
-                    </p>
                 </div>
+                <button type="button" onClick={onDelete} aria-label={`حذف ${card.word.chinese} از لایتنر`} className="flex h-11 w-11 items-center justify-center justify-self-end rounded-full text-slate-500 transition hover:bg-red-50 hover:text-red-700"><Trash2 size={20} /></button>
             </div>
+            {pronunciation.error && <p role="alert" className="px-3 pb-2 text-xs leading-6 text-red-700">{pronunciation.error}</p>}
             {card.word.persian_meaning && (
                 <div className="border-t border-slate-100 bg-slate-50/75 px-3 py-2 text-right text-[11px] font-bold leading-5 text-slate-500">
                     {card.word.persian_meaning}
@@ -292,36 +259,35 @@ function ReviewWordRow({ card, onPlayAudio }: { card: Flashcard; onPlayAudio: (u
     );
 }
 
-function BoxStageCard({ boxNumber, stats, compact = false }: { boxNumber: number; stats: LeitnerStats; compact?: boolean }) {
+function BoxStageCard({ boxNumber, stats }: { boxNumber: number; stats: LeitnerStats }) {
     const box = BOX_INFO[boxNumber];
     const count = stats.box_counts[String(boxNumber)] || 0;
-    const interval = stats.box_intervals[String(boxNumber)] || 1;
 
     return (
-        <article className="overflow-hidden rounded-[9px] bg-[#d5d6da] shadow-sm">
-            <div className={cn("flex h-[34px] flex-col items-center justify-center px-1 text-center text-white", box.header)}>
-                <h3 className="line-clamp-1 text-[11px] font-black leading-4">{box.title}</h3>
-                <p className="line-clamp-1 text-[8px] font-bold leading-3 text-white/95">{box.subtitle}</p>
+        <article className={cn(
+            "col-span-2 overflow-hidden rounded-[11px] bg-[#d9d9d9]",
+            boxNumber === 4 && "col-start-2 row-start-2",
+            boxNumber === 5 && "col-start-4 row-start-2",
+        )}>
+            <div className={cn("flex h-11 flex-col items-center justify-center px-1 text-center text-white", box.header)}>
+                <h3 className="text-[12px] font-black leading-[18px]">{box.title}</h3>
+                <p className="whitespace-nowrap text-[10px] font-bold leading-[15px]">({box.subtitle})</p>
             </div>
-            <div className={cn("flex flex-col items-center px-2 pb-2 pt-1.5 text-center", compact ? "min-h-[96px]" : "min-h-[106px]", box.body)}>
-                <div className={cn("relative flex items-center justify-center", compact ? "h-12 w-12" : "h-14 w-14")}>
+            <div className="relative h-[68px]">
+                <div className="absolute bottom-1 right-1 flex h-16 w-16 items-center justify-center">
                     <Image
                         src={box.image}
                         alt=""
-                        width={compact ? 58 : 68}
-                        height={compact ? 58 : 68}
-                        className="h-full w-full object-contain drop-shadow-sm"
+                        width={64}
+                        height={64}
+                        className="h-full w-full object-contain"
+                        loading="eager"
                         unoptimized
                     />
                 </div>
-                <div className="mt-auto w-full">
-                    <p className={cn("line-clamp-1 text-[8.5px] font-black", box.accent)}>{box.shortLabel}</p>
-                    <div className="mt-0.5 flex items-center justify-center gap-1.5 text-[10px] font-black text-slate-700">
-                        <span>{toPersianDigits(count)} لغت</span>
-                        <span className={cn("h-1.5 w-1.5 rounded-full", box.header)} />
-                    </div>
-                    <p className="mt-0.5 text-[8.5px] font-bold text-slate-500">{toPersianDigits(interval)} روز</p>
-                </div>
+                <p className="absolute bottom-1.5 left-2 text-[11px] font-bold leading-4 text-[#434343]">
+                    {toPersianDigits(count)} لغت
+                </p>
             </div>
         </article>
     );

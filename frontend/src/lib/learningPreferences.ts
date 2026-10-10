@@ -106,13 +106,22 @@ export const dailyGoalMinuteOptions = [
 ];
 
 export const dailyGoalWordOptions = [
-    { value: 3, label: "۳ لغت" },
-    { value: 5, label: "۵ لغت" },
-    { value: 8, label: "۸ لغت" },
-    { value: 10, label: "۱۰ لغت" },
-    { value: 15, label: "۱۵ لغت" },
-    { value: 20, label: "۲۰ لغت" },
+    { value: 3, label: "۳ لغت", description: "سبک" },
+    { value: 5, label: "۵ لغت", description: "راحت" },
+    { value: 8, label: "۸ لغت", description: "متعادل" },
+    { value: 10, label: "۱۰ لغت", description: "پیشنهادی" },
+    { value: 15, label: "۱۵ لغت", description: "جدی" },
+    { value: 20, label: "۲۰ لغت", description: "فشرده" },
 ];
+
+export function parseGoalInput(value: string, minimum = 0): number | null {
+    const normalized = value.trim()
+        .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+        .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+    if (!/^\d+$/.test(normalized)) return null;
+    const number = Number(normalized);
+    return Number.isSafeInteger(number) && number >= minimum ? number : null;
+}
 
 export const highlightColorOptions: Array<{ value: HighlightColor; label: string; swatch: string }> = [
     { value: "amber", label: "نارنجی", swatch: "#f59e0b" },
@@ -192,11 +201,11 @@ const sanitizePreferences = (value: unknown): LearningPreferences => {
             : defaultLearningPreferences.leitnerHighlightColor,
         showPinyin: typeof input.showPinyin === "boolean" ? input.showPinyin : defaultLearningPreferences.showPinyin,
         autoplayNext: typeof input.autoplayNext === "boolean" ? input.autoplayNext : defaultLearningPreferences.autoplayNext,
-        dailyGoalMinutes: typeof input.dailyGoalMinutes === "number" && Number.isFinite(input.dailyGoalMinutes) && input.dailyGoalMinutes >= 0 && input.dailyGoalMinutes <= 300
+        dailyGoalMinutes: typeof input.dailyGoalMinutes === "number" && Number.isSafeInteger(Math.round(input.dailyGoalMinutes)) && input.dailyGoalMinutes >= 0
             ? Math.round(input.dailyGoalMinutes)
             : defaultLearningPreferences.dailyGoalMinutes,
-        dailyGoalWords: dailyGoalWordOptions.some((option) => option.value === input.dailyGoalWords)
-            ? Number(input.dailyGoalWords)
+        dailyGoalWords: typeof input.dailyGoalWords === "number" && Number.isSafeInteger(input.dailyGoalWords) && input.dailyGoalWords >= 1
+            ? input.dailyGoalWords
             : defaultLearningPreferences.dailyGoalWords,
     };
 };

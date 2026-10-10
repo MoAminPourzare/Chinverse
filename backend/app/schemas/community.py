@@ -1,5 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.schemas.article_document import ArticleDocument
 from datetime import datetime
 
 # ===== FORUM QUESTION SCHEMAS =====
@@ -93,10 +94,19 @@ class ArticleBase(BaseModel):
         return value.strip() or None
 
 class ArticleCreate(ArticleBase):
-    pass
+    @field_validator("cover_image")
+    @classmethod
+    def require_sanitized_cover_image(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if not value.startswith("/uploads/"):
+            raise ValueError("Article cover image must use a sanitized upload URL")
+        return value
 
 class ArticleRead(ArticleBase):
     id: int
+    slug: Optional[str] = None
+    document: Optional[ArticleDocument] = None
     author_user_id: Optional[int] = None
     author: Optional[UserSummary] = None
     created_at: datetime
@@ -147,6 +157,8 @@ class SupportTicketRead(BaseModel):
     user_id: int
     message: str
     status: str
+    admin_reply: Optional[str] = None
+    responded_at: Optional[datetime] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

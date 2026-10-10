@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { SYNONYMS_CATALOG } from "@/lib/synonymsCatalog";
 
 export default function SynonymsDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="synonyms"
-            explorePath="/explore/synonyms"
-            eyebrow="واژگان هم معنی"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-sky-600"
-        />
-    );
+    return <PlannedCourseDetailPage domain="synonyms" title="واژگان هم‌معنی" basePath="/synonyms" catalog={SYNONYMS_CATALOG} />;
 }

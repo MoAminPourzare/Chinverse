@@ -4,20 +4,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Dialog } from "@headlessui/react";
 import { ChevronLeft } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import { IncompleteFeature, releaseConfig } from "@/config/release";
-import { cn } from "@/lib/cn";
 import { authService } from "@/services/auth.service";
 
 type SettingsItem = {
     title: string;
     href: string;
     icon: string;
-    danger?: boolean;
     action?: "logout";
     auth?: "required" | "guest";
     feature?: IncompleteFeature;
+    beta?: boolean;
 };
 
 const settingsItems: SettingsItem[] = [
@@ -44,6 +44,18 @@ const settingsItems: SettingsItem[] = [
         title: "ظاهر و نمایش",
         href: "/settings/appearance",
         icon: "/assets/chinverse/icons/Preferences 2.svg",
+    },
+    {
+        title: "نصب و دسترسی آفلاین",
+        href: "/settings/app",
+        icon: "/assets/chinverse/icons/notification.svg",
+    },
+    {
+        title: "بازخورد بتای چین‌ورس",
+        href: "/beta-feedback",
+        icon: "/assets/chinverse/icons/Support & Help.svg",
+        auth: "required",
+        beta: true,
     },
     {
         title: "درباره چین ورس",
@@ -84,10 +96,9 @@ const settingsItems: SettingsItem[] = [
         auth: "required",
     },
     {
-        title: "حذف حساب کاربری",
-        href: "/profile",
-        icon: "/assets/chinverse/icons/Delete.svg",
-        danger: true,
+        title: "امنیت حساب",
+        href: "/account/security",
+        icon: "/assets/chinverse/icons/profile.svg",
         auth: "required",
     },
 ];
@@ -98,14 +109,22 @@ export default function SettingsPage() {
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
     useEffect(() => {
-        const syncAuth = () => setIsAuthenticated(Boolean(localStorage.getItem("token")));
-        syncAuth();
+        let isMounted = true;
+        const syncAuth = async () => {
+            const authenticated = await authService.restoreSession();
+            if (isMounted) setIsAuthenticated(authenticated);
+        };
+        void syncAuth();
         window.addEventListener("chinverse-auth-change", syncAuth);
-        return () => window.removeEventListener("chinverse-auth-change", syncAuth);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("chinverse-auth-change", syncAuth);
+        };
     }, []);
 
     const visibleItems = settingsItems.filter((item) => {
         if (item.feature && !releaseConfig.features[item.feature]) return false;
+        if (item.beta && !releaseConfig.betaEnabled) return false;
         if (!item.auth) return true;
         if (isAuthenticated === null) return false;
         return item.auth === "required" ? isAuthenticated : !isAuthenticated;
@@ -115,8 +134,8 @@ export default function SettingsPage() {
         setIsLogoutConfirmOpen(true);
     };
 
-    const handleLogout = () => {
-        authService.logout();
+    const handleLogout = async () => {
+        await authService.logout();
         setIsLogoutConfirmOpen(false);
         router.replace("/login");
         router.refresh();
@@ -124,8 +143,8 @@ export default function SettingsPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fb] px-6 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
-            <header className="relative flex h-11 items-center justify-center">
-                <BackButton href="/profile" className="absolute right-0 top-0" />
+            <header data-page-header className="relative flex h-11 items-center justify-center">
+                <BackButton href="/profile" className="absolute left-0 top-0" />
                 <h1 className="text-[18px] font-black text-[#2f3238] dark:text-[#f4f7fb]">تنظیمات</h1>
             </header>
 
@@ -163,7 +182,7 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
             <div className="flex h-9 w-9 shrink-0 items-center justify-center">
                 <Image src={item.icon} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
             </div>
-            <span className={cn("min-w-0 flex-1 text-[15px] font-black text-[#2f3238]", item.danger && "text-red-600")}>
+            <span className="min-w-0 flex-1 text-[15px] font-black text-[#2f3238]">
                 {item.title}
             </span>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[0px] text-[#155aa6] transition group-hover:-translate-x-0.5">
@@ -197,21 +216,17 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
 
 function LogoutConfirmDialog({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
     return (
-        <div
-            className="modal-backdrop-motion fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/45 px-5 backdrop-blur-sm"
-            dir="rtl"
-            onClick={onCancel}
-        >
-            <div
-                className="modal-panel-motion w-full max-w-[360px] rounded-[28px] border border-white/80 bg-white p-5 text-right shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26]"
-                onClick={(event) => event.stopPropagation()}
-            >
+        <Dialog open onClose={onCancel} className="relative z-[140]" dir="rtl">
+            <div className="modal-backdrop-motion fixed inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
+            <div className="fixed inset-0 overflow-y-auto px-5 py-5">
+              <div className="flex min-h-full items-center justify-center">
+                <Dialog.Panel className="modal-panel-motion w-full max-w-[360px] rounded-[28px] border border-white/80 bg-white p-5 text-right shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-[#344050] dark:bg-[#171d26]">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-50">
                     <Image src="/assets/chinverse/icons/Log out.svg" alt="" width={34} height={34} className="h-9 w-9 object-contain" />
                 </div>
-                <h2 className="text-center text-[17px] font-black text-[#2f3238] dark:text-[#f4f7fb]">
+                <Dialog.Title className="text-center text-[17px] font-black text-[#2f3238] dark:text-[#f4f7fb]">
                     خروج از حساب کاربری؟
-                </h2>
+                </Dialog.Title>
                 <p className="mt-3 text-center text-sm font-bold leading-7 text-slate-600 dark:text-[#c5ced9]">
                     مطمئنی می‌خوای از حسابت خارج بشی؟
                 </p>
@@ -231,7 +246,9 @@ function LogoutConfirmDialog({ onCancel, onConfirm }: { onCancel: () => void; on
                         خروج از حساب
                     </button>
                 </div>
+                </Dialog.Panel>
+              </div>
             </div>
-        </div>
+        </Dialog>
     );
 }

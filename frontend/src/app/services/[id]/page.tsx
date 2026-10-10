@@ -1,12 +1,12 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, ImageIcon, MessageCircle, User as UserIcon } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Surface from "@/components/ui/Surface";
 import LikeButton from "@/components/engagement/LikeButton";
@@ -18,7 +18,6 @@ import { ServiceWithProvider, userService } from "@/services/user.service";
 
 export default function ServiceDetailPage() {
     const params = useParams();
-    const router = useRouter();
     const serviceId = Number(params.id);
     const [service, setService] = useState<ServiceWithProvider | null>(null);
     const [loading, setLoading] = useState(true);
@@ -72,8 +71,8 @@ export default function ServiceDetailPage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-                <header className="flex items-center justify-between">
-                    <BackButton onClick={() => router.back()} />
+                <header data-page-header className="flex items-center justify-between" dir="ltr">
+                    <SafeBackButton fallback="/showcase" />
                     <Link href="/showcase" className="text-xs font-bold text-[#155aa6]">
                         ویترین خدمات
                     </Link>
@@ -131,7 +130,9 @@ export default function ServiceDetailPage() {
                 <Surface className="p-5">
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <h2 className="text-base font-black text-slate-900">توضیحات خدمت</h2>
-                        <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                        <div className="flex items-center gap-2">
+                            <LikeButton targetType="service" targetId={service.id} initialCount={service.likes_count || 0} compact />
+                        </div>
                     </div>
                     <p className="whitespace-pre-wrap text-sm leading-8 text-slate-700" {...getDirectionalTextProps(service.description)}>
                         {service.description}
@@ -158,6 +159,7 @@ function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
+                    fallbackSrc="/assets/chinverse/icons/profile.svg"
                     alt={name || "کاربر"}
                     fill
                     className="object-cover"

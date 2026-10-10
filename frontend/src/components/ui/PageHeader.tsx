@@ -38,7 +38,7 @@ export default function PageHeader({
         >
             <div className="relative flex min-h-10 items-center justify-center">
                 {backControl && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2">
                         {backControl}
                     </div>
                 )}
@@ -47,7 +47,7 @@ export default function PageHeader({
                         {title}
                     </h1>
                 </div>
-                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                <div className="absolute right-0 top-1/2 -translate-y-1/2">
                     {endContent ?? <div className="h-10 w-10" />}
                 </div>
             </div>

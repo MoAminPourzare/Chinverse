@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import HSKCourseDetailPage from "@/components/course/HSKCourseDetailPage";
 
 export default function HSKDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="hsk"
-            explorePath="/explore/hsk"
-            eyebrow="HSK"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-blue-600"
-        />
-    );
+    return <HSKCourseDetailPage />;
 }

@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import CartoonDetailContent from "@/components/course/CartoonDetailPage";
 
 export default function CartoonDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="cartoons"
-            explorePath="/explore/cartoons"
-            eyebrow="کارتون و انیمیشن"
-            countKeys={["episodes_count"]}
-            countLabel="بخش"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+    return <CartoonDetailContent />;
 }

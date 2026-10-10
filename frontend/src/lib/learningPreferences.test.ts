@@ -8,6 +8,7 @@ import {
   getPersianTextStyle,
   getStoredLearningPreferences,
   getHighlightStyle,
+  parseGoalInput,
   saveLearningPreferences,
   useLearningPreferences,
 } from "./learningPreferences";
@@ -30,9 +31,21 @@ describe("learning preferences", () => {
 
     window.localStorage.setItem(
       LEARNING_PREFERENCES_STORAGE_KEY,
-      JSON.stringify({ ...defaultLearningPreferences, dailyGoalMinutes: 301 }),
+      JSON.stringify({ ...defaultLearningPreferences, dailyGoalMinutes: 600, dailyGoalWords: 12 }),
     );
+    expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(600);
+    expect(getStoredLearningPreferences().dailyGoalWords).toBe(12);
+    window.localStorage.setItem(LEARNING_PREFERENCES_STORAGE_KEY, JSON.stringify({ dailyGoalMinutes: -1, dailyGoalWords: 0 }));
     expect(getStoredLearningPreferences().dailyGoalMinutes).toBe(defaultLearningPreferences.dailyGoalMinutes);
+    expect(getStoredLearningPreferences().dailyGoalWords).toBe(defaultLearningPreferences.dailyGoalWords);
+  });
+
+  it("parses custom goals using Persian, Arabic and Latin digits and rejects invalid counts", () => {
+    expect(parseGoalInput(" ۱۸۰ ")).toBe(180);
+    expect(parseGoalInput("٦٠٠")).toBe(600);
+    expect(parseGoalInput("12", 1)).toBe(12);
+    for (const invalid of ["", "-1", "3.5", "1e3", "abc", "9007199254740992"]) expect(parseGoalInput(invalid)).toBeNull();
+    expect(parseGoalInput("0", 1)).toBeNull();
   });
 
   it("persists sanitized values and publishes a change event", () => {

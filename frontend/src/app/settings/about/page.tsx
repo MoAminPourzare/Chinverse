@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Instagram } from "lucide-react";
 import { AppHeader } from "@/components/ui/IconButton";
 
@@ -19,7 +20,7 @@ export default function SettingsAboutPage() {
             />
 
             <main className="mx-auto flex w-full max-w-[430px] flex-col items-center text-center">
-                <Image src={logo} alt="چین ورس" width={118} height={118} className="mt-1 h-20 w-20 object-contain" priority />
+                <Image src={logo} alt="چین ورس" width={200} height={200} className="mt-3 h-[180px] w-[180px] object-contain" priority />
 
                 <div className="mt-5 space-y-4 text-right text-[13px] font-medium leading-7 text-[#2f3238]">
                     <p>
@@ -50,6 +51,12 @@ export default function SettingsAboutPage() {
                     <Instagram size={18} />
                     اینستاگرام چین ورس
                 </a>
+
+                <nav className="mt-7 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs font-bold text-[#155aa6]" aria-label="اسناد حقوقی">
+                    <Link href="/legal/privacy" className="hover:text-[#0f4e92]">حریم خصوصی</Link>
+                    <Link href="/legal/terms" className="hover:text-[#0f4e92]">شرایط استفاده</Link>
+                    <Link href="/legal/community-guidelines" className="hover:text-[#0f4e92]">قوانین جامعه</Link>
+                </nav>
             </main>
         </div>
     );

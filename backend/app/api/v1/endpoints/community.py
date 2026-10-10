@@ -1,7 +1,8 @@
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select, func, update
+from sqlalchemy import and_, delete, select, func, or_, update
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
@@ -9,11 +10,15 @@ from app.api.errors import bad_request, forbidden, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import write_rate_limit
 from app.models.social import ForumQuestion, ForumAnswer, Article, ArticleComment, SupportTicket
-from app.models.user import User
+from app.models.user import User, UserStatus
 from app.schemas import community as schemas
 from app.services.notifications import notify_followers
+# Forum authors follow the directory's existing optional-verification beta
+# policy; production and inactive-account restrictions remain the same.
+from app.services.showcase_visibility import showcase_user_filters as forum_user_filters
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def build_user_summary(user: Optional[User]) -> Optional[schemas.UserSummary]:
@@ -56,6 +61,8 @@ def build_article_read(article: Article, comments_count: int = 0) -> schemas.Art
         title=article.title,
         summary=article.summary,
         content=article.content,
+        slug=article.slug,
+        document=article.document_json,
         cover_image=article.cover_image,
         author_user_id=article.author_user_id,
         author=build_user_summary(article.author),
@@ -65,6 +72,14 @@ def build_article_read(article: Article, comments_count: int = 0) -> schemas.Art
 
 
 # ===== FORUM QUESTIONS =====
+
+def visible_article_author():
+    # Editorial records are published from the reviewed repository catalog,
+    # never through the user article-creation API.
+    return or_(
+        and_(Article.author_user_id.is_(None), Article.slug.is_not(None), Article.document_json.is_not(None)),
+        and_(User.status == UserStatus.ACTIVE, User.is_verified.is_(True)),
+    )
 
 @router.get("/forum/questions", response_model=List[schemas.ForumQuestionRead])
 async def get_forum_questions(
@@ -79,14 +94,18 @@ async def get_forum_questions(
             ForumAnswer.question_id,
             func.count(ForumAnswer.id).label("answers_count"),
         )
+        .join(User, User.id == ForumAnswer.author_user_id)
+        .where(*forum_user_filters())
         .group_by(ForumAnswer.question_id)
         .subquery()
     )
 
     query = (
         select(ForumQuestion, func.coalesce(answer_counts.c.answers_count, 0))
+        .join(User, User.id == ForumQuestion.author_user_id)
         .outerjoin(answer_counts, ForumQuestion.id == answer_counts.c.question_id)
         .options(selectinload(ForumQuestion.author).selectinload(User.profile))
+        .where(*forum_user_filters())
         .order_by(ForumQuestion.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -133,30 +152,34 @@ async def create_forum_question(
     db.add(question)
     await db.commit()
     await db.refresh(question)
-    try:
-        display_name = current_user.profile.display_name if current_user.profile else "Chinverse user"
-        await notify_followers(
-            db,
-            actor_user_id=current_user.id,
-            type="forum",
-            title="بحث جدید در تالار",
-            body=f"{display_name} یک سؤال جدید پرسید: {question.title}",
-            target_url="/community",
-            metadata={"question_id": question.id},
-        )
-    except Exception:
-        await db.rollback()
-
-    # Get author info
-    return schemas.ForumQuestionRead(
+    # Keep the saved response outside the optional notification transaction:
+    # rollback expires ORM attributes even with expire_on_commit=False.
+    response = schemas.ForumQuestionRead(
         id=question.id,
         title=question.title,
         content=question.body,
         author_user_id=question.author_user_id,
         created_at=question.created_at,
         author=build_user_summary(current_user),
-        answers_count=0
+        answers_count=0,
     )
+    actor_user_id = current_user.id
+    display_name = response.author.display_name if response.author else "Chinverse user"
+    try:
+        await notify_followers(
+            db,
+            actor_user_id=actor_user_id,
+            type="forum",
+            title="بحث جدید در تالار",
+            body=f"{display_name} یک سؤال جدید پرسید: {response.title}",
+            target_url="/community",
+            metadata={"question_id": response.id},
+        )
+    except Exception:
+        await db.rollback()
+        logger.warning("Follower notifications failed for saved question %s", response.id)
+
+    return response
 
 
 @router.get("/forum/questions/{question_id}", response_model=schemas.ForumQuestionDetailRead)
@@ -166,8 +189,12 @@ async def get_forum_question_detail(
 ):
     result = await db.execute(
         select(ForumQuestion)
+        .join(User, User.id == ForumQuestion.author_user_id)
         .options(selectinload(ForumQuestion.author).selectinload(User.profile))
-        .where(ForumQuestion.id == question_id)
+        .where(
+            ForumQuestion.id == question_id,
+            *forum_user_filters(),
+        )
     )
     question = result.scalar_one_or_none()
     if not question:
@@ -175,8 +202,12 @@ async def get_forum_question_detail(
 
     answers_result = await db.execute(
         select(ForumAnswer)
+        .join(User, User.id == ForumAnswer.author_user_id)
         .options(selectinload(ForumAnswer.author).selectinload(User.profile))
-        .where(ForumAnswer.question_id == question_id)
+        .where(
+            ForumAnswer.question_id == question_id,
+            *forum_user_filters(),
+        )
         .order_by(ForumAnswer.created_at.asc(), ForumAnswer.id.asc())
     )
     answers = answers_result.scalars().all()
@@ -279,7 +310,11 @@ async def create_forum_answer(
     if not content:
         raise bad_request("Answer cannot be empty")
 
-    question_result = await db.execute(select(ForumQuestion).where(ForumQuestion.id == question_id))
+    question_result = await db.execute(
+        select(ForumQuestion)
+        .join(User, User.id == ForumQuestion.author_user_id)
+        .where(ForumQuestion.id == question_id, *forum_user_filters())
+    )
     question = question_result.scalar_one_or_none()
     if not question:
         raise not_found("Forum question")
@@ -323,14 +358,18 @@ async def get_articles(
             ArticleComment.article_id,
             func.count(ArticleComment.id).label("comments_count"),
         )
+        .join(User, User.id == ArticleComment.author_user_id)
+        .where(*forum_user_filters())
         .group_by(ArticleComment.article_id)
         .subquery()
     )
 
     query = (
         select(Article, func.coalesce(comment_counts.c.comments_count, 0))
+        .outerjoin(User, User.id == Article.author_user_id)
         .outerjoin(comment_counts, Article.id == comment_counts.c.article_id)
         .options(selectinload(Article.author).selectinload(User.profile))
+        .where(visible_article_author())
         .order_by(Article.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -377,10 +416,23 @@ async def get_article_detail(
     article_id: int,
     db: AsyncSession = Depends(deps.get_db),
 ):
+    return await load_article_detail(db, Article.id == article_id)
+
+
+@router.get("/forum/articles/by-slug/{slug}", response_model=schemas.ArticleDetailRead)
+async def get_article_by_slug(slug: str, db: AsyncSession = Depends(deps.get_db)):
+    return await load_article_detail(db, Article.slug == slug)
+
+
+async def load_article_detail(db: AsyncSession, identifier):
     result = await db.execute(
         select(Article)
+        .outerjoin(User, User.id == Article.author_user_id)
         .options(selectinload(Article.author).selectinload(User.profile))
-        .where(Article.id == article_id)
+        .where(
+            identifier,
+            visible_article_author(),
+        )
     )
     article = result.scalar_one_or_none()
     if not article:
@@ -388,8 +440,12 @@ async def get_article_detail(
 
     comments_result = await db.execute(
         select(ArticleComment)
+        .join(User, User.id == ArticleComment.author_user_id)
         .options(selectinload(ArticleComment.author).selectinload(User.profile))
-        .where(ArticleComment.article_id == article_id)
+        .where(
+            ArticleComment.article_id == article.id,
+            *forum_user_filters(),
+        )
         .order_by(ArticleComment.created_at.asc(), ArticleComment.id.asc())
     )
     comments = comments_result.scalars().all()
@@ -413,7 +469,10 @@ async def create_article_comment(
     if not content:
         raise bad_request("Comment cannot be empty")
 
-    article_result = await db.execute(select(Article).where(Article.id == article_id))
+    article_result = await db.execute(
+        select(Article).outerjoin(User, User.id == Article.author_user_id)
+        .where(Article.id == article_id, visible_article_author())
+    )
     if not article_result.scalar_one_or_none():
         raise not_found("Article")
 
@@ -442,6 +501,22 @@ async def create_article_comment(
 
 
 # ===== SUPPORT =====
+
+@router.get("/support", response_model=List[schemas.SupportTicketRead])
+async def get_support_tickets(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=20)),
+):
+    """Return only the authenticated user's support tickets, newest first."""
+    result = await db.execute(
+        select(SupportTicket)
+        .where(SupportTicket.user_id == current_user.id)
+        .order_by(SupportTicket.created_at.desc(), SupportTicket.id.desc())
+        .offset(pagination.skip)
+        .limit(pagination.limit)
+    )
+    return result.scalars().all()
 
 @router.post("/support", response_model=schemas.SupportTicketResponse)
 async def submit_support_ticket(

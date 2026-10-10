@@ -20,7 +20,7 @@ export type SocialPlatform = {
     name: string;
     icon: ComponentType<{ className?: string }>;
     placeholder: string;
-    profileUrl: (handle: string) => string;
+    profileUrl: (handle: string) => string | null;
     handlePattern: RegExp;
     errorMessage: string;
 };
@@ -76,7 +76,8 @@ export const socialPlatforms: SocialPlatform[] = [
         name: "WeChat",
         icon: WeChatIcon,
         placeholder: "chinverse_id",
-        profileUrl: (handle) => `weixin://dl/chat?${encodeURIComponent(handle)}`,
+        // A WeChat ID is searched inside WeChat; it is not a public profile URL.
+        profileUrl: () => null,
         handlePattern: /^[A-Za-z][A-Za-z0-9_-]{5,19}$/,
         errorMessage: "WeChat ID باید با حرف شروع شود؛ مثل chinverse_id.",
     },

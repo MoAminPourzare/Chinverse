@@ -1,24 +1,22 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogPanel } from "@headlessui/react";
 import {
     BriefcaseBusiness,
-    Check,
     ChevronLeft,
-    GraduationCap,
     ImageIcon,
-    Landmark,
     MapPin,
     MessageCircle,
     Search,
-    SlidersHorizontal,
-    Tag,
     Users,
     X,
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
+import SearchableOptionList from "@/components/ui/SearchableOptionList";
+import LocationFilterOptions from "@/components/showcase/LocationFilterOptions";
 import LikeButton from "@/components/engagement/LikeButton";
 import { BackButton, IconButton } from "@/components/ui/IconButton";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
@@ -48,27 +46,27 @@ const filterOrder: FilterKey[] = ["jobTitles", "locations", "degrees", "universi
 
 const filterConfig: Record<FilterKey, {
     label: string;
-    icon: typeof Tag;
+    icon: string;
     options: string[];
 }> = {
     jobTitles: {
         label: "عنوان شغلی",
-        icon: Tag,
+        icon: "Title.svg",
         options: PROFILE_HEADLINE_OPTIONS,
     },
     locations: {
         label: "لوکیشن",
-        icon: MapPin,
+        icon: "Location 2.svg",
         options: LOCATION_FILTER_OPTIONS,
     },
     degrees: {
         label: "مقطع تحصیلی",
-        icon: GraduationCap,
+        icon: "Graduation.svg",
         options: EDUCATION_DEGREE_OPTIONS,
     },
     universities: {
         label: "دانشگاه محل تحصیل",
-        icon: Landmark,
+        icon: "University.svg",
         options: UNIVERSITY_OPTIONS,
     },
 };
@@ -147,19 +145,23 @@ export default function ShowcasePage() {
 
     const filteredServices = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
-        if (!query) return services;
-
-        return services.filter((service) =>
-            [
+        return services.filter((service) => {
+            const provider = service.provider;
+            if (!provider && activeFilterCount > 0) return false;
+            if (provider && (!matchesAnyJobTitle(provider, talentFilters.jobTitles)
+                || !matchesAnyLocation(provider, talentFilters.locations)
+                || !matchesValue(provider.education?.degree, talentFilters.degrees)
+                || !matchesValue(provider.education?.university, talentFilters.universities))) return false;
+            return !query || [
                 service.title,
                 service.description,
                 service.provider?.display_name,
                 service.provider?.headline,
             ]
                 .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(query)),
-        );
-    }, [searchQuery, services]);
+                .some((value) => String(value).toLowerCase().includes(query));
+        });
+    }, [searchQuery, services, talentFilters, activeFilterCount]);
 
     const searchPlaceholder = activeTab === "talents" ? "جستجو بین استعدادها" : "جستجو بین خدمات";
 
@@ -174,6 +176,12 @@ export default function ShowcasePage() {
             const nextValues = values.includes(value)
                 ? values.filter((item) => item !== value)
                 : [...values, value];
+            if (filterKey === "locations" && !values.includes(value)) {
+                const country = value.split(" / ")[0];
+                return { ...current, locations: value.includes(" / ")
+                    ? nextValues.filter((item) => item !== country)
+                    : nextValues.filter((item) => !item.startsWith(country + " / ")) };
+            }
             return { ...current, [filterKey]: nextValues };
         });
     };
@@ -189,7 +197,7 @@ export default function ShowcasePage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-24 pt-6" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header className="space-y-3">
+                <header data-page-header className="space-y-3">
                     <div className="rounded-[24px] border border-white/80 bg-[#e7ebf1] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_22px_rgba(15,23,42,0.06)]">
                         <div className="grid grid-cols-2 gap-1.5">
                             {tabs.map((tab) => (
@@ -218,7 +226,8 @@ export default function ShowcasePage() {
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 placeholder={searchPlaceholder}
-                                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-800 outline-none placeholder:text-slate-500"
+                                dir="rtl"
+                                className="min-w-0 flex-1 bg-transparent text-right text-sm font-bold text-slate-800 outline-none placeholder:text-right placeholder:text-slate-500"
                             />
                             {searchQuery && (
                                 <button
@@ -232,7 +241,7 @@ export default function ShowcasePage() {
                             )}
                         </label>
 
-                        {activeTab === "talents" && (
+                        {(
                             <button
                                 type="button"
                                 onClick={() => {
@@ -247,7 +256,7 @@ export default function ShowcasePage() {
                                 )}
                                 aria-label="فیلترها"
                             >
-                                <SlidersHorizontal size={18} />
+                                <Image src="/assets/chinverse/icons/Filter.svg" alt="" width={24} height={24} className="h-6 w-6 object-contain" />
                                 <span>{activeFilterCount > 0 ? `${toPersianDigits(activeFilterCount)} فیلتر` : "فیلتر"}</span>
                                 {activeFilterCount > 0 && (
                                     <span className="absolute -left-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-[#ffb74d]" />
@@ -334,14 +343,14 @@ function TalentFilterPanel({
     const currentConfig = activeFilterKey ? filterConfig[activeFilterKey] : null;
 
     return (
-        <div className="modal-backdrop-motion fixed inset-0 z-[120] bg-[#f7f8fa] px-5 pb-24 pt-5" dir="rtl">
-            <div className="mx-auto flex h-full w-full max-w-[430px] flex-col">
-                <header className="relative flex h-11 items-center justify-center">
-                    <BackButton onClick={onBack} className="absolute right-0 top-0" />
-                    <h2 className="text-center text-[18px] font-black text-[#25272d]">
+        <Dialog open onClose={onClose} aria-labelledby="showcase-filter-title" className="modal-backdrop-motion fixed inset-0 z-[1100] bg-[#f7f8fa] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5" dir="rtl">
+            <DialogPanel className="mx-auto flex h-full w-full max-w-[430px] flex-col">
+                <header data-page-header className="relative flex h-11 items-center justify-center">
+                    <BackButton onClick={onBack} className="absolute left-0 top-0" />
+                    <h2 id="showcase-filter-title" className="text-center text-[18px] font-black text-[#25272d]">
                         {currentConfig?.label || "فیلترها"}
                     </h2>
-                    <IconButton onClick={onClose} label="بستن" className="absolute left-0 top-0">
+                    <IconButton onClick={onClose} label="بستن" className="absolute right-0 top-0">
                         <X className="h-5 w-5" />
                     </IconButton>
                 </header>
@@ -351,7 +360,6 @@ function TalentFilterPanel({
                         <div className="mt-8 space-y-1">
                             {filterOrder.map((filterKey) => {
                                 const config = filterConfig[filterKey];
-                                const Icon = config.icon;
                                 const selectedValues = filters[filterKey];
                                 return (
                                     <button
@@ -360,7 +368,7 @@ function TalentFilterPanel({
                                         onClick={() => onOpenFilter(filterKey)}
                                         className="flex min-h-[56px] w-full items-center gap-3 border-b border-slate-300/80 py-2 text-right transition hover:bg-white/70"
                                     >
-                                        <ChevronLeft className="h-5 w-5 shrink-0 text-slate-700" />
+                                        <Image src={`/assets/chinverse/icons/${config.icon}`} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-[15px] font-black text-[#25272d]">{config.label}</p>
                                             {selectedValues.length > 0 && (
@@ -370,13 +378,14 @@ function TalentFilterPanel({
                                                 </p>
                                             )}
                                         </div>
-                                        <Icon className="h-6 w-6 shrink-0 text-[#155aa6]" strokeWidth={1.7} />
+                                        <ChevronLeft className="h-5 w-5 shrink-0 text-slate-700" />
                                     </button>
                                 );
                             })}
                         </div>
 
-                        <div className="mt-auto flex gap-3 pt-6">
+                        <div className="flex min-h-0 flex-1 items-center justify-center py-5" aria-hidden="true"><Image src="/assets/chinverse/icons/Filter.svg" alt="" width={192} height={192} className="h-full max-h-[210px] w-[192px] object-contain" /></div>
+                        <div className="mt-auto flex flex-row-reverse gap-3 pt-3">
                             <button
                                 type="button"
                                 onClick={onClearAll}
@@ -396,50 +405,27 @@ function TalentFilterPanel({
                     </>
                 ) : (
                     <div className="mt-5 flex min-h-0 flex-1 flex-col">
-                        <div className="min-h-0 flex-1 overflow-y-auto rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+                        <div className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                             {activeFilterKey === "jobTitles" && (
                                 <p className="mb-3 rounded-[18px] border border-amber-100 bg-amber-50 px-4 py-3 text-[12px] font-bold leading-6 text-amber-800">
                                     عنوان شغلی توسط خود کاربر انتخاب می‌شود و به معنی تأیید تخصص، مجوز یا سابقه کاری فرد توسط چین‌ورس نیست.
                                 </p>
                             )}
-                            <button
-                                type="button"
-                                onClick={() => onClearFilter(activeFilterKey)}
-                                className={cn(
-                                    "mb-2 flex min-h-11 w-full items-center justify-center rounded-[16px] border px-3 text-center text-sm font-black transition",
-                                    filters[activeFilterKey].length === 0
-                                        ? "border-[#155aa6] bg-[#155aa6] text-white"
-                                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                )}
-                            >
-                                همه موارد
-                            </button>
-                            <div className="grid grid-cols-2 gap-2">
-                                {filterConfig[activeFilterKey].options.map((option) => {
-                                    const active = filters[activeFilterKey].includes(option);
-                                    return (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() => onToggleValue(activeFilterKey, option)}
-                                            className={cn(
-                                                "flex min-h-12 items-center justify-center gap-1.5 rounded-[16px] border px-3 py-2 text-center text-[12px] font-black leading-5 transition-all duration-200",
-                                                active
-                                                    ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
-                                                    : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                            )}
-                                        >
-                                            {active && <Check size={14} />}
-                                            <span className="line-clamp-2">{option}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {activeFilterKey === "locations" ? <LocationFilterOptions values={filters.locations} onToggle={(value) => onToggleValue("locations", value)} onClear={() => onClearFilter("locations")} /> : <SearchableOptionList
+                                key={activeFilterKey}
+                                label={filterConfig[activeFilterKey].label}
+                                options={filterConfig[activeFilterKey].options}
+                                selectedValues={filters[activeFilterKey]}
+                                onSelect={(option) => onToggleValue(activeFilterKey, option)}
+                                clearLabel="همه موارد"
+                                onClear={() => onClearFilter(activeFilterKey)}
+                                scrollClassName="flex-1"
+                            />}
                         </div>
                     </div>
                 )}
-            </div>
-        </div>
+            </DialogPanel>
+        </Dialog>
     );
 }
 
@@ -590,6 +576,7 @@ function Avatar({ src, name }: { src?: string | null; name?: string | null }) {
             {src ? (
                 <Image
                     src={getMediaUrl(src)}
+                    fallbackSrc="/assets/chinverse/icons/profile.svg"
                     alt={name || "کاربر"}
                     fill
                     className="object-cover"
@@ -613,7 +600,7 @@ function ShowcaseSkeleton({ activeTab }: { activeTab: TabType }) {
     );
 }
 
-function matchesAnyJobTitle(user: ShowcaseUser, selectedJobTitles: string[]) {
+function matchesAnyJobTitle(user: Pick<ShowcaseUser, "headline" | "job_titles">, selectedJobTitles: string[]) {
     if (selectedJobTitles.length === 0) return true;
     const userTitles = [user.headline, ...(user.job_titles || [])]
         .map((title) => title?.trim())
@@ -621,7 +608,7 @@ function matchesAnyJobTitle(user: ShowcaseUser, selectedJobTitles: string[]) {
     return selectedJobTitles.some((title) => userTitles.includes(title));
 }
 
-function matchesAnyLocation(user: ShowcaseUser, selectedLocations: string[]) {
+function matchesAnyLocation(user: Pick<ShowcaseUser, "country" | "city">, selectedLocations: string[]) {
     if (selectedLocations.length === 0) return true;
     const country = user.country?.trim();
     const city = user.city?.trim();

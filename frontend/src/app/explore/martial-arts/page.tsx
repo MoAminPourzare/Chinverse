@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { MARTIAL_ARTS_CATALOG } from "@/lib/martialArtsCatalog";
 
 export default function MartialArtsExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="هنرهای رزمی"
-            subcategorySlug="martial-arts"
-            detailPath="/martial-arts"
-            layout="list"
-            countLabel="درس"
-            accentClass="bg-blue-700"
+            basePath="/martial-arts"
+            catalog={MARTIAL_ARTS_CATALOG}
+            countLabel="قسمت"
         />
     );
 }

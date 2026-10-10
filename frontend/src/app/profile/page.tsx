@@ -1,11 +1,11 @@
 'use client';
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
+import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
@@ -15,9 +15,11 @@ import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
-import { getSocialLinkRel, getSocialLinkTarget, getSocialPlatform, getSocialProfileUrl } from "@/lib/socialLinks";
+import ProfileSocialLink from "@/components/profile/ProfileSocialLink";
 import { cleanProfileText, getVisibleSocials, getVisibleWebsites, hasResumePreviewItemContent, isResumeEmpty } from "@/lib/profileContent";
-import { Course, fetchSavedCourses, getCourseDetailHref, getDisplayCount, getLessonCount } from "@/lib/courses";
+import { fetchSavedCourses } from "@/lib/courses";
+import { fetchSavedCollectionKeys } from "@/lib/savedCollections";
+import { mergeSavedCollections, type SavedCollectionCard } from "@/lib/collectionCatalog";
 import NotificationBellLink from "@/components/notifications/NotificationBellLink";
 import { IMAGE_FILE_ACCEPT, isAdjustableImageFile, validateImageFile } from "@/validation";
 
@@ -119,26 +121,6 @@ export default function ProfilePage() {
 
         const delta = direction === "left" ? -150 : 150;
         container.scrollBy({ left: delta, behavior: "smooth" });
-    };
-
-    const handleDeleteAccount = async () => {
-        const confirmed = window.confirm(
-            'آیا مطمئن هستید؟ با حذف حساب کاربری، تمام اطلاعات شما (رزومه، گالری، چت‌ها) برای همیشه پاک خواهد شد.'
-        );
-
-        if (confirmed) {
-            try {
-                const api = (await import('@/lib/api')).default;
-                await api.delete('/users/me');
-                authService.logout();
-                setUser(null);
-                router.replace('/login');
-                router.refresh();
-            } catch (error) {
-                console.error('Failed to delete account:', error);
-                alert('خطا در حذف حساب کاربری. لطفا دوباره تلاش کنید.');
-            }
-        }
     };
 
     const fetchUser = async () => {
@@ -265,28 +247,7 @@ export default function ProfilePage() {
                         <div>
                             <h3 className="font-bold text-gray-900 mb-3 text-sm">شبکه‌های اجتماعی</h3>
                             <div className="grid gap-2">
-                                {socials.map((social, idx) => {
-                                    const platform = getSocialPlatform(social.platform);
-                                    const Icon = platform.icon;
-                                    const href = getSocialProfileUrl(social.platform, social.handle);
-                                    const target = getSocialLinkTarget(social.platform);
-                                    const rel = getSocialLinkRel(social.platform);
-                                    return (
-                                        <a
-                                            key={idx}
-                                            href={href}
-                                            target={target}
-                                            rel={rel}
-                                            className="flex items-center gap-3 rounded-[18px] border border-[#d8e8f7] bg-[#f3f8ff] px-3 py-2.5 text-sm text-slate-700 shadow-[0_6px_14px_rgba(21,90,166,0.06)] transition hover:border-[#b8d8f4] hover:bg-[#eef6ff] hover:text-[#155aa6]"
-                                        >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#155aa6] shadow-[0_6px_12px_rgba(21,90,166,0.12)]">
-                                                <Icon className="h-4 w-4" />
-                                            </span>
-                                            <span className="min-w-0 flex-1 text-right font-bold">{platform.name}</span>
-                                            <span className="dir-ltr truncate text-left text-xs text-slate-500">{social.handle}</span>
-                                        </a>
-                                    );
-                                })}
+                                {socials.map((social, idx) => <ProfileSocialLink key={idx} platformId={social.platform} handle={social.handle} className="flex items-center gap-3 rounded-[18px] border border-[#d8e8f7] bg-[#f3f8ff] px-3 py-2.5 text-sm text-slate-700 shadow-[0_6px_14px_rgba(21,90,166,0.06)] transition hover:border-[#b8d8f4] hover:bg-[#eef6ff] hover:text-[#155aa6]" iconClassName="shadow-[0_6px_12px_rgba(21,90,166,0.12)]" />)}
                             </div>
                         </div>
                     )}
@@ -419,7 +380,7 @@ export default function ProfilePage() {
     return (
         <div className="min-h-full bg-[#f6f7f9] pb-8" dir="rtl">
             <div className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header className="sticky top-0 z-50 flex h-[70px] items-center justify-between border-b border-[#dfe3ea] bg-[#eef0f3] px-5">
+                <header data-page-header className="sticky top-0 z-50 flex h-[70px] items-center justify-between border-b border-[#dfe3ea] bg-[#eef0f3] px-5">
                     <div className="flex items-center gap-3">
                         <Link href="/settings" className="flex h-9 w-9 items-center justify-center rounded-full text-[#242833] transition hover:bg-white" aria-label="تنظیمات">
                             <Settings className="h-5 w-5" strokeWidth={1.9} />
@@ -492,7 +453,7 @@ export default function ProfilePage() {
                         </h1>
 
                         {headline && (
-                            <p className="mt-1 text-[18px] font-medium leading-8 text-[#25272d]" {...getDirectionalTextProps(headline)}>
+                            <p className="mt-1 text-center text-[18px] font-medium leading-8 text-[#25272d]" {...getDirectionalTextProps(headline)}>
                                 {headline}
                             </p>
                         )}
@@ -685,16 +646,6 @@ export default function ProfilePage() {
                                     <span className="font-medium text-gray-800">خروج</span>
                                 </button>
 
-                                {/* 6. حذف حساب کاربری */}
-                                <button
-                                    onClick={() => { setIsSettingsOpen(false); handleDeleteAccount(); }}
-                                    className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-red-50"
-                                >
-                                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                                        <Trash2 className="w-5 h-5 text-red-600" />
-                                    </div>
-                                    <span className="font-medium text-red-600">حذف حساب کاربری</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -818,7 +769,7 @@ function ProfileLoadingState() {
 }
 
 function SavedCoursesTab() {
-    const [courses, setCourses] = useState<Course[]>([]);
+    const [courses, setCourses] = useState<SavedCollectionCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -830,7 +781,8 @@ function SavedCoursesTab() {
             setError(false);
 
             try {
-                const data = await fetchSavedCourses();
+                const [savedCourses, savedKeys] = await Promise.all([fetchSavedCourses(), fetchSavedCollectionKeys()]);
+                const data = mergeSavedCollections(savedCourses, savedKeys);
                 if (!cancelled) {
                     setCourses(data);
                 }
@@ -912,22 +864,19 @@ function SavedCoursesTab() {
         <div className="p-4 sm:p-5">
             <div className="grid grid-cols-3 gap-2.5">
                 {courses.map((course) => {
-                    const href = getCourseDetailHref(course);
-                    const lessonsCount = getLessonCount(course);
-                    const countText = lessonsCount > 0
-                        ? `${lessonsCount} درس`
-                        : getDisplayCount(course, ["lesson_count", "episodes_count", "tracks_count"], "بخش");
+                    const href = course.href;
+                    const countText = course.countText;
 
                     return (
                         <article
-                            key={course.id}
+                            key={course.key}
                             className="group relative overflow-hidden rounded-[16px] border border-[#cfd3da] bg-[#e1e4ea] p-1.5 shadow-[0_6px_14px_rgba(15,23,42,0.13)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]"
                         >
                             <Link href={href} className="block">
                                 <div className="relative aspect-square overflow-hidden rounded-[12px] bg-slate-200 shadow-sm">
-                                {course.cover_image_url ? (
+                                {course.cover ? (
                                     <Image
-                                        src={getMediaUrl(course.cover_image_url)}
+                                        src={course.cover.startsWith("/assets/") ? course.cover : getMediaUrl(course.cover)}
                                         alt={course.title}
                                         fill
                                         sizes="130px"

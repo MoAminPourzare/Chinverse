@@ -1,63 +1,63 @@
-import type { LucideIcon } from "lucide-react";
-import { BookOpen, Flame, Headphones, PencilLine, Play, Sparkles } from "lucide-react";
-
 export interface ExploreItem {
     title: string;
     id: string;
     href: string;
-    icon: LucideIcon;
-    color: string;
+    description: string;
+    imagePath: string;
+    tone: "sky" | "rose" | "violet" | "amber";
+    scene?: boolean;
+    imagePosition?: string;
 }
 
 export interface ExploreSection {
     title: string;
     subtitle: string;
     id: string;
-    tone: string;
     items: ExploreItem[];
 }
 
-const blue = "from-[#155aa6] to-[#0f4e92]";
-const sky = "from-[#4f9de8] to-[#155aa6]";
-const jade = "from-[#50bca4] to-[#15806f]";
-const gold = "from-[#ffb74d] to-[#d88713]";
-const slate = "from-[#64748b] to-[#334155]";
-const cyan = "from-[#38bdf8] to-[#0f7f88]";
+function createExploreItem(item: Omit<ExploreItem, "href" | "imagePath">): ExploreItem {
+    return {
+        ...item,
+        href: `/explore/${item.id}`,
+        imagePath: `/assets/chinverse/explore/${item.id}.webp`,
+    };
+}
 
 export const learningItems: ExploreItem[] = [
-    { title: "HSK", id: "hsk", href: "/explore/hsk", icon: BookOpen, color: blue },
-    { title: "تلفظ", id: "pronunciation", href: "/explore/pronunciation", icon: Play, color: sky },
-    { title: "کاراکتر", id: "characters", href: "/explore/characters", icon: PencilLine, color: jade },
-    { title: "گرامر", id: "grammar", href: "/explore/grammar", icon: Sparkles, color: gold },
-    { title: "اصطلاح", id: "idioms", href: "/explore/idioms", icon: Flame, color: slate },
-    { title: "چینی کاربردی", id: "practical", href: "/explore/practical", icon: Headphones, color: cyan },
-    { title: "یادگیری با ولاگ", id: "vlogs", href: "/explore/vlogs", icon: Sparkles, color: jade },
-    { title: "واژگان هم‌معنی", id: "synonyms", href: "/explore/synonyms", icon: BookOpen, color: sky },
-    { title: "زبان چینی کلاسیک", id: "classical", href: "/explore/classical", icon: PencilLine, color: slate },
+    createExploreItem({ title: "HSK", id: "hsk", description: "آمادگی آزمون", tone: "sky" }),
+    createExploreItem({ title: "تلفظ", id: "pronunciation", description: "شنیدن و صحیح گفتن", tone: "rose" }),
+    createExploreItem({ title: "کاراکتر", id: "characters", description: "نوشتن و خواندن", tone: "sky" }),
+    createExploreItem({ title: "گرامر", id: "grammar", description: "ساختار و جمله‌سازی", tone: "violet" }),
+    createExploreItem({ title: "اصطلاح", id: "idioms", description: "عبارت‌های رایج چینی", tone: "sky" }),
+    createExploreItem({ title: "چینی کاربردی", id: "practical", description: "چینی در زندگی روزمره", tone: "sky" }),
+    createExploreItem({ title: "یادگیری با ولاگ", id: "vlogs", description: "همراه با زندگی واقعی", tone: "sky" }),
+    createExploreItem({ title: "واژگان هم‌معنی", id: "synonyms", description: "انتخاب دقیق‌تر واژه‌ها", tone: "violet" }),
+    createExploreItem({ title: "زبان چینی کلاسیک", id: "classical", description: "آشنایی با زبان کهن چین", tone: "amber" }),
 ];
 
 export const entertainmentItems: ExploreItem[] = [
-    { title: "سریال", id: "series", href: "/explore/series", icon: Play, color: blue },
-    { title: "فیلم", id: "movies", href: "/explore/movies", icon: Play, color: sky },
-    { title: "کارتون و انیمیشن", id: "cartoons", href: "/explore/cartoons", icon: Sparkles, color: gold },
-    { title: "پادکست", id: "podcasts", href: "/explore/podcasts", icon: Headphones, color: jade },
-    { title: "موسیقی", id: "music", href: "/explore/music", icon: Flame, color: cyan },
-    { title: "گفتارهای موضوعی", id: "topic-talks", href: "/explore/topic-talks", icon: BookOpen, color: slate },
+    createExploreItem({ title: "موسیقی", id: "music", description: "یادگیری با ترانه‌های چینی", tone: "violet" }),
+    createExploreItem({ title: "پادکست", id: "podcasts", description: "گوش دادن به گفت‌وگوهای چینی", tone: "sky" }),
+    createExploreItem({ title: "گفتارهای موضوعی", id: "topic-talks", description: "گفت‌وگو دربارهٔ موضوع‌های متنوع", tone: "sky" }),
+    createExploreItem({ title: "فیلم", id: "movies", description: "فیلم‌های جذاب چینی", tone: "amber", scene: true, imagePosition: "center 58%" }),
+    createExploreItem({ title: "سریال", id: "series", description: "تماشای سریال‌های چینی", tone: "rose", scene: true, imagePosition: "center 60%" }),
+    createExploreItem({ title: "کارتون و انیمیشن", id: "cartoons", description: "دنیای انیمیشن چینی", tone: "sky", scene: true, imagePosition: "center 54%" }),
 ];
 
 export const artSkillItems: ExploreItem[] = [
-    { title: "آشپزی", id: "arts-cooking", href: "/explore/arts-cooking", icon: Flame, color: gold },
-    { title: "هنرهای رزمی", id: "martial-arts", href: "/explore/martial-arts", icon: Sparkles, color: blue },
-    { title: "تمرینات انرژی و سلامت", id: "energy-health", href: "/explore/energy-health", icon: Headphones, color: jade },
-    { title: "خطاطی", id: "calligraphy", href: "/explore/calligraphy", icon: PencilLine, color: slate },
-    { title: "فرهنگ چای", id: "tea-culture", href: "/explore/tea-culture", icon: BookOpen, color: cyan },
+    createExploreItem({ title: "آشپزی", id: "cooking", description: "طعم‌ها و هنر آشپزی چینی", tone: "amber" }),
+    createExploreItem({ title: "هنرهای رزمی", id: "martial-arts", description: "حرکت، تعادل و تمرکز", tone: "rose" }),
+    createExploreItem({ title: "تمرینات انرژی و سلامت", id: "energy-health", description: "تنفس، آرامش و هماهنگی بدن", tone: "sky" }),
+    createExploreItem({ title: "خطاطی", id: "calligraphy", description: "هنر نوشتن با قلم‌مو", tone: "amber" }),
+    createExploreItem({ title: "فرهنگ چای", id: "tea-culture", description: "آداب و دنیای چای چینی", tone: "sky" }),
 ];
 
 export const cultureThoughtItems: ExploreItem[] = [
-    { title: "متون کلاسیک آموزشی", id: "culture-texts", href: "/explore/culture-texts", icon: BookOpen, color: slate },
-    { title: "داستان‌های تاریخی", id: "historical-stories", href: "/explore/historical-stories", icon: Sparkles, color: gold },
-    { title: "شعر و ادبیات کلاسیک", id: "classical-poetry", href: "/explore/classical-poetry", icon: PencilLine, color: blue },
-    { title: "آیین‌ها و جشن‌ها", id: "festivals-customs", href: "/explore/festivals-customs", icon: Flame, color: jade },
+    createExploreItem({ title: "متون کلاسیک آموزشی", id: "culture-texts", description: "خواندن متون ماندگار چین", tone: "sky" }),
+    createExploreItem({ title: "داستان‌های کهن", id: "historical-stories", description: "سفر به روایت‌های قدیمی چین", tone: "amber" }),
+    createExploreItem({ title: "شعر و ادبیات کلاسیک", id: "classical-poetry", description: "شعرها و قصه‌های ماندگار", tone: "amber", scene: true }),
+    createExploreItem({ title: "آیین‌ها و جشن‌ها", id: "festivals-customs", description: "رنگ و شادی سنت‌های چینی", tone: "amber" }),
 ];
 
 export const exploreSections: ExploreSection[] = [
@@ -65,28 +65,24 @@ export const exploreSections: ExploreSection[] = [
         title: "یادگیری زبان چینی",
         subtitle: "مسیرهای اصلی برای درس، تمرین و ساخت عادت روزانه.",
         id: "learning",
-        tone: "border-[#d5e1ef] bg-[#f8fbff]",
         items: learningItems,
     },
     {
         title: "سرگرمی چینی",
         subtitle: "یادگیری با فیلم، سریال، صدا و محتوای دیدنی.",
         id: "entertainment",
-        tone: "border-[#f4dfb8] bg-[#fffaf0]",
         items: entertainmentItems,
     },
     {
         title: "هنر و مهارت‌های چینی",
         subtitle: "مهارت‌های فرهنگی و کاربردی برای تجربه عمیق‌تر.",
         id: "arts",
-        tone: "border-[#cceadf] bg-[#f5fffb]",
         items: artSkillItems,
     },
     {
         title: "فرهنگ و اندیشه چینی",
         subtitle: "متون، داستان‌ها و آیین‌های کلاسیک و فرهنگی.",
         id: "culture",
-        tone: "border-[#e1e6ee] bg-[#fbfcff]",
         items: cultureThoughtItems,
     },
 ];
