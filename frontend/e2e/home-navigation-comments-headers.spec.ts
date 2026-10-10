@@ -52,6 +52,7 @@ for (const [label, route, back] of [
 ] as const) {
     test(`${label}: back and browser back restore the learning tab and its position`, async ({ page }) => {
         await setup(page); await ready(page, "/");
+        await expect(page.getByText(post.data.caption, { exact: true })).toBeVisible();
         await page.getByRole("button", { name: "روند یادگیری", exact: true }).click();
         await expect(page).toHaveURL(/\?tab=daily$/);
         const link = page.getByRole("link", { name: label, exact: true });
@@ -128,8 +129,11 @@ test("a full collection and lesson journey returns to the original learning tab"
     await back.click();
     await expect(page).toHaveURL(url => url.pathname === "/cooking/meishi-zuojia-wang-gang");
     for (const target of ["/explore/cooking", "/explore", "/?tab=daily"]) {
-        await page.locator('[data-page-header] a[aria-label^="بازگشت"]').first().click();
-        await expect(page).toHaveURL(url => `${url.pathname}${url.search}`.startsWith(target));
+        const returnHref = new URL(page.url()).searchParams.get("returnTo");
+        const button = page.locator('[data-page-header] a[aria-label^="بازگشت"]').first();
+        await expect(button).toHaveAttribute("href", returnHref!);
+        await button.click();
+        await expect(page).toHaveURL(url => target === "/?tab=daily" ? url.pathname === "/" && url.searchParams.get("tab") === "daily" : url.pathname === target);
     }
     await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
