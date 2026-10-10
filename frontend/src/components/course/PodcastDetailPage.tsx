@@ -55,7 +55,7 @@ export default function PodcastDetailPage() {
                         </div>
                     </header>
                     <section className="mt-4 grid grid-cols-2 items-center gap-2" dir="ltr">
-                        <div className="min-w-0 text-center">
+                        <div data-course-heading className="min-w-0 text-center">
                             <h1 className="text-[14px] font-bold leading-6 text-[#343941] dark:text-white">
                                 {(podcast.titleLines || [podcast.title]).map((line) => <span key={line} className="block">{line}</span>)}
                                 <span className="block" lang="zh">{podcast.subtitle}</span>

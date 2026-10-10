@@ -116,7 +116,7 @@ input[type="search"]::placeholder {
 }
 
 /* Keep reading copy justified while respecting centered headings and their metadata. */
-:where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap):where(:not(.text-center, .text-center *)) {
+:where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap):where(:not(.text-center, [data-course-heading] *)) {
   text-align: justify;
   text-justify: auto;
 }

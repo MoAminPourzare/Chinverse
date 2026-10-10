@@ -80,7 +80,7 @@ export default function PlannedCourseDetailPage({
                 </header>
 
                 <section className="mt-3 grid grid-cols-[1fr_46%] items-center gap-3" dir="ltr">
-                    <div className="min-w-0 text-center" dir="ltr">
+                    <div data-course-heading className="min-w-0 text-center" dir="ltr">
                         <h1 className="text-[17px] font-black leading-7 text-[#343941] dark:text-white">
                             {detailTitleLines ? detailTitleLines.map((line, index) => (
                                 <span key={line} className={`block ${index > 0 && (line.length > 18 || (line.length > 11 && /\p{Script=Han}/u.test(line))) ? "text-[14px]" : ""}`}>

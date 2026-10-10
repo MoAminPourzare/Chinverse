@@ -65,7 +65,7 @@ export default function MusicArtistDetailPage() {
                     </header>
 
                     <section className="mt-4 grid grid-cols-2 items-center gap-4" dir="ltr">
-                        <div className="min-w-0 text-center" dir="ltr">
+                        <div data-course-heading className="min-w-0 text-center" dir="ltr">
                             <h1 className="font-cjk text-[20px] leading-8 text-[#343941] dark:text-white">{artist.title}</h1>
                             <p className="mt-1 text-[13px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{artist.pinyin}</p>
                             <p className="mt-3 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">سرگرمی و رسانه | ؟ دقیقه</p>

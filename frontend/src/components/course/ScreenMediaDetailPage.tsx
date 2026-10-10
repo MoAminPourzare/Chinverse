@@ -123,7 +123,7 @@ export default function ScreenMediaDetailPage({
                     </header>
 
                     <section className={`mt-4 grid items-center gap-4 ${showAnimationCards ? "grid-cols-2" : "grid-cols-[1fr_40%]"}`} dir="ltr">
-                        <div className="min-w-0 text-center">
+                        <div data-course-heading className="min-w-0 text-center">
                             <h1 className={`font-cjk font-bold leading-7 text-[#343941] dark:text-white ${showAnimationCards ? "text-[17px]" : "text-[19px]"}`}>{item.title}</h1>
                             <p className="mt-1 text-[12px] text-[#454b55] dark:text-slate-300">{item.pinyin}</p>
                             <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه | ؟ دقیقه</p>
@@ -170,7 +170,7 @@ export default function ScreenMediaDetailPage({
                         </header>
 
                         <section className={`mt-4 grid items-center gap-4 ${showAnimationCards ? "grid-cols-2" : "grid-cols-[1fr_40%]"}`} dir="ltr">
-                            <div className="min-w-0 text-center">
+                            <div data-course-heading className="min-w-0 text-center">
                                 <h1 className={`font-cjk font-bold leading-7 text-[#343941] dark:text-white ${showAnimationCards ? "text-[17px]" : "text-[19px]"}`}>{item.detailTitleLines ? item.detailTitleLines.map((line) => <span key={line} className="block">{line}</span>) : item.title}</h1>
                                 <p className="mt-1 text-[12px] text-[#454b55] dark:text-slate-300">{item.pinyin}</p>
                                 <p className="mt-4 text-[11px] text-[#454b55] dark:text-slate-300" dir="rtl">سرگرمی و رسانه | ؟ دقیقه</p>
@@ -250,7 +250,7 @@ export default function ScreenMediaDetailPage({
                 </header>
 
                 <section className="mt-3 grid grid-cols-[1fr_42%] items-center gap-4" dir="ltr">
-                    <div className="min-w-0 text-center" dir="ltr">
+                    <div data-course-heading className="min-w-0 text-center" dir="ltr">
                         <h1 className="text-[20px] font-black leading-8 text-[#343941] dark:text-white">{item.title}</h1>
                         <p className="mt-1 text-[12px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{item.pinyin}</p>
                         <p className="mt-3 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300" dir="rtl">

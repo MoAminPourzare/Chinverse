@@ -183,7 +183,7 @@ export default function CourseDetailPage({
                 <header data-page-header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2" dir="ltr">
                         <BackButton href={explorePath} className="justify-self-end" />
-                        <div className="min-w-0 flex-1 text-center" dir="rtl">
+                        <div data-course-heading className="min-w-0 flex-1 text-center" dir="rtl">
                             <p className="text-[11px] font-black text-[#155aa6]">{label}</p>
                             <h1 className="truncate text-sm font-black text-slate-900" {...courseTitleProps}>{course.title}</h1>
                         </div>

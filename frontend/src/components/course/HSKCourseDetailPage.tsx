@@ -64,7 +64,7 @@ export default function HSKCourseDetailPage() {
                 </header>
 
                 <section className="mt-3 grid grid-cols-[1fr_40%] items-center gap-5" dir="ltr">
-                    <div className="min-w-0 text-center" dir="rtl">
+                    <div data-course-heading className="min-w-0 text-center" dir="rtl">
                         <h1 className="text-[22px] font-black leading-8 text-[#343941] dark:text-white" dir="ltr">{course.title}</h1>
                         <p className="mt-1 text-[11px] font-medium leading-5 text-[#59616c] dark:text-slate-300">{course.tagline}</p>
                     </div>

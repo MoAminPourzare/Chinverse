@@ -50,7 +50,7 @@ export default function MartialArtsDetailPage() {
                         </div>
                     </header>
                     <section className="mt-4 grid grid-cols-2 items-center gap-2" dir="ltr">
-                        <div className="min-w-0 text-center">
+                        <div data-course-heading className="min-w-0 text-center">
                             <h1 className="text-[15px] font-bold leading-6 text-[#343941] dark:text-white" lang="zh">{course.cardTitle || course.title}</h1>
                             {course.cardSubtitle && <p className="mt-0.5 text-[14px] font-bold leading-5 text-[#343941] dark:text-white" lang="en">{course.cardSubtitle}</p>}
                             {course.subtitle && <p className="mt-0.5 text-[14px] font-bold leading-5 text-[#343941] dark:text-white" lang="zh">{course.subtitle}</p>}
