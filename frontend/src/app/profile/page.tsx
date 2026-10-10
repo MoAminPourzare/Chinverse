@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, Trash2, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
+import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { userService, User } from "@/services/user.service";
 import GalleryTab from "@/components/gallery/GalleryTab";
@@ -453,7 +453,7 @@ export default function ProfilePage() {
                         </h1>
 
                         {headline && (
-                            <p className="mt-1 text-[18px] font-medium leading-8 text-[#25272d]" {...getDirectionalTextProps(headline)}>
+                            <p className="mt-1 text-center text-[18px] font-medium leading-8 text-[#25272d]" {...getDirectionalTextProps(headline)}>
                                 {headline}
                             </p>
                         )}
@@ -646,19 +646,6 @@ export default function ProfilePage() {
                                     <span className="font-medium text-gray-800">خروج</span>
                                 </button>
 
-                                {/* 6. حذف حساب کاربری */}
-                                <button
-                                    onClick={() => {
-                                        setIsSettingsOpen(false);
-                                        router.push('/account/security#delete-account');
-                                    }}
-                                    className="flex w-full items-center gap-3 rounded-2xl p-4 transition hover:bg-red-50"
-                                >
-                                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                                        <Trash2 className="w-5 h-5 text-red-600" />
-                                    </div>
-                                    <span className="font-medium text-red-600">حذف حساب کاربری</span>
-                                </button>
                             </div>
                         </div>
                     </div>

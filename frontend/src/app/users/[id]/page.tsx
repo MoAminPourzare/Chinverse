@@ -480,7 +480,7 @@ export default function PublicProfilePage() {
                         {user.profile?.display_name || "کاربر"}
                     </h1>
 
-                    <p className="mb-2 text-sm font-medium text-white/70" {...getDirectionalTextProps(user.profile?.headline)}>
+                    <p className="mb-2 text-center text-sm font-medium text-white/70" {...getDirectionalTextProps(user.profile?.headline)}>
                         {user.profile?.headline || ""}
                     </p>
 

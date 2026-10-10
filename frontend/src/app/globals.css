@@ -115,8 +115,8 @@ input[type="search"]::placeholder {
   text-align: right;
 }
 
-/* A shared reading layout for Persian, Chinese and mixed-language body copy. */
-:where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap):where(:not(.text-center)) {
+/* Keep reading copy justified while respecting centered headings and their metadata. */
+:where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap):where(:not(.text-center, .text-center *)) {
   text-align: justify;
   text-justify: auto;
 }

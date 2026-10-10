@@ -8,14 +8,12 @@ import { Dialog } from "@headlessui/react";
 import { ChevronLeft } from "lucide-react";
 import { BackButton } from "@/components/ui/IconButton";
 import { IncompleteFeature, releaseConfig } from "@/config/release";
-import { cn } from "@/lib/cn";
 import { authService } from "@/services/auth.service";
 
 type SettingsItem = {
     title: string;
     href: string;
     icon: string;
-    danger?: boolean;
     action?: "logout";
     auth?: "required" | "guest";
     feature?: IncompleteFeature;
@@ -103,13 +101,6 @@ const settingsItems: SettingsItem[] = [
         icon: "/assets/chinverse/icons/profile.svg",
         auth: "required",
     },
-    {
-        title: "حذف حساب کاربری",
-        href: "/account/security#delete-account",
-        icon: "/assets/chinverse/icons/Delete.svg",
-        danger: true,
-        auth: "required",
-    },
 ];
 
 export default function SettingsPage() {
@@ -191,7 +182,7 @@ function SettingsRow({ item, onLogout }: { item: SettingsItem; onLogout: () => v
             <div className="flex h-9 w-9 shrink-0 items-center justify-center">
                 <Image src={item.icon} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
             </div>
-            <span className={cn("min-w-0 flex-1 text-[15px] font-black text-[#2f3238]", item.danger && "text-red-600")}>
+            <span className="min-w-0 flex-1 text-[15px] font-black text-[#2f3238]">
                 {item.title}
             </span>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[0px] text-[#155aa6] transition group-hover:-translate-x-0.5">
