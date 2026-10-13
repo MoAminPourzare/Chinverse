@@ -13,7 +13,7 @@ export default function ExploreItemLink({ item, layout = "row", preload = false,
     return (
         <Link
             href={item.href}
-            className={`${styles.card} ${styles[layout]} ${item.scene ? styles.scene : ""}`}
+            className={`${styles.card} ${styles[layout]} ${item.scene ? styles.scene : ""} ${item.fullArtwork ? styles.fullArtwork : ""}`}
             data-tone={item.tone}
             dir="ltr"
         >
@@ -29,7 +29,7 @@ export default function ExploreItemLink({ item, layout = "row", preload = false,
                     src={item.imagePath}
                     alt=""
                     fill
-                    sizes={layout === "tile" ? "(max-width: 430px) 29vw, 125px" : "(max-width: 430px) 49vw, 205px"}
+                    sizes={layout === "tile" ? item.fullArtwork ? "(max-width: 430px) 44vw, 185px" : "(max-width: 430px) 29vw, 125px" : "(max-width: 430px) 49vw, 205px"}
                     preload={preload}
                     loading={preload ? undefined : eager ? "eager" : "lazy"}
                     className={styles.image}
