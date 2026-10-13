@@ -201,7 +201,7 @@ export default function AddPhotoModal({ isOpen, onClose, onUploadSuccess, item }
                                             }}
                                             rows={5}
                                             dir="rtl"
-                                            className="w-full resize-none rounded-2xl border border-[#d6e1ee] bg-white px-4 py-3 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                            className="description-field w-full resize-none rounded-2xl border border-[#d6e1ee] bg-white px-4 py-3 text-right text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             placeholder="هر عکسی یه داستانی داره؛ داستانتو اینجا بنویس!"
                                         />
                                         {error && (

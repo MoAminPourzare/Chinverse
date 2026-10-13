@@ -65,7 +65,7 @@ export default function GalleryTab() {
                     <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
                         اولین عکست رو بارگذاری کن!
                     </h3>
-                    <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                    <p className="mt-3 max-w-[300px] text-center text-[12px] font-medium leading-7 text-[#888e99]">
                         با اضافه کردن تصاویر نمونه‌کار یا فعالیت‌هات، پروفایلت توی ویترین بیشتر به چشم میاد.
                     </p>
                     <button

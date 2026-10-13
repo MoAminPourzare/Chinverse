@@ -106,7 +106,7 @@ export default function SupportPage() {
                     </section>
 
                     <div className="mt-6">
-                        <textarea value={message} onChange={(event) => { setMessage(event.target.value); if (error) setError(''); }} placeholder="پیامت رو اینجا بنویس…" rows={4} maxLength={4000} aria-label="پیام پشتیبانی" dir="rtl" className="min-h-28 w-full resize-none rounded-2xl border border-[#155aa6] bg-white px-4 py-3 text-justify text-[13px] leading-7 text-slate-800 outline-none placeholder:text-right focus:ring-4 focus:ring-[#155aa6]/10" />
+                        <textarea value={message} onChange={(event) => { setMessage(event.target.value); if (error) setError(''); }} placeholder="پیامت رو اینجا بنویس…" rows={4} maxLength={4000} aria-label="پیام پشتیبانی" dir="rtl" className="description-field min-h-28 w-full resize-none rounded-2xl border border-[#155aa6] bg-white px-4 py-3 text-justify text-slate-800 outline-none placeholder:text-right focus:ring-4 focus:ring-[#155aa6]/10" />
                         {error && <p role="alert" className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">{error}</p>}
                         <button type="button" onClick={handleSubmit} disabled={!message.trim() || isSubmitting} className="mt-4 flex h-[52px] w-full items-center justify-center gap-2 rounded-[22px] bg-[#155aa6] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.28)] disabled:cursor-not-allowed disabled:opacity-55">
                             {isSubmitting && <Loader2 size={18} className="animate-spin" />}

@@ -206,7 +206,7 @@ function EmptyMessagesState() {
                 className="h-[168px] w-[168px] object-contain"
             />
             <h2 className="mt-7 text-lg font-black text-slate-900">هنوز پیامی دریافت نکردی!</h2>
-            <p className="mt-3 max-w-[310px] text-sm leading-7 text-slate-500">
+            <p className="mt-3 max-w-[310px] text-center text-sm leading-7 text-slate-500">
                 در این بخش می‌تونی با افراد شبکه‌ات در تماس باشی، با زبان‌آموزهای دیگه گفتگو کنی، از پشتیبانی کمک بگیری یا حتی پیام‌های شغلی از کارفرماها دریافت کنی.
             </p>
         </div>
@@ -220,7 +220,7 @@ function EmptySearchState() {
                 <Search size={34} />
             </div>
             <h2 className="mt-6 text-lg font-black text-slate-900">نتیجه‌ای پیدا نشد</h2>
-            <p className="mt-2 max-w-[260px] text-sm leading-7 text-slate-500">
+            <p className="mt-2 max-w-[260px] text-center text-sm leading-7 text-slate-500">
                 عبارت جستجو را کوتاه‌تر یا متفاوت‌تر وارد کن.
             </p>
         </div>

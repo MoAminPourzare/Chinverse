@@ -209,7 +209,7 @@ function EmptyNotifications({
             )}
             <h2 className="text-[17px] font-black text-[#25272d]">{title}</h2>
             {description && (
-                <p className="mt-4 max-w-[300px] text-[12px] font-medium leading-7 text-[#858b96]">
+                <p className="mt-4 max-w-[300px] text-center text-[12px] font-medium leading-7 text-[#858b96]">
                     {description}
                 </p>
             )}

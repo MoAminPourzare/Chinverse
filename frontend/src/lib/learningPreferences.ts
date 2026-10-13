@@ -124,7 +124,7 @@ export function parseGoalInput(value: string, minimum = 0): number | null {
 }
 
 export const highlightColorOptions: Array<{ value: HighlightColor; label: string; swatch: string }> = [
-    { value: "amber", label: "نارنجی", swatch: "#f59e0b" },
+    { value: "amber", label: "زرد", swatch: "#f59e0b" },
     { value: "rose", label: "قرمز ملایم", swatch: "#f43f5e" },
     { value: "sky", label: "آبی", swatch: "#0ea5e9" },
     { value: "emerald", label: "سبز", swatch: "#10b981" },

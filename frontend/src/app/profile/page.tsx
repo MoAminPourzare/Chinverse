@@ -211,7 +211,7 @@ export default function ProfilePage() {
                     {bio && (
                         <div className="mb-6">
                             <h3 className="font-bold text-gray-900 mb-3 text-lg">درباره من</h3>
-                            <p className="whitespace-pre-wrap text-justify text-sm leading-8 text-gray-600" {...getDirectionalTextProps(bio)}>
+                            <p className="whitespace-pre-wrap text-center text-sm leading-8 text-gray-600" {...getDirectionalTextProps(bio)}>
                                 {bio}
                             </p>
                         </div>
@@ -525,7 +525,7 @@ export default function ProfilePage() {
                         </div>
                     </nav>
 
-                    <section className="min-h-[370px] bg-[#f6f7f9]">
+                    <section data-centered-copy className="min-h-[370px] bg-[#f6f7f9]">
                         {renderTabContent()}
                     </section>
                 </main>
@@ -743,7 +743,7 @@ function ProfileEmptyState({
             <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
                 {title}
             </h3>
-            <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+            <p className="mt-3 max-w-[300px] text-center text-[12px] font-medium leading-7 text-[#888e99]">
                 {description}
             </p>
             <button
@@ -845,7 +845,7 @@ function SavedCoursesTab() {
                 </div>
 
                 <h3 className="text-[18px] font-black leading-8 text-[#25272d]">اولین مجموعه‌ات رو انتخاب کن!</h3>
-                <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                <p className="mt-3 max-w-[300px] text-center text-[12px] font-medium leading-7 text-[#888e99]">
                     به عالمه محتوای خفن منتظره. فقط کافیه یکیو انتخاب کنی و بذاری توی علاقه‌مندی‌هات.
                 </p>
 

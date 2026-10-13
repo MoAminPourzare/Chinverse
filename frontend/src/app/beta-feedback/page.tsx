@@ -198,11 +198,11 @@ export default function BetaFeedbackPage() {
                     </fieldset>
                     <label className="block text-sm font-black text-slate-800 dark:text-slate-100">
                         پیام
-                        <textarea value={message} onChange={(event) => { setMessage(event.target.value); if (error) setError(''); }} rows={5} maxLength={4000} required placeholder="چه چیزی خوب بود یا چه چیزی مشکل داشت؟" className="mt-2 min-h-32 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 outline-none focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+                        <textarea value={message} onChange={(event) => { setMessage(event.target.value); if (error) setError(''); }} rows={5} maxLength={4000} required placeholder="چه چیزی خوب بود یا چه چیزی مشکل داشت؟" className="description-field mt-2 min-h-32 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
                     </label>
                     <label className="block text-sm font-black text-slate-800 dark:text-slate-100">
                         مراحل تکرار (برای گزارش خطا، اختیاری)
-                        <textarea value={steps} onChange={(event) => setSteps(event.target.value)} rows={3} maxLength={2000} placeholder="۱) … ۲) …" className="mt-2 min-h-20 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 outline-none focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+                        <textarea value={steps} onChange={(event) => setSteps(event.target.value)} rows={3} maxLength={2000} placeholder="۱) … ۲) …" className="description-field mt-2 min-h-20 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
                     </label>
                     {error && <p role="alert" className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-600">{error}</p>}
                     <button type="submit" disabled={isSubmitting || !message.trim()} className="h-[52px] w-full rounded-2xl bg-[#155aa6] px-6 text-base font-black text-white shadow-[0_8px_16px_rgba(21,90,166,0.26)] disabled:cursor-not-allowed disabled:opacity-55">{submitLabel}</button>

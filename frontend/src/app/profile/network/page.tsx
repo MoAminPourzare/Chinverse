@@ -56,19 +56,19 @@ export default function NetworkPage() {
 
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
-            <PageHeader title="شبکه من" subtitle="دنبال‌کننده‌ها و افرادی که دنبال می‌کنی" backHref="/profile" />
+            <PageHeader title="شبکه من" subtitle="دنبال‌کنندگان و افرادی که دنبال می‌کنی" backHref="/profile" />
 
             <main className="mx-auto mt-5 flex w-full max-w-3xl flex-col gap-4">
                 <Surface className="grid grid-cols-2 gap-2 p-2">
                     <TabButton
                         active={activeTab === "followers"}
                         onClick={() => setActiveTab("followers")}
-                        label={`دنبال‌کننده‌ها (${followers.length})`}
+                        label={`دنبال‌کنندگان (${followers.length})`}
                     />
                     <TabButton
                         active={activeTab === "following"}
                         onClick={() => setActiveTab("following")}
-                        label={`دنبال‌شونده‌ها (${following.length})`}
+                        label={`دنبال می‌کنم (${following.length})`}
                     />
                 </Surface>
 
@@ -83,8 +83,8 @@ export default function NetworkPage() {
                 ) : currentList.length === 0 ? (
                     <EmptyState
                         icon={<UsersRound size={30} />}
-                        title={activeTab === "followers" ? "هنوز دنبال‌کننده‌ای نداری" : "هنوز کسی را دنبال نمی‌کنی"}
-                        description={activeTab === "followers" ? "وقتی کاربران پروفایلت را دنبال کنند، اینجا نمایش داده می‌شوند." : "از ویترین می‌تونی کاربران و متخصص‌های فعال را پیدا کنی."}
+                        title={activeTab === "followers" ? "هنوز کسی دنبالت نمی‌کنه!" : "هنوز کسی رو دنبال نمی‌کنی!"}
+                        description={activeTab === "followers" ? "وقتی کسی پروفایلت رو دنبال کنه، می‌تونی اینجا ببینیش" : "از ویترین می‌تونی کاربران و متخصص‌های فعال رو پیدا کنی."}
                         action={activeTab === "following" ? <PrimaryButton href="/showcase">رفتن به ویترین</PrimaryButton> : undefined}
                     />
                 ) : (

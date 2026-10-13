@@ -146,12 +146,6 @@ export default function ShowcasePage() {
     const filteredServices = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         return services.filter((service) => {
-            const provider = service.provider;
-            if (!provider && activeFilterCount > 0) return false;
-            if (provider && (!matchesAnyJobTitle(provider, talentFilters.jobTitles)
-                || !matchesAnyLocation(provider, talentFilters.locations)
-                || !matchesValue(provider.education?.degree, talentFilters.degrees)
-                || !matchesValue(provider.education?.university, talentFilters.universities))) return false;
             return !query || [
                 service.title,
                 service.description,
@@ -161,7 +155,7 @@ export default function ShowcasePage() {
                 .filter(Boolean)
                 .some((value) => String(value).toLowerCase().includes(query));
         });
-    }, [searchQuery, services, talentFilters, activeFilterCount]);
+    }, [searchQuery, services]);
 
     const searchPlaceholder = activeTab === "talents" ? "جستجو بین استعدادها" : "جستجو بین خدمات";
 
@@ -218,7 +212,7 @@ export default function ShowcasePage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <div className={cn("grid gap-2", activeTab === "talents" ? "grid-cols-[1fr_auto]" : "grid-cols-1")}>
                         <label className="flex h-12 min-w-0 items-center gap-2 rounded-[18px] border border-white/70 bg-[#e2e5eb] px-4 text-slate-700 transition-all duration-300 focus-within:border-[#155aa6]/25 focus-within:bg-white focus-within:text-[#155aa6] focus-within:shadow-[0_10px_22px_rgba(21,90,166,0.10)] focus-within:ring-4 focus-within:ring-[#155aa6]/10">
                             <Search size={18} className="shrink-0" />
                             <input
@@ -241,7 +235,7 @@ export default function ShowcasePage() {
                             )}
                         </label>
 
-                        {(
+                        {activeTab === "talents" && (
                             <button
                                 type="button"
                                 onClick={() => {
@@ -299,7 +293,7 @@ export default function ShowcasePage() {
                 </section>
             </main>
 
-            {isFilterOpen && (
+            {activeTab === "talents" && isFilterOpen && (
                 <TalentFilterPanel
                     activeFilterKey={activeFilterKey}
                     filters={talentFilters}

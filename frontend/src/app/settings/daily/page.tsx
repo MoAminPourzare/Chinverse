@@ -44,10 +44,10 @@ export default function DailyGoalSettingsPage() {
                             />
                         </div>
                         <div className="min-w-0 flex-1 text-center">
-                            <p dir="ltr" lang="zh" className="font-cjk text-[18px] font-black leading-8 text-slate-950">
+                            <p dir="ltr" lang="zh" className="text-center font-cjk text-[18px] font-black leading-8 text-slate-950">
                                 滴水穿石
                             </p>
-                            <p dir="ltr" lang="zh-Latn" className="mt-1 text-xs font-semibold text-slate-500">
+                            <p dir="ltr" lang="zh-Latn" className="mt-1 text-center text-xs font-semibold text-slate-500">
                                 dī shuǐ chuān shí
                             </p>
                             <p className="mt-4 text-sm font-medium leading-8 text-slate-700">

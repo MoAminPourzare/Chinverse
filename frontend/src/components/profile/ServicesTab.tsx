@@ -211,7 +211,7 @@ export default function ServicesTab({ userId, readOnly = false }: ServicesTabPro
                         {isOwner ? "اولین خدمتت رو ثبت کن!" : "خدمتی ثبت نشده است"}
                     </h3>
                     {isOwner ? (
-                        <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                        <p className="mt-3 max-w-[300px] text-center text-[12px] font-medium leading-7 text-[#888e99]">
                             اینجا میتونی دوره‌های آموزشی، ترجمه رسمی، مشاوره بازرگانی یا هر خدمت مرتبط با زبان چینی و معرفی کسب‌وکارت رو ثبت کنی.
                         </p>
                     ) : null}
@@ -475,10 +475,10 @@ function ServiceModal({
                                             <textarea
                                                 value={description}
                                                 onChange={(event) => onDescriptionChange(event.target.value)}
-                                                placeholder="توضیح بده این خدمت چیست، برای چه کسانی مناسب است و کاربر با درخواست مشاوره چه چیزی دریافت می‌کند."
+                                                placeholder="اینجا دقیق‌تر بگو چه خدماتی ارائه می‌دی، این خدمات برای چه کسایی مناسبه، چه مزیت‌هایی داره و چرا مشتری‌ها باید خدمات تو رو انتخاب کنن."
                                                 dir="auto"
                                                 rows={8}
-                                                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
+                                                className="description-field w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
                                             />
                                         </div>
 

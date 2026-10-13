@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Check, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import VocabularyCollocations from "@/components/lms/VocabularyCollocations";
 import { cn } from "@/lib/cn";
 import { LEITNER_STAGES } from "@/lib/leitnerStages";
 import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
@@ -398,23 +399,15 @@ export default function LeitnerReviewPage() {
                                 )}
 
                                 {activeBackTab === "composition" && (
-                                    collocations.length > 0 ? (
-                                        <CollocationList
-                                            items={collocations}
-                                            keyword={currentCard.word.chinese}
-                                            style={chineseTextStyle}
-                                            highlight={highlightKeyword}
-                                        />
-                                    ) : (
-                                        <TextLines
-                                            value={currentCard.word.composition}
-                                            empty="ترکیب واژگانی موجود نیست"
-                                            chinese
-                                            keyword={currentCard.word.chinese}
-                                            style={chineseTextStyle}
-                                            highlight={highlightKeyword}
-                                        />
-                                    )
+                                    <VocabularyCollocations
+                                        items={collocations}
+                                        definitions={persianDefinitions}
+                                        composition={currentCard.word.composition}
+                                        keyword={currentCard.word.chinese}
+                                        highlight={highlightKeyword}
+                                        chineseStyle={chineseTextStyle}
+                                        persianStyle={persianTextStyle}
+                                    />
                                 )}
 
                                 {activeBackTab === "persian" && (
@@ -513,7 +506,7 @@ function TextLines({
                 <p
                     key={`${line}-${i}`}
                     className={cn("rounded-[14px] bg-slate-50 p-3 text-slate-800", chinese && "font-cjk")}
-                    style={style}
+                    style={{ ...style, textAlign: chinese ? "left" : "right" }}
                     dir={chinese ? "ltr" : "rtl"}
                     lang={chinese ? "zh-CN" : "fa"}
                 >
@@ -537,13 +530,13 @@ function DefinitionList({
         <div className="space-y-3">
             {items.map((item) => (
                 <div key={item.id} className="rounded-[14px] bg-slate-50 p-3">
-                    <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-bold text-slate-400">
-                        <span>{item.part_of_speech}</span>
-                        <span>{toPersianDigits(item.sense_order || 1)}</span>
+                    <div className="mb-1 flex items-center justify-start gap-2 text-[11px] font-bold text-slate-400" dir={chinese ? "ltr" : "rtl"}>
+                        <span>{toPersianDigits(item.sense_order || 1)}.</span>
+                        <span dir="auto">{item.part_of_speech}</span>
                     </div>
                     <p
                         className={cn("text-slate-800", chinese && "font-cjk")}
-                        style={style}
+                        style={{ ...style, textAlign: chinese ? "left" : "right" }}
                         dir={chinese ? "ltr" : "rtl"}
                         lang={chinese ? "zh-CN" : "fa"}
                     >
@@ -552,40 +545,6 @@ function DefinitionList({
                     {item.notes && (
                         <p className="mt-2 text-xs leading-6 text-slate-500" dir={chinese ? "ltr" : "rtl"}>
                             {item.notes}
-                        </p>
-                    )}
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function CollocationList({
-    items,
-    keyword,
-    style,
-    highlight,
-}: {
-    items: Collocation[];
-    keyword: string;
-    style: CSSProperties;
-    highlight: (text: string, keyword: string) => ReactNode;
-}) {
-    return (
-        <div className="space-y-3">
-            {items.map((item) => (
-                <div key={item.id} className="rounded-[14px] bg-slate-50 p-3">
-                    <p className="font-cjk text-slate-800" style={style} dir="ltr" lang="zh-CN">
-                        {toPersianDigits(item.sense_order || 1)}. {highlight(item.phrase_zh, keyword)}
-                    </p>
-                    {item.phrase_pinyin && (
-                        <p className="font-latin mt-1 text-xs font-semibold leading-6 text-slate-400" dir="ltr" lang="en">
-                            {item.phrase_pinyin}
-                        </p>
-                    )}
-                    {item.translation_target && (
-                        <p className="mt-2 text-sm leading-7 text-slate-500" dir="rtl" lang="fa">
-                            {item.translation_target}
                         </p>
                     )}
                 </div>

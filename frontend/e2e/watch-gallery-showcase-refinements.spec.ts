@@ -240,7 +240,7 @@ test("gallery owners can edit captions, delete comments and delete images only a
     expect(state.galleryDeletes).toBe(1);
 });
 
-test("talent and service filters use the supplied artwork and account country/province choices", async ({ page }, info) => {
+test("talent filters keep country/province choices while services have no filter", async ({ page }, info) => {
     await setup(page);
     await ready(page, "/showcase");
     await page.getByRole("button", { name: "فیلترها", exact: true }).click();
@@ -259,19 +259,21 @@ test("talent and service filters use the supplied artwork and account country/pr
     await page.getByRole("button", { name: "بستن", exact: true }).click();
     await expect(page.getByRole("heading", { name: "متخصص تهران", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "متخصص فارس", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "ویترین خدمات", exact: true }).click();
     await page.getByRole("button", { name: "فیلترها", exact: true }).click();
-    await page.getByRole("button", { name: "لوکیشن", exact: true }).click();
+    await page.getByRole("button", { name: /^لوکیشن/ }).click();
     await page.getByRole("searchbox", { name: "جست‌وجوی کشور/منطقه", exact: true }).fill("چین");
     await page.getByRole("button", { name: "چین", exact: true }).click();
     await expect(page.getByRole("heading", { name: "استان‌های چین", exact: true })).toBeVisible();
     await page.getByRole("searchbox", { name: "جست‌وجوی استان", exact: true }).fill("پکن");
     await expect(page.getByRole("button", { name: /پکن/, exact: false })).toBeVisible();
     await page.getByRole("button", { name: "بستن", exact: true }).click();
+    await page.getByRole("button", { name: "ویترین خدمات", exact: true }).click();
+    await expect(page.getByRole("button", { name: "فیلترها", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "مشاوره چین", exact: true })).toBeVisible();
+    const search = page.getByRole("searchbox");
+    await search.fill("پیدا نمی‌شود");
     await expect(page.getByRole("heading", { name: "مشاوره چین", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "فیلترها", exact: true }).click();
-    await page.getByRole("button", { name: "پاک کردن", exact: true }).click();
-    await page.getByRole("button", { name: "بستن", exact: true }).click();
+    await search.fill("مشاوره");
     await expect(page.getByRole("heading", { name: "مشاوره چین", exact: true })).toBeVisible();
 });
 
@@ -281,6 +283,7 @@ test("consultation chat uses the supplied copy and a right-aligned composer", as
     await expect(page.getByRole("heading", { name: "هنوز مکالمه‌ای شروع نشده", exact: true })).toBeVisible();
     await expect(page.getByText("برای شروع گفت‌وگو، اولین پیام رو بفرست.", { exact: true })).toBeVisible();
     const composer = page.getByRole("textbox", { name: "پیام", exact: true });
+    await expect(composer).toHaveAttribute("placeholder", "اینجا پیامت رو بنویس...");
     await expect(composer).toHaveAttribute("dir", "rtl");
     await expect(composer).toHaveCSS("text-align", "right");
 });

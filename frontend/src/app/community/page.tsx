@@ -261,7 +261,7 @@ function QuestionsSection({
                     placeholder="سوالت رو اینجا بنویس…"
                     disabled={isSubmitting}
                     maxLength={8000}
-                    className={cn("min-h-[56px] min-w-0 flex-1 resize-none rounded-[10px] border bg-white px-4 py-3 text-right text-sm leading-7 text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 disabled:opacity-70", draftError ? "border-rose-500" : "border-[#d6e1ee]")}
+                    className={cn("description-field min-h-[56px] min-w-0 flex-1 resize-none rounded-[10px] border bg-white px-4 py-3 text-right text-slate-900 outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10 disabled:opacity-70", draftError ? "border-rose-500" : "border-[#d6e1ee]")}
                 />
                 <button
                     type="button"
@@ -468,7 +468,7 @@ function QuestionCard({
                                 onChange={(event) => onEditChange(event.target.value)}
                                 rows={4}
                                 dir={editText.trim() ? "auto" : "rtl"}
-                                className="min-h-[108px] w-full resize-none rounded-2xl bg-slate-50 px-3 py-3 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
+                                className="description-field min-h-[108px] w-full resize-none rounded-2xl bg-slate-50 px-3 py-3 text-right text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400 focus:ring-4 focus:ring-[#155aa6]/10"
                                 placeholder="متن سوال را ویرایش کن"
                             />
                             {editError && <p className="mt-2 text-xs font-bold leading-5 text-rose-600">{editError}</p>}
@@ -560,7 +560,7 @@ function ReplyComposer({
                     rows={2}
                     disabled={disabled}
                     dir={value.trim() ? "auto" : "rtl"}
-                    className="min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-right text-sm leading-7 text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
+                    className="description-field min-h-[48px] flex-1 resize-none bg-transparent px-2 py-2 text-right text-slate-800 outline-none placeholder:text-right placeholder:text-slate-400"
                 />
                 <button
                     type="button"
