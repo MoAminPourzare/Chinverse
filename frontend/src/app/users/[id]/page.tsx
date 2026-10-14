@@ -17,6 +17,7 @@ import {
     Languages,
 } from "lucide-react";
 import { userService, PublicUser, GalleryItemPublic } from "@/services/user.service";
+import { getProfileJobTitles } from "@/lib/profileJobTitles";
 import ServicesTab from "@/components/profile/ServicesTab";
 import ProfileStatsLine from "@/components/profile/ProfileStatsLine";
 import PostViewerModal from "@/components/engagement/PostViewerModal";
@@ -480,8 +481,8 @@ export default function PublicProfilePage() {
                         {user.profile?.display_name || "کاربر"}
                     </h1>
 
-                    <p className="mb-2 text-center text-sm font-medium text-white/70" {...getDirectionalTextProps(user.profile?.headline)}>
-                        {user.profile?.headline || ""}
+                    <p className="mb-2 text-center text-sm font-medium text-white/70" {...getDirectionalTextProps(getProfileJobTitles(user.profile).join("، "))}>
+                        {getProfileJobTitles(user.profile).join("، ")}
                     </p>
 
                     <ProfileStatsLine

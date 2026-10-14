@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import Image from "next/image";
-import { Check, Loader2, X } from "lucide-react";
+import Image from "@/components/ui/PublicMediaImage";
+import { Check, Loader2, Trash2, X } from "lucide-react";
+import DeleteWordDialog from "@/components/leitner/DeleteWordDialog";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import VocabularyCollocations from "@/components/lms/VocabularyCollocations";
@@ -106,6 +107,9 @@ export default function LeitnerReviewPage() {
     const [loadError, setLoadError] = useState<string | null>(null);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
     const [sessionComplete, setSessionComplete] = useState(false);
     const [activeBackTab, setActiveBackTab] = useState<BackTabType>("chinese");
     const currentCard = cards[currentIndex];
@@ -135,7 +139,7 @@ export default function LeitnerReviewPage() {
     }, [fetchReviewCards]);
 
     const handleReview = async (remembered: boolean) => {
-        if (isSubmitting) return;
+        if (isSubmitting || deleting || confirmDelete) return;
         const currentCard = cards[currentIndex];
         if (!currentCard) return;
         setLoadError(null);
@@ -159,6 +163,27 @@ export default function LeitnerReviewPage() {
             setLoadError("نتیجه مرور ذخیره نشد. دوباره تلاش کن.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const deleteCurrentCard = async () => {
+        if (!currentCard || deleting || isSubmitting) return;
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+            await api.delete(`/leitner/cards/${currentCard.id}`);
+            pronunciation.stop();
+            const remainingCards = cards.filter((card) => card.id !== currentCard.id);
+            setCards(remainingCards);
+            setIsFlipped(false);
+            setActiveBackTab("chinese");
+            setConfirmDelete(false);
+            setLoadError(null);
+            if (currentIndex >= remainingCards.length) setSessionComplete(true);
+        } catch {
+            setDeleteError("لغت حذف نشد. دوباره تلاش کن.");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -208,19 +233,19 @@ export default function LeitnerReviewPage() {
     if (sessionComplete) {
         return (
             <ReviewState returnTo={returnTo}>
-                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#eef6ff]">
+                <div className="mb-6 flex h-36 w-36 items-center justify-center">
                     <Image
-                        src="/assets/chinverse/icons/Laitner.svg"
+                        src="/assets/chinverse/icons/Celebrate.svg"
                         alt=""
-                        width={54}
-                        height={54}
-                        className="h-14 w-14 object-contain"
+                        width={144}
+                        height={144}
+                        className="h-36 w-36 object-contain"
                         unoptimized
                     />
                 </div>
-                <h2 className="mb-2 text-2xl font-black text-slate-950">آفرین! مرور امروز تمام شد</h2>
-                <p className="mb-8 max-w-xs text-sm leading-7 text-slate-500">
-                    برای امروز کارتی برای مرور نداری. وقتی زمان مرور بعدی برسد، کارت‌ها دوباره اینجا می‌آیند.
+                <h2 className="mb-2 text-xl font-black leading-9 text-slate-950">آفرین! مرور امروزت رو تموم کردی</h2>
+                <p className="mb-8 max-w-xs text-center! text-sm leading-7 text-slate-500">
+                    فعلاً کارت برای امروز تمومه! هر وقت زمان مرور بعدی برسه، کارت‌هات دوباره اینجا منتظرت هستن.
                 </p>
                 <button
                     onClick={() => router.push(returnTo)}
@@ -266,6 +291,11 @@ export default function LeitnerReviewPage() {
                 </section>
 
                 <section aria-label={isFlipped ? "پشت کارت" : "روی کارت"} className={cn("mt-4 overflow-hidden rounded-[18px] border-2 bg-white shadow-[0_12px_26px_rgba(15,23,42,0.10)]", stage.border)}>
+                    <div className="flex justify-end px-3 pt-3">
+                        <button type="button" aria-label={`حذف ${currentCard.word.chinese} از لایتنر`} disabled={isSubmitting || deleting} onClick={() => { setDeleteError(null); setConfirmDelete(true); }} className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:opacity-50">
+                            <Trash2 aria-hidden size={20} />
+                        </button>
+                    </div>
                     {!isFlipped ? (
                         <div className="flex min-h-[340px] flex-col items-center justify-center px-6 py-8 text-center">
                             <span className={cn("rounded-full px-3 py-1 text-[11px] font-black", boxStyle.soft)}>
@@ -445,7 +475,7 @@ export default function LeitnerReviewPage() {
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => handleReview(false)}
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || deleting}
                                         className={cn(styles.decision, "flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl bg-red-700 px-2 py-3 text-white transition active:scale-[0.98] disabled:opacity-50")}
                                     >
                                         <span className="flex items-center gap-1"><X size={16} aria-hidden="true" />یادم نیست</span>
@@ -453,7 +483,7 @@ export default function LeitnerReviewPage() {
                                     </button>
                                     <button
                                         onClick={() => handleReview(true)}
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || deleting}
                                         className={cn(styles.decision, "flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-700 px-2 py-3 text-white transition active:scale-[0.98] disabled:opacity-50")}
                                     >
                                         <span className="flex items-center gap-1"><Check size={16} aria-hidden="true" />یادم هست</span>
@@ -466,6 +496,7 @@ export default function LeitnerReviewPage() {
                 </section>
 
             </main>
+            <DeleteWordDialog word={confirmDelete ? currentCard.word.chinese : null} pending={deleting} error={deleteError} onConfirm={() => void deleteCurrentCard()} onClose={() => setConfirmDelete(false)} />
         </div>
     );
 }

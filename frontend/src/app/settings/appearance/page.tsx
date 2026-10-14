@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Dialog } from "@headlessui/react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useRouter } from "next/navigation";
 import { RotateCcw, X } from "lucide-react";
 import Surface from "@/components/ui/Surface";

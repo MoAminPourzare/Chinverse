@@ -18,6 +18,14 @@ def test_profile_has_all_46_requested_titles_and_rejects_unknown_titles():
         UserProfileUpdate(headline="عنوان نامعتبر")
 
 
+def test_multiple_job_titles_normalize_deduplicate_and_reject_unknown_choices():
+    profile = UserProfileUpdate(job_titles=[" استاد دانشگاه ", "صراف", "استاد دانشگاه", "کارآفرین حوزه چین"])
+    assert profile.job_titles == ["استاد دانشگاه", "صراف", "کارآفرین حوزه چین"]
+    assert UserProfileUpdate(job_titles=[]).job_titles == []
+    with pytest.raises(ValidationError, match="Invalid profile job title"):
+        UserProfileUpdate(job_titles=["صراف", "عنوان نامعتبر"])
+
+
 def test_signup_normalizes_email_phone_name_and_referral_code():
     user = UserCreate(
         email="  USER@Example.COM ",

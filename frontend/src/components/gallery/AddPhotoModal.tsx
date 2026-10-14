@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState, type ChangeEvent } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { Upload, X } from "lucide-react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { galleryService, type GalleryItem } from "@/services/gallery.service";
 import { getMediaUrl } from "@/lib/media";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";

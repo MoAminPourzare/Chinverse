@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Settings, BookmarkCheck, BookOpen, Compass, MessageCircle, User as UserIcon, PenLine, Globe, FileText, Briefcase, GraduationCap, Wrench, Languages, LogIn, UserPlus, LogOut, X, Info, ImageIcon, Camera, Loader2, SlidersHorizontal, Award, type LucideIcon } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { userService, User } from "@/services/user.service";
+import { getProfileJobTitles } from "@/lib/profileJobTitles";
 import GalleryTab from "@/components/gallery/GalleryTab";
 import ServicesTab from "@/components/profile/ServicesTab";
 import ProfileStatsLine from "@/components/profile/ProfileStatsLine";
@@ -71,7 +72,7 @@ export default function ProfilePage() {
     const [avatarError, setAvatarError] = useState("");
     const [followersCount, setFollowersCount] = useState<number>(0);
     const displayName = user?.profile?.display_name?.trim() || user?.email?.split("@")[0] || "کاربر";
-    const headline = user?.profile?.headline?.trim();
+    const headline = getProfileJobTitles(user?.profile).join("، ");
     const locationParts = [user?.profile?.city?.trim(), user?.profile?.country?.trim()].filter(Boolean);
 
     const openResumeEditor = (section?: string) => {

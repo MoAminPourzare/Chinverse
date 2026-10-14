@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { Dialog, DialogDescription, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Check, Minus, Plus, X } from "lucide-react";
 import { dailyGoalWordOptions, parseGoalInput } from "@/lib/learningPreferences";

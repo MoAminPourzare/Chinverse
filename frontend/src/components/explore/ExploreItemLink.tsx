@@ -1,5 +1,5 @@
 import Link from "@/components/ui/ReturnAwareLink";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { ChevronLeft } from "lucide-react";
 import type { ExploreItem } from "./exploreData";
 import styles from "./ExploreGallery.module.css";

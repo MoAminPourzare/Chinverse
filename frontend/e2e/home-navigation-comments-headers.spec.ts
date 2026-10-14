@@ -113,6 +113,22 @@ test("comments scroll independently, keep the feed in place and retain a fixed c
     expect((await article.boundingBox())!.height).toBe(bounds.height);
 });
 
+test("service likes occupy the same right side as post likes", async ({ page }) => {
+    await setup(page);
+    await page.route("**/api/backend/feed*", route => route.fulfill({ json: [{
+        id: "service_90", type: "service", created_at: stamp, likes_count: 0,
+        provider: { id: 9, display_name: "عرفان" },
+        data: { id: 90, title: "خدمت آزمایشی", description: "توضیحات خدمت" },
+    }] }));
+    await ready(page, "/");
+    const card = page.getByRole("article", { name: "خدمت: خدمت آزمایشی", exact: true });
+    const like = card.getByRole("button", { name: "لایک کردن", exact: true });
+    const details = card.getByRole("link", { name: "مشاهدهٔ خدمت", exact: true });
+    await expect(like).toBeVisible();
+    const likeBox = (await like.boundingBox())!, detailsBox = (await details.boundingBox())!;
+    expect(likeBox.x).toBeGreaterThan(detailsBox.x + detailsBox.width);
+});
+
 test("a full collection and lesson journey returns to the original learning tab", async ({ page }) => {
     await setup(page); await ready(page, "/?tab=daily");
     await page.getByRole("link", { name: "دیدن ویدیو", exact: true }).click();
@@ -144,7 +160,7 @@ test("empty and failed review sessions keep a back path to learning progress", a
         await page.route("**/api/backend/leitner/review**", route => route.fulfill({ status, json: status === 200 ? { cards: [] } : { detail: "unavailable" } }));
         await ready(page, "/?tab=daily");
         await page.getByRole("link", { name: "مرور لغات", exact: true }).click();
-        if (status === 200) await expect(page.getByRole("heading", { name: "آفرین! مرور امروز تمام شد" })).toBeVisible();
+        if (status === 200) await expect(page.getByRole("heading", { name: "آفرین! مرور امروزت رو تموم کردی" })).toBeVisible();
         else await expect(page.getByRole("button", { name: "تلاش دوباره", exact: true })).toBeVisible();
         await page.getByRole("link", { name: "بازگشت", exact: true }).click();
         await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "@/components/ui/ReturnAwareLink";
 import { BackButton } from "@/components/ui/IconButton";
 import { PODCAST_CATALOG, getPodcastEpisodeCount } from "@/lib/podcastCatalog";

@@ -93,6 +93,37 @@ test("dashboard centers characters, hides pinyin and confirms deletion with a le
     await expect(page.getByRole("button", { name: "حذف 朋友 از لایتنر", exact: true })).toBeVisible();
 });
 
+test("review deletion cancels safely, retries failures on the back and advances without reviewing deleted cards", async ({ page }, info) => {
+    const state = await setup(page, false, 2);
+    await ready(page, "/leitner/review");
+    const trash = page.getByRole("button", { name: "حذف 经理 از لایتنر", exact: true });
+    await trash.click();
+    const dialog = page.getByRole("dialog", { name: "حذف لغت از لایتنر", exact: true });
+    await dialog.getByRole("button", { name: "نه", exact: true }).click();
+    expect(state.deletions).toEqual([]);
+    await page.getByRole("button", { name: "دیدن پشت کارت", exact: true }).click();
+    state.failDelete = true;
+    await trash.click();
+    await dialog.getByRole("button", { name: "آره", exact: true }).click();
+    await expect(dialog.getByRole("alert")).toContainText("لغت حذف نشد");
+    await expect(page.locator('[role="tab"][aria-selected="true"]')).toContainText("معنی چینی");
+    state.failDelete = false;
+    await dialog.getByRole("button", { name: "آره", exact: true }).click();
+    await expect(page.getByRole("button", { name: "حذف 朋友 از لایتنر", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "دیدن پشت کارت", exact: true })).toBeVisible();
+    expect(state.deletions).toEqual([11]);
+    expect(state.reviews).toEqual([]);
+    await page.getByRole("button", { name: "حذف 朋友 از لایتنر", exact: true }).click();
+    await dialog.getByRole("button", { name: "آره", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "آفرین! مرور امروزت رو تموم کردی", exact: true })).toBeVisible();
+    await expect(page.getByText("فعلاً کارت برای امروز تمومه! هر وقت زمان مرور بعدی برسه، کارت‌هات دوباره اینجا منتظرت هستن.", { exact: true })).toBeVisible();
+    expect(state.deletions).toEqual([11, 12]);
+    expect(state.reviews).toEqual([]);
+    const celebration = page.locator('img[src*="Celebrate.svg"]:visible');
+    expect((await celebration.boundingBox())!.width).toBeGreaterThanOrEqual(140);
+    await page.screenshot({ path: path.resolve("../.tmp", `review-complete-${info.project.name}.png`) });
+});
+
 test("upcoming cards remain deletable and a failed deletion can be retried", async ({ page }) => {
     const state = await setup(page, true, 1);
     await ready(page, "/leitner");
@@ -141,7 +172,7 @@ test("all five growth stages use exact text and back tabs and schedules follow t
         if (!i) await page.screenshot({ path: path.resolve("../.tmp", `leitner-back-${info.project.name}.png`) });
         await remember.click();
     }
-    await expect(page.getByRole("heading", { name: "آفرین! مرور امروز تمام شد", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "آفرین! مرور امروزت رو تموم کردی", exact: true })).toBeVisible();
     expect(state.reviews).toEqual([11, 12, 13, 14, 15].map((card_id) => ({ card_id, remembered: true })));
 });
 
@@ -157,7 +188,7 @@ test("failed review keeps the back visible and the forgotten choice submits the 
     expect(state.reviews).toEqual([]);
     state.failReview = false;
     await missed.click();
-    await expect(page.getByRole("heading", { name: "آفرین! مرور امروز تمام شد", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "آفرین! مرور امروزت رو تموم کردی", exact: true })).toBeVisible();
     expect(state.reviews).toEqual([{ card_id: 11, remembered: false }]);
 });
 

@@ -91,6 +91,7 @@ class UserProfile(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), primary_key=True)
     display_name: Mapped[str] = mapped_column(String, nullable=False)
     headline: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    job_titles: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     about_me: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     country: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     city: Mapped[Optional[str]] = mapped_column(String, nullable=True)

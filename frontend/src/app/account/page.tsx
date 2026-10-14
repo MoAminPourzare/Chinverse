@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Image from "@/components/ui/PublicMediaImage";
-import { ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, LogOut, Pencil, Trash2, X } from "lucide-react";
+import { getProfileJobTitles } from "@/lib/profileJobTitles";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
@@ -40,6 +41,8 @@ interface AccountFormState extends UserProfile {
 }
 
 const accountIcon = "/assets/chinverse/icons/profile.svg";
+const legacyJobTitles = new Set(["مترجم زبان چینی", "راهنمای تور چین", "تولیدکننده محتوای چینی", "مشاور تحصیل در چین", "بازرگان و واردات از چین", "متخصص فرهنگ چین", "زیرنویس و دوبله چینی"]);
+const getAccountJobTitles = (profile?: UserProfile) => getProfileJobTitles(profile).filter((title) => isKnownProfileHeadline(title) || legacyJobTitles.has(title));
 export default function AccountPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -56,6 +59,7 @@ export default function AccountPage() {
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
         headline: "",
+        job_titles: [],
         gender: "",
         city: "",
         country: "",
@@ -71,7 +75,8 @@ export default function AccountPage() {
                 const userData = await userService.getMe();
                 setFormData({
                     display_name: userData.profile?.display_name || "",
-                    headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
+                    headline: getAccountJobTitles(userData.profile)[0] || "",
+                    job_titles: getAccountJobTitles(userData.profile),
                     gender: userData.profile?.gender || "",
                     city: userData.profile?.city || "",
                     country: userData.profile?.country || "",
@@ -109,6 +114,16 @@ export default function AccountPage() {
     };
 
     const handleOptionSelect = (name: "headline" | "gender" | "country" | "city", value: string) => {
+        if (name === "headline") {
+            setFormData((prev) => {
+                const titles = prev.job_titles || [];
+                const nextTitles = titles.includes(value) ? titles.filter((title) => title !== value) : [...titles, value];
+                return { ...prev, headline: nextTitles[0] || "", job_titles: nextTitles };
+            });
+            setFieldErrors((current) => ({ ...current, headline: "" }));
+            setFormMessage(null);
+            return;
+        }
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -199,6 +214,7 @@ export default function AccountPage() {
             await userService.updateProfile({
                 display_name: normalizePersianName(formData.display_name || ""),
                 headline: (formData.headline || "").trim(),
+                job_titles: formData.job_titles || [],
                 gender: formData.gender?.trim() || "",
                 city: shouldValidateProvince ? formData.city?.trim() : "",
                 country: formData.country?.trim(),
@@ -211,7 +227,8 @@ export default function AccountPage() {
             const userData = await userService.getMe();
             setFormData({
                 display_name: userData.profile?.display_name || "",
-                headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
+                headline: getAccountJobTitles(userData.profile)[0] || "",
+                job_titles: getAccountJobTitles(userData.profile),
                 gender: userData.profile?.gender || "",
                 city: userData.profile?.city || "",
                 country: userData.profile?.country || "",
@@ -362,6 +379,7 @@ export default function AccountPage() {
                             id="account-headline"
                             label="عنوان شغلی"
                             value={formData.headline || ""}
+                            selectedValues={formData.job_titles || []}
                             placeholder="انتخاب شغل"
                             options={PROFILE_HEADLINE_OPTIONS}
                             isOpen={openPicker === "headline"}
@@ -516,6 +534,7 @@ function OptionPicker({
     clearLabel,
     onToggle,
     onSelect,
+    selectedValues,
 }: {
     id: string;
     label: string;
@@ -526,6 +545,7 @@ function OptionPicker({
     clearLabel?: string;
     onToggle: () => void;
     onSelect: (value: string) => void;
+    selectedValues?: string[];
 }) {
     const triggerRef = useRef<HTMLButtonElement>(null);
     return (
@@ -541,7 +561,7 @@ function OptionPicker({
                 id={id}
                 type="button"
                 onClick={onToggle}
-                aria-label={`${label}: ${value || placeholder}`}
+                aria-label={`${label}: ${selectedValues?.length ? selectedValues.join("، ") : value || placeholder}`}
                 aria-expanded={isOpen}
                 aria-controls={isOpen ? `${id}-options` : undefined}
                 className={cn(
@@ -550,22 +570,33 @@ function OptionPicker({
                 )}
             >
                 <ChevronDown className={cn("h-4 w-4 shrink-0 text-[#155aa6] transition-transform duration-300", isOpen && "rotate-180")} />
-                <span className={cn("min-w-0 flex-1 truncate", !value && "text-slate-400")}>{value || placeholder}</span>
+                <span className={cn("min-w-0 flex-1", !value && "text-slate-400", selectedValues ? "break-words leading-7" : "truncate")}>{selectedValues?.length ? selectedValues.join("، ") : value || placeholder}</span>
                 <span className="h-4 w-4 shrink-0" aria-hidden />
             </button>
+
+            {selectedValues && (
+                <div className="px-3 pb-3">
+                    <p className="my-2 text-center text-xs leading-6 text-slate-500">می‌تونی چند عنوان انتخاب کنی. اولین عنوان، عنوان اصلی پروفایلت است.</p>
+                    {selectedValues.length > 0 && <div className="flex flex-wrap justify-center gap-2" aria-label="عناوین شغلی انتخاب‌شده">
+                        {selectedValues.map((title) => <button key={title} type="button" aria-label={`حذف عنوان شغلی ${title}`} onClick={() => onSelect(title)} className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#eef6ff] px-3 py-1 text-xs leading-6 text-[#155aa6]">
+                            <span>{title}</span><X aria-hidden size={14} />
+                        </button>)}
+                    </div>}
+                </div>
+            )}
 
             {isOpen && (
                 <div id={`${id}-options`} className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
                     <SearchableOptionList
                         label={label}
                         options={options}
-                        selectedValues={value ? [value] : []}
+                        selectedValues={selectedValues || (value ? [value] : [])}
                         searchable={id === "account-headline" || id === "account-country" || id === "account-city"}
                         clearLabel={clearLabel}
                         onClear={() => onSelect("")}
                         onSelect={(option) => {
                             onSelect(option);
-                            triggerRef.current?.focus();
+                            if (!selectedValues) triggerRef.current?.focus();
                         }}
                     />
                 </div>

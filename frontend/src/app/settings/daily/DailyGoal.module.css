@@ -13,19 +13,19 @@
 .slider::-webkit-slider-runnable-track {
     height: 8px;
     border-radius: 999px;
-    background: linear-gradient(to right, #155aa6 0%, #155aa6 var(--goal-progress), #fff6f2 var(--goal-progress), #fff6f2 100%);
+    background: linear-gradient(to right, var(--app-primary) 0%, var(--app-primary) var(--goal-progress), var(--app-surface-soft) var(--goal-progress), var(--app-surface-soft) 100%);
 }
 
 .slider::-moz-range-track {
     height: 8px;
     border-radius: 999px;
-    background: #fff6f2;
+    background: var(--app-surface-soft);
 }
 
 .slider::-moz-range-progress {
     height: 8px;
     border-radius: 999px;
-    background: #155aa6;
+    background: var(--app-primary);
 }
 
 .slider::-webkit-slider-thumb {
@@ -71,15 +71,15 @@
     gap: 5px;
     padding: 0;
     border-radius: 6px;
-    color: #334155;
+    color: var(--app-text);
     font-size: 10px;
     font-weight: 700;
     cursor: pointer;
 }
 
 .tick:hover, .tick[aria-pressed="true"] {
-    color: #155aa6;
-    background: rgb(255 255 255 / 60%);
+    color: var(--app-primary);
+    background: var(--app-surface);
 }
 
 .tick:focus-visible {

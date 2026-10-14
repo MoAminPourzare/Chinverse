@@ -161,8 +161,8 @@ function ServiceCard({ item }: { item: Extract<FeedItem, { type: "service" }> })
                 <p className="mt-2 line-clamp-3 whitespace-pre-line break-words text-[13px] leading-7 text-slate-600" dir="auto">{service.description}</p>
                 {service.price_label ? <p className="mt-3 inline-block rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">{service.price_label}</p> : null}
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                    <Link href={`/services/${service.id}`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#155aa6] px-4 text-xs font-bold text-white">مشاهدهٔ خدمت <ArrowLeft size={15} /></Link>
                     <LikeButton targetType="service" targetId={service.id} initialCount={item.likes_count || 0} compact />
+                    <Link href={`/services/${service.id}`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#155aa6] px-4 text-xs font-bold text-white">مشاهدهٔ خدمت <ArrowLeft size={15} /></Link>
                 </div>
                 <div className="mt-2 text-left"><PublishedDate value={item.created_at} /></div>
             </div>

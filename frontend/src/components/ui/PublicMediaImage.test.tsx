@@ -3,9 +3,9 @@ import { afterEach, expect, it, vi } from 'vitest';
 import PublicMediaImage from './PublicMediaImage';
 
 vi.mock('next/image', () => ({
-    default: ({ src, alt, onError }: { src: string; alt: string; onError: () => void }) => (
+    default: ({ src, alt, onError, "data-theme-asset": theme }: { src: string; alt: string; onError: () => void; "data-theme-asset"?: string }) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} onError={onError} />
+        <img src={src} alt={alt} data-theme-asset={theme} onError={onError} />
     ),
 }));
 afterEach(cleanup);
@@ -23,5 +23,6 @@ it('replaces a missing original with a local placeholder and loads a newly uploa
 it('uses the avatar placeholder when supplied', () => {
     render(<PublicMediaImage src='/uploads/missing-avatar.jpg' fallbackSrc='/assets/chinverse/icons/profile.svg' alt='تارا' width={44} height={44} />);
     fireEvent.error(screen.getByRole('img'));
-    expect(screen.getByRole('img')).toHaveAttribute('src', '/assets/chinverse/icons/profile.svg');
+    expect(screen.getAllByRole('img')[0]).toHaveAttribute('src', '/assets/chinverse/icons/profile.svg');
+    expect(screen.getAllByRole('img')[1]).toHaveAttribute('src', '/assets/chinverse/dark/icons/profile.svg');
 });

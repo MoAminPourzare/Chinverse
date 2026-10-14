@@ -42,6 +42,7 @@ test.beforeEach(async ({ page }) => {
 test("account searches all 46 titles and sorted countries, then saves the exact selected values", async ({ page }) => {
     await ready(page, "/account");
     const main = page.locator("main:visible");
+    await main.getByRole("button", { name: "حذف عنوان شغلی مترجم زبان چینی", exact: true }).click();
     await main.locator("#account-headline").click();
     await expect(main.getByRole("group", { name: "گزینه‌های عنوان شغلی", exact: true }).getByRole("button")).toHaveCount(46);
     const search = main.getByRole("searchbox", { name: "جست‌وجوی عنوان شغلی", exact: true });

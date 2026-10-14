@@ -3,7 +3,7 @@
 import { Suspense, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import BottomNav from "@/components/layout/BottomNav";
 import NotificationToaster from "@/components/notifications/NotificationToaster";
 import RouteTransition from "@/components/layout/RouteTransition";

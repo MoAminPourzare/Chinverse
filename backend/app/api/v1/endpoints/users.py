@@ -203,6 +203,15 @@ async def update_user_profile(
     Update current user profile.
     """
     update_data = profile_in.model_dump(exclude_unset=True)
+    if "job_titles" in update_data:
+        titles = update_data["job_titles"] or []
+        update_data["job_titles"] = titles
+        update_data["headline"] = titles[0] if titles else None
+    elif "headline" in update_data:
+        # Older clients can change the primary title without losing other roles.
+        existing_titles = (current_user.profile.job_titles or []) if current_user.profile else []
+        headline = update_data["headline"]
+        update_data["job_titles"] = [headline, *[title for title in existing_titles if title != headline]] if headline else []
     if "avatar_url" in update_data:
         raise bad_request("Avatar changes must use the dedicated upload or delete endpoint")
     if "display_name" in update_data and isinstance(update_data["display_name"], str):
@@ -336,7 +345,7 @@ async def get_showcase_users(
                     degree=first_edu.get("degree")
                 )
 
-        job_titles = []
+        job_titles = list(user.profile.job_titles or ([user.profile.headline] if user.profile.headline else []))
         if user.profile.resume and user.profile.resume.get("work_experiences"):
             for work in user.profile.resume.get("work_experiences", []):
                 title = (work.get("job_title") or "").strip()
@@ -409,6 +418,7 @@ async def get_public_user_profile(
         public_profile = PublicUserProfile(
             display_name=user.profile.display_name,
             headline=user.profile.headline,
+            job_titles=user.profile.job_titles or ([user.profile.headline] if user.profile.headline else []),
             city=user.profile.city,
             country=user.profile.country,
             gender=user.profile.gender,

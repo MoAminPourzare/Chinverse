@@ -75,7 +75,6 @@ export default function BottomNav() {
                             >
                                 <Icon size={21} strokeWidth={isActive ? 2.5 : 2} />
                                 <span className="text-[10px] font-semibold leading-none">{item.name}</span>
-                                {isActive && <span className="bottom-nav-dot absolute top-1 h-1 w-1 rounded-full bg-[#155aa6]" />}
                             </Link>
                         );
                     })}

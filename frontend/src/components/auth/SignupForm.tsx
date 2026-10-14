@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User, Eye, EyeOff } from "lucide-react";

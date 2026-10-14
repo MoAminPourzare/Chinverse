@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { BackButton } from "@/components/ui/IconButton";
 
 export default function PointsSettingsPage() {

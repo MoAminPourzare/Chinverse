@@ -288,6 +288,7 @@ class UserInDBBase(UserBase):
 class UserProfileBase(BaseModel):
     display_name: Optional[str] = Field(default=None, max_length=120)
     headline: Optional[str] = Field(default=None, max_length=180)
+    job_titles: Optional[list[str]] = Field(default=None, max_length=46)
     about_me: Optional[str] = Field(default=None, max_length=4000)
     country: Optional[str] = Field(default=None, max_length=80)
     city: Optional[str] = Field(default=None, max_length=80)
@@ -437,6 +438,20 @@ class UserProfileBase(BaseModel):
         return normalized_socials
 
 class UserProfileUpdate(UserProfileBase):
+    @field_validator("job_titles")
+    @classmethod
+    def validate_job_titles(cls, value: Optional[list[str]]) -> Optional[list[str]]:
+        if value is None:
+            return None
+        titles = []
+        for title in value:
+            normalized = title.strip()
+            if normalized not in ALLOWED_PROFILE_HEADLINES | LEGACY_PROFILE_HEADLINES:
+                raise ValueError("Invalid profile job title")
+            if normalized not in titles:
+                titles.append(normalized)
+        return titles
+
     @field_validator("headline")
     @classmethod
     def validate_update_headline(cls, value: Optional[str]) -> Optional[str]:

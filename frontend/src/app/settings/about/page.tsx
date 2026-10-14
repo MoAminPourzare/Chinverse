@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { Instagram } from "lucide-react";
 import { AppHeader } from "@/components/ui/IconButton";

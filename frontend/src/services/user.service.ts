@@ -51,6 +51,7 @@ export interface ResumeData {
 export interface UserProfile {
     display_name?: string;
     headline?: string;
+    job_titles?: string[];
     about_me?: string;
     phone?: string;
     is_verified?: boolean;

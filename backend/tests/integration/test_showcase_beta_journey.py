@@ -35,6 +35,21 @@ async def test_showcase_registration_service_details_and_visibility_policy(monke
         login = await client.post("/api/v1/login/access-token", data={"username": email, "password": password})
         assert login.status_code == 200, login.text
         owner_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        titles = ["استاد دانشگاه", "کارآفرین حوزه چین", "صراف"]
+        saved = await client.put("/api/v1/users/me/profile", headers=owner_headers, json={"job_titles": titles})
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["profile"]["job_titles"] == titles
+        assert saved.json()["profile"]["headline"] == titles[0]
+        updated = await client.put("/api/v1/users/me/profile", headers=owner_headers, json={"bio": "معرفی آزمایشی"})
+        assert updated.json()["profile"]["job_titles"] == titles
+        reread = await client.get("/api/v1/users/me", headers=owner_headers)
+        assert reread.json()["profile"]["job_titles"] == titles
+        public = await client.get(f"/api/v1/users/{owner_id}/public")
+        assert public.json()["profile"]["job_titles"] == titles
+        directory = await client.get("/api/v1/users/showcase?limit=100")
+        assert next(item for item in directory.json() if item["id"] == owner_id)["job_titles"] == titles
+        invalid = await client.put("/api/v1/users/me/profile", headers=owner_headers, json={"job_titles": ["عنوان نامعتبر"]})
+        assert invalid.status_code == 422
         created = await client.post("/api/v1/users/me/services", headers=owner_headers, data={
             "title": "خدمت آزمایشی عرفان", "description": "توضیحات خدمت برای بازآزمایی ویترین.",
         })

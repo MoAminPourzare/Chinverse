@@ -22,7 +22,8 @@ const integerBudget = (name, fallback) => {
 };
 
 const budgets = {
-    publicBytes: integerBudget("CHINVERSE_PUBLIC_ASSET_BUDGET_BYTES", 80 * 1024 * 1024),
+    // Includes the complete CJK font (loaded by unicode range) and theme SVGs.
+    publicBytes: integerBudget("CHINVERSE_PUBLIC_ASSET_BUDGET_BYTES", 88 * 1024 * 1024),
     totalJavaScriptBytes: integerBudget("CHINVERSE_JS_BUDGET_BYTES", 4 * 1024 * 1024),
     singleChunkBytes: integerBudget("CHINVERSE_CHUNK_BUDGET_BYTES", 600 * 1024),
     hlsGzipBytes: integerBudget("CHINVERSE_HLS_GZIP_BUDGET_BYTES", 180 * 1024),
