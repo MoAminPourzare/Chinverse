@@ -255,7 +255,7 @@ function BoxStageCard({ boxNumber, stats }: { boxNumber: number; stats: LeitnerS
             boxNumber === 4 && "col-start-2 row-start-2",
             boxNumber === 5 && "col-start-4 row-start-2",
         )}>
-            <div className={cn("flex h-11 flex-col items-center justify-center px-1 text-center text-white", box.header)}>
+            <div className={cn("flex h-11 flex-col items-center justify-center px-1 text-center", boxNumber >= 2 && boxNumber <= 4 ? "text-[#172033]" : "text-white", box.header)}>
                 <h3 className="text-[12px] font-black leading-[18px]">{box.title}</h3>
                 <p className="whitespace-nowrap text-[10px] font-bold leading-[15px]">({box.subtitle})</p>
             </div>

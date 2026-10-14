@@ -245,11 +245,11 @@ test("talent filters keep country/province choices while services have no filter
     await ready(page, "/showcase");
     await page.getByRole("button", { name: "فیلترها", exact: true }).click();
     const row = page.getByRole("button", { name: "عنوان شغلی", exact: true });
-    await expect(row.locator("img")).toHaveAttribute("src", /Title\.svg/);
-    const icon = await row.locator("img").boundingBox();
+    await expect(row.locator("img:visible")).toHaveAttribute("src", /Title\.svg/);
+    const icon = await row.locator("img:visible").boundingBox();
     const arrow = await row.locator("svg").boundingBox();
     expect(icon!.x).toBeGreaterThan(arrow!.x);
-    await expect(page.locator('img[src*="Filter.svg"]').last()).toBeVisible();
+    await expect(page.locator('img[src*="Filter.svg"]:visible').last()).toBeVisible();
     await page.screenshot({ path: path.resolve("../.tmp", "showcase-filters-" + info.project.name + ".png") });
     await page.getByRole("button", { name: "لوکیشن", exact: true }).click();
     await page.getByRole("searchbox", { name: "جست‌وجوی کشور/منطقه", exact: true }).fill("ایران");

@@ -925,7 +925,9 @@ html.dark [class~="bg-white/88"],
 html.dark [class~="bg-white/86"],
 html.dark [class~="bg-white/85"],
 html.dark [class~="bg-white/80"],
+html.dark [class~="bg-white/75"],
 html.dark [class~="bg-white/70"],
+html.dark [class~="bg-white/60"],
 html.dark [class~="bg-white/55"] {
   background-color: color-mix(in srgb, var(--app-surface) 94%, transparent) !important;
 }

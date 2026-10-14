@@ -73,7 +73,7 @@ interface Flashcard {
 }
 
 const BOX_STYLES: Record<number, { label: string; border: string; text: string; soft: string }> = {
-    1: { label: "جعبه ۱", border: "border-red-500", text: "text-red-600", soft: "bg-red-50 text-red-600" },
+    1: { label: "جعبه ۱", border: "border-red-500", text: "text-red-700", soft: "bg-red-50 text-red-700" },
     2: { label: "جعبه ۲", border: "border-amber-500", text: "text-amber-700", soft: "bg-amber-50 text-amber-700" },
     3: { label: "جعبه ۳", border: "border-emerald-500", text: "text-emerald-700", soft: "bg-emerald-50 text-emerald-700" },
     4: { label: "جعبه ۴", border: "border-sky-500", text: "text-sky-700", soft: "bg-sky-50 text-sky-700" },

@@ -24,6 +24,8 @@ async function setup(page: Page, theme = "light") {
         }
         if (endpoint === "/leitner/review") return route.fulfill({ json: { cards: [{ id: 11, box_number: 1, word: { id: 1, chinese: "学习學習", pinyin: "xuéxí", chinese_meaning: "學習中文", persian_meaning: "یادگیری" } }] } });
         if (endpoint.endsWith("/unread-count")) return route.fulfill({ json: { count: 0 } });
+        if (endpoint === "/leitner/dashboard") return route.fulfill({ json: { box_counts: { 1: 1 }, due_by_box: { 1: 0 }, box_intervals: { 1: 1, 2: 3, 3: 7, 4: 15, 5: 30 }, total_cards: 1, total_due: 0, upcoming_count: 1, mastered_count: 0, recent_cards: [] } });
+        if (endpoint === "/leitner/cards") return route.fulfill({ json: { cards: [{ id: 11, box_number: 1, word: { id: 1, chinese: "学习", pinyin: "xuéxí", persian_meaning: "یادگیری" } }] } });
         return route.fulfill({ json: [] });
     });
     return saved;
@@ -94,6 +96,11 @@ for (const theme of ["light", "dark"]) {
             const icon = page.locator('img[data-theme-asset="dark"]:visible').first();
             await expect(icon).toHaveAttribute("src", /\/assets\/chinverse\/dark\//);
             await expect(page.locator('img[data-theme-asset="light"]:visible')).toHaveCount(0);
+        }
+        for (const route of ["/settings/daily", "/leitner"]) {
+            await ready(page, route);
+            const result = await new AxeBuilder({ page }).include("main").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+            expect(result.violations).toEqual([]);
         }
     });
 }
