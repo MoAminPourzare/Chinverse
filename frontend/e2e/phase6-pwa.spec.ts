@@ -27,6 +27,7 @@ test("PWA assets expose an installable, release-scoped and private-cache-safe co
   const workerResponse = await request.get(`/sw.js?release=${"a".repeat(40)}`);
   expect(workerResponse.ok()).toBe(true);
   expect(workerResponse.headers()["content-type"]).toContain("javascript");
+  expect(workerResponse.headers()["cache-control"]).toContain("no-store");
   const worker = await workerResponse.text();
   expect(worker).toContain('workerUrl.searchParams.get("release")');
   expect(worker).toContain('const OFFLINE_URL = "/offline.html"');
@@ -190,7 +191,7 @@ test("production worker isolates caches, updates atomically and serves the stand
   try {
     await context.setOffline(true);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "اتصال اینترنت در دسترس نیست" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ارتباط با چین‌ورس برقرار نشد" })).toBeVisible();
     expect(await page.locator('link[href="/offline.css"]').count()).toBe(1);
     expect(await page.locator("html").getAttribute("dir")).toBe("rtl");
     const cardBackground = await page.locator(".offline-card").evaluate(

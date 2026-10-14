@@ -63,9 +63,13 @@ const isCacheableStaticResponse = (response, url) => {
 const fetchNavigationWithFallback = async (request) => {
   try {
     const response = await fetch(request);
-    if (!response || response.type === "error" || response.status === 0 || response.status >= 500) {
+    // A browser navigation redirect has status 0, too. Returning it lets the
+    // browser complete preview authentication and ordinary page redirects.
+    if (response?.type === "opaqueredirect") return response;
+    if (!response || response.type === "error" || response.status === 0) {
       throw new Error("navigation network unavailable");
     }
+    // HTTP errors prove that the server was reached; do not label them offline.
     return response;
   } catch {
     const shellCache = await caches.open(CACHE_VERSION);

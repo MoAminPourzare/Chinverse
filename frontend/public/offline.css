@@ -86,6 +86,26 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
+.secondary-action {
+  display: flex;
+  border: 1px solid #155aa6;
+  background: transparent;
+  color: #155aa6;
+}
+
+button {
+  min-height: 48px;
+  margin-top: 1.5rem;
+  border: 0;
+  border-radius: 1rem;
+  background: #155aa6;
+  padding: 0 1.5rem;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (prefers-color-scheme: dark) {
   :root,
   body {
@@ -100,6 +120,11 @@ a:focus-visible {
 
   p {
     color: #c3ccd8;
+  }
+
+  .secondary-action {
+    border-color: #82bbf7;
+    color: #82bbf7;
   }
 }
 

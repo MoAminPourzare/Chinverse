@@ -25,7 +25,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
-      testIgnore: /phase6-pwa\.spec\.ts/,
+      testIgnore: /phase6-pwa(?:-navigation)?\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -34,7 +34,7 @@ export default defineConfig({
     },
     {
       name: "mobile-chromium",
-      testIgnore: /phase6-pwa\.spec\.ts/,
+      testIgnore: /phase6-pwa(?:-navigation)?\.spec\.ts/,
       use: {
         ...devices["Pixel 5"],
         serviceWorkers: "block",
@@ -42,7 +42,7 @@ export default defineConfig({
     },
     {
       name: "mobile-webkit",
-      testIgnore: /phase6-pwa\.spec\.ts/,
+      testIgnore: /phase6-pwa(?:-navigation)?\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
         serviceWorkers: "block",
@@ -50,7 +50,7 @@ export default defineConfig({
     },
     {
       name: "pwa-mobile-chromium",
-      testMatch: /phase6-pwa\.spec\.ts/,
+      testMatch: /phase6-pwa(?:-navigation)?\.spec\.ts/,
       use: {
         ...devices["Pixel 5"],
         serviceWorkers: "allow",
@@ -58,7 +58,7 @@ export default defineConfig({
     },
     {
       name: "pwa-mobile-webkit",
-      testMatch: /phase6-pwa\.spec\.ts/,
+      testMatch: /phase6-pwa(?:-navigation)?\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
         serviceWorkers: "allow",

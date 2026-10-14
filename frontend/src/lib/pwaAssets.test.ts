@@ -33,7 +33,7 @@ describe("PWA public contracts", () => {
         const css = readFileSync(resolve(process.cwd(), "public/offline.css"), "utf8");
         expect(html).toContain('lang="fa-IR"');
         expect(html).toContain('href="/offline.css"');
-        expect(html).toContain("اتصال اینترنت در دسترس نیست");
+        expect(html).toContain("ارتباط با چین‌ورس برقرار نشد");
         expect(html).not.toMatch(/<script\b/i);
         expect(css).toContain("env(safe-area-inset-bottom)");
         expect(css).toContain("prefers-color-scheme: dark");
