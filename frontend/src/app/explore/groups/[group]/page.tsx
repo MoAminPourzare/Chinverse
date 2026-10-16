@@ -31,7 +31,7 @@ export default function ExploreGroupPage() {
                     <p className={styles.groupCount}>{section.items.length.toLocaleString("fa-IR")} موضوع</p>
                     <ul className={section.id === "learning" ? styles.tiles : styles.list}>
                         {section.items.map((item, index) => (
-                            <li key={item.id}><ExploreItemLink item={item} layout={section.id === "learning" ? "tile" : "row"} preload={index === 0} eager={index < (section.id === "learning" ? 6 : 4)} /></li>
+                            <li key={item.id}><ExploreItemLink item={item} layout={section.id === "learning" ? "tile" : section.id === "entertainment" ? "banner" : "row"} preload={index === 0} eager={index < (section.id === "learning" ? 6 : 4)} /></li>
                         ))}
                     </ul>
                 </section>

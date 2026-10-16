@@ -6,7 +6,6 @@ export interface ExploreItem {
     imagePath: string;
     tone: "sky" | "rose" | "violet" | "amber";
     scene?: boolean;
-    fullArtwork?: boolean;
     imagePosition?: string;
 }
 
@@ -27,24 +26,24 @@ function createExploreItem(item: Omit<ExploreItem, "href" | "imagePath"> & { ima
 }
 
 export const learningItems: ExploreItem[] = [
-    createExploreItem({ title: "HSK", id: "hsk", description: "آمادگی آزمون", tone: "sky", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "تلفظ", id: "pronunciation", description: "شنیدن و صحیح گفتن", tone: "rose", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "کاراکتر", id: "characters", description: "نوشتن و خواندن", tone: "sky", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "گرامر", id: "grammar", description: "ساختار و جمله‌سازی", tone: "violet", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "اصطلاح", id: "idioms", description: "عبارت‌های رایج چینی", tone: "sky", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "چینی کاربردی", id: "practical", description: "چینی در زندگی روزمره", tone: "sky", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "یادگیری با ولاگ", id: "vlogs", description: "همراه با زندگی واقعی", tone: "sky", imageVersion: "v2", fullArtwork: true }),
-    createExploreItem({ title: "واژگان هم‌معنی", id: "synonyms", description: "انتخاب دقیق‌تر واژه‌ها", tone: "violet" }),
-    createExploreItem({ title: "زبان چینی کلاسیک", id: "classical", description: "آشنایی با زبان کهن چین", tone: "amber" }),
+    createExploreItem({ title: "HSK", id: "hsk", description: "آمادگی آزمون", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "تلفظ", id: "pronunciation", description: "شنیدن و صحیح گفتن", tone: "rose", imageVersion: "v3" }),
+    createExploreItem({ title: "کاراکتر", id: "characters", description: "نوشتن و خواندن", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "گرامر", id: "grammar", description: "ساختار و جمله‌سازی", tone: "violet", imageVersion: "v3" }),
+    createExploreItem({ title: "اصطلاح", id: "idioms", description: "عبارت‌های رایج چینی", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "چینی کاربردی", id: "practical", description: "چینی در زندگی روزمره", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "یادگیری با ولاگ", id: "vlogs", description: "همراه با زندگی واقعی", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "واژگان هم‌معنی", id: "synonyms", description: "انتخاب دقیق‌تر واژه‌ها", tone: "violet", imageVersion: "v3" }),
+    createExploreItem({ title: "زبان چینی کلاسیک", id: "classical", description: "آشنایی با زبان کهن چین", tone: "amber", imageVersion: "v3" }),
 ];
 
 export const entertainmentItems: ExploreItem[] = [
-    createExploreItem({ title: "موسیقی", id: "music", description: "یادگیری با ترانه‌های چینی", tone: "violet", imageVersion: "v2", scene: true }),
-    createExploreItem({ title: "پادکست", id: "podcasts", description: "گوش دادن به گفت‌وگوهای چینی", tone: "sky", imageVersion: "v2", scene: true }),
-    createExploreItem({ title: "گفتارهای موضوعی", id: "topic-talks", description: "گفت‌وگو دربارهٔ موضوع‌های متنوع", tone: "sky", imageVersion: "v2", scene: true }),
-    createExploreItem({ title: "فیلم", id: "movies", description: "فیلم‌های جذاب چینی", tone: "amber", imageVersion: "v2", scene: true }),
-    createExploreItem({ title: "سریال", id: "series", description: "تماشای سریال‌های چینی", tone: "rose", scene: true, imagePosition: "center 60%" }),
-    createExploreItem({ title: "کارتون و انیمیشن", id: "cartoons", description: "دنیای انیمیشن چینی", tone: "sky", scene: true, imagePosition: "center 54%" }),
+    createExploreItem({ title: "موسیقی", id: "music", description: "یادگیری با ترانه‌های چینی", tone: "violet", imageVersion: "v3" }),
+    createExploreItem({ title: "پادکست", id: "podcasts", description: "گوش دادن به گفت‌وگوهای چینی", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "گفتارهای موضوعی", id: "topic-talks", description: "گفت‌وگو دربارهٔ موضوع‌های متنوع", tone: "sky", imageVersion: "v3" }),
+    createExploreItem({ title: "فیلم", id: "movies", description: "فیلم‌های جذاب چینی", tone: "amber", imageVersion: "v3" }),
+    createExploreItem({ title: "سریال", id: "series", description: "تماشای سریال‌های چینی", tone: "rose", imageVersion: "v3" }),
+    createExploreItem({ title: "کارتون و انیمیشن", id: "cartoons", description: "دنیای انیمیشن چینی", tone: "sky", imageVersion: "v3" }),
 ];
 
 export const artSkillItems: ExploreItem[] = [

@@ -37,7 +37,7 @@ export default function ExplorePage() {
 
                         <ul className={section.id === "learning" ? styles.tiles : styles.list}>
                             {(section.id === "entertainment" ? section.items : section.items.slice(0, 4)).map((item, index) => (
-                                <li key={item.id}><ExploreItemLink item={item} layout={section.id === "learning" ? "tile" : "row"} preload={section.id === "learning" && index === 0} eager={section.id === "learning" || (section.id === "entertainment" && index === 0)} /></li>
+                                <li key={item.id}><ExploreItemLink item={item} layout={section.id === "learning" ? "tile" : section.id === "entertainment" ? "banner" : "row"} preload={section.id === "learning" && index === 0} eager={section.id === "learning" || (section.id === "entertainment" && index === 0)} /></li>
                             ))}
                         </ul>
                     </section>

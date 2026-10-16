@@ -168,27 +168,50 @@
     object-fit: cover;
 }
 
-/* The second artwork set includes its own scenery and clear space for labels. */
-.tile.fullArtwork .picture {
-    inset: 0;
+/* Override the global link touch-target size so wrapped copy stays inside. */
+.card.banner[data-tone] {
     width: 100%;
-    height: 100%;
-    mask-image: none;
+    height: auto;
+    min-height: 88px;
+    aspect-ratio: 4 / 1;
+    border-radius: 19px;
+    background: var(--tile-tint);
 }
 
-.fullArtwork .image {
+/* The panoramic artwork fills the card; its open left side holds the copy. */
+.banner .picture {
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+}
+
+.banner .image {
     object-fit: cover;
 }
 
-.tile.fullArtwork .itemTitle {
+.banner .picture::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background: linear-gradient(to right, #f3f8ff80, #f3f8ff26 44%, transparent 60%);
+}
+
+.banner .itemTitle {
     color: #102945;
 }
 
-.tile.fullArtwork .description {
+.banner .description {
+    padding-left: 25px;
     color: #244561;
 }
 
-.tile.fullArtwork .arrow {
+.banner .arrow {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    width: 25px;
+    height: 25px;
+    margin: 0;
     background: #ffffffd9;
     color: #155da4;
 }
@@ -213,6 +236,12 @@
 .row .content {
     justify-content: center;
     padding: 9px 5px 9px 9px;
+}
+
+.banner .content {
+    width: 49%;
+    justify-content: center;
+    padding: 10px 10px 10px 14px;
 }
 
 .itemTitle {
@@ -326,6 +355,15 @@
 
     .row {
         grid-template-columns: minmax(0, 1fr) 51%;
+    }
+
+    .banner .content {
+        padding-block: 8px;
+    }
+
+    .banner .description {
+        font-size: 9px;
+        line-height: 1.7;
     }
 }
 
