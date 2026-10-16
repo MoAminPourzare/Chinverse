@@ -42,7 +42,7 @@ async function setup(page: Page) {
 async function ready(page: Page, url: string) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await expect(page.locator(".route-panel:visible").first()).toHaveCSS("opacity", "1");
-    await page.evaluate(() => document.fonts.ready);
+    await page.waitForFunction(() => document.fonts.status === "loaded");
 }
 
 for (const [label, route, back] of [
@@ -132,6 +132,7 @@ test("service likes occupy the same right side as post likes", async ({ page }) 
 test("a full collection and lesson journey returns to the original learning tab", async ({ page }) => {
     await setup(page); await ready(page, "/?tab=daily");
     await page.getByRole("link", { name: "دیدن ویدیو", exact: true }).click();
+    await page.getByRole("navigation", { name: "دسته‌بندی‌های اصلی کاوش" }).getByRole("link", { name: /هنر و مهارت‌های چینی/ }).click();
     await page.locator('a[href^="/explore/cooking"]').click();
     await page.locator('main a[href^="/cooking/meishi-zuojia-wang-gang?"]').click();
     await page.locator('main a[href^="/cooking/meishi-zuojia-wang-gang/lesson/1?"]').first().click();
@@ -144,7 +145,7 @@ test("a full collection and lesson journey returns to the original learning tab"
     await expect(back).toHaveAttribute("href", parent!);
     await back.click();
     await expect(page).toHaveURL(url => url.pathname === "/cooking/meishi-zuojia-wang-gang");
-    for (const target of ["/explore/cooking", "/explore", "/?tab=daily"]) {
+    for (const target of ["/explore/cooking", "/explore/groups/arts", "/explore", "/?tab=daily"]) {
         const returnHref = new URL(page.url()).searchParams.get("returnTo");
         const button = page.locator('[data-page-header] a[aria-label^="بازگشت"]').first();
         await expect(button).toHaveAttribute("href", returnHref!);
@@ -177,12 +178,31 @@ test("comment loading failure can be retried without leaving activities", async 
     await expect(page).toHaveURL(/\/$/);
 });
 
-test("entertainment shows all six subjects in the requested order", async ({ page }) => {
+test("Explore starts with four categories and entertainment opens its six subjects", async ({ page }) => {
     await setup(page); await ready(page, "/explore");
-    const expected = ["موسیقی", "پادکست", "گفتارهای موضوعی", "فیلم", "سریال", "کارتون و انیمیشن"];
-    await expect(page.locator('section[aria-labelledby="explore-entertainment"] li a > span:first-child > span:first-child')).toHaveText(expected);
-    await page.getByRole("link", { name: "مشاهده همهٔ سرگرمی چینی" }).click();
+    const categories = page.getByRole("navigation", { name: "دسته‌بندی‌های اصلی کاوش" });
+    await expect(categories.getByRole("link")).toHaveCount(4);
+    await expect(page.locator('main a[href^="/explore/podcasts"]')).toHaveCount(0);
+    await categories.getByRole("link", { name: /سرگرمی چینی/ }).click();
+    const expected = ["پادکست", "گفتارهای موضوعی", "فیلم", "سریال", "کارتون و انیمیشن", "موسیقی"];
     await expect(page.getByRole("region", { name: "موضوع‌های سرگرمی چینی" }).locator("li a > span:first-child > span:first-child")).toHaveText(expected);
+    await expect(page.locator('main a[data-tone="violet"]')).toHaveCount(6);
+    await page.getByRole("link", { name: "بازگشت به کاوش", exact: true }).click();
+    await expect(categories.getByRole("link")).toHaveCount(4);
+});
+
+test("culture contains tea and a working coming-soon page without moving the learning journey", async ({ page }) => {
+    await setup(page); await ready(page, "/explore/groups/arts");
+    await expect(page.locator('main a[data-tone="green"]')).toHaveCount(4);
+    await expect(page.locator('main a[href^="/explore/tea-culture"]')).toHaveCount(0);
+    await ready(page, "/explore/groups/culture");
+    await expect(page.locator('main a[data-tone="amber"]')).toHaveCount(6);
+    await expect(page.locator('main a[href^="/explore/tea-culture"]')).toHaveCount(1);
+    await page.getByRole("link", { name: /چین، فراتر از زبان/ }).click();
+    await expect(page.getByRole("heading", { name: "چین، فراتر از زبان", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "به‌زودی", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "بازگشت به فرهنگ و اندیشه", exact: true }).click();
+    await expect(page).toHaveURL(/\/explore\/groups\/culture$/);
 });
 
 for (const [group, urls] of [
