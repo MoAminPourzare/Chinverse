@@ -16,9 +16,9 @@ export default function PlannedCourseExplorePage({ title, basePath, catalog, com
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
-                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
+                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                     <BackButton href="/explore" label="بازگشت به کاوش" />
-                    <div className="min-w-0 text-center" dir="rtl">
+                    <div data-header-title className="min-w-0 text-center" dir="rtl">
                         <h1 className={`font-black text-[#25272d] dark:text-white ${compactTitle ? "whitespace-nowrap text-[15px]" : "text-[22px]"}`}>{title}</h1>
                         {headingSubtitle && <p className="mt-0.5 text-[18px] font-black leading-5 text-[#25272d] dark:text-white">{headingSubtitle}</p>}
                     </div>

@@ -43,7 +43,7 @@ export default function PageHeader({
                         {backControl}
                     </div>
                 )}
-                <div className="min-w-0 px-14 text-center">
+                <div data-header-title className="min-w-0 px-14 text-center">
                     <h1 className="truncate text-base font-black tracking-tight text-slate-950">
                         {title}
                     </h1>

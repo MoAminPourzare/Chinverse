@@ -405,14 +405,13 @@ export default function ChatRoomPage() {
     return (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f7f8fa]" dir="rtl">
             <header className="shrink-0 border-b border-[#dfe3ea] bg-[#f0f2f5] px-5 pb-3 pt-5">
-                <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3" dir="rtl">
-                    <SafeBackButton fallback="/chat" className="justify-self-end" />
+                <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
+                    <SafeBackButton fallback="/chat" className="justify-self-start" />
 
-                    <div className="flex min-w-0 items-center justify-center gap-3" dir="rtl">
-                        <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
+                    <div data-header-title className="flex min-w-0 items-center justify-center gap-3" dir="rtl">
                         <div className="min-w-0 text-right">
                             <h1 className={cn("truncate text-base font-black text-slate-900", getTextAlign(otherUser?.display_name))} {...getDirectionalTextProps(otherUser?.display_name)}>{otherUser?.display_name || 'گفت‌وگو'}</h1>
-                            <p className="mt-0.5 flex items-center justify-end gap-1 text-[11px] font-semibold text-slate-500">
+                            <p className="mt-0.5 flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500">
                                 <span
                                     className={cn(
                                         'h-2 w-2 rounded-full',
@@ -424,7 +423,7 @@ export default function ChatRoomPage() {
                         </div>
                     </div>
 
-                    <span aria-hidden="true" />
+                    <Avatar src={otherUser?.avatar_url} name={otherUser?.display_name} />
                 </div>
             </header>
 

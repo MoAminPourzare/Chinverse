@@ -141,9 +141,9 @@ export default function LessonPlayerPage() {
 
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-4 pb-5 pt-4" dir="rtl">
-            <header data-page-header className="grid shrink-0 grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
-                <SafeBackButton fallback="/explore" className="justify-self-end" />
-                <div className="min-w-0 text-center" dir="rtl">
+            <header data-page-header className="grid shrink-0 grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
+                <SafeBackButton fallback="/explore" className="justify-self-start" />
+                <div data-header-title className="min-w-0 text-center" dir="rtl">
                     <h1 className="truncate text-base font-black text-slate-900">{playback?.lesson.title || "درس"}</h1>
                     <p className="mt-0.5 text-xs font-medium text-slate-500">پخش رسانهٔ منتشرشده</p>
                 </div>

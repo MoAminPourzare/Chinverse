@@ -126,7 +126,7 @@ export function AppHeader({
                         className="absolute right-0 top-1/2 -translate-y-1/2"
                     />
                 )}
-                <div className={cn("min-w-0 px-14 text-center", titleClassName)}>
+                <div data-header-title className={cn("min-w-0 px-14 text-center", titleClassName)}>
                     {typeof title === "string" ? (
                         <h1 className="truncate text-base font-black text-slate-950">{title}</h1>
                     ) : (

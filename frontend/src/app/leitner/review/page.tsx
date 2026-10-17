@@ -274,9 +274,9 @@ export default function LeitnerReviewPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-28 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header data-page-header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="rtl">
-                    <BackButton href={returnTo} className="justify-self-end" />
-                    <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
+                <header data-page-header className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-3" dir="rtl">
+                    <BackButton href={returnTo} className="justify-self-start" />
+                    <h1 data-header-title className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
                     <div className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#155aa6] shadow-sm">
                         {toPersianDigits(currentIndex + 1)} / {toPersianDigits(cards.length)}
                     </div>
@@ -504,9 +504,9 @@ export default function LeitnerReviewPage() {
 function ReviewState({ returnTo, children }: { returnTo: string; children: ReactNode }) {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-8 pt-4" dir="rtl">
-            <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
+            <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                 <BackButton href={returnTo} />
-                <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
+                <h1 data-header-title className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
                 <span aria-hidden />
             </header>
             <div className="flex min-h-[calc(100dvh-160px)] flex-col items-center justify-center p-6 text-center">{children}</div>

@@ -277,6 +277,27 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
     top: var(--app-header-top, 0px);
 }
 
+/* Page titles remain centered regardless of the writing direction or side controls. */
+.app-scroll h1,
+[data-header-title],
+[data-header-title] :is(h1, h2, p, span) {
+  text-align: center;
+}
+
+[data-header-title] {
+  width: 100%;
+  min-width: 0;
+}
+
+:is(h1, h2, p)[data-header-title],
+[data-header-title] :is(h1, h2, p) {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  text-wrap: balance;
+}
+
 @layer components {
     [data-page-header] {
         position: sticky;

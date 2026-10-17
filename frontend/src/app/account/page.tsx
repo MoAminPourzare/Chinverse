@@ -282,7 +282,7 @@ export default function AccountPage() {
                 <header data-page-header className="relative flex h-11 items-center justify-center">
                     <SafeBackButton fallback="/profile" className="absolute right-0 top-0" />
                     <h1 className="text-[17px] font-black text-[#2f3238]">حساب کاربری</h1>
-                    <div className="absolute right-0 top-0 flex h-10 w-10 items-center justify-center">
+                    <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center">
                         <Image src={accountIcon} alt="" width={30} height={30} className="h-8 w-8 object-contain" />
                     </div>
                 </header>

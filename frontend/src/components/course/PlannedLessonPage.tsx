@@ -57,9 +57,10 @@ export default function PlannedLessonPage({
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                    <header data-page-header className="flex items-center justify-between" dir="rtl">
+                    <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                         <BackButton href={`${basePath}/${course.slug}`} label={`بازگشت به ${course.title}`} />
-                        <span className="text-xs font-black text-[#155aa6]">{course.title}</span>
+                        <span data-header-title className="text-center text-xs font-black text-[#155aa6]">{course.title}</span>
+                        <span aria-hidden />
                     </header>
                     <section className="mt-6 rounded-[20px] border border-[#dfe6f0] bg-white p-5 dark:border-slate-700 dark:bg-[#18212b]">
                         <p className="text-xs font-bold text-[#155aa6]">مجموعهٔ گرامر</p>
@@ -75,9 +76,9 @@ export default function PlannedLessonPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
+                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                     <BackButton href={`${basePath}/${course.slug}`} label={`بازگشت به ${course.title}`} />
-                    <div className="min-w-0 text-center" dir="ltr">
+                    <div data-header-title className="min-w-0 text-center" dir="ltr">
                         <p className="truncate text-[10px] font-black text-[#155aa6]">{course.title}</p>
                         <h1 className="truncate text-sm font-black text-[#343941] dark:text-white">{title}</h1>
                     </div>

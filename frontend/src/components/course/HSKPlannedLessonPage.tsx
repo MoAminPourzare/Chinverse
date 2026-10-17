@@ -35,9 +35,9 @@ export default function HSKPlannedLessonPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
+                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                     <BackButton href={`/hsk/${course.slug}`} label={`بازگشت به ${course.title}`} />
-                    <div className="min-w-0 text-center" dir="rtl">
+                    <div data-header-title className="min-w-0 text-center" dir="rtl">
                         <p className="truncate text-[10px] font-black text-[#155aa6]" dir="ltr">{course.title}</p>
                         <h1 className="truncate text-sm font-black text-[#343941] dark:text-white" dir="ltr">{title}</h1>
                     </div>

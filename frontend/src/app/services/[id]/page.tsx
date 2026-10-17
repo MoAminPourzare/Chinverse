@@ -71,11 +71,12 @@ export default function ServiceDetailPage() {
     return (
         <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-                <header data-page-header className="flex items-center justify-between" dir="rtl">
+                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                     <SafeBackButton fallback="/showcase" />
-                    <Link href="/showcase" className="text-xs font-bold text-[#155aa6]">
+                    <Link data-header-title href="/showcase" className="flex items-center justify-center text-center text-xs font-bold text-[#155aa6]">
                         ویترین خدمات
                     </Link>
+                    <span aria-hidden />
                 </header>
 
                 <Surface className="overflow-hidden p-0">

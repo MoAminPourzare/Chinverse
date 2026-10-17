@@ -25,9 +25,9 @@ export default function CatalogEntryPage({ entry, backHref, watchHref, isLoading
             : watchHref ? "ویدیو آمادهٔ پخش است." : "فایل اصلی این بخش هنوز منتشر نشده است.";
     return <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
         <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-            <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
+            <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                 <BackButton href={backHref} label={`بازگشت به ${entry.collectionTitle}`} />
-                <div className="min-w-0 text-center">
+                <div data-header-title className="min-w-0 text-center">
                     <p className="text-[11px] font-bold text-[#155aa6] dark:text-sky-300">{entry.collectionTitle}</p>
                     <h1 className="mt-1 break-words font-cjk text-lg font-bold text-[#343941] dark:text-white">{entry.title}</h1>
                 </div>

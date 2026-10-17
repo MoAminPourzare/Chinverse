@@ -74,9 +74,9 @@ export default function ChatPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] px-5 pb-24 pt-5" dir="rtl">
-            <header data-page-header className="grid grid-cols-[44px_1fr_44px] items-center" dir="rtl">
-                <BackButton href="/community" className="justify-self-end" />
-                <h1 className="text-center text-lg font-black text-slate-900" dir="rtl">پیام‌ها</h1>
+            <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center" dir="rtl">
+                <BackButton href="/community" className="justify-self-start" />
+                <h1 data-header-title className="text-center text-lg font-black text-slate-900" dir="rtl">پیام‌ها</h1>
                 <span aria-hidden />
             </header>
 

@@ -7,9 +7,9 @@ export default function PodcastExplorePage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
-                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
+                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
                     <BackButton href="/explore" label="بازگشت به کاوش" />
-                    <h1 className="text-center text-[22px] font-black text-[#343941] dark:text-white">پادکست آموزشی</h1>
+                    <h1 data-header-title className="text-center text-[22px] font-black text-[#343941] dark:text-white">پادکست آموزشی</h1>
                     <span aria-hidden />
                 </header>
                 <div className="motion-list grid grid-cols-3 gap-2.5" dir="rtl">
