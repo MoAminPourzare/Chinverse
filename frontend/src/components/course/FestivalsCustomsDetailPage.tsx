@@ -40,7 +40,7 @@ export default function FestivalsCustomsDetailPage() {
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-6 py-4">
                 <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
-                    <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                    <header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
                         <BackButton href="/explore/festivals-customs" label="بازگشت به فهرست آیین‌ها و جشن‌ها" />
                         <div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={"festivals-customs"} slug={course.slug} courseId={publishedCourse?.id} />

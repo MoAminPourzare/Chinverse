@@ -29,14 +29,14 @@ export function BackButton({
 
     if (href) {
         return (
-            <Link href={returnHref} className={classes} aria-label={label}>
+            <Link href={returnHref} className={classes} aria-label={label} data-back-button>
                 <ArrowLeft size={iconSize} />
             </Link>
         );
     }
 
     return (
-        <button type="button" onClick={onClick} className={classes} aria-label={label}>
+        <button type="button" onClick={onClick} className={classes} aria-label={label} data-back-button>
             <ArrowLeft size={iconSize} />
         </button>
     );
@@ -123,7 +123,7 @@ export function AppHeader({
                     <BackButton
                         href={backHref}
                         onClick={onBack}
-                        className="absolute left-0 top-1/2 -translate-y-1/2"
+                        className="absolute right-0 top-1/2 -translate-y-1/2"
                     />
                 )}
                 <div className={cn("min-w-0 px-14 text-center", titleClassName)}>
@@ -133,7 +133,7 @@ export function AppHeader({
                         title
                     )}
                 </div>
-                <HeaderIcon className={cn("absolute right-0 top-1/2 -translate-y-1/2", iconClassName)}>
+                <HeaderIcon className={cn("absolute left-0 top-1/2 -translate-y-1/2", iconClassName)}>
                     {icon}
                 </HeaderIcon>
             </div>

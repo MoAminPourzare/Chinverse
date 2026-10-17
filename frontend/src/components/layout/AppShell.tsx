@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "@/components/ui/PublicMediaImage";
@@ -31,7 +31,7 @@ const navHiddenPrefixes = [
 
 export default function AppShell({ children, releaseSha }: { children: ReactNode; releaseSha: string }) {
     const pathname = usePathname();
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
     const isChatRoom = pathname.startsWith("/chat/");
     const showSupportButton = pathname === "/chat";
@@ -43,10 +43,10 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
                     <ThemeController />
                     <MobileUxController />
                     <NotificationToaster />
-                    <Suspense fallback={null}><ScrollRestoration scrollRef={scrollRef} /></Suspense>
-                    <div ref={scrollRef} data-scroll-mode={isChatRoom ? "conversation" : undefined} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
+                    <div ref={setScrollElement} data-scroll-mode={isChatRoom ? "conversation" : undefined} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
                         <RouteTransition>{children}</RouteTransition>
                     </div>
+                    <Suspense fallback={null}><ScrollRestoration scroll={scrollElement} /></Suspense>
                     {showSupportButton && (
                         <Link
                             href="/support"

@@ -274,7 +274,7 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
 /* Page toolbars stay inside the app viewport; post/card headers are unaffected. */
 .app-scroll [data-page-header] {
     position: sticky;
-    top: 0;
+    top: var(--app-header-top, 0px);
 }
 
 @layer components {

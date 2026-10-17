@@ -49,8 +49,12 @@
 
 .homeBack {
     position: absolute;
-    left: 0;
+    right: 0;
     top: 0;
+}
+
+.header:has(.homeBack) {
+    padding-right: 62px;
 }
 
 .sections, .tiles {
@@ -288,6 +292,16 @@
     width: 80%;
     height: 126px;
     margin-right: 2px;
+}
+
+/* Source edges meet the card edge instead of floating inside the illustration. */
+.edgeArtwork .picture {
+    width: 88%;
+    margin-right: 0;
+}
+
+.edgeArtwork .image {
+    object-position: right bottom;
 }
 
 .arrow {

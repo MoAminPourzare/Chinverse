@@ -57,7 +57,7 @@ export default function PlannedLessonPage({
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                    <header data-page-header className="flex items-center justify-between" dir="ltr">
+                    <header data-page-header className="flex items-center justify-between" dir="rtl">
                         <BackButton href={`${basePath}/${course.slug}`} label={`بازگشت به ${course.title}`} />
                         <span className="text-xs font-black text-[#155aa6]">{course.title}</span>
                     </header>
@@ -75,7 +75,7 @@ export default function PlannedLessonPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
+                <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
                     <BackButton href={`${basePath}/${course.slug}`} label={`بازگشت به ${course.title}`} />
                     <div className="min-w-0 text-center" dir="ltr">
                         <p className="truncate text-[10px] font-black text-[#155aa6]">{course.title}</p>

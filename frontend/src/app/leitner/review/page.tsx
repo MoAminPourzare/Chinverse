@@ -274,7 +274,7 @@ export default function LeitnerReviewPage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-28 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col">
-                <header data-page-header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="ltr">
+                <header data-page-header className="grid grid-cols-[40px_1fr_72px] items-center gap-3" dir="rtl">
                     <BackButton href={returnTo} className="justify-self-end" />
                     <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
                     <div className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#155aa6] shadow-sm">
@@ -504,7 +504,7 @@ export default function LeitnerReviewPage() {
 function ReviewState({ returnTo, children }: { returnTo: string; children: ReactNode }) {
     return (
         <div className="min-h-full bg-[#f7f8fa] px-4 pb-8 pt-4" dir="rtl">
-            <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="ltr">
+            <header data-page-header className="grid grid-cols-[40px_1fr_40px] items-center gap-3" dir="rtl">
                 <BackButton href={returnTo} />
                 <h1 className="text-center text-lg font-black text-slate-950" dir="rtl">مرور لغات</h1>
                 <span aria-hidden />

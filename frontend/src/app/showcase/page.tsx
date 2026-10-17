@@ -340,11 +340,11 @@ function TalentFilterPanel({
         <Dialog open onClose={onClose} aria-labelledby="showcase-filter-title" className="modal-backdrop-motion fixed inset-0 z-[1100] bg-[#f7f8fa] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5" dir="rtl">
             <DialogPanel className="mx-auto flex h-full w-full max-w-[430px] flex-col">
                 <header data-page-header className="relative flex h-11 items-center justify-center">
-                    <BackButton onClick={onBack} className="absolute left-0 top-0" />
+                    <BackButton onClick={onBack} className="absolute right-0 top-0" />
                     <h2 id="showcase-filter-title" className="text-center text-[18px] font-black text-[#25272d]">
                         {currentConfig?.label || "فیلترها"}
                     </h2>
-                    <IconButton onClick={onClose} label="بستن" className="absolute right-0 top-0">
+                    <IconButton onClick={onClose} label="بستن" className="absolute left-0 top-0">
                         <X className="h-5 w-5" />
                     </IconButton>
                 </header>

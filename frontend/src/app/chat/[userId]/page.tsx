@@ -405,7 +405,7 @@ export default function ChatRoomPage() {
     return (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f7f8fa]" dir="rtl">
             <header className="shrink-0 border-b border-[#dfe3ea] bg-[#f0f2f5] px-5 pb-3 pt-5">
-                <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3" dir="ltr">
+                <div className="grid grid-cols-[42px_1fr_42px] items-center gap-3" dir="rtl">
                     <SafeBackButton fallback="/chat" className="justify-self-end" />
 
                     <div className="flex min-w-0 items-center justify-center gap-3" dir="rtl">

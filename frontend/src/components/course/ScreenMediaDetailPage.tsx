@@ -112,7 +112,7 @@ export default function ScreenMediaDetailPage({
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                    <header data-page-header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                    <header data-page-header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
                         <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                         <div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />
@@ -159,7 +159,7 @@ export default function ScreenMediaDetailPage({
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
                 <main className="mx-auto w-full max-w-[430px] px-6 py-4">
                     <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
-                        <header className="-mx-2 flex items-center justify-between py-2" dir="ltr">
+                        <header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
                             <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                             <div className="flex items-center gap-1">
                                 <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />
@@ -234,7 +234,7 @@ export default function ScreenMediaDetailPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
+                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="rtl">
                     <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                     <div className="flex items-center gap-1">
                         <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />

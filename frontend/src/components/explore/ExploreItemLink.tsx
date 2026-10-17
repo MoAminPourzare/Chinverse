@@ -9,9 +9,10 @@ import styles from "./ExploreGallery.module.css";
 
 export default function ExploreItemLink({ item, eager = false }: { item: ExploreItem; eager?: boolean }) {
     const currentPath = useCurrentReturnPath();
+    const edgeArtwork = ["china-beyond-language", "historical-stories", "series"].includes(item.id);
     return (
         <Link href={`${item.href}?returnTo=${encodeURIComponent(currentPath)}`}
-            className={`${styles.card} ${styles.tile} ${item.wide ? styles.feature : ""}`} data-tone={item.tone} dir="ltr">
+            className={`${styles.card} ${styles.tile} ${item.wide ? styles.feature : ""} ${edgeArtwork ? styles.edgeArtwork : ""}`} data-tone={item.tone} dir="ltr">
             <span className={styles.content} dir="rtl">
                 <span className={styles.itemTitle} lang={item.id === "hsk" ? "en" : undefined} dir={item.id === "hsk" ? "ltr" : undefined}>{item.title}</span>
                 <span className={styles.description}>{item.description}</span>

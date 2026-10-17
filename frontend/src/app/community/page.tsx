@@ -22,6 +22,11 @@ function CommunityHub() {
     const currentUserId = useOptionalCurrentUserId();
     const searchParams = useSearchParams();
     const activeSection = searchParams.get("section") === "articles" ? "articles" : "questions";
+    const sectionHref = (section: string) => {
+        const query = new URLSearchParams(searchParams.toString());
+        query.set("section", section);
+        return `/community?${query}`;
+    };
     const [questions, setQuestions] = useState<ForumQuestion[]>([]);
     const [articles, setArticles] = useState<Article[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +58,7 @@ function CommunityHub() {
 
     return <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
         <header data-page-header className="relative mb-6 flex h-12 items-center justify-center">
-            <BackButton href="/profile" className="absolute left-0" />
+            <BackButton href="/profile" className="absolute right-0" />
             <h1 className="text-lg font-black text-slate-900">گفتگو</h1>
         </header>
         <Link href="/chat" className="flex min-h-24 items-center gap-3 rounded-[24px] border border-blue-100 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition hover:border-blue-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#155aa6]">
@@ -64,7 +69,7 @@ function CommunityHub() {
         <section className="mt-8" aria-labelledby="forum-title">
             <h2 id="forum-title" className="text-base font-black text-slate-900">تالار گفتگو</h2>
             <nav aria-label="بخش‌های تالار گفتگو" className="mb-6 mt-4 flex gap-5 border-b border-slate-200">
-                {[{ id: "questions", label: "سوالات شما", Icon: MessageCircle }, { id: "articles", label: "مقالات", Icon: BookOpen }].map(({ id, label, Icon }) => <Link key={id} href={`/community?section=${id}`} scroll={false} aria-current={activeSection === id ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 border-b-2 px-1 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#155aa6]", activeSection === id ? "border-[#155aa6] text-[#155aa6]" : "border-transparent text-slate-500 hover:text-[#155aa6]")}><Icon aria-hidden className="size-4" />{label}</Link>)}
+                {[{ id: "questions", label: "سوالات شما", Icon: MessageCircle }, { id: "articles", label: "مقالات", Icon: BookOpen }].map(({ id, label, Icon }) => <Link key={id} href={sectionHref(id)} scroll={false} aria-current={activeSection === id ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 border-b-2 px-1 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#155aa6]", activeSection === id ? "border-[#155aa6] text-[#155aa6]" : "border-transparent text-slate-500 hover:text-[#155aa6]")}><Icon aria-hidden className="size-4" />{label}</Link>)}
             </nav>
             {loadError ? <div role="alert" className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600"><p>{loadError}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 rounded-xl bg-[#155aa6] px-4 font-bold text-white">تلاش دوباره</button></div> : isLoading ? <LoadingList /> : activeSection === "articles" ? <section><SectionHeader title="مقالات" description="در این بخش، سوالات پرتکرار یا موضوعات جالب توسط تیم ما تبدیل به مقاله میشه. می‌تونی مقاله‌ها رو بخونی، زیرش نظر بدی یا سوال جدید مطرح کنی." /><div className="mt-4"><ArticleLibrary articles={articles} /></div></section> : <QuestionsSection questions={questions} isLoading={false} currentUserId={currentUserId} setQuestions={setQuestions} />}
         </section>

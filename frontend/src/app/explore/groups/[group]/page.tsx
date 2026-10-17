@@ -16,7 +16,7 @@ export default function ExploreGroupPage() {
         <div className={styles.page} data-tone={section.tone} dir="rtl">
             <main className={styles.main}>
                 <header data-page-header className={styles.groupHeader}>
-                    <div className={styles.groupToolbar} dir="ltr">
+                    <div className={styles.groupToolbar} dir="rtl">
                         <BackButton href="/explore" label="بازگشت به کاوش" />
                         <h1 className={styles.groupTitle} dir="rtl">{section.title}</h1>
                         <span aria-hidden />

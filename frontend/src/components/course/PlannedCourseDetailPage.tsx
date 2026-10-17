@@ -64,7 +64,7 @@ export default function PlannedCourseDetailPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="ltr">
+                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="rtl">
                     <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
                     <div className="flex items-center gap-1">
                         <CollectionBookmarkButton domain={domain} slug={course.slug} courseId={publishedCourse?.id} />

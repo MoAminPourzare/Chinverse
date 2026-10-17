@@ -3,6 +3,7 @@
 import { Dialog, DialogPanel, DialogTitle, Description } from "@headlessui/react";
 import Link from "next/link";
 import { useState } from "react";
+import { useCurrentReturnPath } from "@/hooks/useReturnTo";
 import { vocabularyKnowledgeService, type VocabularyStates } from "@/services/vocabularyKnowledge.service";
 
 export default function LessonCompletionActions({ words, loadingWords, wordsFailed, onRetryWords, onKnown, onNext, onLogin }: {
@@ -14,6 +15,7 @@ export default function LessonCompletionActions({ words, loadingWords, wordsFail
     onNext?: () => void;
     onLogin?: () => void;
 }) {
+    const returnPath = useCurrentReturnPath();
     const [confirm, setConfirm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -34,7 +36,7 @@ export default function LessonCompletionActions({ words, loadingWords, wordsFail
     return <section className="space-y-2 rounded-[24px] border border-[#dfe6f0] bg-[#eef6ff] p-4" aria-label="پایان درس">
         <h2 className="mb-3 text-center font-bold text-slate-900">درس تموم شد!</h2>
         <button type="button" className={button} disabled={loadingWords || wordsFailed || words.length === 0 || saved} onClick={() => onLogin ? onLogin() : setConfirm(true)}>بقیه لغت‌ها رو بلدم</button>
-        <Link href="/community" className={button}>آیا سوالی داری؟</Link>
+        <Link href={`/community?returnTo=${encodeURIComponent(returnPath)}`} className={button}>آیا سوالی داری؟</Link>
         <button type="button" className={button + " !bg-[#155aa6] !text-white"} disabled={!onNext} onClick={onNext}>پخش درس بعدی</button>
         {saved && <p role="status" className="text-sm leading-7 text-emerald-800">لغت‌های باقی‌مونده به حالت «می‌دونم» تغییر کردن.</p>}
         {!onNext && <p className="text-center text-xs leading-6 text-slate-600">به آخرین درس این دوره رسیدی.</p>}

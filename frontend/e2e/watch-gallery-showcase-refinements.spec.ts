@@ -73,7 +73,8 @@ async function ready(page: Page, url: string) {
     await page.goto(url);
     await page.waitForLoadState("networkidle");
     await expect(page.locator(".route-panel:visible").first()).toHaveCSS("opacity", "1");
-    await page.evaluate(() => document.fonts.ready);
+    await page.waitForFunction(() => document.fonts.status === "loaded");
+    await expect.poll(() => page.locator(".app-scroll").evaluate(element => element.style.getPropertyValue("--app-header-height"))).not.toBe("");
 }
 
 async function setup(page: Page) {
@@ -164,7 +165,8 @@ test("lesson end offers all three actions, confirmation cancels safely, knowledg
     const video = page.locator("video");
     await video.evaluate((element) => { element.setAttribute("data-original-player", "true"); element.dispatchEvent(new Event("ended")); });
     const end = page.getByRole("region", { name: "پایان درس", exact: true });
-    await expect(end.getByRole("link", { name: "آیا سوالی داری؟", exact: true })).toHaveAttribute("href", "/community");
+    await expect(end.getByRole("link", { name: "آیا سوالی داری؟", exact: true })).toHaveAttribute("href", "/community?returnTo=%2Fwatch%2Fhsk%2F121%3Flesson%3D501");
+    expect(await end.evaluate(element => Boolean(element.parentElement?.previousElementSibling?.textContent?.includes("ادامهٔ دوره")))).toBe(true);
     await expect(page).toHaveURL(/lesson=501/);
     await end.getByRole("button", { name: "بقیه لغت‌ها رو بلدم", exact: true }).click();
     const confirm = page.getByRole("dialog", { name: "بقیه لغت‌ها رو بلدم", exact: true });
@@ -185,6 +187,32 @@ test("lesson end offers all three actions, confirmation cancels safely, knowledg
     await video.dispatchEvent("ended");
     await expect(end.getByRole("button", { name: "پخش درس بعدی", exact: true })).toBeDisabled();
     expect(state.knownWrites).toBe(1);
+});
+
+test("lesson questions return from the forum to the exact lesson and preserve its parent journey", async ({ page }, info) => {
+    await setup(page);
+    const lesson = "/watch/hsk/121?lesson=501&returnTo=%2Fhsk%2F121%3FreturnTo%3D%252Fexplore%252Fhsk";
+    await ready(page, lesson);
+    await page.locator("video").dispatchEvent("ended");
+    const completion = page.getByRole("region", { name: "پایان درس", exact: true });
+    const transcript = page.locator(".lesson-subtitle-list");
+    expect(await completion.evaluate(element => Boolean(element.parentElement?.previousElementSibling?.textContent?.includes("ادامهٔ دوره")))).toBe(true);
+    expect(await transcript.evaluate(element => Boolean(element.closest("section")?.nextElementSibling?.textContent?.includes("ادامهٔ دوره")))).toBe(true);
+    const nextAction = completion.getByRole("button", { name: "پخش درس بعدی", exact: true });
+    await expect.poll(async () => {
+        const actionBox = (await nextAction.boundingBox())!;
+        const navBox = (await page.getByRole("navigation", { name: "ناوبری اصلی" }).boundingBox())!;
+        return actionBox.y + actionBox.height <= navBox.y;
+    }).toBe(true);
+    await page.screenshot({ path: path.resolve("../artifacts", "lesson-completion-below-transcript-" + info.project.name + ".png") });
+    await completion.getByRole("link", { name: "آیا سوالی داری؟", exact: true }).click();
+    await expect(page).toHaveURL(url => url.pathname === "/community" && url.searchParams.get("returnTo") === lesson);
+    await page.getByRole("link", { name: "مقالات", exact: true }).click();
+    await expect(page.locator("[data-back-button]")).toHaveAttribute("href", lesson);
+    await page.locator("[data-back-button]").click();
+    await expect(page).toHaveURL(url => url.pathname + url.search === lesson);
+    await expect(page.getByRole("heading", { name: "درس اول", exact: true })).toBeVisible();
+    await expect(page.locator("[data-back-button]")).toHaveAttribute("href", "/hsk/121?returnTo=%2Fexplore%2Fhsk");
 });
 
 test("a failed knowledge save stays retryable without clearing vocabulary colours", async ({ page }) => {

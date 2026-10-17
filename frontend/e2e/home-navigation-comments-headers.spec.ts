@@ -43,6 +43,7 @@ async function ready(page: Page, url: string) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await expect(page.locator(".route-panel:visible").first()).toHaveCSS("opacity", "1");
     await page.waitForFunction(() => document.fonts.status === "loaded");
+    await expect.poll(() => page.locator(".app-scroll").evaluate(element => element.style.getPropertyValue("--app-header-height"))).not.toBe("");
 }
 
 for (const [label, route, back] of [
@@ -57,8 +58,9 @@ for (const [label, route, back] of [
         await expect(page).toHaveURL(/\?tab=daily$/);
         const link = page.getByRole("link", { name: label, exact: true });
         await expect(link).toBeVisible();
-        await page.locator(".app-scroll").evaluate(element => element.scrollTo(0, 70));
-        await expect.poll(() => page.locator(".app-scroll").evaluate(element => Math.abs(element.scrollTop - 70))).toBeLessThan(2);
+        // Keep the action below the pinned toolbar so clicking does not auto-scroll it.
+        await page.locator(".app-scroll").evaluate(element => element.scrollTo(0, 20));
+        await expect.poll(() => page.locator(".app-scroll").evaluate(element => Math.abs(element.scrollTop - 20))).toBeLessThan(2);
         await link.click();
         await expect(page).toHaveURL(new RegExp(route + "\\?returnTo="));
         if (route === "/settings/daily") {
@@ -67,10 +69,10 @@ for (const [label, route, back] of [
         await page.getByRole("link", { name: back, exact: true }).click();
         await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");
         await expect(page.getByRole("link", { name: label, exact: true })).toBeVisible();
-        await expect.poll(() => page.locator(".app-scroll").evaluate(element => Math.abs(element.scrollTop - 70))).toBeLessThan(2);
+        await expect.poll(() => page.locator(".app-scroll").evaluate(element => Math.abs(element.scrollTop - 20))).toBeLessThan(2);
         await link.click(); await expect(page).toHaveURL(new RegExp(route)); await page.goBack({ waitUntil: "domcontentloaded" });
         await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");
-        await expect.poll(() => page.locator(".app-scroll").evaluate(element => Math.abs(element.scrollTop - 70))).toBeLessThan(2);
+        await expect.poll(() => page.locator(".app-scroll").evaluate(element => Math.abs(element.scrollTop - 20))).toBeLessThan(2);
         await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");
     });
@@ -205,6 +207,19 @@ test("culture contains tea and a working coming-soon page without moving the lea
     await expect(page).toHaveURL(/\/explore\/groups\/culture$/);
 });
 
+test("back controls sit on the right across shared, grid, absolute and detail headers", async ({ page }) => {
+    await setup(page);
+    for (const url of ["/settings", "/settings/daily", "/settings/points", "/community", "/profile/network", "/chat", "/notifications", "/account", "/explore/groups/culture", "/explore/china-beyond-language", "/explore/podcasts", "/explore/series", "/cooking/meishi-zuojia-wang-gang/lesson/1"]) {
+        await ready(page, url);
+        const back = page.locator("[data-page-header] [data-back-button]");
+        await expect(back).toHaveCount(1);
+        const backBox = (await back.boundingBox())!;
+        const headerBox = (await page.locator("[data-page-header]").first().boundingBox())!;
+        expect(backBox.x + backBox.width / 2, url).toBeGreaterThan(headerBox.x + headerBox.width / 2);
+        expect(backBox.y, url).toBeGreaterThanOrEqual(headerBox.y - 1);
+    }
+});
+
 for (const [group, urls] of [
     ["home and showcase", ["/", "/?tab=daily", "/showcase"]],
     ["explore and collections", ["/explore", "/explore/groups/entertainment", "/explore/cooking", "/cooking/meishi-zuojia-wang-gang"]],
@@ -221,17 +236,21 @@ test(`${group}: page toolbars remain visible while long content scrolls`, async 
         if (url === "/showcase") await expect(page.getByRole("heading", { name: "مدرس 15", exact: true })).toBeAttached();
         if (url === "/leitner") await expect(page.getByRole("button", { name: "حذف 学习 از لایتنر", exact: true })).toHaveCount(25);
         if (url === "/account") await expect(page.locator("#account-headline")).toBeAttached();
+        const initialTop = (await header.boundingBox())!.y;
+        const back = header.locator("[data-back-button]");
+        if (await back.count()) {
+            const headerBox = (await header.boundingBox())!, backBox = (await back.first().boundingBox())!;
+            expect(backBox.x + backBox.width / 2).toBeGreaterThan(headerBox.x + headerBox.width / 2);
+        }
         const scrolled = await page.locator(".app-scroll").evaluate(element => { element.scrollTo(0, element.scrollHeight); return element.scrollHeight - element.clientHeight; });
         if (scrolled > 20) {
-            await expect.poll(async () => (await header.boundingBox())!.y).toBeGreaterThanOrEqual(-1);
-            expect((await header.boundingBox())!.y).toBeLessThan(36);
+            await expect.poll(async () => Math.abs((await header.boundingBox())!.y - initialTop)).toBeLessThanOrEqual(1);
         }
         if (url === "/showcase") {
             await page.getByRole("button", { name: "ویترین خدمات", exact: true }).click();
             await expect(page.getByRole("heading", { name: "خدمت 10", exact: true })).toBeAttached();
             await page.locator(".app-scroll").evaluate(element => element.scrollTo(0, element.scrollHeight));
-            expect((await header.boundingBox())!.y).toBeGreaterThanOrEqual(-1);
-            expect((await header.boundingBox())!.y).toBeLessThan(36);
+            expect(Math.abs((await header.boundingBox())!.y - initialTop)).toBeLessThanOrEqual(1);
         }
         expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
