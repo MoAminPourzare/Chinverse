@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { TEA_CULTURE_CATALOG } from "@/lib/teaCultureCatalog";
 
 export default function TeaCultureExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="فرهنگ چای"
-            subcategorySlug="tea-culture"
-            detailPath="/tea-culture"
-            layout="list"
+            basePath="/tea-culture"
+            catalog={TEA_CULTURE_CATALOG}
             countLabel="درس"
-            accentClass="bg-blue-700"
         />
     );
 }

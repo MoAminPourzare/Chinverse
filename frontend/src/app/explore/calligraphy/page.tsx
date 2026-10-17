@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { CALLIGRAPHY_CATALOG } from "@/lib/calligraphyCatalog";
 
 export default function CalligraphyExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="خطاطی"
-            subcategorySlug="calligraphy"
-            detailPath="/calligraphy"
-            layout="list"
+            basePath="/calligraphy"
+            catalog={CALLIGRAPHY_CATALOG}
             countLabel="درس"
-            accentClass="bg-indigo-600"
         />
     );
 }

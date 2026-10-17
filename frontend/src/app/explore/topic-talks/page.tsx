@@ -1,13 +1,12 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { TOPIC_TALKS_CATALOG } from "@/lib/topicTalksCatalog";
 
 export default function TopicTalksExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="گفتارهای موضوعی"
-            subcategorySlug="topic-talks"
-            detailPath="/topic-talks"
-            layout="square"
-            countKeys={["episodes_count"]}
+            basePath="/topic-talks"
+            catalog={TOPIC_TALKS_CATALOG}
             countLabel="گفتار"
         />
     );

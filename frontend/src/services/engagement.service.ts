@@ -28,6 +28,9 @@ export interface EngagementComment {
 }
 
 export const engagementService = {
+    async deleteComment(targetType: EngagementTargetType, targetId: number, commentId: number): Promise<void> {
+        await api.delete(`/engagements/${targetType}/${targetId}/comments/${commentId}`);
+    },
     async getState(targetType: EngagementTargetType, targetId: number): Promise<EngagementState> {
         const response = await api.get<EngagementState>(`/engagements/${targetType}/${targetId}`);
         return response.data;

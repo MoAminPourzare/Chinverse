@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { galleryService, GalleryItem } from "@/services/gallery.service";
@@ -19,6 +19,7 @@ export default function GalleryTab() {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+    const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
 
     const fetchGallery = async () => {
         try {
@@ -64,7 +65,7 @@ export default function GalleryTab() {
                     <h3 className="text-[18px] font-black leading-8 text-[#25272d]">
                         اولین عکست رو بارگذاری کن!
                     </h3>
-                    <p className="mt-3 max-w-[300px] text-[12px] font-medium leading-7 text-[#888e99]">
+                    <p className="mt-3 max-w-[300px] text-center text-[12px] font-medium leading-7 text-[#888e99]">
                         با اضافه کردن تصاویر نمونه‌کار یا فعالیت‌هات، پروفایلت توی ویترین بیشتر به چشم میاد.
                     </p>
                     <button
@@ -102,6 +103,7 @@ export default function GalleryTab() {
                                 src={getMediaUrl(item.image_url)}
                                 alt={item.caption || "Gallery image"}
                                 fill
+                                sizes="(max-width: 430px) 50vw, 215px"
                                 className="object-cover"
                                 unoptimized
                             />
@@ -125,10 +127,24 @@ export default function GalleryTab() {
                 onUploadSuccess={handleUploadSuccess}
             />
 
+            <AddPhotoModal
+                isOpen={!!editingItem}
+                item={editingItem}
+                onClose={() => setEditingItem(null)}
+                onUploadSuccess={handleUploadSuccess}
+            />
+
             <ImageDetailModal
                 isOpen={!!selectedItem}
                 onClose={() => setSelectedItem(null)}
                 item={selectedItem}
+                onEdit={() => { setEditingItem(selectedItem); setSelectedItem(null); }}
+                onDelete={async () => {
+                    if (!selectedItem) return;
+                    await galleryService.deleteImage(selectedItem.id);
+                    setGalleryItems((items) => items.filter((item) => item.id !== selectedItem.id));
+                    setSelectedItem(null);
+                }}
             />
         </>
     );

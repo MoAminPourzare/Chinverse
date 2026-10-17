@@ -80,3 +80,71 @@
 2. هر دو health endpoint محیط `staging`، نسخه release و noindex را گزارش کنند.
 3. GitHub، Vercel و Hugging Face به commitهای ثبت‌شده در گزارش نهایی اشاره کنند.
 4. production عمومی ایجاد یا indexable نشود.
+
+## ممیزی اجرایی تکمیلی — ۲۴ اوت ۲۰۲۶ (پیش از مجوز rewrite)
+
+این سند baseline تاریخی فاز صفر است؛ وضعیت اجرای فعلی در
+`docs/LAUNCH_READINESS_ACTION_PLAN_FA.md` ثبت می‌شود. در ممیزی تکمیلی:
+
+- guard tree-level privacy و release سبز است؛ فایل‌های runtime، env خصوصی و
+  artifact دیتابیس در tree فعلی tracked نیستند. strict history guard عمداً fail
+  می‌شود، چون دو commit قابل‌دسترسی هنوز migration قدیمی display-name را دارند.
+- frontend و backend قرارداد staging/noindex و featureهای ناقص را enforce می‌کنند؛
+  backend `/health` نیز اکنون `indexable` را صریحاً گزارش می‌کند.
+- deploy workflow دیگر به branch بازنشستهٔ فاز ۷ قفل نیست و SHA را نسبت به
+  `release_ref` بررسی می‌کند.
+- commit فاز ۸ هنوز روی remote/main نیست و live deployment با همان SHA ثبت نشده است.
+- history قابل‌دسترسی هنوز یک migration قدیمی با دادهٔ display-name دارد؛
+  history rewrite و force-push فقط پس از تأیید مالک پروژه انجام می‌شود.
+
+بنابراین اصلاحات کدی فاز صفر انجام شده، اما این بخش از گزارش مربوط به وضعیت قبل
+از دریافت مجوز rewrite است. الحاقیهٔ اجرایی زیر وضعیت فعلی را ثبت می‌کند.
+
+## الحاقیهٔ اجرایی پس از rewrite — ۲۴ اوت ۲۰۲۶
+
+- history تمام refهای publishable بازنویسی شد و migration قدیمی به revision
+  no-op تبدیل شده است؛ اسکن تاریخچهٔ مسیر migration با
+  `git log --all -G "DISPLAY_NAME_UPDATES|نام/ایمیل شخصی" -- <migration-path>`
+  در refهای قابل‌دسترسی hit ندارد. رشتهٔ guard و مستندات ممکن است بیرون از این
+  مسیر باقی مانده باشد و به‌تنهایی نشانهٔ وجود دادهٔ شخصی در history نیست.
+- شاخه‌های phase 2 تا phase 8، `codex/release-phase-0` و `main` با
+  `--force-with-lease` روی remote ثبت شدند. شاخهٔ phase 8 پس از این گزارش
+  چند commit docs-only دارد؛ مقدار HEAD را با `git rev-parse HEAD` بررسی کنید.
+  آخرین SHA کد/CI-tested برابر `7238566467d821bd9acce70a6bf7441a06a2cd16` و
+  SHA `main` برابر `bd7b016edede215885f495370b1976a230d3a996` است؛ remote tag
+  وجود ندارد.
+- bundle پیش از rewrite برای بازیابی محلی در
+  `.backups/phase0-history-rewrite-20260824/before.bundle` نگه‌داری شده و
+  به remote منتقل نشده است.
+- health زنده هنوز deploy همان SHA phase 8 را اثبات نمی‌کند: frontend روی
+  `bd7b016...` و backend روی `3b3a918...` است. ruleset/required checks نیز باید
+  از حساب صاحب repository ثبت و قابل‌مشاهده شود.
+
+### نتیجهٔ CI و provider — ۲۴ اوت ۲۰۲۶
+
+- Quality Gates برای SHA نهایی `7238566467d821bd9acce70a6bf7441a06a2cd16` در
+  [run 32766872810](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872810)
+  سبز شد؛ baseline، backend، migration rollback/rebuild، frontend و browser tests
+  همگی موفق بودند.
+- Quality Gates روی HEAD مستندات `1db3633d67b758bd8167cffb5e447fc402e99e5a` در
+  [run 32768637283](https://github.com/MoAminPourzare/Chinverse/actions/runs/32768637283)
+  نیز با موفقیت پایان یافت؛ تغییرات پس از SHA کد فقط مستنداتی هستند.
+- Quality Gates روی snapshotهای docs-only پس از SHA کد در
+  [run 32769302779](https://github.com/MoAminPourzare/Chinverse/actions/runs/32769302779)
+  و [run 32770142297](https://github.com/MoAminPourzare/Chinverse/actions/runs/32770142297)
+  نیز با هر سه job سبز پایان یافت؛ کد deployable همچنان همان SHA `7238566...` است.
+- Deploy staging در [run 32766872815](https://github.com/MoAminPourzare/Chinverse/actions/runs/32766872815)
+  در گام mirror به Hugging Face شکست خورد و health همان SHA اجرا نشد. Space عمومی
+  هنوز release قدیمی `3b3a918...` را گزارش می‌کند.
+- بررسی خواندنی تنظیمات Space نشان داد فقط دو publisher برای refهای
+  `refs/heads/codex/phase-4-user-journeys` و
+  `refs/heads/codex/phase-5-education-media` ثبت شده‌اند؛ publisher برای
+  phase 7/8 وجود ندارد. برای ادامهٔ deploy، Trusted Publisher در تنظیمات Space باید با resource
+  `spaces/MoAmin9/chinverse-api` و claimهای repository/branch/workflow متناظر با
+  `MoAminPourzare/Chinverse`، `codex/phase-8-beta-release` و
+  `deploy-hf-space.yml` ثبت شود. در این نشست هیچ تنظیم provider تغییر نکرده و
+  افزودن این مجوز نیازمند تأیید صاحب Space است.
+- در سابقهٔ عمومی workflow، deploy phase 7 نیز در همان گام mirror شکست خورده،
+  درحالی‌که deployهای phase 4 و phase 5 سبز بوده‌اند؛ این الگو با محدودیت claim
+  branch/workflow در Trusted Publisher سازگار است، اما log خصوصی provider باید
+  علت را قطعی کند.

@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Check, ChevronDown, Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
+import Image from "@/components/ui/PublicMediaImage";
+import { ChevronDown, Loader2, LogOut, Pencil, Trash2, X } from "lucide-react";
+import { getProfileJobTitles } from "@/lib/profileJobTitles";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
-import { BackButton } from "@/components/ui/IconButton";
+import SafeBackButton from "@/components/ui/SafeBackButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import SearchableOptionList from "@/components/ui/SearchableOptionList";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
 import {
@@ -39,6 +41,8 @@ interface AccountFormState extends UserProfile {
 }
 
 const accountIcon = "/assets/chinverse/icons/profile.svg";
+const legacyJobTitles = new Set(["مترجم زبان چینی", "راهنمای تور چین", "تولیدکننده محتوای چینی", "مشاور تحصیل در چین", "بازرگان و واردات از چین", "متخصص فرهنگ چین", "زیرنویس و دوبله چینی"]);
+const getAccountJobTitles = (profile?: UserProfile) => getProfileJobTitles(profile).filter((title) => isKnownProfileHeadline(title) || legacyJobTitles.has(title));
 export default function AccountPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -55,6 +59,7 @@ export default function AccountPage() {
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
         headline: "",
+        job_titles: [],
         gender: "",
         city: "",
         country: "",
@@ -70,7 +75,8 @@ export default function AccountPage() {
                 const userData = await userService.getMe();
                 setFormData({
                     display_name: userData.profile?.display_name || "",
-                    headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
+                    headline: getAccountJobTitles(userData.profile)[0] || "",
+                    job_titles: getAccountJobTitles(userData.profile),
                     gender: userData.profile?.gender || "",
                     city: userData.profile?.city || "",
                     country: userData.profile?.country || "",
@@ -108,6 +114,16 @@ export default function AccountPage() {
     };
 
     const handleOptionSelect = (name: "headline" | "gender" | "country" | "city", value: string) => {
+        if (name === "headline") {
+            setFormData((prev) => {
+                const titles = prev.job_titles || [];
+                const nextTitles = titles.includes(value) ? titles.filter((title) => title !== value) : [...titles, value];
+                return { ...prev, headline: nextTitles[0] || "", job_titles: nextTitles };
+            });
+            setFieldErrors((current) => ({ ...current, headline: "" }));
+            setFormMessage(null);
+            return;
+        }
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -198,6 +214,7 @@ export default function AccountPage() {
             await userService.updateProfile({
                 display_name: normalizePersianName(formData.display_name || ""),
                 headline: (formData.headline || "").trim(),
+                job_titles: formData.job_titles || [],
                 gender: formData.gender?.trim() || "",
                 city: shouldValidateProvince ? formData.city?.trim() : "",
                 country: formData.country?.trim(),
@@ -210,7 +227,8 @@ export default function AccountPage() {
             const userData = await userService.getMe();
             setFormData({
                 display_name: userData.profile?.display_name || "",
-                headline: isKnownProfileHeadline(userData.profile?.headline) ? userData.profile?.headline || "" : "",
+                headline: getAccountJobTitles(userData.profile)[0] || "",
+                job_titles: getAccountJobTitles(userData.profile),
                 gender: userData.profile?.gender || "",
                 city: userData.profile?.city || "",
                 country: userData.profile?.country || "",
@@ -261,10 +279,10 @@ export default function AccountPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5">
-                <header className="relative flex h-11 items-center justify-center">
-                    <BackButton onClick={() => router.back()} className="absolute right-0 top-0" />
+                <header data-page-header className="relative flex h-11 items-center justify-center">
+                    <SafeBackButton fallback="/profile" className="absolute right-0 top-0" />
                     <h1 className="text-[17px] font-black text-[#2f3238]">حساب کاربری</h1>
-                    <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center">
+                    <div className="absolute right-0 top-0 flex h-10 w-10 items-center justify-center">
                         <Image src={accountIcon} alt="" width={30} height={30} className="h-8 w-8 object-contain" />
                     </div>
                 </header>
@@ -327,6 +345,8 @@ export default function AccountPage() {
 
                 {formMessage && (
                     <div
+                        role={formMessage.type === "success" ? "status" : "alert"}
+                        aria-live={formMessage.type === "success" ? "polite" : undefined}
                         className={cn(
                             "rounded-2xl px-4 py-3 text-sm font-bold leading-6",
                             formMessage.type === "success"
@@ -356,7 +376,10 @@ export default function AccountPage() {
 
                     <FloatingField label="عنوان شغلی" error={fieldErrors.headline}>
                         <OptionPicker
+                            id="account-headline"
+                            label="عنوان شغلی"
                             value={formData.headline || ""}
+                            selectedValues={formData.job_titles || []}
                             placeholder="انتخاب شغل"
                             options={PROFILE_HEADLINE_OPTIONS}
                             isOpen={openPicker === "headline"}
@@ -367,6 +390,8 @@ export default function AccountPage() {
 
                     <FloatingField label="جنسیت" error={fieldErrors.gender}>
                         <OptionPicker
+                            id="account-gender"
+                            label="جنسیت"
                             value={formData.gender || ""}
                             placeholder="انتخاب جنسیت"
                             options={GENDER_OPTIONS}
@@ -379,6 +404,8 @@ export default function AccountPage() {
 
                     <FloatingField label="کشور/منطقه" error={fieldErrors.country}>
                         <OptionPicker
+                            id="account-country"
+                            label="کشور یا منطقه"
                             value={formData.country || ""}
                             placeholder="انتخاب کشور/منطقه"
                             options={COUNTRY_REGION_OPTIONS}
@@ -392,6 +419,8 @@ export default function AccountPage() {
                     {shouldShowProvince && (
                         <FloatingField label="استان" error={fieldErrors.city}>
                             <OptionPicker
+                                id="account-city"
+                                label="استان"
                                 value={formData.city || ""}
                                 placeholder="انتخاب استان"
                                 options={provinceOptions}
@@ -417,16 +446,19 @@ export default function AccountPage() {
                     <div>
                         <label className="flex items-start gap-3 rounded-[16px] border border-[#d6e1ee] bg-white/70 px-4 py-3 text-right">
                             <input
+                                id="account-profile-truth"
                                 type="checkbox"
                                 checked={Boolean(formData.profile_truth_confirmed)}
                                 onChange={handleTruthConfirmChange}
+                                aria-invalid={Boolean(fieldErrors.profile_truth_confirmed)}
+                                aria-describedby={fieldErrors.profile_truth_confirmed ? "account-profile-truth-error" : undefined}
                                 className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
                             />
                             <span className="text-[13px] font-bold leading-7 text-[#2f3238]">
-                                تایید میکنم اطلاعات پروفایل، عناوین شغلی، مهارت ها و خدماتم درست و واقعی است و مسئولیت آن ها با خودم است.
+                                تایید می‌کنم اطلاعات پروفایل، عناوین شغلی، مهارت‌ها و خدماتم درست و واقعی است و مسئولیت آن‌ها با خودم است.
                             </span>
                         </label>
-                        <FieldError message={fieldErrors.profile_truth_confirmed} />
+                        <FieldError id="account-profile-truth-error" message={fieldErrors.profile_truth_confirmed} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-1">
@@ -472,14 +504,18 @@ function AccountField({
     error?: string;
 } & InputHTMLAttributes<HTMLInputElement>) {
     if (inputProps.name === "city") return null;
+    const fieldId = inputProps.id || `account-${inputProps.name || "field"}`;
+    const errorId = `${fieldId}-error`;
 
     return (
-        <FloatingField label={label} error={error}>
+        <FloatingField label={label} labelFor={fieldId} error={error} errorId={errorId}>
             <input
                 {...inputProps}
+                id={fieldId}
+                aria-describedby={error ? errorId : inputProps["aria-describedby"]}
                 dir={inputProps.dir || "auto"}
                 className={cn(
-                    "h-11 w-full rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none placeholder:text-slate-400",
+                    "h-[46px] w-full rounded-[9px] border-0 bg-transparent px-4 text-center text-[15px] font-medium text-[#2f3238] outline-none placeholder:text-slate-400",
                     inputProps.readOnly && "text-slate-500",
                     error && "text-rose-700",
                 )}
@@ -489,6 +525,8 @@ function AccountField({
 }
 
 function OptionPicker({
+    id,
+    label,
     value,
     placeholder,
     options,
@@ -496,7 +534,10 @@ function OptionPicker({
     clearLabel,
     onToggle,
     onSelect,
+    selectedValues,
 }: {
+    id: string;
+    label: string;
     value: string;
     placeholder: string;
     options: string[];
@@ -504,85 +545,85 @@ function OptionPicker({
     clearLabel?: string;
     onToggle: () => void;
     onSelect: (value: string) => void;
+    selectedValues?: string[];
 }) {
+    const triggerRef = useRef<HTMLButtonElement>(null);
     return (
-        <div className="relative">
+        <div className="relative" onKeyDown={(event) => {
+            if (isOpen && event.key === "Escape") {
+                event.preventDefault();
+                onToggle();
+                triggerRef.current?.focus();
+            }
+        }}>
             <button
+                ref={triggerRef}
+                id={id}
                 type="button"
                 onClick={onToggle}
+                aria-label={`${label}: ${selectedValues?.length ? selectedValues.join("، ") : value || placeholder}`}
+                aria-expanded={isOpen}
+                aria-controls={isOpen ? `${id}-options` : undefined}
                 className={cn(
                     "flex min-h-11 w-full items-center justify-between gap-3 rounded-[8px] bg-[#f7f8fb] px-4 py-2 text-center text-[15px] font-bold text-[#2f3238] outline-none transition-all duration-300",
                     isOpen && "bg-white text-[#155aa6]",
                 )}
             >
                 <ChevronDown className={cn("h-4 w-4 shrink-0 text-[#155aa6] transition-transform duration-300", isOpen && "rotate-180")} />
-                <span className={cn("min-w-0 flex-1 truncate", !value && "text-slate-400")}>{value || placeholder}</span>
+                <span className={cn("min-w-0 flex-1", !value && "text-slate-400", selectedValues ? "break-words leading-7" : "truncate")}>{selectedValues?.length ? selectedValues.join("، ") : value || placeholder}</span>
                 <span className="h-4 w-4 shrink-0" aria-hidden />
             </button>
 
-            {isOpen && (
-                <div className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
-                    <div className="max-h-72 overflow-y-auto pr-1">
-                        <div className="motion-list grid grid-cols-2 gap-2">
-                            {clearLabel && (
-                                <button
-                                    type="button"
-                                    onClick={() => onSelect("")}
-                                    className={cn(
-                                        "flex min-h-11 items-center justify-center rounded-[16px] border px-3 py-2 text-center text-[12px] font-black transition-all duration-300",
-                                        !value
-                                            ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
-                                            : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                    )}
-                                >
-                                    {clearLabel}
-                                </button>
-                            )}
+            {selectedValues && (
+                <div className="px-3 pb-3">
+                    <p className="my-2 text-center text-xs leading-6 text-slate-500">می‌تونی چند عنوان انتخاب کنی. اولین عنوان، عنوان اصلی پروفایلت است.</p>
+                    {selectedValues.length > 0 && <div className="flex flex-wrap justify-center gap-2" aria-label="عناوین شغلی انتخاب‌شده">
+                        {selectedValues.map((title) => <button key={title} type="button" aria-label={`حذف عنوان شغلی ${title}`} onClick={() => onSelect(title)} className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#eef6ff] px-3 py-1 text-xs leading-6 text-[#155aa6]">
+                            <span>{title}</span><X aria-hidden size={14} />
+                        </button>)}
+                    </div>}
+                </div>
+            )}
 
-                            {options.map((option) => {
-                                const active = value === option;
-                                return (
-                                    <button
-                                        key={option}
-                                        type="button"
-                                        onClick={() => onSelect(option)}
-                                        className={cn(
-                                            "flex min-h-11 items-center justify-center gap-1.5 rounded-[16px] border px-3 py-2 text-center text-[12px] font-black leading-5 transition-all duration-300",
-                                            active
-                                                ? "border-[#155aa6] bg-[#155aa6] text-white shadow-[0_10px_20px_rgba(21,90,166,0.22)]"
-                                                : "border-[#dbe5f0] bg-[#f8fbff] text-slate-600 hover:border-[#155aa6]/30 hover:bg-[#eef6ff] hover:text-[#155aa6]",
-                                        )}
-                                    >
-                                        {active && <Check size={14} />}
-                                        <span className="line-clamp-2">{option}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+            {isOpen && (
+                <div id={`${id}-options`} className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
+                    <SearchableOptionList
+                        label={label}
+                        options={options}
+                        selectedValues={selectedValues || (value ? [value] : [])}
+                        searchable={id === "account-headline" || id === "account-country" || id === "account-city"}
+                        clearLabel={clearLabel}
+                        onClear={() => onSelect("")}
+                        onSelect={(option) => {
+                            onSelect(option);
+                            if (!selectedValues) triggerRef.current?.focus();
+                        }}
+                    />
                 </div>
             )}
         </div>
     );
 }
 
-function FloatingField({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+function FloatingField({ label, labelFor, error, errorId, children }: { label: string; labelFor?: string; error?: string; errorId?: string; children: ReactNode }) {
     return (
         <div className="block">
             <div className="relative rounded-[9px] bg-[linear-gradient(90deg,#f07d57,#155aa6)] p-[1.5px]">
-                <span className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">
-                    {label}
-                </span>
+                {labelFor ? (
+                    <label htmlFor={labelFor} className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">{label}</label>
+                ) : (
+                    <span className="absolute right-1/2 top-0 z-10 -translate-y-1/2 translate-x-1/2 bg-[#f7f8fb] px-3 text-[14px] font-black text-[#2f3238]">{label}</span>
+                )}
                 <div className="rounded-[8px] bg-[#f7f8fb]">
                     {children}
                 </div>
             </div>
-            <FieldError message={error} />
+            <FieldError id={errorId} message={error} />
         </div>
     );
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ id, message }: { id?: string; message?: string }) {
     if (!message) return null;
-    return <p className="mt-1 text-xs font-bold leading-5 text-rose-600">{message}</p>;
+    return <p id={id} role="alert" className="mt-1 text-xs font-bold leading-5 text-rose-600">{message}</p>;
 }

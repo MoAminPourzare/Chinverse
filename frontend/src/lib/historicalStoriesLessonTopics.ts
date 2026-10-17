@@ -1,0 +1,21 @@
+/** Reference order and spelling, including "Schoolar" in episode seven. */
+export const HISTORICAL_STORIES_LESSON_TOPICS = [
+    "The Bird Who Longed for the Sea | 想回大海的鸟",
+    "The Stolen Axe | 谁偷的？",
+    "The Seagulls and the Boy | 海鸥与少年",
+    "The Moon That Cannot Be Stolen | 偷不走的月亮",
+    "Don't Worry, the Flowers will Bloom | 别急，花儿会开",
+    "Fan Dan asks Buddha | 范丹问佛",
+    "The Schoolar in The Goose Cage | 鹅笼书生",
+    "A World in a Gourd | 壶中日月",
+    "Before Sunrise! | 日出之前",
+    "The Emperor's favorite food was actually...?! | 天底下最美味的食物",
+    "The Happiness of Fish | 鱼的快乐",
+    "Useless Tree | 无用之树",
+    "The Peach Blossom Spring | 桃花源记",
+    'China\'s "Reincarnation Village" Mystery | 坪阳再生人',
+    "He... came back? A mysterious Chinese tale | 他再生了",
+    "A Woman in the Painting | 画中人",
+    "Miscellaneous Morsels from Youyang | 酉阳杂俎",
+    "A Basket of Moonlight? | 一篮月光",
+];

@@ -1,12 +1,28 @@
+from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
-from sqlalchemy import String, ForeignKey, Text, Float, Boolean, Integer, BigInteger, Index, UniqueConstraint, text
+
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base_class import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.dictionary import DictionaryWord
     from app.models.media import MediaAsset
+
+
+class PublicationStatus(str, Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+class SubtitleQualityStatus(str, Enum):
+    PENDING = "pending"
+    VALID = "valid"
+    INVALID = "invalid"
 
 class Category(Base, TimestampMixin):
     __tablename__ = "categories"
@@ -33,6 +49,9 @@ class Subcategory(Base, TimestampMixin):
 
 class Course(Base, TimestampMixin):
     __tablename__ = "courses"
+    __table_args__ = (
+        Index("ix_courses_public_catalog", "status", "subcategory_id", "id"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     subcategory_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subcategories.id"), nullable=False, index=True)
@@ -47,11 +66,32 @@ class Course(Base, TimestampMixin):
         default=dict,
         server_default=text("'{}'::jsonb"),
     )
+    status: Mapped[PublicationStatus] = mapped_column(
+        String,
+        nullable=False,
+        default=PublicationStatus.DRAFT,
+        server_default=text("'draft'"),
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+    cover_media_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("media_assets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_by_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Relationships
     subcategory: Mapped["Subcategory"] = relationship(back_populates="courses")
     sections: Mapped[List["CourseSection"]] = relationship(back_populates="course", cascade="all, delete-orphan")
     saved_by_users: Mapped[List["UserSavedCourse"]] = relationship(back_populates="course", cascade="all, delete-orphan")
+    cover_media: Mapped[Optional["MediaAsset"]] = relationship(foreign_keys=[cover_media_id])
 
     @property
     def subcategory_slug(self) -> Optional[str]:
@@ -97,6 +137,7 @@ class Lesson(Base, TimestampMixin):
     __tablename__ = "lessons"
     __table_args__ = (
         Index("ix_lessons_section_order", "section_id", "id"),
+        Index("ix_lessons_public_course", "status", "course_id", "section_id", "id"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
@@ -107,6 +148,12 @@ class Lesson(Base, TimestampMixin):
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     duration_minutes: Mapped[float] = mapped_column(Float, default=0.0)
     media_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("media_assets.id"), nullable=True, index=True)
+    poster_media_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("media_assets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     is_free: Mapped[bool] = mapped_column(Boolean, default=False)
     metadata_json: Mapped[Dict[str, Any]] = mapped_column(
         JSONB,
@@ -114,12 +161,31 @@ class Lesson(Base, TimestampMixin):
         default=dict,
         server_default=text("'{}'::jsonb"),
     )
+    status: Mapped[PublicationStatus] = mapped_column(
+        String,
+        nullable=False,
+        default=PublicationStatus.DRAFT,
+        server_default=text("'draft'"),
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_by_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Relationships
     section: Mapped["CourseSection"] = relationship(back_populates="lessons")
-    media: Mapped[Optional["MediaAsset"]] = relationship()
+    media: Mapped[Optional["MediaAsset"]] = relationship(foreign_keys=[media_id])
+    poster_media: Mapped[Optional["MediaAsset"]] = relationship(foreign_keys=[poster_media_id])
     content: Mapped[List["Content"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
     subtitles: Mapped[List["LessonSubtitle"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
+    subtitle_tracks: Mapped[List["SubtitleTrack"]] = relationship(
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
     word_maps: Mapped[List["LessonWordMap"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
 
 class Content(Base, TimestampMixin):
@@ -146,6 +212,104 @@ class LessonSubtitle(Base, TimestampMixin):
 
     # Relationships
     lesson: Mapped["Lesson"] = relationship(back_populates="subtitles")
+
+
+class SubtitleTrack(Base, TimestampMixin):
+    __tablename__ = "subtitle_tracks"
+    __table_args__ = (
+        UniqueConstraint("lesson_id", "language", "revision", name="uq_subtitle_tracks_lesson_language_revision"),
+        Index("ix_subtitle_tracks_lesson_status", "lesson_id", "status"),
+        Index(
+            "uq_subtitle_tracks_one_published_language",
+            "lesson_id",
+            "language",
+            unique=True,
+            postgresql_where=text("status = 'published'"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    lesson_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("lessons.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    language: Mapped[str] = mapped_column(String(20), nullable=False)
+    format: Mapped[str] = mapped_column(String(20), nullable=False, default="json", server_default=text("'json'"))
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+    supersedes_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("subtitle_tracks.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status: Mapped[PublicationStatus] = mapped_column(
+        String,
+        nullable=False,
+        default=PublicationStatus.DRAFT,
+        server_default=text("'draft'"),
+    )
+    quality_status: Mapped[SubtitleQualityStatus] = mapped_column(
+        String,
+        nullable=False,
+        default=SubtitleQualityStatus.PENDING,
+        server_default=text("'pending'"),
+    )
+    quality_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    quality_report: Mapped[Dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
+    checksum_sha256: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    source_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_by_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    lesson: Mapped["Lesson"] = relationship(back_populates="subtitle_tracks")
+    cues: Mapped[List["SubtitleCue"]] = relationship(
+        back_populates="track",
+        cascade="all, delete-orphan",
+        order_by="SubtitleCue.cue_index",
+    )
+    supersedes: Mapped[Optional["SubtitleTrack"]] = relationship(remote_side="SubtitleTrack.id")
+
+
+class SubtitleCue(Base, TimestampMixin):
+    __tablename__ = "subtitle_cues"
+    __table_args__ = (
+        UniqueConstraint("track_id", "cue_index", name="uq_subtitle_cues_track_index"),
+        Index("ix_subtitle_cues_track_time", "track_id", "timestamp_start", "timestamp_end"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    track_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("subtitle_tracks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cue_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    timestamp_start: Mapped[float] = mapped_column(Float, nullable=False)
+    timestamp_end: Mapped[float] = mapped_column(Float, nullable=False)
+    zh_text: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
+    pinyin: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
+    target_text: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
+    highlighted_words: Mapped[List[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+        server_default=text("'[]'::jsonb"),
+    )
+
+    track: Mapped["SubtitleTrack"] = relationship(back_populates="cues")
 
 class LessonWordMap(Base, TimestampMixin):
     __tablename__ = "lesson_word_maps"

@@ -34,6 +34,7 @@ export default function PageHeader({
     return (
         <Surface
             as="header"
+            data-page-header
             className={cn("sticky top-3 z-40 rounded-[28px] px-4 py-3", className)}
         >
             <div className="relative flex min-h-10 items-center justify-center">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ReturnAwareLink from "@/components/ui/ReturnAwareLink";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
@@ -8,6 +9,7 @@ interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: Variant;
     leadingIcon?: ReactNode;
     href?: string;
+    carryReturnTo?: boolean;
 }
 
 const variantClasses: Record<Variant, string> = {
@@ -24,6 +26,7 @@ export default function PrimaryButton({
     className,
     children,
     href,
+    carryReturnTo = false,
     ...props
 }: PrimaryButtonProps) {
     const classes = cn(
@@ -33,11 +36,12 @@ export default function PrimaryButton({
     );
 
     if (href) {
+        const ButtonLink = carryReturnTo ? ReturnAwareLink : Link;
         return (
-            <Link href={href} className={classes}>
+            <ButtonLink href={href} className={classes}>
                 {leadingIcon}
                 {children}
-            </Link>
+            </ButtonLink>
         );
     }
 

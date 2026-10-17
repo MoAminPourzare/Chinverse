@@ -96,3 +96,12 @@ groups are documented in
 
 The detailed Persian report for the current hardening phase is in
 [`docs/PHASE_1_QUALITY_BASELINE_FA.md`](docs/PHASE_1_QUALITY_BASELINE_FA.md).
+
+The Phase 8 beta/release contract, provider blockers, and staged rollback runbook
+are in [`docs/PHASE_8_BETA_RELEASE_FA.md`](docs/PHASE_8_BETA_RELEASE_FA.md) and
+[`docs/PHASE_8_RELEASE_RUNBOOK_FA.md`](docs/PHASE_8_RELEASE_RUNBOOK_FA.md).
+Run the local fail-closed release check before a protected production promotion:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-phase8-release.ps1
+```

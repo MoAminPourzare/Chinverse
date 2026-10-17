@@ -1,0 +1,23 @@
+{
+  "language": "fa",
+  "format": "json",
+  "source_name": "owner-review-leitner-20260928.json",
+  "cues": [
+    {
+      "start": 0.5,
+      "end": 2.0,
+      "zh_text": "你好！",
+      "pinyin": "Nǐ hǎo!",
+      "target_text": "سلام!",
+      "highlighted_words": ["你好"]
+    },
+    {
+      "start": 2.1,
+      "end": 3.8,
+      "zh_text": "谢谢！",
+      "pinyin": "Xièxie!",
+      "target_text": "متشکرم!",
+      "highlighted_words": ["谢谢"]
+    }
+  ]
+}

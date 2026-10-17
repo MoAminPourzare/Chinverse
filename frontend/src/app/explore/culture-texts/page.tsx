@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { CULTURE_TEXTS_CATALOG } from "@/lib/cultureTextsCatalog";
 
 export default function CultureTextsExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="متون کلاسیک آموزشی"
-            subcategorySlug="culture-texts"
-            detailPath="/culture-texts"
-            layout="list"
+            basePath="/culture-texts"
+            catalog={CULTURE_TEXTS_CATALOG}
             countLabel="درس"
-            accentClass="bg-slate-700"
         />
     );
 }

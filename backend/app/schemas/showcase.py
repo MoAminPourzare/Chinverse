@@ -35,6 +35,7 @@ class PublicUserProfile(BaseModel):
     """Full public profile data"""
     display_name: Optional[str] = None
     headline: Optional[str] = None
+    job_titles: List[str] = Field(default_factory=list)
     city: Optional[str] = None
     country: Optional[str] = None
     gender: Optional[str] = None

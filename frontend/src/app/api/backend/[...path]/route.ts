@@ -1,0 +1,186 @@
+import { NextRequest, NextResponse } from "next/server";
+import { isStateChangingMethod, isTrustedMutationOrigin } from "@/lib/request-origin";
+import { buildBackendUpstreamUrl } from "@/lib/backendProxyUrl";
+import {
+    fetchUpstreamWithPolicy,
+    resolveBackendProxyUploadTimeoutMs,
+    UpstreamTimeoutError,
+} from "@/lib/backendProxyPolicy";
+import { resolveRequestId } from "@/lib/requestId";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const DEFAULT_API_URL = "http://127.0.0.1:8000/api/v1";
+const REQUEST_HEADERS = [
+    "accept",
+    "authorization",
+    "content-length",
+    "content-type",
+    "cookie",
+    "user-agent",
+    "if-match",
+    "if-modified-since",
+    "if-none-match",
+    "if-range",
+    "if-unmodified-since",
+    "range",
+    "x-mfa-code",
+    "x-request-id",
+    "x-turnstile-token",
+];
+const RESPONSE_HEADERS = [
+    "cache-control",
+    "content-disposition",
+    "content-language",
+    "content-length",
+    "content-range",
+    "content-type",
+    "etag",
+    "last-modified",
+    "accept-ranges",
+    "retry-after",
+    "x-request-id",
+];
+const MEDIA_PROVIDER_REQUEST_HEADERS = [
+    "accept",
+    "if-match",
+    "if-modified-since",
+    "if-none-match",
+    "if-range",
+    "if-unmodified-since",
+    "range",
+    "user-agent",
+    "x-request-id",
+];
+
+const hasDecodedTransferBody = (headers: Headers) => {
+    const encoding = headers.get("content-encoding")?.trim().toLowerCase();
+    return Boolean(encoding && encoding !== "identity");
+};
+
+type RouteContext = { params: Promise<{ path: string[] }> };
+
+async function proxy(request: NextRequest, context: RouteContext) {
+    const requestId = resolveRequestId(request.headers.get("x-request-id"));
+    const fetchSite = request.headers.get("sec-fetch-site");
+    if (
+        !isTrustedMutationOrigin({
+            method: request.method,
+            expectedOrigin: request.nextUrl.origin,
+            origin: request.headers.get("origin"),
+            referer: request.headers.get("referer"),
+        })
+        || (isStateChangingMethod(request.method) && fetchSite === "cross-site")
+    ) {
+        return NextResponse.json(
+            { detail: "Cross-origin request rejected" },
+            { status: 403, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+        );
+    }
+
+    const { path } = await context.params;
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
+    const upstreamUrl = buildBackendUpstreamUrl(apiBase, path, request.nextUrl);
+
+    const headers = new Headers();
+    for (const name of REQUEST_HEADERS) {
+        const value = request.headers.get(name);
+        if (value) headers.set(name, value);
+    }
+    headers.set("origin", request.headers.get("origin") || request.nextUrl.origin);
+    headers.set("x-request-id", requestId);
+
+    let upstream: Response;
+    try {
+        const hasBody = !["GET", "HEAD"].includes(request.method) && request.body !== null;
+        const upstreamRequest: RequestInit & { duplex?: "half" } = {
+            method: request.method,
+            headers,
+            body: hasBody ? request.body : undefined,
+            cache: "no-store",
+            redirect: "manual",
+            signal: request.signal,
+        };
+        if (hasBody) upstreamRequest.duplex = "half";
+        const isMultipartUpload = request.headers.get("content-type")
+            ?.toLowerCase()
+            .startsWith("multipart/form-data") ?? false;
+        upstream = await fetchUpstreamWithPolicy(upstreamUrl, upstreamRequest, {
+            // The browser client is the sole retry owner. Keeping the BFF to a
+            // single upstream attempt prevents layered retry amplification.
+            maxRetries: 0,
+            timeoutMs: isMultipartUpload ? resolveBackendProxyUploadTimeoutMs() : undefined,
+        });
+
+        // The backend may resolve an entitlement-checked media token to a
+        // short-lived object-storage URL. Follow it server-side so the
+        // provider URL never reaches the browser and Range remains streamable.
+        const isMediaContent = path.length === 4
+            && path[0] === "media"
+            && path[1] === "assets"
+            && /^\d+$/.test(path[2])
+            && path[3] === "content";
+        if (isMediaContent && upstream.status >= 300 && upstream.status < 400) {
+            const location = upstream.headers.get("location");
+            if (!location) throw new Error("Media redirect did not include a location");
+            const providerUrl = new URL(location, upstreamUrl);
+            const production = process.env.NEXT_PUBLIC_DEPLOYMENT_TIER?.trim().toLowerCase() === "production";
+            if (!/^https?:$/.test(providerUrl.protocol) || (production && providerUrl.protocol !== "https:")) {
+                throw new Error("Media provider redirect is not secure");
+            }
+            const providerHeaders = new Headers();
+            for (const name of MEDIA_PROVIDER_REQUEST_HEADERS) {
+                const value = request.headers.get(name);
+                if (value) providerHeaders.set(name, value);
+            }
+            providerHeaders.set("x-request-id", requestId);
+            upstream = await fetchUpstreamWithPolicy(providerUrl, {
+                method: request.method,
+                headers: providerHeaders,
+                cache: "no-store",
+                redirect: "follow",
+                signal: request.signal,
+            }, {
+                maxRetries: 0,
+            });
+        }
+    } catch (error) {
+        return NextResponse.json(
+            { detail: error instanceof UpstreamTimeoutError
+                ? "Backend response timed out"
+                : "Backend is temporarily unavailable" },
+            {
+                status: error instanceof UpstreamTimeoutError ? 504 : 503,
+                headers: { "Cache-Control": "no-store", "X-Request-ID": requestId },
+            },
+        );
+    }
+
+    const responseHeaders = new Headers();
+    for (const name of RESPONSE_HEADERS) {
+        // Node fetch transparently decompresses gzip/br bodies while retaining
+        // the upstream compressed Content-Length. Forwarding that stale value
+        // truncates larger JSON collections in the browser.
+        if (name === "content-length" && hasDecodedTransferBody(upstream.headers)) continue;
+        const value = upstream.headers.get(name);
+        if (value) responseHeaders.set(name, value);
+    }
+    const setCookie = upstream.headers.get("set-cookie");
+    if (setCookie) responseHeaders.set("set-cookie", setCookie);
+    responseHeaders.set("cache-control", "no-store");
+    responseHeaders.set("pragma", "no-cache");
+    responseHeaders.set("x-request-id", requestId);
+
+    return new NextResponse(upstream.status === 204 || request.method === "HEAD" ? null : upstream.body, {
+        status: upstream.status,
+        headers: responseHeaders,
+    });
+}
+
+export const GET = proxy;
+export const HEAD = proxy;
+export const POST = proxy;
+export const PUT = proxy;
+export const PATCH = proxy;
+export const DELETE = proxy;

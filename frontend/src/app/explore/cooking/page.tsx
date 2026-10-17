@@ -1,13 +1,12 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { COOKING_CATALOG } from "@/lib/cookingCatalog";
 
 export default function CookingExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="آشپزی"
-            subcategorySlug="cooking"
-            detailPath="/cooking"
-            layout="square"
-            countKeys={["episodes_count"]}
+            basePath="/cooking"
+            catalog={COOKING_CATALOG}
             countLabel="قسمت"
         />
     );

@@ -1,14 +1,5 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PodcastExplorePage from "@/components/course/PodcastExplorePage";
 
 export default function PodcastsExplorePage() {
-    return (
-        <CourseExplorePage
-            title="پادکست"
-            subcategorySlug="podcasts"
-            detailPath="/podcasts"
-            layout="square"
-            countKeys={["episodes_count"]}
-            countLabel="اپیزود"
-        />
-    );
+    return <PodcastExplorePage />;
 }

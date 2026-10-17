@@ -61,6 +61,8 @@ class DictionaryWordSimple(BaseModel):
     chinese_meaning: Optional[str] = None
     composition: Optional[str] = None
     audio_url: Optional[str] = None
+    audio_pinyin: Optional[str] = None
+    audio_pinyin: Optional[str] = None
     notes: Optional[str] = None
     definitions: List[DictionaryWordDefinitionSimple] = Field(default_factory=list)
     examples: List[DictionaryWordExampleSimple] = Field(default_factory=list)

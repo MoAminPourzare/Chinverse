@@ -1,53 +1,29 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { exploreSections, type ExploreItem } from "@/components/explore/exploreData";
+import { exploreSections } from "@/components/explore/exploreData";
+import ExploreSectionLink from "@/components/explore/ExploreSectionLink";
+import styles from "@/components/explore/ExploreGallery.module.css";
+import { BackButton } from "@/components/ui/IconButton";
+import { useReturnTo } from "@/hooks/useReturnTo";
 
 export default function ExplorePage() {
+    const returnTo = useReturnTo("/");
     return (
-        <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="motion-list mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
-                {exploreSections.map((section) => (
-                    <section key={section.id} className="rounded-[24px] border border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                                <h2 className="text-[16px] font-black leading-7 text-[#25272d]">{section.title}</h2>
-                            </div>
-                            <Link
-                                href={`/explore/groups/${section.id}`}
-                                className="shrink-0 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-[11px] font-black text-[#155aa6] shadow-sm transition hover:bg-[#eef6ff]"
-                            >
-                                مشاهده همه
-                            </Link>
-                        </div>
-
-                        <div className="motion-list grid grid-cols-2 gap-2">
-                            {section.items.slice(0, 4).map((item) => (
-                                <ExploreCompactCard key={item.id} item={item} />
-                            ))}
-                        </div>
-                    </section>
-                ))}
+        <div className={styles.page} dir="rtl">
+            <main className={styles.main}>
+                <header data-page-header className={styles.header}>
+                    {returnTo !== "/" && <BackButton href={returnTo} className={styles.homeBack} />}
+                    <h1 className={styles.title}>کاوش</h1>
+                    <p className={styles.subtitle}>چی دوست داری امروز یاد بگیری یا ببینی؟</p>
+                </header>
+                <nav aria-label="دسته‌بندی‌های اصلی کاوش">
+                    <ul className={styles.sections}>
+                        {exploreSections.map((section, index) => (
+                            <li key={section.id}><ExploreSectionLink section={section} preload={index === 0} /></li>
+                        ))}
+                    </ul>
+                </nav>
             </main>
         </div>
-    );
-}
-
-function ExploreCompactCard({ item }: { item: ExploreItem }) {
-    const Icon = item.icon;
-
-    return (
-        <Link href={item.href} className="group min-w-0">
-            <div className="flex h-[74px] items-center gap-2 rounded-[18px] border border-[#dfe6f0] bg-[#f8fbff] px-3 shadow-[0_5px_16px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-[#c7d8ea] hover:bg-white">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#155aa6] text-white shadow-[0_10px_18px_rgba(21,90,166,0.24)]">
-                    <Icon size={20} strokeWidth={2.3} />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-2 text-[13px] font-black leading-5 text-slate-900">{item.title}</h3>
-                </div>
-                <ArrowLeft size={15} className="shrink-0 text-slate-300 transition group-hover:text-[#155aa6]" />
-            </div>
-        </Link>
     );
 }

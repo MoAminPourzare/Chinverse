@@ -1,12 +1,5 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import HSKExplorePage from "@/components/course/HSKExplorePage";
 
 export default function HSKLevelPage() {
-    return (
-        <CourseExplorePage
-            title="HSK"
-            subcategorySlug="hsk"
-            detailPath="/hsk"
-            layout="hsk"
-        />
-    );
+    return <HSKExplorePage />;
 }

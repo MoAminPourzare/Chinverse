@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, File, UploadFile, Form, status
+from fastapi import APIRouter, Depends, File, UploadFile, Form, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
 
@@ -11,14 +11,15 @@ from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.models.user import User, UserGalleryItem
 from app.models.social import ContentComment, ContentLike
-from app.core.paths import GALLERY_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
+from app.core.paths import GALLERY_UPLOAD_DIR
 from app.schemas.gallery import GalleryItem
 from app.db.session import get_db
 from app.services.notifications import notify_followers
 
 router = APIRouter()
 
-@router.get("/", response_model=List[GalleryItem])
+@router.get("/", response_model=List[GalleryItem], include_in_schema=False)
+@router.get("", response_model=List[GalleryItem])
 async def get_user_gallery(
     *,
     db: AsyncSession = Depends(get_db),
@@ -37,7 +38,8 @@ async def get_user_gallery(
     
     return gallery_items
 
-@router.post("/", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=GalleryItem, status_code=status.HTTP_201_CREATED, include_in_schema=False)
+@router.post("", response_model=GalleryItem, status_code=status.HTTP_201_CREATED)
 async def upload_gallery_image(
     *,
     db: AsyncSession = Depends(get_db),
@@ -68,7 +70,7 @@ async def upload_gallery_image(
         await db.refresh(gallery_item)
     except Exception:
         await db.rollback()
-        delete_public_file(image_url)
+        await delete_public_file(image_url)
         raise
 
     try:
@@ -109,12 +111,49 @@ async def delete_gallery_item(
     if not gallery_item:
         raise not_found("Gallery item")
     
-    # Delete file from filesystem
-    safe_unlink(resolve_backend_file_url(gallery_item.image_url))
+    image_url = gallery_item.image_url
     await db.execute(delete(ContentComment).where(ContentComment.target_type == "post", ContentComment.target_id == item_id))
     await db.execute(delete(ContentLike).where(ContentLike.target_type == "post", ContentLike.target_id == item_id))
     
     await db.delete(gallery_item)
     await db.commit()
+    await delete_public_file(image_url)
     
     return None
+
+
+@router.patch("/{item_id}", response_model=GalleryItem)
+async def update_gallery_item(
+    item_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+    caption: str | None = Form(None, max_length=500),
+    file: UploadFile | None = File(None),
+    _rate_limit: None = Depends(upload_rate_limit),
+):
+    item = await db.scalar(select(UserGalleryItem).where(
+        UserGalleryItem.id == item_id, UserGalleryItem.user_id == current_user.id,
+    ))
+    if item is None:
+        raise not_found("Gallery item")
+    previous_url = item.image_url
+    replacement_url = None
+    if file is not None:
+        replacement_url = await save_image_upload(
+            file, destination_dir=GALLERY_UPLOAD_DIR, public_url_prefix="/uploads/gallery",
+        )
+        item.image_url = replacement_url
+    if "caption" in await request.form():
+        item.caption = (caption or "").strip() or None
+    try:
+        await db.commit()
+        await db.refresh(item)
+    except Exception:
+        await db.rollback()
+        if replacement_url:
+            await delete_public_file(replacement_url)
+        raise
+    if replacement_url and replacement_url != previous_url:
+        await delete_public_file(previous_url)
+    return item
