@@ -19,7 +19,7 @@ from app.services.media_workflow import (
 
 
 FIXTURE_PATH = Path(__file__).resolve().parents[1] / "data/fixtures/client_demo_first_video.json"
-STAGING_ENDPOINT = "ep-wild-band-atse2yoq"
+STAGING_ENDPOINT = "ep-lively-pine-b8dnfybw"
 logger = logging.getLogger(__name__)
 
 

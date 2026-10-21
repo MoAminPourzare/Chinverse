@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Collection
+from collections.abc import AsyncIterator, Callable, Collection
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 import logging
 from typing import Any, Awaitable
@@ -47,6 +48,7 @@ class ChatRealtimeRelay:
         self._task: asyncio.Task[None] | None = None
         self._stop = asyncio.Event()
         self._wake = asyncio.Event()
+        self._poll_lock = asyncio.Lock()
         self._last_maintenance_at = datetime.min.replace(tzinfo=UTC)
 
     @property
@@ -96,6 +98,25 @@ class ChatRealtimeRelay:
                 await session.scalar(select(func.coalesce(func.max(ChatRealtimeEvent.id), 0)))
                 or 0
             )
+
+    @asynccontextmanager
+    async def connection_registration(self) -> AsyncIterator[None]:
+        """Establish the idle cursor before exposing the first local socket.
+
+        Polling and socket registration share a lock so a reconnect cannot
+        reset the cursor past events being delivered to another connection.
+        Offline history is fetched through the regular history endpoint.
+        """
+        if not self.enabled or (
+            settings.ENVIRONMENT.lower() == "test" and not self._run_background_in_tests
+        ):
+            yield
+            return
+        async with self._poll_lock:
+            if not self._connected_users():
+                await self.initialize_cursor()
+            yield
+        self._wake.set()
 
     def enqueue(
         self,
@@ -220,7 +241,13 @@ class ChatRealtimeRelay:
     async def poll_once(self) -> int:
         if not self.enabled:
             return 0
-        connected = {int(user_id) for user_id in self._connected_users()}
+        async with self._poll_lock:
+            connected = {int(user_id) for user_id in self._connected_users()}
+            if not connected:
+                return 0
+            return await self._poll_connected(connected)
+
+    async def _poll_connected(self, connected: set[int]) -> int:
         async with SessionLocal() as session:
             high_watermark = int(
                 await session.scalar(
@@ -230,9 +257,6 @@ class ChatRealtimeRelay:
             )
             await self._after_high_watermark(high_watermark)
             if high_watermark <= self._cursor:
-                return 0
-            if not connected:
-                self._cursor = high_watermark
                 return 0
             result = await session.execute(
                 select(
@@ -283,7 +307,7 @@ class ChatRealtimeRelay:
         """Async boundary used by concurrency tests; production intentionally no-ops."""
 
     async def maintenance(self) -> None:
-        if not self.enabled:
+        if not self.enabled or not self._connected_users():
             return
         now = datetime.now(UTC)
         await self.refresh_presence()

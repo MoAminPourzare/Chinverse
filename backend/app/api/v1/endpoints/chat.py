@@ -264,7 +264,13 @@ async def chat_websocket(websocket: WebSocket):
         return
     user, session_id, token_expires_at = principal
 
-    first_connection = await chat_manager.connect(user.id, websocket)
+    try:
+        async with chat_realtime.connection_registration():
+            first_connection = await chat_manager.connect(user.id, websocket)
+    except Exception:
+        logger.exception("Could not initialize realtime cursor for chat connection")
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+        return
     if first_connection is None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

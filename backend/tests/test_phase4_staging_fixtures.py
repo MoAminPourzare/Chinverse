@@ -40,11 +40,11 @@ def _database_url(
 
 def test_database_url_accepts_only_the_exact_tls_staging_endpoint():
     normalized = validate_and_normalize_database_url(
-        _database_url("ep-wild-band-atse2yoq", pooled=True)
+        _database_url("ep-lively-pine-b8dnfybw", pooled=True)
     )
 
     assert normalized.startswith("postgresql://")
-    assert "ep-wild-band-atse2yoq-pooler." in normalized
+    assert "ep-lively-pine-b8dnfybw-pooler." in normalized
     assert "sslmode=verify-full" in normalized
     assert "channel_binding" not in normalized
 
@@ -53,19 +53,19 @@ def test_database_url_accepts_only_the_exact_tls_staging_endpoint():
     for weak_sslmode in ("require", "verify-ca", "prefer"):
         with pytest.raises(FixtureSafetyError, match="sslmode=verify-full"):
             validate_and_normalize_database_url(
-                _database_url("ep-wild-band-atse2yoq", sslmode=weak_sslmode)
+                _database_url("ep-lively-pine-b8dnfybw", sslmode=weak_sslmode)
             )
     with pytest.raises(FixtureSafetyError, match="channel binding"):
         validate_and_normalize_database_url(
-            _database_url("ep-wild-band-atse2yoq", channel_binding=None)
+            _database_url("ep-lively-pine-b8dnfybw", channel_binding=None)
         )
     with pytest.raises(FixtureSafetyError, match="channel binding"):
         validate_and_normalize_database_url(
-            _database_url("ep-wild-band-atse2yoq", channel_binding="prefer")
+            _database_url("ep-lively-pine-b8dnfybw", channel_binding="prefer")
         )
     with pytest.raises(FixtureSafetyError):
         validate_and_normalize_database_url(
-            "postgresql://fixture:secret@ep-wild-band-atse2yoq.us-east-2.aws.neon.tech/neondb"
+            "postgresql://fixture:secret@ep-lively-pine-b8dnfybw.us-east-2.aws.neon.tech/neondb"
         )
 
 

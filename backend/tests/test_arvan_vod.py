@@ -84,8 +84,9 @@ async def test_arvan_reads_are_bounded_and_do_not_follow_redirects(monkeypatch, 
 
 
 def test_staging_demo_requires_pinned_neon_and_is_unavailable_in_production(monkeypatch):
-    assert demo_target_allowed("staging", "postgresql://test:test@ep-wild-band-atse2yoq-pooler.eu.neon.tech/neondb")
-    assert not demo_target_allowed("production", "postgresql://test:test@ep-wild-band-atse2yoq.eu.neon.tech/neondb")
+    assert demo_target_allowed("staging", "postgresql://test:test@ep-lively-pine-b8dnfybw-pooler.eu.neon.tech/neondb")
+    assert not demo_target_allowed("production", "postgresql://test:test@ep-lively-pine-b8dnfybw.eu.neon.tech/neondb")
+    assert not demo_target_allowed("staging", "postgresql://test:test@ep-wild-band-atse2yoq.eu.neon.tech/neondb")
     assert not demo_target_allowed("staging", "postgresql://test:test@ep-other.eu.neon.tech/neondb")
     monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "production")
     assert not validate_media_asset(asset(license_type="owner_authorized_staging_demo")).valid

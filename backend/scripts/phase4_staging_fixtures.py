@@ -46,7 +46,7 @@ from app.core.passwords import (  # noqa: E402
 from scripts.schema_verification import repository_alembic_head  # noqa: E402
 
 
-EXPECTED_ENDPOINT_ID = "ep-wild-band-atse2yoq"
+EXPECTED_ENDPOINT_ID = "ep-lively-pine-b8dnfybw"
 # The fixture contract remains useful after later additive migrations, but it
 # must refuse any database that is not at the repository's single release
 # head. Resolving this from the migration graph prevents the safety check from
