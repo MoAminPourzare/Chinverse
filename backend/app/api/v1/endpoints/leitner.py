@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path, status
 from pydantic import BaseModel, Field
-from sqlalchemy import desc, func, select
+from sqlalchemy import delete, desc, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -231,6 +231,37 @@ async def get_review_cards(
     cards = result.scalars().all()
 
     return LeitnerReviewResponse(cards=cards)
+
+
+@router.get("/cards", response_model=LeitnerReviewResponse)
+async def get_all_cards(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    pagination: PaginationParams = Depends(pagination_params(default_limit=100, max_limit=1000)),
+) -> Any:
+    result = await db.execute(
+        select(UserFlashcard)
+        .where(UserFlashcard.user_id == current_user.id)
+        .options(*_flashcard_word_options())
+        .order_by(UserFlashcard.next_review_at, UserFlashcard.id)
+        .offset(pagination.skip).limit(pagination.limit)
+    )
+    return LeitnerReviewResponse(cards=result.scalars().all())
+
+
+@router.delete("/cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_card(
+    card_id: int = Path(gt=0),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
+) -> None:
+    removed = await db.scalar(delete(UserFlashcard).where(
+        UserFlashcard.id == card_id, UserFlashcard.user_id == current_user.id,
+    ).returning(UserFlashcard.id))
+    if removed is None:
+        raise not_found("Card")
+    await db.commit()
 
 
 @router.post("/review", response_model=FlashcardRead)

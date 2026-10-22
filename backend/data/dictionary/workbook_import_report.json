@@ -1,0 +1,798 @@
+{
+  "source_date": "2026-10-03",
+  "format": "Canonical UTF-8 sense CSV; original workbooks unchanged.",
+  "hsk4_level_policy": "Filename HSK4 is authoritative for the entire workbook; 156 HSK3 labels and 620 blanks normalized to HSK 4.",
+  "sources": [
+    {
+      "source_file": "hsk4_words_dictionary.xlsx",
+      "canonical_file": "hsk4_words_dictionary.csv",
+      "level": "HSK 4",
+      "source_rows": 1630,
+      "sense_count": 1630,
+      "word_count": 982,
+      "sha256": "03aef6116fd3caddaeaa793effd7534e99a7dd952093081e32b04a0ef3d27b9f"
+    },
+    {
+      "source_file": "hsk5_words_dictionary.xlsx",
+      "canonical_file": "hsk5_words_dictionary.csv",
+      "level": "HSK 5",
+      "source_rows": 2427,
+      "sense_count": 2371,
+      "word_count": 1557,
+      "sha256": "1f8855210aaee0a9d92eb86ff19f29e07eaa9cc33a9cc8c3f5e402b27beb8206"
+    },
+    {
+      "source_file": "hsk6_words_dictionary.xlsx",
+      "canonical_file": "hsk6_words_dictionary.csv",
+      "level": "HSK 6",
+      "source_rows": 2657,
+      "sense_count": 2659,
+      "word_count": 1756,
+      "sha256": "c0ffc7c49d4d290ba78cee4cb6163af99b864ebacbc2976b383812006dfe431b"
+    },
+    {
+      "source_file": "hsk7-9_repaired.xlsx",
+      "canonical_file": "hsk7-9_words_dictionary.csv",
+      "level": "HSK 7-9",
+      "source_rows": 7979,
+      "sense_count": 7981,
+      "word_count": 6137,
+      "sha256": "0e55cae478ed9f8200cf796efee5c3903eb3d3b7679c4d1f3bbe8f19b7c11588"
+    },
+    {
+      "source_file": "لغات خارج از HSK.xlsx",
+      "canonical_file": "non_hsk_words_dictionary.csv",
+      "level": "NON-HSK",
+      "source_rows": 237,
+      "sense_count": 233,
+      "word_count": 211,
+      "sha256": "1655452172e10648ec0eb54be6ef44b3e0cb362e1cdda7d4e158264550827fa9"
+    }
+  ],
+  "input_sense_count": 14930,
+  "output_sense_count": 14874,
+  "output_word_count": 10643,
+  "exact_duplicate_rows_removed": [
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2242,
+      "word": "诊断",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2243,
+      "word": "诊断",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2244,
+      "word": "针对",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2245,
+      "word": "针对",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2246,
+      "word": "挣",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2247,
+      "word": "挣",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2248,
+      "word": "争",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2249,
+      "word": "争",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2250,
+      "word": "政府",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2251,
+      "word": "证据",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2252,
+      "word": "整齐",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2253,
+      "word": "争取",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2254,
+      "word": "争取",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2255,
+      "word": "正如",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2256,
+      "word": "证书",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2274,
+      "word": "止",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2276,
+      "word": "支",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2277,
+      "word": "支",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2278,
+      "word": "支",
+      "source_sense": "3"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2279,
+      "word": "直播",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2280,
+      "word": "直播",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2281,
+      "word": "职场",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2282,
+      "word": "指导",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2283,
+      "word": "指导",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2284,
+      "word": "制订",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2285,
+      "word": "制定",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2286,
+      "word": "制度",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2287,
+      "word": "制度",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2288,
+      "word": "职工",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2289,
+      "word": "智慧",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2290,
+      "word": "智慧",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2291,
+      "word": "至今",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2292,
+      "word": "治疗",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2293,
+      "word": "知名",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2294,
+      "word": "智能",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2295,
+      "word": "智能",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2299,
+      "word": "志愿者",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2300,
+      "word": "制造",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2301,
+      "word": "制造",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2302,
+      "word": "制作",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2303,
+      "word": "制作",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2304,
+      "word": "重大",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2305,
+      "word": "重大",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2307,
+      "word": "中华",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2308,
+      "word": "中华民族",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2309,
+      "word": "中级",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2310,
+      "word": "中级",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2313,
+      "word": "种类",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2314,
+      "word": "重量",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2315,
+      "word": "中期",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2316,
+      "word": "中期",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2317,
+      "word": "中外",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2318,
+      "word": "中心",
+      "source_sense": "1"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2319,
+      "word": "中心",
+      "source_sense": "2"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2320,
+      "word": "中心",
+      "source_sense": "3"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2321,
+      "word": "中药",
+      "source_sense": "1"
+    }
+  ],
+  "sense_renumbering": [
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "row": 797,
+      "word": "流行",
+      "from": "2",
+      "to": 3
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "row": 1057,
+      "word": "深",
+      "from": "2",
+      "to": 1
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "row": 1058,
+      "word": "深",
+      "from": "4",
+      "to": 2
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "row": 1059,
+      "word": "深",
+      "from": "5",
+      "to": 3
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2147,
+      "word": "炸",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2157,
+      "word": "涨",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2158,
+      "word": "涨",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2275,
+      "word": "止",
+      "from": "2",
+      "to": 3
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2296,
+      "word": "执行",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2297,
+      "word": "执行",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2298,
+      "word": "执行",
+      "from": "3",
+      "to": 5
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2306,
+      "word": "众多",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2311,
+      "word": "中介",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "row": 2312,
+      "word": "中介",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 182,
+      "word": "叉",
+      "from": "1",
+      "to": 5
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 713,
+      "word": "供给",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 714,
+      "word": "供给",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 715,
+      "word": "攻击",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 716,
+      "word": "攻击",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 717,
+      "word": "公开",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 718,
+      "word": "公开",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 719,
+      "word": "公开",
+      "from": "3",
+      "to": 5
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 720,
+      "word": "公民",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 721,
+      "word": "公认",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 722,
+      "word": "功效",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 723,
+      "word": "工序",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 724,
+      "word": "公益",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 725,
+      "word": "供应",
+      "from": "1",
+      "to": 3
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 726,
+      "word": "供应",
+      "from": "2",
+      "to": 4
+    },
+    {
+      "file": "hsk6_words_dictionary.xlsx",
+      "row": 727,
+      "word": "公元",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "لغات خارج از HSK.xlsx",
+      "row": 34,
+      "word": "将军",
+      "from": "1",
+      "to": 4
+    },
+    {
+      "file": "لغات خارج از HSK.xlsx",
+      "row": 35,
+      "word": "将军",
+      "from": "2",
+      "to": 5
+    },
+    {
+      "file": "لغات خارج از HSK.xlsx",
+      "row": 67,
+      "word": "弄虚作假",
+      "from": "1",
+      "to": 2
+    },
+    {
+      "file": "لغات خارج از HSK.xlsx",
+      "row": 9,
+      "word": "涨幅",
+      "from": "1",
+      "to": 2
+    }
+  ],
+  "cross_file_merges": [
+    {
+      "word": "将军",
+      "from": "لغات خارج از HSK.xlsx",
+      "to": "hsk6_words_dictionary.csv",
+      "row": 34
+    },
+    {
+      "word": "将军",
+      "from": "لغات خارج از HSK.xlsx",
+      "to": "hsk6_words_dictionary.csv",
+      "row": 35
+    },
+    {
+      "word": "弄虚作假",
+      "from": "لغات خارج از HSK.xlsx",
+      "to": "hsk7-9_words_dictionary.csv",
+      "row": 67
+    },
+    {
+      "word": "涨幅",
+      "from": "لغات خارج از HSK.xlsx",
+      "to": "hsk7-9_words_dictionary.csv",
+      "row": 9
+    }
+  ],
+  "word_id_repairs": [
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "播放",
+      "from": "41",
+      "to": "988"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "老虎",
+      "from": "451",
+      "to": "989"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "孙子",
+      "from": "700",
+      "to": "990"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "所有",
+      "from": "701",
+      "to": "991"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "台",
+      "from": "702",
+      "to": "992"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "抬",
+      "from": "703",
+      "to": "993"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "态度",
+      "from": "704",
+      "to": "994"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "抬头",
+      "from": "705",
+      "to": "995"
+    },
+    {
+      "file": "hsk4_words_dictionary.xlsx",
+      "word": "弹",
+      "from": "706",
+      "to": "996"
+    },
+    {
+      "file": "hsk5_words_dictionary.xlsx",
+      "word": "精力",
+      "from": "556",
+      "to": "1580"
+    }
+  ],
+  "column_repairs": [
+    {
+      "file": "hsk7-9_repaired.xlsx",
+      "sheet": "Dictionary",
+      "row": 1079,
+      "word": "打捞",
+      "fields": [
+        "example_pinyin"
+      ]
+    },
+    {
+      "file": "hsk7-9_repaired.xlsx",
+      "sheet": "Dictionary",
+      "row": 3394,
+      "word": "捆",
+      "fields": [
+        "example_pinyin",
+        "example_persian_translation"
+      ]
+    },
+    {
+      "file": "hsk7-9_repaired.xlsx",
+      "sheet": "Dictionary",
+      "row": 3396,
+      "word": "苦恼",
+      "fields": [
+        "example_pinyin",
+        "example_persian_translation"
+      ]
+    },
+    {
+      "file": "hsk7-9_repaired.xlsx",
+      "sheet": "Dictionary",
+      "row": 3754,
+      "word": "码",
+      "fields": [
+        "example_pinyin",
+        "example_persian_translation"
+      ]
+    },
+    {
+      "file": "hsk7-9_repaired.xlsx",
+      "sheet": "Dictionary",
+      "row": 4888,
+      "word": "深切",
+      "fields": [
+        "official_pos",
+        "sense_id",
+        "chinese_meaning",
+        "persian_meaning",
+        "collocations",
+        "example_chinese",
+        "example_pinyin",
+        "example_persian_translation"
+      ]
+    },
+    {
+      "file": "hsk7-9_repaired.xlsx",
+      "sheet": "Dictionary",
+      "row": 6324,
+      "word": "议",
+      "fields": [
+        "example_chinese",
+        "example_pinyin",
+        "example_persian_translation"
+      ]
+    }
+  ],
+  "audit_sheet_note": "Repair audit is historical metadata, not dictionary rows. All 310 listed missing words are already present in Dictionary.",
+  "level_7_9_policy": "Keep HSK7-9 as a combined band; do not invent individual HSK7/8/9 assignments.",
+  "original_workbook_sha256": {
+    "hsk4_words_dictionary.xlsx": "3b033d6593ec56cc55cacef1c4c879b2a70200473cf44e4c31d92343bad89a79",
+    "hsk5_words_dictionary.xlsx": "ba69be579c7bc23701cf0488d0d0a5f3962914209c6cf8f947fe907384bd6c8b",
+    "hsk6_words_dictionary.xlsx": "5f0ccbcef3cfd9eff5a570d59e754b7d87646f462f689e4c8e5ed9ca82c31b16",
+    "hsk7-9_repaired.xlsx": "b6044e17a46a4b39cada660d0b90a1ffa2ebfd6c705b672c7afcaad9eb249fed",
+    "لغات خارج از HSK.xlsx": "8f86304e971d144a05e0aaf00f1adf3b2cc7529c949c14380b3f7ce6e0367961"
+  }
+}

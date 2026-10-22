@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import TopicTalksCatalogDetailPage from "@/components/course/TopicTalksDetailPage";
 
 export default function TopicTalksDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="topic-talks"
-            explorePath="/explore/topic-talks"
-            eyebrow="گفتارهای موضوعی"
-            countKeys={["episodes_count"]}
-            countLabel="گفتار"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+    return <TopicTalksCatalogDetailPage />;
 }

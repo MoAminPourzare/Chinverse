@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { IDIOMS_CATALOG } from "@/lib/idiomsCatalog";
 
 export default function IdiomsDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="idioms"
-            explorePath="/explore/idioms"
-            eyebrow="اصطلاحات"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+    return <PlannedCourseDetailPage domain="idioms" title="اصطلاحات و ضرب‌المثل‌های ادبی" basePath="/idioms" catalog={IDIOMS_CATALOG} />;
 }

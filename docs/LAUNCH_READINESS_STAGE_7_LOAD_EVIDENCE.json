@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "release": "54973b82341924f5056ba1d8d3cbb108c5c166ab",
+  "target": "backend",
+  "base_url": "https://moamin9-chinverse-api.hf.space",
+  "read_only": true,
+  "profiles": [
+    {
+      "profile": "smoke",
+      "generated_at": "2026-09-20T00:18:57.774329+03:30",
+      "duration_seconds": 15,
+      "concurrency": 2,
+      "rate_per_second": 1.0,
+      "requests": 15,
+      "succeeded": 15,
+      "failed": 0,
+      "error_rate": 0.0,
+      "throughput_per_second": 1.047,
+      "elapsed_seconds": 14.328,
+      "latency_ms": {
+        "p50": 317.304,
+        "p95": 409.402,
+        "p99": 409.402,
+        "max": 409.402
+      },
+      "max_error_rate": 0.0,
+      "max_p95_ms": 2500.0,
+      "passed": true
+    },
+    {
+      "profile": "load",
+      "generated_at": "2026-09-20T00:22:21.102740+03:30",
+      "duration_seconds": 180,
+      "concurrency": 10,
+      "rate_per_second": 5.0,
+      "requests": 862,
+      "succeeded": 862,
+      "failed": 0,
+      "error_rate": 0.0,
+      "throughput_per_second": 4.785,
+      "elapsed_seconds": 180.141,
+      "latency_ms": {
+        "p50": 246.307,
+        "p95": 308.293,
+        "p99": 573.213,
+        "max": 895.871
+      },
+      "max_error_rate": 0.01,
+      "max_p95_ms": 2500.0,
+      "passed": true
+    },
+    {
+      "profile": "soak",
+      "generated_at": "2026-09-20T00:37:42.064860+03:30",
+      "duration_seconds": 900,
+      "concurrency": 5,
+      "rate_per_second": 2.0,
+      "requests": 1767,
+      "succeeded": 1767,
+      "failed": 0,
+      "error_rate": 0.0,
+      "throughput_per_second": 1.963,
+      "elapsed_seconds": 900.094,
+      "latency_ms": {
+        "p50": 260.618,
+        "p95": 361.932,
+        "p99": 650.905,
+        "max": 946.656
+      },
+      "max_error_rate": 0.01,
+      "max_p95_ms": 2500.0,
+      "passed": true
+    }
+  ],
+  "post_soak_health": {
+    "status": "ok",
+    "deployment_tier": "staging",
+    "indexable": false,
+    "release": "54973b82341924f5056ba1d8d3cbb108c5c166ab",
+    "database_target": "ok",
+    "database": "ok",
+    "storage": "ok"
+  }
+}

@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import bad_request, not_found
+from app.core.config import settings
 
 
 DEFAULT_SUBSCRIPTION_PLANS = [
@@ -49,111 +50,6 @@ SUBSCRIPTION_FEATURES = [
 ]
 
 
-async def ensure_subscription_storage(db: AsyncSession) -> None:
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS subscription_plans (
-                id BIGINT PRIMARY KEY,
-                name VARCHAR NOT NULL,
-                duration_months BIGINT NOT NULL,
-                price DOUBLE PRECISION NOT NULL,
-                is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS user_subscriptions (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                plan_id BIGINT NOT NULL REFERENCES subscription_plans(id),
-                start_date DATE NOT NULL,
-                end_date DATE NOT NULL,
-                status VARCHAR NOT NULL DEFAULT 'active',
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_user_subscriptions_user_status_end
-            ON user_subscriptions (user_id, status, end_date DESC)
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS subscription_orders (
-                id BIGSERIAL PRIMARY KEY,
-                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                plan_id BIGINT NOT NULL REFERENCES subscription_plans(id),
-                amount DOUBLE PRECISION NOT NULL,
-                currency VARCHAR(16) NOT NULL DEFAULT 'IRT',
-                status VARCHAR(32) NOT NULL DEFAULT 'created',
-                provider VARCHAR(64),
-                provider_reference VARCHAR(255),
-                checkout_url TEXT,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-            )
-            """
-        )
-    )
-    await db.execute(
-        text(
-            """
-            CREATE INDEX IF NOT EXISTS ix_subscription_orders_user_created
-            ON subscription_orders (user_id, created_at DESC)
-            """
-        )
-    )
-
-    for plan in DEFAULT_SUBSCRIPTION_PLANS:
-        await db.execute(
-            text(
-                """
-                INSERT INTO subscription_plans (
-                    id,
-                    name,
-                    duration_months,
-                    price,
-                    is_active,
-                    updated_at
-                )
-                VALUES (
-                    :id,
-                    :name,
-                    :duration_months,
-                    :price,
-                    TRUE,
-                    now()
-                )
-                ON CONFLICT (id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    duration_months = EXCLUDED.duration_months,
-                    price = EXCLUDED.price,
-                    is_active = TRUE,
-                    updated_at = now()
-                """
-            ),
-            {
-                "id": plan["id"],
-                "name": plan["name"],
-                "duration_months": plan["duration_months"],
-                "price": plan["price"],
-            },
-        )
-
-
 def _plan_meta(duration_months: int) -> dict[str, Any]:
     for plan in DEFAULT_SUBSCRIPTION_PLANS:
         if plan["duration_months"] == duration_months:
@@ -184,7 +80,6 @@ def _serialize_plan(row: dict[str, Any]) -> dict[str, Any]:
 
 
 async def list_subscription_plans(db: AsyncSession) -> list[dict[str, Any]]:
-    await ensure_subscription_storage(db)
     result = await db.execute(
         text(
             """
@@ -206,7 +101,6 @@ async def list_subscription_plans(db: AsyncSession) -> list[dict[str, Any]]:
 
 
 async def get_current_subscription(db: AsyncSession, *, user_id: int) -> dict[str, Any] | None:
-    await ensure_subscription_storage(db)
     result = await db.execute(
         text(
             """
@@ -224,6 +118,7 @@ async def get_current_subscription(db: AsyncSession, *, user_id: int) -> dict[st
             JOIN subscription_plans p ON p.id = s.plan_id
             WHERE s.user_id = :user_id
               AND s.status = 'active'
+              AND s.start_date <= CURRENT_DATE
               AND s.end_date >= CURRENT_DATE
             ORDER BY s.end_date DESC
             LIMIT 1
@@ -257,8 +152,18 @@ async def get_subscription_overview(db: AsyncSession, *, user_id: int) -> dict[s
         "current_subscription": current_subscription,
         "features": SUBSCRIPTION_FEATURES,
         "payment": {
+            # ``generic_hmac`` is only a signed-callback/idempotency boundary;
+            # it has no checkout adapter.  Keep this false until a reviewed
+            # commercial provider is installed so the UI cannot imply that
+            # payment is ready merely because a webhook secret exists.
             "gateway_configured": False,
-            "message": "درگاه پرداخت هنوز به پروژه وصل نشده است. سفارش پرداخت ساخته می شود، اما فعال سازی نهایی بعد از اتصال درگاه انجام خواهد شد.",
+            "provider": settings.PAYMENT_PROVIDER,
+            "checkout_available": False,
+            "message": (
+                "درگاه پرداخت هنوز به پروژه وصل نشده است."
+                if settings.PAYMENT_PROVIDER == "disabled"
+                else "آداپتور ساخت لینک پرداخت هنوز پس از بازبینی provider فعال نشده است."
+            ),
         },
     }
 
@@ -269,7 +174,6 @@ async def create_subscription_checkout(
     user_id: int,
     plan_id: int,
 ) -> dict[str, Any]:
-    await ensure_subscription_storage(db)
     result = await db.execute(
         text(
             """
@@ -288,6 +192,8 @@ async def create_subscription_checkout(
     if current_subscription and current_subscription["plan_id"] == int(plan["id"]):
         raise bad_request("This subscription is already active for your account")
 
+    provider = settings.PAYMENT_PROVIDER
+    order_status = "created" if provider == "disabled" else "provider_pending"
     created = await db.execute(
         text(
             """
@@ -304,8 +210,8 @@ async def create_subscription_checkout(
                 :plan_id,
                 :amount,
                 'IRT',
-                'created',
-                'manual-placeholder'
+                :status,
+                :provider
             )
             RETURNING id, created_at
             """
@@ -314,6 +220,8 @@ async def create_subscription_checkout(
             "user_id": user_id,
             "plan_id": int(plan["id"]),
             "amount": float(plan["price"]),
+            "status": order_status,
+            "provider": provider,
         },
     )
     order = created.mappings().one()
@@ -321,10 +229,14 @@ async def create_subscription_checkout(
 
     return {
         "order_id": int(order["id"]),
-        "status": "gateway_not_configured",
+        "status": "gateway_not_configured" if provider == "disabled" else "provider_adapter_pending",
         "checkout_url": None,
         "amount": int(float(plan["price"])),
         "currency": "IRT",
         "plan": _serialize_plan(dict(plan)),
-        "message": "سفارش پرداخت ساخته شد. بعد از انتخاب درگاه پرداخت، این درخواست لینک پرداخت واقعی برمی گرداند.",
+        "message": (
+            "سفارش پرداخت ساخته شد. بعد از اتصال درگاه پرداخت، این درخواست لینک پرداخت واقعی برمی‌گرداند."
+            if provider == "disabled"
+            else "سفارش ثبت شد اما آداپتور provider هنوز فعال نشده است؛ هیچ entitlementی صادر نمی‌شود."
+        ),
     }

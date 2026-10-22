@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { HISTORICAL_STORIES_CATALOG } from "@/lib/historicalStoriesCatalog";
 
 export default function HistoricalStoriesExplorePage() {
     return (
-        <CourseExplorePage
-            title="داستان‌های تاریخی"
-            subcategorySlug="historical-stories"
-            detailPath="/historical-stories"
-            layout="list"
+        <PlannedCourseExplorePage
+            title="داستان‌های کهن"
+            basePath="/historical-stories"
+            catalog={HISTORICAL_STORIES_CATALOG}
             countLabel="درس"
-            accentClass="bg-blue-700"
         />
     );
 }

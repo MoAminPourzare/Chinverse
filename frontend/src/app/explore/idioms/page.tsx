@@ -1,13 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { IDIOMS_CATALOG } from "@/lib/idiomsCatalog";
 
 export default function IdiomsExplorePage() {
-    return (
-        <CourseExplorePage
-            title="اصطلاحات"
-            subcategorySlug="idioms"
-            detailPath="/idioms"
-            layout="list"
-            accentClass="bg-blue-700"
-        />
-    );
+    return <PlannedCourseExplorePage title="اصطلاحات و ضرب‌المثل‌های ادبی" basePath="/idioms" catalog={IDIOMS_CATALOG} compactTitle />;
 }

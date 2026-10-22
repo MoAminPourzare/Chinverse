@@ -17,6 +17,30 @@ from app.schemas import engagement as schemas
 
 router = APIRouter()
 
+
+@router.delete("/{target_type}/{target_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment(
+    target_type: str, target_id: int, comment_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+    _rate_limit: None = Depends(write_rate_limit),
+):
+    normalized = _normalize_target(target_type)
+    comment = await db.scalar(select(ContentComment).where(
+        ContentComment.id == comment_id,
+        ContentComment.target_type == normalized,
+        ContentComment.target_id == target_id,
+    ))
+    if comment is None:
+        raise not_found("Comment")
+    owns_post = normalized == "post" and bool(await db.scalar(select(UserGalleryItem.id).where(
+        UserGalleryItem.id == target_id, UserGalleryItem.user_id == current_user.id,
+    )))
+    if comment.user_id != current_user.id and not owns_post:
+        raise not_found("Comment")
+    await db.execute(delete(ContentComment).where(ContentComment.id == comment.id))
+    await db.commit()
+
 ALLOWED_TARGETS = {"post", "service", "course"}
 
 

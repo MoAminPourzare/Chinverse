@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isAxiosError } from "axios";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -55,15 +56,22 @@ export default function DailyPracticeContent() {
     const [visibleMonth, setVisibleMonth] = useState(() => getTodayJalaliMonth());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [requiresLogin, setRequiresLogin] = useState(false);
 
     const loadSummary = async () => {
+        setIsLoading(true);
+        setError(null);
+        setRequiresLogin(false);
         try {
-            setError(null);
             const data = await dailyActivityService.getSummary(370);
             setSummary(data);
         } catch (loadError) {
-            console.error("Failed to load daily activity", loadError);
-            setError("آمار آموزش روزانه باز نشد. اتصال را بررسی کن و دوباره تلاش کن.");
+            if (isAxiosError(loadError) && loadError.response?.status === 401) {
+                setRequiresLogin(true);
+            } else {
+                console.error("Failed to load daily activity", loadError);
+                setError("آمار آموزش روزانه باز نشد. اتصال را بررسی کن و دوباره تلاش کن.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -125,6 +133,18 @@ export default function DailyPracticeContent() {
         );
     }
 
+    if (requiresLogin) {
+        return (
+            <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
+                <EmptyState
+                    title="برای دیدن روند یادگیری وارد حساب شو"
+                    description="آمار روزانه به حساب تو مربوط است و پس از ورود نمایش داده می‌شود."
+                    action={<PrimaryButton href="/login?next=%2F%3Ftab%3Ddaily">ورود به حساب</PrimaryButton>}
+                />
+            </div>
+        );
+    }
+
     if (error || !summary) {
         return (
             <div className="min-h-full px-4 pb-8 pt-4" dir="rtl">
@@ -132,7 +152,7 @@ export default function DailyPracticeContent() {
                     icon={<RefreshCw size={30} />}
                     title="آمار باز نشد"
                     description={error || "داده‌ای برای نمایش پیدا نشد."}
-                    action={<PrimaryButton onClick={loadSummary}>تلاش دوباره</PrimaryButton>}
+                    action={<PrimaryButton onClick={() => void loadSummary()}>تلاش دوباره</PrimaryButton>}
                 />
             </div>
         );
@@ -154,20 +174,20 @@ export default function DailyPracticeContent() {
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                         <ActionCard
-                            href="/leitner/review"
+                            href="/leitner/review?returnTo=%2F%3Ftab%3Ddaily"
                             icon={<BookOpenCheck size={19} />}
                             title="مرور لغات"
                             accent="from-emerald-500 to-teal-500"
                         />
                         <ActionCard
-                            href="/explore"
+                            href="/explore?returnTo=%2F%3Ftab%3Ddaily"
                             icon={<PlayCircle size={19} />}
                             title="دیدن ویدیو"
                             accent="from-[#155aa6] to-[#0f4e92]"
                         />
                     </div>
                     <Link
-                        href="/settings/daily"
+                        href="/settings/daily?returnTo=%2F%3Ftab%3Ddaily"
                         className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50"
                     >
                         <Settings size={15} />

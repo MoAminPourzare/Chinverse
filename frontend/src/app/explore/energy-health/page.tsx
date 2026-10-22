@@ -1,14 +1,14 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { ENERGY_HEALTH_CATALOG } from "@/lib/energyHealthCatalog";
 
 export default function EnergyHealthExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="تمرینات انرژی و سلامت"
-            subcategorySlug="energy-health"
-            detailPath="/energy-health"
-            layout="list"
-            countLabel="درس"
-            accentClass="bg-blue-700"
+            headingSubtitle="(气功 چی‌گونگ)"
+            basePath="/energy-health"
+            catalog={ENERGY_HEALTH_CATALOG}
+            countLabel="تمرین"
         />
     );
 }

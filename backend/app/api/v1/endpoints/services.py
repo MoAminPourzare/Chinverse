@@ -7,7 +7,7 @@ from app.api import deps
 from app.api.errors import bad_request, not_found
 from app.api.pagination import PaginationParams, pagination_params
 from app.api.rate_limit import upload_rate_limit, write_rate_limit
-from app.core.paths import SERVICE_UPLOAD_DIR, resolve_backend_file_url, safe_unlink
+from app.core.paths import SERVICE_UPLOAD_DIR
 from app.core.storage import delete_public_file
 from app.core.uploads import save_image_upload
 from app.models.user import User
@@ -15,8 +15,23 @@ from app.models.service import UserService
 from app.models.social import ContentComment, ContentLike
 from app.schemas.service import Service, ServiceWithProvider
 from app.services.notifications import notify_followers
+from app.services.showcase_visibility import showcase_user_filters
 
 router = APIRouter()
+
+
+def _provider_filters(profile) -> dict:
+    resume = profile.resume or {}
+    educations = resume.get("educations") or []
+    first_education = educations[0] if educations else None
+    return {
+        "country": profile.country,
+        "city": profile.city,
+        "education": {key: first_education.get(key) for key in ("degree", "university", "field")} if first_education else None,
+        "job_titles": list(dict.fromkeys(
+            title for work in resume.get("work_experiences", []) if (title := (work.get("job_title") or "").strip())
+        )),
+    }
 
 
 async def _service_likes_count(db: AsyncSession, service_id: int) -> int:
@@ -117,7 +132,7 @@ async def create_service(
     except Exception:
         await db.rollback()
         if banner_url:
-            delete_public_file(banner_url)
+            await delete_public_file(banner_url)
         raise
 
     try:
@@ -193,11 +208,11 @@ async def update_service(
     except Exception:
         await db.rollback()
         if new_banner_url:
-            delete_public_file(new_banner_url)
+            await delete_public_file(new_banner_url)
         raise
 
     if new_banner_url and old_banner_url:
-        safe_unlink(resolve_backend_file_url(old_banner_url))
+        await delete_public_file(old_banner_url)
 
     return service
 
@@ -223,14 +238,14 @@ async def delete_service(
     if not service:
         raise not_found("Service")
     
-    # Delete banner file if exists
-    if service.banner_url:
-        safe_unlink(resolve_backend_file_url(service.banner_url))
+    banner_url = service.banner_url
     await db.execute(delete(ContentComment).where(ContentComment.target_type == "service", ContentComment.target_id == service_id))
     await db.execute(delete(ContentLike).where(ContentLike.target_type == "service", ContentLike.target_id == service_id))
     
     await db.delete(service)
     await db.commit()
+    if banner_url:
+        await delete_public_file(banner_url)
 
 
 # ===== PUBLIC ENDPOINTS =====
@@ -249,7 +264,9 @@ async def get_public_services(
     
     result = await db.execute(
         select(UserService)
+        .join(User, User.id == UserService.user_id)
         .options(selectinload(UserService.user).selectinload(User.profile))
+        .where(*showcase_user_filters())
         .order_by(UserService.created_at.desc())
         .offset(pagination.skip)
         .limit(pagination.limit)
@@ -266,6 +283,7 @@ async def get_public_services(
                 "display_name": service.user.profile.display_name,
                 "avatar_url": service.user.profile.avatar_url,
                 "headline": service.user.profile.headline,
+                **_provider_filters(service.user.profile),
             }
         elif service.user:
             provider_info = {
@@ -301,8 +319,12 @@ async def get_public_service(
 
     result = await db.execute(
         select(UserService)
+        .join(User, User.id == UserService.user_id)
         .options(selectinload(UserService.user).selectinload(User.profile))
-        .where(UserService.id == service_id)
+        .where(
+            UserService.id == service_id,
+            *showcase_user_filters(),
+        )
     )
     service = result.scalar_one_or_none()
     if not service:
@@ -315,6 +337,7 @@ async def get_public_service(
             "display_name": service.user.profile.display_name,
             "avatar_url": service.user.profile.avatar_url,
             "headline": service.user.profile.headline,
+            **_provider_filters(service.user.profile),
         }
     elif service.user:
         provider_info = {

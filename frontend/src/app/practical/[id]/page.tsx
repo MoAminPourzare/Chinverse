@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { PRACTICAL_CATALOG } from "@/lib/practicalCatalog";
 
 export default function PracticalDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="practical"
-            explorePath="/explore/practical"
-            eyebrow="چینی کاربردی"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-cyan-600"
-        />
-    );
+    return <PlannedCourseDetailPage domain="practical" title="چینی کاربردی" basePath="/practical" catalog={PRACTICAL_CATALOG} />;
 }

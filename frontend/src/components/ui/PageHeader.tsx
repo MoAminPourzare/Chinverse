@@ -34,6 +34,7 @@ export default function PageHeader({
     return (
         <Surface
             as="header"
+            data-page-header
             className={cn("sticky top-3 z-40 rounded-[28px] px-4 py-3", className)}
         >
             <div className="relative flex min-h-10 items-center justify-center">
@@ -42,7 +43,7 @@ export default function PageHeader({
                         {backControl}
                     </div>
                 )}
-                <div className="min-w-0 px-14 text-center">
+                <div data-header-title className="min-w-0 px-14 text-center">
                     <h1 className="truncate text-base font-black tracking-tight text-slate-950">
                         {title}
                     </h1>

@@ -1,13 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { GRAMMAR_CATALOG } from "@/lib/grammarCatalog";
 
 export default function GrammarExplorePage() {
-    return (
-        <CourseExplorePage
-            title="گرامر"
-            subcategorySlug="grammar"
-            detailPath="/grammar"
-            layout="list"
-            accentClass="bg-blue-700"
-        />
-    );
+    return <PlannedCourseExplorePage title="گرامر" basePath="/grammar" catalog={GRAMMAR_CATALOG} />;
 }

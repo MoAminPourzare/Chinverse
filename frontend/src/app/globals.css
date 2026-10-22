@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./chinese-font.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -11,6 +12,9 @@
 }
 
 :root {
+  --app-visual-height: 100dvh;
+  --app-visual-offset-top: 0px;
+  --app-keyboard-inset: 0px;
   --background: #fafafb;
   --foreground: #0f172a;
   --app-canvas: #fafafb;
@@ -22,37 +26,37 @@
   --app-border-strong: #cdd8e6;
   --app-text: #172033;
   --app-text-muted: #687386;
-  --app-text-faint: #94a0b1;
+  --app-text-faint: #64748b;
   --app-primary: #155aa6;
   --app-primary-hover: #0f4e92;
   --app-primary-soft: #eef6ff;
   --app-shadow: rgba(15, 23, 42, 0.12);
   --app-ambient-rose: rgba(244, 63, 94, 0.14);
   --app-ambient-green: rgba(16, 185, 129, 0.12);
-  --font-persian: "Vazirmatn", Tahoma, Arial, Helvetica, sans-serif;
-  --font-latin: "Vazirmatn", "Segoe UI", Arial, Helvetica, sans-serif;
-  --font-cjk: "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", sans-serif;
+  --font-persian: "Vazirmatn", "LXGW WenKai GB Screen", Tahoma, Arial, Helvetica, sans-serif;
+  --font-latin: "Vazirmatn", "LXGW WenKai GB Screen", "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-cjk: "LXGW WenKai GB Screen", "Vazirmatn", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
   --font-vazirmatn: var(--font-persian);
   --motion-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html.dark {
-  --background: #0d1117;
+  --background: #121727;
   --foreground: #f4f7fb;
-  --app-canvas: #10151c;
-  --app-canvas-soft: #0d1117;
-  --app-surface: #171d26;
-  --app-surface-soft: #1d2530;
-  --app-surface-raised: #202936;
-  --app-border: #2b3542;
-  --app-border-strong: #3a4656;
+  --app-canvas: #151b2d;
+  --app-canvas-soft: #121727;
+  --app-surface: #1c2438;
+  --app-surface-soft: #232d43;
+  --app-surface-raised: #2b3650;
+  --app-border: #36415c;
+  --app-border-strong: #4b5975;
   --app-text: #f4f7fb;
-  --app-text-muted: #aab4c2;
-  --app-text-faint: #778394;
+  --app-text-muted: #b8c2d5;
+  --app-text-faint: #a1afc6;
   --app-primary: #62a8f4;
   --app-primary-hover: #82bbf7;
-  --app-primary-soft: #172a40;
+  --app-primary-soft: #233756;
   --app-shadow: rgba(0, 0, 0, 0.42);
   --app-ambient-rose: rgba(244, 63, 94, 0.08);
   --app-ambient-green: rgba(16, 185, 129, 0.06);
@@ -79,6 +83,13 @@ body {
   height: 100%;
 }
 
+html {
+  min-width: 320px;
+  background: var(--app-canvas);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   color: var(--foreground);
@@ -86,6 +97,8 @@ body {
     linear-gradient(180deg, var(--app-canvas) 0%, var(--app-canvas-soft) 100%);
   font-family: var(--font-vazirmatn);
   overflow: hidden;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -98,6 +111,74 @@ textarea {
   font: inherit;
 }
 
+input[type="search"]::placeholder {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Match the approved about-me field across explanatory text boxes. */
+.description-field {
+  font-size: 13px;
+  line-height: 24px;
+  text-align: justify;
+  text-justify: auto;
+}
+
+.description-field::placeholder {
+  font-size: inherit;
+  line-height: inherit;
+  direction: rtl;
+  text-align: justify;
+  text-align-last: right;
+}
+
+[data-centered-copy] :is(p, h2, h3, h4) {
+  text-align: center;
+}
+
+/* Keep reading copy justified while respecting centered headings and their metadata. */
+:where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap):where(:not(.text-center, [data-course-heading] *)) {
+  text-align: justify;
+  text-justify: auto;
+}
+
+:where(button, [role="button"], label) :where(p, li, blockquote, dd, .whitespace-pre-line, .whitespace-pre-wrap) {
+  text-align: inherit;
+}
+
+button:not([data-inline-action="true"]),
+[role="button"]:not([data-inline-action="true"]),
+a[href]:not([data-inline-action="true"]),
+.touch-target {
+  /* WebKit can quantize a 44px box just below 44 CSS px at mobile scale. */
+  min-width: 46px;
+  min-height: 46px;
+}
+
+input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  min-height: 46px;
+}
+
+input[type="range"] {
+  min-height: 46px;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 78%, white);
+  outline-offset: 3px;
+}
+
+.chat-composer input {
+  /* The composer supplies the focus indicator around both controls. */
+  border-radius: 9999px;
+  font-size: 16px;
+  line-height: 1.75;
+  outline: none;
+  box-shadow: none;
+}
+
 :lang(en) {
   font-family: var(--font-latin);
 }
@@ -105,12 +186,29 @@ textarea {
 :lang(zh),
 .font-cjk {
   font-family: var(--font-cjk);
+  font-synthesis: none;
   letter-spacing: 0;
   line-height: 1.45;
 }
 
 .font-latin {
   font-family: var(--font-latin);
+}
+
+[lang="zh-CN"], [lang="zh-TW"], [lang="zh-Hans"], [lang="zh-Hant"] {
+  font-family: var(--font-cjk);
+  font-synthesis: none;
+}
+
+/* Theme-specific SVG paints follow the app setting, including system mode. */
+img[data-theme-asset="dark"] { display: none; }
+html.dark img[data-theme-asset="light"] { display: none; }
+html.dark img[data-theme-asset="dark"] { display: inline-block; }
+
+html.dark .brand-logo {
+  background-color: #f4f5fb;
+  border-radius: 14px;
+  padding: 6px;
 }
 
 .font-persian {
@@ -143,12 +241,15 @@ body::selection {
   isolation: isolate;
   display: flex;
   height: 100vh;
-  height: 100dvh;
+  height: var(--app-visual-height, 100dvh);
   width: 100%;
   max-width: 430px;
   flex-direction: column;
   overflow: hidden;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: contain;
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
   transform: translateZ(0);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--app-canvas) 98%, transparent) 0%, color-mix(in srgb, var(--app-canvas-soft) 98%, transparent) 100%);
@@ -170,14 +271,75 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   background-color: rgba(250, 250, 251, 0.9) !important;
 }
 
+/* Page toolbars stay inside the app viewport; post/card headers are unaffected. */
+.app-scroll [data-page-header] {
+    position: sticky;
+    top: var(--app-header-top, 0px);
+}
+
+/* Page titles remain centered regardless of the writing direction or side controls. */
+.app-scroll h1,
+[data-header-title],
+[data-header-title] :is(h1, h2, p, span) {
+  text-align: center;
+}
+
+[data-header-title] {
+  width: 100%;
+  min-width: 0;
+}
+
+:is(h1, h2, p)[data-header-title],
+[data-header-title] :is(h1, h2, p) {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  text-wrap: balance;
+}
+
+@layer components {
+    [data-page-header] {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        flex-shrink: 0;
+        isolation: isolate;
+        background-color: var(--app-canvas);
+    }
+
+    [data-page-header]::before {
+        content: "";
+        position: absolute;
+        inset: -24px 0 0;
+        z-index: -1;
+        background: inherit;
+        pointer-events: none;
+    }
+}
+
 .app-scroll {
   flex: 1 1 0%;
   min-height: 0;
   position: relative;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: contain;
   padding-top: env(safe-area-inset-top);
+  scroll-padding-top: calc(env(safe-area-inset-top) + var(--app-header-height, 0px) + 12px);
+  scroll-padding-bottom: calc(var(--app-keyboard-inset, 0px) + env(safe-area-inset-bottom) + 24px);
   -webkit-overflow-scrolling: touch;
+}
+
+html[data-keyboard="open"] .bottom-nav-container,
+html[data-keyboard="open"] .app-support-button,
+html[data-keyboard="open"] .pwa-action-card {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[data-keyboard="open"] .app-scroll {
+  padding-bottom: 12px !important;
 }
 
 .route-stage {
@@ -189,6 +351,21 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   min-height: 100%;
   transform-origin: center;
   backface-visibility: hidden;
+}
+
+/* A conversation owns its scrolling; the route wrappers fill the app frame. */
+.app-scroll[data-scroll-mode="conversation"],
+.app-scroll[data-scroll-mode="conversation"] > .route-stage,
+.app-scroll[data-scroll-mode="conversation"] > .route-stage > .route-panel {
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+html[data-keyboard="open"] .app-scroll[data-scroll-mode="conversation"] {
+  padding-bottom: 0 !important;
 }
 
 .route-panel[data-phase="enter"] {
@@ -230,13 +407,14 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   z-index: 1000;
   display: flex;
   justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   pointer-events: none;
 }
 
 #headlessui-portal-root > * {
   position: relative;
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   width: 100%;
   max-width: 430px;
   overflow: hidden;
@@ -251,7 +429,7 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   }
 
   .app-frame {
-    height: min(900px, calc(100dvh - 36px));
+    height: min(900px, calc(var(--app-visual-height, 100dvh) - 36px));
     border: 1px solid color-mix(in srgb, var(--app-border) 82%, transparent);
     border-radius: 38px;
     box-shadow:
@@ -261,12 +439,74 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
 
   #headlessui-portal-root {
     align-items: center;
-    padding: 18px;
+    padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   }
 
   #headlessui-portal-root > * {
-    height: min(900px, calc(100dvh - 36px));
+    height: min(900px, calc(var(--app-visual-height, 100dvh) - 36px));
     border-radius: 38px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .app-viewport {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .app-frame,
+  #headlessui-portal-root > * {
+    height: var(--app-visual-height, 100dvh);
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* iOS Safari uses the CSS fallback when native element fullscreen is absent.
+   Remove clipped/transformed ancestors so the fixed player reaches the visual
+   viewport rather than the 430px application frame. */
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .app-viewport,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .app-frame,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .app-scroll,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .route-stage,
+body:has(.lesson-video-shell[data-pseudo-fullscreen="true"]) .route-panel {
+  max-width: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+html:not(.dark) [class~="text-slate-400"],
+html:not(.dark) [class~="text-gray-400"] {
+  color: var(--app-text-muted) !important;
+}
+
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid CanvasText;
+  }
+
+  .chat-composer:focus-within {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --app-border: #9aa7b8;
+    --app-border-strong: #69778a;
+    --app-text-muted: #455266;
+  }
+
+  html.dark {
+    --app-border: #718096;
+    --app-border-strong: #94a3b8;
+    --app-text-muted: #d2d9e2;
   }
 }
 
@@ -372,22 +612,9 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
 
 @keyframes nav-shell-in {
   from {
-    opacity: 0;
     transform: translate3d(0, 18px, 0) scale(0.97);
   }
   to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes nav-dot-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, -5px, 0) scale(0.25);
-  }
-  to {
-    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
@@ -434,10 +661,6 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   transform: translateY(-2px) scale(1.08);
 }
 
-.bottom-nav-dot {
-  animation: nav-dot-in 360ms var(--motion-ease-spring) both;
-}
-
 .modal-backdrop-motion {
   animation: modal-backdrop-in 220ms ease-out both;
 }
@@ -472,17 +695,26 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   isolation: isolate;
 }
 
-.lesson-video-shell:fullscreen {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) {
   display: flex;
-  height: 100vh;
+  height: var(--app-visual-height, 100dvh);
   width: 100vw;
   align-items: center;
   justify-content: center;
   background: #000;
 }
 
-.lesson-video-shell:fullscreen .lesson-video-element {
-  height: 100vh;
+.lesson-video-shell[data-pseudo-fullscreen="true"] {
+  position: fixed;
+  inset: var(--app-visual-offset-top, 0px) 0 0;
+  z-index: 100;
+  max-width: none;
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-video-element {
+  height: var(--app-visual-height, 100dvh);
   width: 100vw;
   object-fit: contain;
 }
@@ -496,18 +728,18 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
-.lesson-video-shell:fullscreen .lesson-fullscreen-captions {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-fullscreen-captions {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding-bottom: max(76px, env(safe-area-inset-bottom));
 }
 
-.lesson-video-shell:fullscreen .lesson-fullscreen-captions-bottom {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-fullscreen-captions-bottom {
   justify-content: flex-end;
 }
 
-.lesson-video-shell:fullscreen .lesson-video-center-controls {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-video-center-controls {
   opacity: 0;
   pointer-events: none;
 }
@@ -516,7 +748,7 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   transition: opacity 220ms ease;
 }
 
-.lesson-video-shell:fullscreen .lesson-video-controls {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-video-controls {
   padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right));
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
@@ -597,18 +829,18 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
   line-height: 1.4;
 }
 
-.lesson-video-shell:fullscreen .lesson-caption-bottom button {
+.lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-caption-bottom button {
   pointer-events: none;
   color: inherit;
 }
 
 @media (orientation: landscape) {
-  .lesson-video-shell:fullscreen .lesson-fullscreen-captions {
+  .lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-fullscreen-captions {
     padding-block: 28px;
   }
 
-  .lesson-video-shell:fullscreen .lesson-caption-top,
-  .lesson-video-shell:fullscreen .lesson-caption-bottom {
+  .lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-caption-top,
+  .lesson-video-shell:is(:fullscreen, [data-pseudo-fullscreen="true"]) .lesson-caption-bottom {
     background: rgba(15, 23, 42, 0.48);
   }
 }
@@ -714,7 +946,9 @@ html.dark [class~="bg-white/88"],
 html.dark [class~="bg-white/86"],
 html.dark [class~="bg-white/85"],
 html.dark [class~="bg-white/80"],
+html.dark [class~="bg-white/75"],
 html.dark [class~="bg-white/70"],
+html.dark [class~="bg-white/60"],
 html.dark [class~="bg-white/55"] {
   background-color: color-mix(in srgb, var(--app-surface) 94%, transparent) !important;
 }
@@ -779,6 +1013,19 @@ html.dark [class~="bg-[#f3f8ff]"] {
   background-color: var(--app-surface-soft) !important;
 }
 
+html.dark [class~="bg-[#e8f2fd]"],
+html.dark [class~="bg-[#e9edf5]"],
+html.dark [class~="bg-[#e3e7ed]"],
+html.dark [class~="bg-[#d9d9d9]"] {
+  background-color: var(--app-surface-raised) !important;
+}
+
+html.dark [class~="bg-[#f3f5f8]"],
+html.dark [class~="bg-[#f8f9fc]"],
+html.dark [class~="bg-[#f4f8ff]"] {
+  background-color: var(--app-canvas) !important;
+}
+
 html.dark [class~="bg-[#ffe9ec]"] {
   background-color: #3b2028 !important;
 }
@@ -790,6 +1037,11 @@ html.dark [class~="bg-[#fff6df]"] {
 
 html.dark [class~="bg-[#f8d4c7]"] {
   background-color: #3a2522 !important;
+}
+
+html.dark [class~="bg-[#efa38d]"],
+html.dark [class~="bg-[#f0a58d]"] {
+  background-color: #51332f !important;
 }
 
 html.dark [class~="bg-[#155aa6]/10"] {
@@ -861,6 +1113,41 @@ html.dark [class~="text-[#242833]"] {
   color: var(--app-text) !important;
 }
 
+html.dark [class~="text-[#343941]"],
+html.dark [class~="text-[#333941]"],
+html.dark [class~="text-[#353941]"],
+html.dark [class~="text-[#40464f]"],
+html.dark [class~="text-[#2f343b]"],
+html.dark [class~="text-[#454b55]"],
+html.dark [class~="text-[#434343]"],
+html.dark [class~="text-[#4b535e]"] {
+  color: var(--app-text) !important;
+}
+
+html.dark [class~="text-[#59616c]"],
+html.dark [class~="text-[#58616d]"],
+html.dark [class~="text-[#737b87]"],
+html.dark [class~="text-[#646d79]"],
+html.dark [class~="text-[#667587]"],
+html.dark [class~="text-[#6f7785]"],
+html.dark [class~="text-[#888888]"],
+html.dark [class~="text-[#777f89]"] {
+  color: var(--app-text-muted) !important;
+}
+
+html.dark [class~="text-[#9ba4af]"],
+html.dark [class~="text-[#828994]"],
+html.dark [class~="text-[#8a929d]"],
+html.dark [class~="text-[#9aa5b3]"] {
+  color: var(--app-text-faint) !important;
+}
+
+html.dark [class~="text-[#1768d4]"],
+html.dark [class~="text-[#10467f]"],
+html.dark [class~="text-[#315f94]"] {
+  color: var(--app-primary) !important;
+}
+
 html.dark [class~="text-slate-700"],
 html.dark [class~="text-slate-600"],
 html.dark [class~="text-slate-500"],
@@ -923,6 +1210,25 @@ html.dark [class~="border-slate-300/80"],
 html.dark [class~="border-gray-100"],
 html.dark [class~="border-[#dfe6f0]"],
 html.dark [class~="border-[#d5e1ef]"] {
+  border-color: var(--app-border) !important;
+}
+
+html.dark [class~="border-[#d6e1ee]"],
+html.dark [class~="border-[#cfd3da]"],
+html.dark [class~="border-[#dfe3ea]"],
+html.dark [class~="border-[#d8e8f7]"],
+html.dark [class~="border-[#d8e3ef]"],
+html.dark [class~="border-[#cfe0f8]"],
+html.dark [class~="border-[#e0e5ee]"],
+html.dark [class~="border-[#e3e7ee]"],
+html.dark [class~="border-[#d9dee7]"],
+html.dark [class~="border-[#e8edf4]"],
+html.dark [class~="border-[#cfe2f7]"],
+html.dark [class~="border-[#c8d0dc]"],
+html.dark [class~="border-[#c4c8d0]"],
+html.dark [class~="border-[#b9d7f5]"],
+html.dark [class~="border-[#b9cbe0]"],
+html.dark [class~="border-[#dbe5f0]"] {
   border-color: var(--app-border) !important;
 }
 

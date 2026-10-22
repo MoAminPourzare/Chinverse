@@ -26,7 +26,7 @@ from app.db.base_class import Base
 # FIX 3: Do NOT use 'from app.models import *'
 # Just import the package. Since __init__.py inside models imports everything,
 # Base.metadata will still be populated correctly.
-import app.models
+import app.models  # noqa: F401
 # ---------------------------------------------------------------------
 
 # this is the Alembic Config object, which provides

@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
+import { headers } from "next/headers";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 import { releaseConfig } from "@/config/release";
@@ -6,7 +8,16 @@ import { releaseConfig } from "@/config/release";
 export const metadata: Metadata = {
   title: "چین‌ورس",
   description: "اپلیکیشن آموزش زبان چینی برای فارسی‌زبان‌ها",
+  applicationName: "ChinVerse",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "چین‌ورس",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   robots: releaseConfig.isPublicRelease
     ? {
         index: true,
@@ -23,6 +34,7 @@ export const metadata: Metadata = {
       { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
     ],
+    apple: [{ url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" }],
   },
 };
 
@@ -30,6 +42,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  colorScheme: "light dark",
+  interactiveWidget: "resizes-content",
 };
 
 const themeBootstrapScript = `
@@ -46,19 +60,30 @@ const themeBootstrapScript = `
   }
 })();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const releaseSha = process.env.VERCEL_GIT_COMMIT_SHA
+    ?? process.env.GITHUB_SHA
+    ?? process.env.NEXT_PUBLIC_RELEASE_SHA
+    ?? "local";
+
   return (
     <html lang="fa" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#fafafb" />
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeBootstrapScript }}
+        />
       </head>
       <body className="antialiased text-slate-900">
-        <AppShell>{children}</AppShell>
+        <AppShell releaseSha={releaseSha}>{children}</AppShell>
       </body>
     </html>
   );

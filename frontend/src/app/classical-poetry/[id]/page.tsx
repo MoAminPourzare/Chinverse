@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import ClassicalPoetryDetailPage from "@/components/course/ClassicalPoetryDetailPage";
 
-export default function ClassicalPoetryDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="classical-poetry"
-            explorePath="/explore/classical-poetry"
-            eyebrow="شعر و ادبیات کلاسیک"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+export default function ClassicalPoetryPage() {
+    return <ClassicalPoetryDetailPage />;
 }

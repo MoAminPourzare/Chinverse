@@ -1,0 +1,7 @@
+export const LEITNER_STAGES: Record<number, { title: string; subtitle: string; image: string; border: string; header: string; message: string }> = {
+    1: { title: "بذر", subtitle: "نیازمند یادآوری", image: "/assets/chinverse/leitner/stage-seed.svg", border: "border-[#e51f35]", header: "bg-[#e51f35]", message: "این لغت هنوز توی ذهنت جا نیفتاده. چند بار مرورش کن تا کم‌کم ریشه بگیره و وارد حافظه‌ات بشه." },
+    2: { title: "جوانه", subtitle: "حافظه کوتاه مدت", image: "/assets/chinverse/leitner/stage-sprout.svg", border: "border-[#f4aa16]", header: "bg-[#f7bd28]", message: "لغت رو یاد گرفتی، اما هنوز زوده به حافظه‌ات اعتماد کنی! مرورهای بعدی کمک می‌کنن بهتر توی ذهنت بمونه." },
+    3: { title: "نهال", subtitle: "حافظه میان مدت", image: "/assets/chinverse/leitner/stage-branch.svg", border: "border-[#39aa20]", header: "bg-[#50b008]", message: "آفرین! این لغت داره کم‌کم توی ذهنت ریشه می‌گیره. چند مرور دیگه تا موندگار شدنش فاصله داری." },
+    4: { title: "درخت جوان", subtitle: "حافظه بلند مدت", image: "/assets/chinverse/leitner/stage-tree.svg", border: "border-[#88c7ee]", header: "bg-[#a2cef0]", message: "این لغت رو خوب یاد گرفتی و حالا وارد حافظه بلندمدتت شده. مرورهای گاه‌به‌گاه کمک می‌کنن فراموشش نکنی." },
+    5: { title: "درخت تنومند", subtitle: "آموخته شده", image: "/assets/chinverse/leitner/stage-mastered.svg", border: "border-[#155aa6]", header: "bg-[#20518f]", message: "این لغت حسابی توی ذهنت ریشه کرده! حالا می‌تونی با خیال راحت بگی که یادش گرفتی." },
+};

@@ -1,14 +1,13 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { CLASSICAL_POETRY_CATALOG } from "@/lib/classicalPoetryCatalog";
 
 export default function ClassicalPoetryExplorePage() {
     return (
-        <CourseExplorePage
+        <PlannedCourseExplorePage
             title="شعر و ادبیات کلاسیک"
-            subcategorySlug="classical-poetry"
-            detailPath="/classical-poetry"
-            layout="list"
-            countLabel="درس"
-            accentClass="bg-blue-700"
+            basePath="/classical-poetry"
+            catalog={CLASSICAL_POETRY_CATALOG}
+            countLabel="قسمت"
         />
     );
 }

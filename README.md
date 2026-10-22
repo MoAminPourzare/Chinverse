@@ -12,7 +12,7 @@ Persian-first Chinese learning and professional-networking web application.
 - npm `10.9.2` (`frontend/package.json`)
 - Python `3.11.15` (`.python-version` and backend image)
 - Poetry `2.4.1` (`backend/Dockerfile` and CI)
-- PostgreSQL `16.14` for isolated integration tests
+- PostgreSQL `18.4` for isolated integration tests
 
 Use the lockfiles. Local development and CI install with `npm ci` and
 `poetry sync`; do not replace them with unlocked installs.
@@ -90,9 +90,23 @@ which allows a deployment to be matched to a pushed revision.
 
 ## Release Notes
 
+The current application and free-database recovery checkpoint is documented in
+[`docs/PROJECT_CHECKPOINT_2026_10_22_FA.md`](docs/PROJECT_CHECKPOINT_2026_10_22_FA.md).
+Source history is retained on `codex/phase-8-beta-release`; private database
+backups, account details, and service secrets stay outside this public repository.
+
 The fixed release scope, staging policy, privacy guard, and 29 accepted change
 groups are documented in
 [`docs/PHASE_0_RELEASE_BASELINE_FA.md`](docs/PHASE_0_RELEASE_BASELINE_FA.md).
 
 The detailed Persian report for the current hardening phase is in
 [`docs/PHASE_1_QUALITY_BASELINE_FA.md`](docs/PHASE_1_QUALITY_BASELINE_FA.md).
+
+The Phase 8 beta/release contract, provider blockers, and staged rollback runbook
+are in [`docs/PHASE_8_BETA_RELEASE_FA.md`](docs/PHASE_8_BETA_RELEASE_FA.md) and
+[`docs/PHASE_8_RELEASE_RUNBOOK_FA.md`](docs/PHASE_8_RELEASE_RUNBOOK_FA.md).
+Run the local fail-closed release check before a protected production promotion:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-phase8-release.ps1
+```

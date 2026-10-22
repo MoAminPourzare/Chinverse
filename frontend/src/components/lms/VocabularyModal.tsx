@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogPanel } from "@headlessui/react";
 import { Check, Volume2, X } from "lucide-react";
 import api from "@/lib/api";
-import { getMediaUrl } from "@/lib/media";
+import VocabularyCollocations from "@/components/lms/VocabularyCollocations";
+import { useVocabularyPronunciation } from "@/hooks/useVocabularyPronunciation";
+import { dictionaryLevelLabel } from "@/lib/dictionaryLevels";
 
 interface VocabularyDefinition {
     id: number;
@@ -35,6 +38,7 @@ interface VocabularyWord {
     chinese: string;
     pinyin: string;
     audio_url?: string | null;
+    audio_pinyin?: string | null;
     level?: string;
     hsk_level?: number | null;
     source?: string;
@@ -52,6 +56,7 @@ interface VocabularyModalProps {
     word: VocabularyWord;
     isOpen: boolean;
     onClose: () => void;
+    onLeitnerChange?: (word: VocabularyWord) => void;
 }
 
 type TabType = "persian" | "chinese" | "composition" | "examples";
@@ -84,7 +89,8 @@ const splitLines = (value?: string | null) =>
         .map((line) => line.trim())
         .filter(Boolean);
 
-export default function VocabularyModal({ word, isOpen, onClose }: VocabularyModalProps) {
+export default function VocabularyModal({ word, isOpen, onClose, onLeitnerChange }: VocabularyModalProps) {
+    const pronunciation = useVocabularyPronunciation(word, isOpen);
     const [activeTab, setActiveTab] = useState<TabType>("persian");
     const [isInLeitner, setIsInLeitner] = useState(false);
     const [isCheckingLeitner, setIsCheckingLeitner] = useState(false);
@@ -102,7 +108,6 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
     const examples = useMemo(() => sortBySense(word.examples || []), [word.examples]);
     const collocations = useMemo(() => sortBySense(word.collocations || []), [word.collocations]);
     const examplesBySense = useMemo(() => groupBySense(examples), [examples]);
-    const collocationsBySense = useMemo(() => groupBySense(collocations), [collocations]);
     const persianDefinitionBySense = useMemo(() => {
         const definitions = new Map<number, VocabularyDefinition>();
         persianDefinitions.forEach((definition) => {
@@ -127,6 +132,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                 const response = await api.get(`/leitner/check/${word.id}`);
                 if (!cancelled) {
                     setIsInLeitner(Boolean(response.data.in_leitner));
+                    if (response.data.in_leitner) onLeitnerChange?.(word);
                 }
             } catch (error) {
                 console.error("Failed to check leitner status:", error);
@@ -145,33 +151,9 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         return () => {
             cancelled = true;
         };
-    }, [isOpen, word.id]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const previousBodyOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            document.body.style.overflow = previousBodyOverflow;
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isOpen, onClose]);
+    }, [isOpen, word, onLeitnerChange]);
 
     if (!isOpen) return null;
-
-    const playAudio = () => {
-        if (!word.audio_url) return;
-        void new Audio(getMediaUrl(word.audio_url)).play().catch((error) => {
-            console.error("Failed to play vocabulary audio:", error);
-        });
-    };
 
     const handleAddToLeitner = async () => {
         if (word.id === undefined || word.id === null || isInLeitner || isAdding || isCheckingLeitner) return;
@@ -180,6 +162,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
         try {
             await api.post("/leitner/add", { word_id: word.id });
             setIsInLeitner(true);
+            onLeitnerChange?.(word);
         } catch (error) {
             console.error("Failed to add to leitner:", error);
             setLeitnerError("افزودن واژه انجام نشد. اتصال را بررسی و دوباره تلاش کن.");
@@ -208,13 +191,10 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
     );
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden overscroll-none px-4 py-5">
+        <Dialog open={isOpen} onClose={onClose} aria-labelledby="vocabulary-word-title" className="fixed inset-0 z-[1100] flex items-center justify-center overflow-hidden overscroll-none px-4 py-5" dir="rtl">
             <div className="modal-backdrop-motion absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} />
 
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="vocabulary-word-title"
+            <DialogPanel
                 className="modal-panel-motion relative flex h-[min(720px,calc(100dvh-40px))] w-full max-w-[390px] flex-col overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
             >
                 <div className="shrink-0 border-b border-slate-100 px-5 pb-4 pt-5 text-center">
@@ -222,6 +202,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                         onClick={onClose}
                         className="absolute right-4 top-4 rounded-2xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                         aria-label="بستن اطلاعات واژه"
+                        data-autofocus
                     >
                         <X size={24} />
                     </button>
@@ -231,10 +212,10 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                             {word.chinese}
                         </h2>
                         <button
-                            onClick={playAudio}
-                            disabled={!word.audio_url}
+                            onClick={() => pronunciation.playing ? pronunciation.stop() : void pronunciation.play()}
+                            aria-pressed={pronunciation.playing}
                             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#155aa6] transition-colors hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="پخش تلفظ"
+                            aria-label={pronunciation.playing ? "توقف تلفظ" : "پخش تلفظ"}
                         >
                             <Volume2 size={20} />
                         </button>
@@ -243,9 +224,14 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     <p className="font-latin text-base text-gray-600 sm:text-lg" dir="ltr" lang="en">
                         {word.pinyin}
                     </p>
+                    {pronunciation.deviceVoice && <p className="mt-1 text-xs text-slate-600" role="status">تلفظ با صدای چینی دستگاه</p>}
+                    {pronunciation.error && <p className="mt-2 text-xs leading-6 text-rose-700" role="alert" dir="rtl">{pronunciation.error}</p>}
+                    {word.audio_url && word.audio_pinyin && /[/|,，;；]/.test(word.pinyin) && (
+                        <p className="mt-2 text-xs text-slate-500" dir="rtl">تلفظ این صدا: <span className="font-latin" dir="ltr">{word.audio_pinyin}</span></p>
+                    )}
                     {(word.hsk_level || word.level) && (
                         <span className="mt-3 inline-flex rounded-full bg-[#eef6ff] px-3 py-1 text-xs font-bold text-[#155aa6]">
-                            {word.hsk_level ? `HSK ${word.hsk_level}` : word.level}
+                            {dictionaryLevelLabel(word)}
                         </span>
                     )}
                 </div>
@@ -315,58 +301,13 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                     )}
 
                     {activeTab === "composition" && (
-                        <div className="space-y-3">
-                            {collocationsBySense.length > 0
-                                ? collocationsBySense.map((group) => {
-                                      const definition = persianDefinitionBySense.get(group.senseOrder);
-                                      return (
-                                          <section key={group.senseOrder} className="rounded-3xl bg-slate-50 px-4 py-3.5">
-                                              <div className="mb-3 border-b border-slate-200/80 pb-2 text-right">
-                                                  <span className="inline-flex rounded-full bg-[#eef6ff] px-3 py-1 text-[11px] font-black text-[#155aa6]">
-                                                      معنی {group.senseOrder}
-                                                  </span>
-                                                  {definition && (
-                                                      <p className="mt-2 text-xs font-bold leading-6 text-slate-500" dir="rtl" lang="fa">
-                                                          {definition.definition_text}
-                                                      </p>
-                                                  )}
-                                              </div>
-                                              <ol className="space-y-2" dir="ltr">
-                                                  {group.items.map((item, index) => (
-                                                      <li key={item.id} className="rounded-2xl bg-white px-3 py-2.5">
-                                                          <div className="flex items-start gap-2">
-                                                              <span className="mt-0.5 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#eef6ff] px-1.5 text-xs font-black text-[#155aa6]">
-                                                                  {index + 1}
-                                                              </span>
-                                                              <div className="min-w-0 flex-1">
-                                                                  <p className="font-cjk text-base font-bold text-slate-800" lang="zh-CN">
-                                                                      {highlightWord(item.phrase_zh, word.chinese)}
-                                                                  </p>
-                                                                  {item.phrase_pinyin && (
-                                                                      <p className="mt-1 font-latin text-xs text-slate-500" dir="ltr" lang="en">
-                                                                          {item.phrase_pinyin}
-                                                                      </p>
-                                                                  )}
-                                                                  {item.translation_target && (
-                                                                      <p className="mt-2 text-sm text-slate-700" dir="rtl" lang="fa">
-                                                                          {item.translation_target}
-                                                                      </p>
-                                                                  )}
-                                                              </div>
-                                                          </div>
-                                                      </li>
-                                                  ))}
-                                              </ol>
-                                          </section>
-                                      );
-                                  })
-                                : splitLines(word.composition).map((line, i) => (
-                                      <p key={line} className="font-cjk text-sm leading-7 text-slate-800" dir="ltr" lang="zh-CN">
-                                          {i + 1}. {highlightWord(line, word.chinese)}
-                                      </p>
-                                  ))}
-                            {collocations.length === 0 && splitLines(word.composition).length === 0 && renderEmpty("ترکیب واژگانی موجود نیست")}
-                        </div>
+                        <VocabularyCollocations
+                            items={collocations}
+                            definitions={persianDefinitions}
+                            composition={word.composition}
+                            keyword={word.chinese}
+                            highlight={highlightWord}
+                        />
                     )}
 
                     {activeTab === "examples" && (
@@ -443,7 +384,7 @@ export default function VocabularyModal({ word, isOpen, onClose }: VocabularyMod
                         )}
                     </button>
                 </div>
-            </div>
-        </div>
+            </DialogPanel>
+        </Dialog>
     );
 }

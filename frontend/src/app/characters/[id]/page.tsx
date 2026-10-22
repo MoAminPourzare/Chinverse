@@ -1,14 +1,6 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import PlannedCourseDetailPage from "@/components/course/PlannedCourseDetailPage";
+import { CHARACTER_CATALOG } from "@/lib/characterCatalog";
 
 export default function CharactersDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="characters"
-            explorePath="/explore/characters"
-            eyebrow="کاراکتر"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+    return <PlannedCourseDetailPage domain="characters" title="کاراکتر" basePath="/characters" catalog={CHARACTER_CATALOG} />;
 }

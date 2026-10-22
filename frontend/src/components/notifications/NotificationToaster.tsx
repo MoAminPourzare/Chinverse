@@ -1,12 +1,14 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, MessageCircle, Sparkles, UserPlus, X } from "lucide-react";
+import { Bell, CheckCircle2, MessageCircle, ShieldAlert, Sparkles, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
+import { authService } from "@/services/auth.service";
+import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
 
 const STORAGE_KEY = "chinverse:lastSeenNotificationId";
 const HIDDEN_PREFIXES = ["/login", "/signup", "/notifications"];
@@ -17,6 +19,7 @@ const iconByType: Record<NotificationType, typeof Bell> = {
     post: Sparkles,
     forum: MessageCircle,
     service: CheckCircle2,
+    moderation: ShieldAlert,
     system: Bell,
 };
 
@@ -26,66 +29,79 @@ export default function NotificationToaster() {
     const [notification, setNotification] = useState<AppNotification | null>(null);
     const [extraCount, setExtraCount] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const lastSeenRef = useRef<number | null>(null);
     const initializedRef = useRef(false);
     const hideTimerRef = useRef<number | null>(null);
 
     const shouldRun = useMemo(() => {
-        if (typeof window === "undefined") return false;
         if (HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return false;
-        return Boolean(localStorage.getItem("token"));
-    }, [pathname]);
+        return isAuthenticated;
+    }, [isAuthenticated, pathname]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const syncAuth = async () => {
+            const authenticated = await authService.restoreSession();
+            if (isMounted) setIsAuthenticated(authenticated);
+        };
+
+        void syncAuth();
+        window.addEventListener("chinverse-auth-change", syncAuth);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("chinverse-auth-change", syncAuth);
+        };
+    }, []);
 
     useEffect(() => {
         if (!shouldRun) return;
-
-        const stored = Number(localStorage.getItem(STORAGE_KEY));
-        lastSeenRef.current = Number.isFinite(stored) && stored > 0 ? stored : null;
-        let isMounted = true;
-
-        const poll = async () => {
-            try {
-                const items = await notificationService.getLatest(lastSeenRef.current);
-                if (!isMounted || items.length === 0) {
-                    initializedRef.current = true;
-                    return;
-                }
-
-                const maxId = Math.max(...items.map((item) => item.id));
-                lastSeenRef.current = maxId;
-                localStorage.setItem(STORAGE_KEY, String(maxId));
-
-                if (!initializedRef.current) {
-                    initializedRef.current = true;
-                    return;
-                }
-
-                const ordered = [...items].sort((a, b) => a.id - b.id);
-                const newest = ordered[ordered.length - 1];
-                setNotification(newest);
-                setExtraCount(Math.max(0, ordered.length - 1));
-                setIsVisible(true);
-
-                if (hideTimerRef.current) {
-                    window.clearTimeout(hideTimerRef.current);
-                }
-                hideTimerRef.current = window.setTimeout(() => setIsVisible(false), 6500);
-            } catch {
-                initializedRef.current = true;
-            }
-        };
-
-        poll();
-        const interval = window.setInterval(poll, 12_000);
+        try {
+            const stored = Number(localStorage.getItem(STORAGE_KEY));
+            lastSeenRef.current = Number.isFinite(stored) && stored > 0 ? stored : null;
+        } catch {
+            lastSeenRef.current = null;
+        }
 
         return () => {
-            isMounted = false;
-            window.clearInterval(interval);
-            if (hideTimerRef.current) {
-                window.clearTimeout(hideTimerRef.current);
-            }
+            if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
         };
     }, [shouldRun]);
+
+    useAdaptivePolling({
+        enabled: shouldRun,
+        task: async (signal) => {
+            const items = await notificationService.getLatest(lastSeenRef.current, signal);
+            if (items.length === 0) {
+                initializedRef.current = true;
+                return false;
+            }
+
+            const maxId = Math.max(...items.map((item) => item.id));
+            lastSeenRef.current = maxId;
+            try {
+                localStorage.setItem(STORAGE_KEY, String(maxId));
+            } catch {
+                // Storage can be unavailable in private mode; in-memory tracking still works.
+            }
+
+            if (!initializedRef.current) {
+                initializedRef.current = true;
+                return true;
+            }
+
+            const ordered = [...items].sort((a, b) => a.id - b.id);
+            setNotification(ordered[ordered.length - 1]);
+            setExtraCount(Math.max(0, ordered.length - 1));
+            setIsVisible(true);
+
+            if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = window.setTimeout(() => setIsVisible(false), 6500);
+            return true;
+        },
+        baseIntervalMs: 12_000,
+        maxIntervalMs: 60_000,
+    });
 
     if (!notification) return null;
 

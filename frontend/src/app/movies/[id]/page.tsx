@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import MovieDetailContent from "@/components/course/MovieDetailPage";
 
 export default function MovieDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="movies"
-            explorePath="/explore/movies"
-            eyebrow="فیلم"
-            countKeys={["episodes_count"]}
-            countLabel="بخش"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+    return <MovieDetailContent />;
 }

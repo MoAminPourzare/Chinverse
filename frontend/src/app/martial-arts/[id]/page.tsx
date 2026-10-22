@@ -1,14 +1,5 @@
-import CourseDetailPage from "@/components/course/CourseDetailPage";
+import MartialArtsDetailPage from "@/components/course/MartialArtsDetailPage";
 
-export default function MartialArtsDetailPage() {
-    return (
-        <CourseDetailPage
-            domain="martial-arts"
-            explorePath="/explore/martial-arts"
-            eyebrow="هنرهای رزمی"
-            countKeys={["lesson_count"]}
-            countLabel="درس"
-            accentClass="bg-[#155aa6]"
-        />
-    );
+export default function MartialArtsPage() {
+    return <MartialArtsDetailPage />;
 }

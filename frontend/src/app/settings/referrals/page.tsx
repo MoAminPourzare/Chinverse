@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/PublicMediaImage";
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2, Share2 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/ReturnAwareLink";
 import { Play } from "lucide-react";
 import { getDirectionalTextProps } from "@/lib/textDirection";
 

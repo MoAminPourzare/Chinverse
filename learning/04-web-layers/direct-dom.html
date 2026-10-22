@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>دکمه با DOM مستقیم | آزمایشگاه وب</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="store-panel direct-panel">
+        <span class="eyebrow">مقایسه با نسخهٔ React</span>
+        <h1>این بار بدون React</h1>
+        <p>HTML از ابتدا دکمه را دارد. JavaScript مستقیماً متن، کلاس و ویژگی DOM آن را تغییر می‌دهد.</p>
+        <button id="direct-button" type="button" class="choose-button" aria-pressed="false">انتخاب کتاب</button>
+        <h3>DOM واقعی دکمه بعد از هر کلیک</h3>
+        <pre id="direct-dom-output" class="code-view" dir="ltr"></pre>
+        <h3>دستور اصلی تغییر</h3>
+        <pre class="code-view" dir="ltr">button.textContent = selected ? "انتخاب شده ✓" : "انتخاب کتاب";
+button.classList.toggle("is-selected", selected);
+button.setAttribute("aria-pressed", String(selected));</pre>
+        <a class="text-link" href="/">برگشت به نسخهٔ React ←</a>
+      </section>
+    </main>
+    <script type="module" src="/direct-dom.js"></script>
+  </body>
+</html>

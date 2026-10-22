@@ -1,14 +1,6 @@
-import CourseExplorePage from "@/components/course/CourseExplorePage";
+import PlannedCourseExplorePage from "@/components/course/PlannedCourseExplorePage";
+import { SYNONYMS_CATALOG } from "@/lib/synonymsCatalog";
 
 export default function SynonymsExplorePage() {
-    return (
-        <CourseExplorePage
-            title="واژگان هم معنی"
-            subcategorySlug="synonyms"
-            detailPath="/synonyms"
-            layout="list"
-            countLabel="درس"
-            accentClass="bg-sky-600"
-        />
-    );
+    return <PlannedCourseExplorePage title="واژگان هم‌معنی" basePath="/synonyms" catalog={SYNONYMS_CATALOG} />;
 }

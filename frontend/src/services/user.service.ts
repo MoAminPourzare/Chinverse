@@ -51,6 +51,7 @@ export interface ResumeData {
 export interface UserProfile {
     display_name?: string;
     headline?: string;
+    job_titles?: string[];
     about_me?: string;
     phone?: string;
     is_verified?: boolean;
@@ -75,8 +76,8 @@ export interface User {
 
 export const userService = {
     // دریافت اطلاعات کامل کاربر (شامل ایمیل + پروفایل)
-    async getMe(): Promise<User> {
-        const response = await api.get<User>('/users/me');
+    async getMe(signal?: AbortSignal): Promise<User> {
+        const response = await api.get<User>('/users/me', { signal });
         return response.data;
     },
 
@@ -101,6 +102,15 @@ export const userService = {
         return response.data;
     },
 
+    async deleteAccount(currentPassword: string): Promise<void> {
+        await api.delete('/users/me', {
+            data: {
+                current_password: currentPassword,
+                confirm: true,
+            },
+        });
+    },
+
     // ===== PUBLIC ENDPOINTS =====
 
     // دریافت لیست کاربران برای ویترین
@@ -112,8 +122,8 @@ export const userService = {
     },
 
     // دریافت پروفایل عمومی کاربر
-    async getPublicProfile(userId: number): Promise<PublicUser> {
-        const response = await api.get<PublicUser>(`/users/${userId}/public`);
+    async getPublicProfile(userId: number, signal?: AbortSignal): Promise<PublicUser> {
+        const response = await api.get<PublicUser>(`/users/${userId}/public`, { signal });
         return response.data;
     },
 
@@ -195,11 +205,13 @@ export const userService = {
 
     // دنبال کردن کاربر
     async followUser(userId: number): Promise<void> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         await api.post(`/users/${userId}/follow`);
     },
 
     // لغو دنبال کردن کاربر
     async unfollowUser(userId: number): Promise<void> {
+        await api.get('/users/me', { chinverseCacheTtlMs: 0 });
         await api.delete(`/users/${userId}/follow`);
     },
 
@@ -274,6 +286,10 @@ export interface ServiceProvider {
     display_name?: string;
     avatar_url?: string;
     headline?: string;
+    country?: string;
+    city?: string;
+    education?: EducationSummary;
+    job_titles?: string[];
 }
 
 export interface ServiceWithProvider {

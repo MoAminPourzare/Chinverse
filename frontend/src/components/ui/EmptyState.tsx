@@ -24,9 +24,9 @@ export default function EmptyState({
                     {icon}
                 </div>
             )}
-            <h2 className="text-base font-bold text-slate-950">{title}</h2>
+            <h2 className="text-center text-base font-bold text-slate-950">{title}</h2>
             {description && (
-                <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500">
+                <p className="mx-auto mt-2 max-w-md text-center text-sm leading-7 text-slate-500">
                     {description}
                 </p>
             )}
