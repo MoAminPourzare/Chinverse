@@ -58,6 +58,10 @@ test-results/
 /dictionary-audio-output/
 # Owner reference originals; runtime copies are tracked under frontend/public/assets.
 /پروفایل دوره ها/
+/فایل های اپلیکیشن من/
+# Local browser evidence can include account and infrastructure details.
+# Reviewed, publishable screenshots belong under docs/checkpoints/ instead.
+/artifacts/
 .DS_Store
 *.local
 *.log
