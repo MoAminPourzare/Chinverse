@@ -45,6 +45,7 @@ export interface DailyActivitySummary {
 export interface VideoProgressPayload {
     lesson_id: number;
     seconds_delta: number;
+    study_seconds_delta?: number;
     position_seconds?: number;
     duration_seconds?: number;
 }
@@ -57,7 +58,8 @@ export const dailyActivityService = {
         return response.data;
     },
 
-    async recordVideoProgress(payload: VideoProgressPayload): Promise<void> {
-        await api.post("/daily-activity/video-progress", payload);
+    async recordVideoProgress(payload: VideoProgressPayload): Promise<{ lesson_completed: boolean }> {
+        const response = await api.post<{ lesson_completed: boolean }>("/daily-activity/video-progress", payload);
+        return response.data;
     },
 };

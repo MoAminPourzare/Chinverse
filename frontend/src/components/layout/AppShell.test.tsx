@@ -33,9 +33,9 @@ it.each([
     ["/settings", false],
     ["/support", false],
     ["/chatty", false],
-    ["/chat", true],
+    ["/chat", false],
     ["/chat/42", false],
-])("limits the support shortcut to messages at %s", (pathname, visible) => {
+])("keeps support in the forum and settings instead of a global shortcut at %s", (pathname, visible) => {
     route.pathname = pathname;
     render(<AppShell releaseSha="test-release"><main>محتوا</main></AppShell>);
     const support = screen.queryByRole("link", { name: "پشتیبانی" });

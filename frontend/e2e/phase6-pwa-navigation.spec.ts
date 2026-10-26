@@ -48,7 +48,7 @@ test("recovery reopens a browser trapped by a legacy worker and preserves accoun
     expect(await page.evaluate(() => navigator.onLine)).toBe(true);
     await page.goto("/api/pwa/recover", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(new URL("/", origin).href);
-    await expect(page.getByRole("button", { name: "فعالیت‌ها", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "تالار گفتگو", exact: true })).toBeVisible();
     expect(await page.evaluate(() => [localStorage.getItem("chinverse.recovery-test"), sessionStorage.getItem("chinverse.recovery-test")])).toEqual(["preserve", "preserve"]);
     expect(await context.cookies()).toEqual(expect.arrayContaining([expect.objectContaining({ name: "pwa-recovery-account-probe", value: "preserve", httpOnly: true })]));
     await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes(`chinverse-shell-${"f".repeat(40)}`))).toBe(false);

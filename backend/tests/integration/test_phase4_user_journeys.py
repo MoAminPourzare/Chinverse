@@ -404,7 +404,7 @@ async def test_profile_gallery_services_feed_engagement_and_ownership():
 
 
 @pytest.mark.asyncio
-async def test_forum_support_chat_notifications_courses_leitner_daily_and_race():
+async def test_forum_support_notifications_courses_leitner_daily_and_race():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="https://test"
     ) as client:
@@ -457,20 +457,16 @@ async def test_forum_support_chat_notifications_courses_leitner_daily_and_race()
         assert support.status_code == 200, support.text
         assert support.json()["success"] is True
 
-        sent = await client.post(
-            "/api/v1/chat",
-            headers=sender,
-            json={"receiver_id": receiver_id, "content": "پیام تست فاز چهار"},
-        )
-        assert sent.status_code == 200, sent.text
-        message_id = sent.json()["id"]
-
+        # Notifications still work for active learning/support features.
+        from app.services.notifications import create_notification
+        async with SessionLocal() as db:
+            await create_notification(db, user_id=receiver_id, type="system", title="Learning notification", target_url="/profile")
         unread = await client.get("/api/v1/notifications/unread-count", headers=receiver)
         assert unread.status_code == 200 and unread.json()["count"] >= 1
         notifications = await client.get("/api/v1/notifications", headers=receiver)
         assert notifications.status_code == 200
         notification_id = next(
-            item["id"] for item in notifications.json() if item["type"] == "message"
+            item["id"] for item in notifications.json() if item["type"] == "system"
         )
         latest = await client.get("/api/v1/notifications/latest", headers=receiver)
         assert latest.status_code == 200
@@ -485,18 +481,7 @@ async def test_forum_support_chat_notifications_courses_leitner_daily_and_race()
         assert read_all.json()["updated"] >= 0
         assert (await client.get("/api/v1/notifications/unread-count", headers=receiver)).json()["count"] == 0
 
-        history = await client.get(f"/api/v1/chat/{sender_id}/messages", headers=receiver)
-        assert history.status_code == 200 and history.json()[0]["id"] == message_id
-        assert history.json()[0]["is_read"] is True
-        conversations = await client.get("/api/v1/chat/conversations", headers=sender)
-        assert conversations.status_code == 200
-        assert conversations.json()[0]["user"]["id"] == receiver_id
-        self_message = await client.post(
-            "/api/v1/chat",
-            headers=sender,
-            json={"receiver_id": sender_id, "content": "نباید ارسال شود"},
-        )
-        assert self_message.status_code == 400
+        assert (await client.get("/api/v1/chat/conversations", headers=sender)).status_code == 404
 
         saved = await client.post(f"/api/v1/courses/{course_id}/save", headers=sender)
         assert saved.status_code == 201 and saved.json()["saved"] is True

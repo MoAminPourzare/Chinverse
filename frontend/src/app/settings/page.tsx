@@ -58,9 +58,14 @@ const settingsItems: SettingsItem[] = [
         beta: true,
     },
     {
-        title: "درباره چین ورس",
+        title: "درباره چین‌ورس",
         href: "/settings/about",
         icon: "/assets/chinverse/icons/About chinverse.svg",
+    },
+    {
+        title: "پشتیبانی",
+        href: "/support",
+        icon: "/assets/chinverse/icons/Support & Help.svg",
     },
     {
         title: "معرفی چین ورس به دوستان",

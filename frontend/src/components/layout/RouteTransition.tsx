@@ -12,7 +12,7 @@ type RouteItem = {
     motion: RouteMotion;
 };
 
-const immersivePrefixes = ["/watch", "/chat", "/lessons", "/leitner/review"];
+const immersivePrefixes = ["/watch", "/lessons", "/leitner/review"];
 const detailRoots = new Set([
     "arts-cooking",
     "calligraphy",
@@ -45,7 +45,7 @@ const detailRoots = new Set([
     "vlogs",
 ]);
 
-const mainTabs = new Set(["/", "/leitner", "/explore", "/showcase", "/profile"]);
+const mainTabs = new Set(["/", "/leitner", "/explore", "/profile"]);
 
 const splitPath = (pathname: string) => pathname.split("/").filter(Boolean);
 

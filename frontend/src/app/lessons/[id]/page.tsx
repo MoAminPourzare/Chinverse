@@ -13,6 +13,8 @@ import {
     selectInitialSubtitleTrack,
     type LessonPlayback,
 } from "@/lib/lessonPlayback";
+import { useLessonWatchProgress } from "@/hooks/useLessonWatchProgress";
+import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { lessonPlaybackService } from "@/services/lessonPlayback.service";
 
 const languageLabels: Record<string, string> = { fa: "فارسی", "fa-ir": "فارسی", en: "English", zh: "中文", "zh-cn": "中文" };
@@ -30,6 +32,8 @@ export default function LessonPlayerPage() {
     const [error, setError] = useState<string | null>(null);
     const [retryable, setRetryable] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const currentUserId = useOptionalCurrentUserId();
+    useLessonWatchProgress(videoRef, Number.isSafeInteger(lessonId) ? lessonId : null, currentUserId, Boolean(playback && playback.lesson.id === lessonId));
     const pendingResumeRef = useRef<{ position: number; shouldPlay: boolean } | null>(null);
 
     const loadPlayback = useCallback(async (forceRefresh = false, preservePosition = false) => {

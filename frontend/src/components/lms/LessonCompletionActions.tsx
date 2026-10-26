@@ -6,13 +6,14 @@ import { useState } from "react";
 import { useCurrentReturnPath } from "@/hooks/useReturnTo";
 import { vocabularyKnowledgeService, type VocabularyStates } from "@/services/vocabularyKnowledge.service";
 
-export default function LessonCompletionActions({ words, loadingWords, wordsFailed, onRetryWords, onKnown, onNext, onLogin }: {
+export default function LessonCompletionActions({ words, loadingWords, wordsFailed, onRetryWords, onKnown, onNext, onLogin, nextStatus }: {
     words: string[];
     loadingWords: boolean;
     wordsFailed: boolean;
     onRetryWords: () => void;
     onKnown: (states: VocabularyStates) => void;
     onNext?: () => void;
+    nextStatus?: string;
     onLogin?: () => void;
 }) {
     const returnPath = useCurrentReturnPath();
@@ -39,7 +40,7 @@ export default function LessonCompletionActions({ words, loadingWords, wordsFail
         <Link href={`/community?returnTo=${encodeURIComponent(returnPath)}`} className={button}>آیا سوالی داری؟</Link>
         <button type="button" className={button + " !bg-[#155aa6] !text-white"} disabled={!onNext} onClick={onNext}>پخش درس بعدی</button>
         {saved && <p role="status" className="text-sm leading-7 text-emerald-800">لغت‌های باقی‌مونده به حالت «می‌دونم» تغییر کردن.</p>}
-        {!onNext && <p className="text-center text-xs leading-6 text-slate-600">به آخرین درس این دوره رسیدی.</p>}
+        {!onNext && <p className="text-center text-xs leading-6 text-slate-600">{nextStatus || "به آخرین درس این دوره رسیدی."}</p>}
         {wordsFailed && <button type="button" onClick={onRetryWords} className="min-h-12 text-sm text-rose-700">دریافت دوبارهٔ واژه‌های درس</button>}
         <Dialog open={confirm} onClose={() => { if (!saving) setConfirm(false); }} className="relative z-[1100]" dir="rtl">
             <div className="fixed inset-0 bg-black/45" aria-hidden="true" />

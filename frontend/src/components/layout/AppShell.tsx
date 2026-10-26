@@ -1,9 +1,7 @@
 "use client";
 
 import { Suspense, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Image from "@/components/ui/PublicMediaImage";
 import BottomNav from "@/components/layout/BottomNav";
 import NotificationToaster from "@/components/notifications/NotificationToaster";
 import RouteTransition from "@/components/layout/RouteTransition";
@@ -33,29 +31,18 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
     const pathname = usePathname();
     const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
     const showBottomNav = !navHiddenPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-    const isChatRoom = pathname.startsWith("/chat/");
-    const showSupportButton = pathname === "/chat";
 
     return (
-        <PwaProvider releaseSha={releaseSha} showActionCards={!isChatRoom}>
+        <PwaProvider releaseSha={releaseSha} showActionCards>
             <div className="app-viewport">
                 <div className="app-frame">
                     <ThemeController />
                     <MobileUxController />
                     <NotificationToaster />
-                    <div ref={setScrollElement} data-scroll-mode={isChatRoom ? "conversation" : undefined} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
+                    <div ref={setScrollElement} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
                         <RouteTransition>{children}</RouteTransition>
                     </div>
                     <Suspense fallback={null}><ScrollRestoration scroll={scrollElement} /></Suspense>
-                    {showSupportButton && (
-                        <Link
-                            href="/support"
-                            className="app-support-button absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] right-[max(1.25rem,env(safe-area-inset-right))] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#155aa6] text-white shadow-[0_12px_24px_rgba(21,90,166,0.34)] transition hover:bg-[#0f4e92]"
-                            aria-label="پشتیبانی"
-                        >
-                            <Image src="/assets/chinverse/icons/support_agent_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg" alt="" width={28} height={28} className="h-7 w-7 brightness-0 invert" />
-                        </Link>
-                    )}
                     {showBottomNav && <BottomNav />}
                 </div>
             </div>

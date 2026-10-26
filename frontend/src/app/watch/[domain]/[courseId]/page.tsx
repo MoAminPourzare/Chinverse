@@ -19,7 +19,8 @@ import { getJourneyHref, getReturnToHref } from "@/lib/returnTo";
 import { getHighlightStyle, useLearningPreferences } from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
 import { BackButton } from "@/components/ui/IconButton";
-import { dailyActivityService } from "@/services/dailyActivity.service";
+import { useLessonWatchProgress } from "@/hooks/useLessonWatchProgress";
+import { fetchLearningPath, learningPathLessonHref, type LearningPath } from "@/lib/learningPath";
 import { lessonPlaybackService } from "@/services/lessonPlayback.service";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { vocabularyKnowledgeService, type VocabularyStates } from "@/services/vocabularyKnowledge.service";
@@ -68,7 +69,7 @@ interface VocabularyMatchesResponse {
     matches: string[][];
 }
 
-type PlaybackErrorKind = "login" | "entitlement" | "missing" | "network" | "media" | "unsupported";
+type PlaybackErrorKind = "login" | "entitlement" | "missing" | "network" | "media" | "unsupported" | "roadmap";
 
 interface PlaybackErrorState {
     kind: PlaybackErrorKind;
@@ -88,6 +89,9 @@ const LANGUAGE_LABELS: Record<string, string> = {
 const playbackErrorFromApi = (error: unknown): PlaybackErrorState => {
     if (isHttpStatus(error, 401)) {
         return { kind: "login", message: "برای دیدن این درس وارد حساب خودت شو.", retryable: false };
+    }
+    if (isHttpStatus(error, 409)) {
+        return { kind: "roadmap", message: "برای بازشدن این مرحله، ویدیوی مرحلهٔ قبلی مسیر یادگیری را تماشا کن.", retryable: false };
     }
     if (isHttpStatus(error, 403)) {
         return { kind: "entitlement", message: "این درس در اشتراک فعلی شما در دسترس نیست.", retryable: false };
@@ -114,6 +118,9 @@ export default function SharedWatchPage() {
     const domain = typeof params?.domain === "string" ? params.domain : "hsk";
     const courseId = typeof params?.courseId === "string" ? params.courseId : "";
     const lessonIdParam = searchParams.get("lesson");
+    const roadmapMode = searchParams.get("roadmap") === "1";
+    const [roadmap, setRoadmap] = useState<LearningPath | null>(null);
+    const [roadmapError, setRoadmapError] = useState(false);
 
     const [course, setCourse] = useState<Course | null>(null);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -156,16 +163,22 @@ export default function SharedWatchPage() {
     const activeSubtitleRef = useRef<HTMLButtonElement | null>(null);
     const playbackRequestIdRef = useRef(0);
     const pendingResumeRef = useRef<{ position: number; shouldPlay: boolean } | null>(null);
-    const pendingWatchSecondsRef = useRef(0);
-    const lastWatchTickRef = useRef<number | null>(null);
-    const isFlushingWatchRef = useRef(false);
     const currentTimeRef = useRef(0);
     const durationRef = useRef(0);
-    const lessonIdRef = useRef<number | null>(null);
     const vocabularyRequestIdRef = useRef(0);
     const resumeVideoAfterVocabularyRef = useRef(false);
     const pseudoFullscreenHistoryRef = useRef(false);
     const isFullscreen = isNativeFullscreen || isPseudoFullscreen;
+    const watchProgress = useLessonWatchProgress(videoRef, currentLesson?.id || null, currentUserId, Boolean(playback && playback.lesson.id === currentLesson?.id));
+    const { flush: flushWatchProgress } = watchProgress;
+
+    useEffect(() => {
+        if (!roadmapMode || !currentUserId) return;
+        const controller = new AbortController();
+        setRoadmapError(false);
+        fetchLearningPath(controller.signal).then(result => { if (!controller.signal.aborted) setRoadmap(result); }).catch(() => { if (!controller.signal.aborted) setRoadmapError(true); });
+        return () => controller.abort();
+    }, [roadmapMode, currentUserId, currentLesson?.id, watchProgress.completed]);
 
     const openAppearanceSettings = useCallback(() => {
         router.push(getReturnToHref("/settings/appearance"));
@@ -238,6 +251,7 @@ export default function SharedWatchPage() {
         try {
             const nextPlayback = await lessonPlaybackService.fetch(lessonId, {
                 forceRefresh: options.forceRefresh,
+                learningPath: roadmapMode,
                 signal: options.signal,
             });
             if (playbackRequestIdRef.current !== requestId) return;
@@ -265,7 +279,7 @@ export default function SharedWatchPage() {
         } finally {
             if (playbackRequestIdRef.current === requestId) setPlaybackLoading(false);
         }
-    }, [course]);
+    }, [course, roadmapMode]);
 
     useEffect(() => {
         if (!currentLesson) {
@@ -449,62 +463,6 @@ export default function SharedWatchPage() {
             video.load();
         };
     }, [playback]);
-
-    const flushWatchProgress = useCallback(async (force = false) => {
-        const lessonId = lessonIdRef.current;
-        const secondsDelta = Math.floor(pendingWatchSecondsRef.current);
-        if (!lessonId || isFlushingWatchRef.current || secondsDelta <= 0) return;
-        if (!force && secondsDelta < 15) return;
-
-        pendingWatchSecondsRef.current = Math.max(0, pendingWatchSecondsRef.current - secondsDelta);
-        isFlushingWatchRef.current = true;
-        try {
-            await dailyActivityService.recordVideoProgress({
-                lesson_id: lessonId,
-                seconds_delta: Math.min(secondsDelta, 300),
-                position_seconds: Math.floor(currentTimeRef.current || 0),
-                duration_seconds: Math.floor(durationRef.current || 0),
-            });
-        } catch {
-            pendingWatchSecondsRef.current += secondsDelta;
-        } finally {
-            isFlushingWatchRef.current = false;
-        }
-    }, []);
-
-    useEffect(() => {
-        lessonIdRef.current = currentLesson?.id || null;
-        pendingWatchSecondsRef.current = 0;
-        lastWatchTickRef.current = null;
-        return () => void flushWatchProgress(true);
-    }, [currentLesson?.id, flushWatchProgress]);
-
-    useEffect(() => {
-        if (!isPlaying || !currentLesson?.id) {
-            lastWatchTickRef.current = null;
-            return;
-        }
-        lastWatchTickRef.current = Date.now();
-        const interval = window.setInterval(() => {
-            const now = Date.now();
-            const lastTick = lastWatchTickRef.current || now;
-            pendingWatchSecondsRef.current += Math.min(Math.max((now - lastTick) / 1000, 0), 2);
-            lastWatchTickRef.current = now;
-            if (pendingWatchSecondsRef.current >= 15) void flushWatchProgress();
-        }, 1_000);
-        return () => window.clearInterval(interval);
-    }, [currentLesson?.id, flushWatchProgress, isPlaying]);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.hidden) void flushWatchProgress(true);
-        };
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        return () => {
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-            void flushWatchProgress(true);
-        };
-    }, [flushWatchProgress]);
 
     const selectedTrack = useMemo(() => {
         if (!playback) return null;
@@ -762,6 +720,10 @@ export default function SharedWatchPage() {
     const showTranslationText = preferences.textDisplayMode !== "chinese";
     const showPinyinText = preferences.showPinyin && showChineseText;
     const posterUrl = playback?.media.posterUrl || undefined;
+    const roadmapNext = roadmap?.steps.find(step => step.lesson_id === roadmap.next_lesson_id && step.lesson_id !== currentLesson.id && step.state === "current");
+    const currentRoadmapStep = roadmap?.steps.find(step => step.lesson_id === currentLesson.id);
+    const hasCompletedCurrent = watchProgress.completed || currentRoadmapStep?.state === "completed";
+    const nextStatus = watchProgress.error ? "پیشرفت ذخیره نشد؛ دوباره تلاش کن." : !hasCompletedCurrent ? "برای بازشدن مرحلهٔ بعد، دست‌کم ۹۰٪ ویدیو را تماشا کن." : roadmapError ? "وضعیت مسیر دریافت نشد؛ به پروفایل برگرد و دوباره تلاش کن." : currentRoadmapStep?.state !== "completed" ? "در حال بازکردن مرحلهٔ بعد…" : roadmapNext ? undefined : "به پایان مرحله‌های منتشرشده رسیدی.";
 
     const handleVideoEnded = () => {
         setIsPlaying(false);
@@ -774,8 +736,11 @@ export default function SharedWatchPage() {
         }
     };
 
-    const errorAction = playbackError?.kind === "login"
-        ? <Link href={`/login?next=${encodeURIComponent(`/watch/${domain}/${course.id}?lesson=${currentLesson.id}`)}`} className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-900">ورود به حساب</Link>
+    const watchReturnPath = `/watch/${encodeURIComponent(domain)}/${course.id}?${searchParams.toString() || `lesson=${currentLesson.id}`}`;
+    const errorAction = playbackError?.kind === "roadmap"
+        ? <Link back href="/profile" className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-900">بازگشت به مسیر یادگیری</Link>
+        : playbackError?.kind === "login"
+        ? <Link href={`/login?next=${encodeURIComponent(watchReturnPath)}`} className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-900">ورود به حساب</Link>
         : playbackError?.kind === "entitlement"
             ? <Link href="/settings/subscription" className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-900">مشاهدهٔ اشتراک</Link>
             : playbackError?.retryable
@@ -913,7 +878,11 @@ export default function SharedWatchPage() {
                     </div>
                 </Surface>
 
-                <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
+                {roadmapMode ? <section aria-label="ادامهٔ مسیر یادگیری" className="space-y-3 rounded-3xl border border-[#dfe6f0] bg-white p-4">
+                    <Link back href="/profile" className="flex min-h-11 items-center justify-center rounded-2xl border border-blue-100 text-sm font-bold text-[#155aa6]">بازگشت به مسیر یادگیری</Link>
+                    {hasCompletedCurrent && roadmapNext ? <Link href={learningPathLessonHref(roadmapNext)} className="flex min-h-12 items-center justify-center rounded-2xl bg-[#155aa6] text-sm font-bold text-white">مرحلهٔ بعدی</Link> : <p role="status" className="text-center text-xs leading-7 text-slate-600">{watchProgress.saving ? "در حال ذخیرهٔ پیشرفت…" : nextStatus}</p>}
+                    {watchProgress.error && <button type="button" onClick={() => void flushWatchProgress(true)} className="min-h-11 w-full rounded-2xl bg-rose-50 px-4 text-sm font-bold text-rose-700">ذخیرهٔ دوبارهٔ پیشرفت</button>}
+                </section> : <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0"><h2 className="text-base font-black text-slate-950">ادامهٔ دوره</h2><p className="mt-1 truncate text-xs font-medium text-slate-500" {...getDirectionalTextProps(course.title)}>{course.title}</p></div>
                         <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">{lessonIndex + 1}/{allLessons.length}</span>
@@ -922,7 +891,7 @@ export default function SharedWatchPage() {
                         {previousLesson ? <Link href={`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${previousLesson.id}`} className="rounded-[18px] border border-[#dfe6f0] bg-white px-3 py-3 text-center text-xs font-black text-slate-600">درس قبلی</Link> : <span className="rounded-[18px] border border-[#dfe6f0] bg-slate-50 px-3 py-3 text-center text-xs font-black text-slate-300">درس قبلی</span>}
                         {nextLesson ? <Link href={`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`} className="rounded-[18px] bg-[#155aa6] px-3 py-3 text-center text-xs font-black text-white">درس بعدی</Link> : <span className="rounded-[18px] bg-slate-100 px-3 py-3 text-center text-xs font-black text-slate-400">پایان دوره</span>}
                     </div>
-                </Surface>
+                </Surface>}
                 {lessonEnded && <div ref={completionRef} className="scroll-mb-28"><LessonCompletionActions
                     key={currentLesson.id}
                     words={lessonWords}
@@ -930,8 +899,9 @@ export default function SharedWatchPage() {
                     wordsFailed={wordMatchesFailed}
                     onRetryWords={() => setWordMatchVersion((value) => value + 1)}
                     onKnown={(states) => { knowledgeRequestRef.current += 1; setWordStates((current) => ({ ...current, ...states })); }}
-                    onLogin={currentUserId ? undefined : () => router.push(`/login?next=${encodeURIComponent(`/watch/${domain}/${course.id}?lesson=${currentLesson.id}`)}`)}
-                    onNext={nextLesson ? () => { playNextRef.current = true; router.push(getJourneyHref(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`)); } : undefined}
+                    onLogin={currentUserId ? undefined : () => router.push(`/login?next=${encodeURIComponent(watchReturnPath)}`)}
+                    nextStatus={roadmapMode ? nextStatus : undefined}
+                    onNext={roadmapMode ? hasCompletedCurrent && roadmapNext ? () => { playNextRef.current = true; router.push(learningPathLessonHref(roadmapNext)); } : undefined : nextLesson ? () => { playNextRef.current = true; router.push(getJourneyHref(`/watch/${encodeURIComponent(domain)}/${course.id}?lesson=${nextLesson.id}`)); } : undefined}
                 /></div>}
             </main>
 

@@ -1,0 +1,24 @@
+.roadmap { position: relative; overflow: hidden; margin: 0 12px; border: 1px solid #fff; border-radius: 30px; background: linear-gradient(155deg,#fff 25%,#f0f8ff 100%); box-shadow: 0 12px 35px #155aa60a; }
+.steps { position: relative; isolation: isolate; margin: 25px 0 0; padding: 0 16px 28px 43px; list-style: none; }
+.steps::before { position: absolute; z-index: -1; top: 0; bottom: 80px; left: 24px; width: 4px; content: ""; border-radius: 8px; background: repeating-linear-gradient(to bottom,#bad7ed 0 7px,transparent 7px 13px); }
+.step { position: relative; margin-bottom: 15px; }
+.step:last-child { margin-bottom: 0; }
+.card { position: relative; display: flex; direction: ltr; align-items: center; gap: 10px; min-height: 140px; padding: 16px 12px 16px 14px; border: 1px solid #d7e9f8; border-radius: 24px; background: linear-gradient(110deg,#f4faff,#e8f3ff); box-shadow: 0 6px 18px #155aa609; transition: box-shadow .2s,border-color .2s; }
+a.card:hover { border-color: #83bceb; box-shadow: 0 8px 22px #155aa615; }
+a.card:focus-visible { outline: 3px solid #1688e8; outline-offset: 3px; }
+.number { position: absolute; top: 4px; left: -36px; display: flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 3px solid #fff; border-radius: 50%; color: white; font-size: 16px; font-weight: 900; box-shadow: 0 3px 10px #155aa612; }
+.current { background: #0871ca; }
+.completed { background: #0f9375; }
+.locked { background: #929bad; }
+.lockedCard { border-color: #e1e5ec; background: linear-gradient(110deg,#f6f7f9,#f0f3f7); }
+.thumbnail { position: relative; display: flex; flex-shrink: 0; width: 74px; height: 88px; align-items: center; justify-content: center; border-radius: 17px; background: #e3ecf5; }
+.thumbnail > img { border-radius: inherit; }
+.play { position: absolute; right: -4px; bottom: -3px; display: flex; width: 29px; height: 29px; align-items: center; justify-content: center; border: 2px solid #fff; border-radius: 50%; background: #fff; color: #1688e8; box-shadow: 0 3px 10px #155aa612; }
+.lockedCard .play { color: #929bad; }
+:global(.dark) .roadmap { border-color: #283a4d; background: linear-gradient(155deg,#182430,#14202c); }
+:global(.dark) .card { border-color: #2a4b67; background: linear-gradient(110deg,#1d3246,#1c2a3b); }
+:global(.dark) .lockedCard { border-color: #344050; background: #222c39; }
+:global(.dark) .number { border-color: #182430; }
+:global(.dark) .thumbnail { background: #2c3c51; }
+@media (min-width:400px) { .card { gap: 13px; } .thumbnail { width: 84px; height: 96px; } }
+@media (prefers-reduced-motion:reduce) { .card { transition: none; } }

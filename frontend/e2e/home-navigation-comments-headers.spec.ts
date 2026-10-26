@@ -1,5 +1,4 @@
 import { expect, test, type Page } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
 import path from "node:path";
 
 test.setTimeout(90_000);
@@ -53,7 +52,7 @@ for (const [label, route, back] of [
 ] as const) {
     test(`${label}: back and browser back restore the learning tab and its position`, async ({ page }) => {
         await setup(page); await ready(page, "/");
-        await expect(page.getByText(post.data.caption, { exact: true })).toBeVisible();
+        await expect(page.getByRole("textbox", { name: "متن سوال", exact: true })).toBeVisible();
         await page.getByRole("button", { name: "روند یادگیری", exact: true }).click();
         await expect(page).toHaveURL(/\?tab=daily$/);
         const link = page.getByRole("link", { name: label, exact: true });
@@ -77,59 +76,6 @@ for (const [label, route, back] of [
         await expect(page.getByRole("button", { name: "روند یادگیری", exact: true })).toHaveAttribute("aria-pressed", "true");
     });
 }
-
-test("comments scroll independently, keep the feed in place and retain a fixed composer and close button", async ({ page }, info) => {
-    await setup(page); await ready(page, "/");
-    const commentButton = page.getByRole("button", { name: "دیدگاه‌های پست", exact: true }).first();
-    await commentButton.evaluate(element => element.scrollIntoView({ block: "center", behavior: "instant" }));
-    const article = page.locator("article").first();
-    const bounds = (await article.boundingBox())!;
-    const feedTop = await page.locator(".app-scroll").evaluate(element => element.scrollTop);
-    await commentButton.click();
-    const dialog = page.getByRole("dialog", { name: "دیدگاه‌های پست", exact: true });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("img")).toHaveCount(0);
-    const list = dialog.getByRole("region", { name: "فهرست دیدگاه‌ها" });
-    await expect(list.getByText(/دیدگاه شماره/)).toHaveCount(40);
-    const input = dialog.getByRole("textbox", { name: "دیدگاهت رو بنویس" });
-    await expect(input).toHaveAttribute("dir", "rtl");
-    await expect(input).toHaveCSS("text-align", "right");
-    const inputTop = (await input.boundingBox())!.y, close = dialog.getByRole("button", { name: "بستن دیدگاه‌ها" });
-    const closeTop = (await close.boundingBox())!.y;
-    await list.evaluate(element => element.scrollTo(0, element.scrollHeight));
-    await expect.poll(() => list.evaluate(element => element.scrollTop)).toBeGreaterThan(500);
-    expect((await input.boundingBox())!.y).toBe(inputTop);
-    expect((await close.boundingBox())!.y).toBe(closeTop);
-    expect(await page.locator(".app-scroll").evaluate(element => element.scrollTop)).toBe(feedTop);
-    expect((await article.boundingBox())!.height).toBe(bounds.height);
-    await input.fill("دیدگاه تازهٔ آزمایشی"); await dialog.getByRole("button", { name: "ارسال دیدگاه" }).click();
-    await expect(list.getByText("دیدگاه تازهٔ آزمایشی", { exact: true })).toBeVisible();
-    await test.step("dialog accessibility", async () => {
-        const audit = await new AxeBuilder({ page }).include('[role="dialog"]').disableRules(["color-contrast"]).analyze();
-        expect(audit.violations).toEqual([]);
-    });
-    await page.screenshot({ path: path.resolve("../.tmp", `home-comments-${info.project.name}.png`) });
-    await close.click();
-    await expect(dialog).toHaveCount(0);
-    expect(await page.locator(".app-scroll").evaluate(element => element.scrollTop)).toBe(feedTop);
-    expect((await article.boundingBox())!.height).toBe(bounds.height);
-});
-
-test("service likes occupy the same right side as post likes", async ({ page }) => {
-    await setup(page);
-    await page.route("**/api/backend/feed*", route => route.fulfill({ json: [{
-        id: "service_90", type: "service", created_at: stamp, likes_count: 0,
-        provider: { id: 9, display_name: "عرفان" },
-        data: { id: 90, title: "خدمت آزمایشی", description: "توضیحات خدمت" },
-    }] }));
-    await ready(page, "/");
-    const card = page.getByRole("article", { name: "خدمت: خدمت آزمایشی", exact: true });
-    const like = card.getByRole("button", { name: "لایک کردن", exact: true });
-    const details = card.getByRole("link", { name: "مشاهدهٔ خدمت", exact: true });
-    await expect(like).toBeVisible();
-    const likeBox = (await like.boundingBox())!, detailsBox = (await details.boundingBox())!;
-    expect(likeBox.x).toBeGreaterThan(detailsBox.x + detailsBox.width);
-});
 
 test("a full collection and lesson journey returns to the original learning tab", async ({ page }) => {
     await setup(page); await ready(page, "/?tab=daily");
@@ -170,16 +116,6 @@ test("empty and failed review sessions keep a back path to learning progress", a
     }
 });
 
-test("comment loading failure can be retried without leaving activities", async ({ page }) => {
-    const state = await setup(page); state.failComments = true; await ready(page, "/");
-    await page.getByRole("button", { name: "دیدگاه‌های پست" }).first().click();
-    const dialog = page.getByRole("dialog"); await expect(dialog.getByRole("alert")).toContainText("دیدگاه‌ها دریافت نشد");
-    state.failComments = false; await dialog.getByRole("button", { name: "تلاش دوباره" }).click();
-    await expect(dialog.getByText(/دیدگاه شماره/)).toHaveCount(40);
-    await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0);
-    await expect(page).toHaveURL(/\/$/);
-});
-
 test("Explore starts with four categories and entertainment opens its six subjects", async ({ page }) => {
     await setup(page); await ready(page, "/explore");
     const categories = page.getByRole("navigation", { name: "دسته‌بندی‌های اصلی کاوش" });
@@ -209,7 +145,7 @@ test("culture contains tea and a working coming-soon page without moving the lea
 
 test("back controls sit on the right across shared, grid, absolute and detail headers", async ({ page }) => {
     await setup(page);
-    for (const url of ["/settings", "/settings/daily", "/settings/points", "/community", "/profile/network", "/chat", "/notifications", "/account", "/explore/groups/culture", "/explore/china-beyond-language", "/explore/podcasts", "/explore/series", "/cooking/meishi-zuojia-wang-gang/lesson/1"]) {
+    for (const url of ["/settings", "/settings/daily", "/settings/points", "/community", "/profile/collections", "/notifications", "/account", "/explore/groups/culture", "/explore/china-beyond-language", "/explore/podcasts", "/explore/series", "/cooking/meishi-zuojia-wang-gang/lesson/1"]) {
         await ready(page, url);
         const back = page.locator("[data-page-header] [data-back-button]");
         await expect(back).toHaveCount(1);
@@ -221,7 +157,7 @@ test("back controls sit on the right across shared, grid, absolute and detail he
 });
 
 for (const [group, urls] of [
-    ["home and showcase", ["/", "/?tab=daily", "/showcase"]],
+    ["home and profile", ["/", "/?tab=daily", "/profile"]],
     ["explore and collections", ["/explore", "/explore/groups/entertainment", "/explore/cooking", "/cooking/meishi-zuojia-wang-gang"]],
     ["leitner and settings", ["/leitner", "/settings", "/settings/daily", "/account"]],
 ] as const) {
@@ -231,11 +167,11 @@ test(`${group}: page toolbars remain visible while long content scrolls`, async 
         await ready(page, url);
         const header = page.locator('.route-panel[data-phase="enter"] [data-page-header]').first();
         await expect(header).toBeVisible();
-        if (url === "/") await expect(page.getByText(post.data.caption, { exact: true })).toBeAttached();
+        if (url === "/") await expect(page.getByRole("textbox", { name: "متن سوال", exact: true })).toBeAttached();
         if (url === "/?tab=daily") await expect(page.getByRole("link", { name: "مرور لغات", exact: true })).toBeAttached();
-        if (url === "/showcase") await expect(page.getByRole("heading", { name: "مدرس 15", exact: true })).toBeAttached();
+        if (url === "/profile") await expect(page.getByRole("heading", { name: "کاربر آزمایشی", exact: true })).toBeAttached();
         if (url === "/leitner") await expect(page.getByRole("button", { name: "حذف 学习 از لایتنر", exact: true })).toHaveCount(25);
-        if (url === "/account") await expect(page.locator("#account-headline")).toBeAttached();
+        if (url === "/account") await expect(page.locator("#account-display_name")).toBeAttached();
         const initialTop = (await header.boundingBox())!.y;
         const back = header.locator("[data-back-button]");
         if (await back.count()) {
@@ -245,12 +181,6 @@ test(`${group}: page toolbars remain visible while long content scrolls`, async 
         const scrolled = await page.locator(".app-scroll").evaluate(element => { element.scrollTo(0, element.scrollHeight); return element.scrollHeight - element.clientHeight; });
         if (scrolled > 20) {
             await expect.poll(async () => Math.abs((await header.boundingBox())!.y - initialTop)).toBeLessThanOrEqual(1);
-        }
-        if (url === "/showcase") {
-            await page.getByRole("button", { name: "ویترین خدمات", exact: true }).click();
-            await expect(page.getByRole("heading", { name: "خدمت 10", exact: true })).toBeAttached();
-            await page.locator(".app-scroll").evaluate(element => element.scrollTo(0, element.scrollHeight));
-            expect(Math.abs((await header.boundingBox())!.y - initialTop)).toBeLessThanOrEqual(1);
         }
         expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
