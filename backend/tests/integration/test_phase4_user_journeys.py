@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.main import app
 from app.models.course import Category, Course, CourseSection, Lesson, PublicationStatus, Subcategory
 from app.models.dictionary import DictionaryWord, WordDefinition
+from app.models.media import MediaAsset
 from app.models.user import User, UserRole
 
 
@@ -191,7 +192,7 @@ async def create_verified_user(
     return user_id, {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 
-async def create_learning_fixture() -> tuple[int, int, int]:
+async def create_learning_fixture(*, user_id: int) -> tuple[int, int, int]:
     suffix = uuid4().hex[:12]
     async with SessionLocal() as db:
         category = Category(name=f"Phase 4 {suffix}", slug=f"phase-4-{suffix}")
@@ -232,12 +233,31 @@ async def create_learning_fixture() -> tuple[int, int, int]:
         db.add(section)
         await db.flush()
 
+        # Progress is accepted only for a published, approved video, just as
+        # playback is. This fixture belongs solely to the isolated test DB.
+        asset = MediaAsset(
+            user_id=user_id,
+            media_type="video",
+            file_url="https://video.example/phase4.m3u8",
+            storage_key=f"phase4/{suffix}/lesson.m3u8",
+            duration_seconds=180,
+            status="published",
+            license_status="approved",
+            source_name="phase4-isolated-test",
+            rights_holder="ChinVerse test fixture",
+            license_type="test-only",
+        )
+        db.add(asset)
+        await db.flush()
         lesson = Lesson(
             course_id=course.id,
             section_id=section.id,
             title="Phase 4 lesson",
             video_url="https://video.example/phase4.m3u8",
             duration_minutes=3,
+            media_id=asset.id,
+            status=PublicationStatus.PUBLISHED,
+            published_at=datetime.now(UTC),
             is_free=True,
             metadata_json={},
         )
@@ -410,7 +430,7 @@ async def test_forum_support_notifications_courses_leitner_daily_and_race():
     ) as client:
         sender_id, sender = await create_verified_user(client, "sender")
         receiver_id, receiver = await create_verified_user(client, "receiver")
-        course_id, lesson_id, word_id = await create_learning_fixture()
+        course_id, lesson_id, word_id = await create_learning_fixture(user_id=sender_id)
 
         question = await client.post(
             "/api/v1/community/forum/questions",
@@ -512,6 +532,11 @@ async def test_forum_support_notifications_courses_leitner_daily_and_race():
             json={"card_id": card_id, "remembered": True},
         )
         assert not_owner_review.status_code == 404
+
+        learning_path = await client.get("/api/v1/learning-path", headers=sender)
+        assert learning_path.status_code == 200, learning_path.text
+        assert learning_path.json()["completed_count"] == 0
+        assert learning_path.json()["total_count"] == len(learning_path.json()["steps"])
 
         progress = await client.post(
             "/api/v1/daily-activity/video-progress",
