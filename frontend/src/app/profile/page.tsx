@@ -65,8 +65,8 @@ export default function ProfilePage() {
                 <Link href="/" aria-label="چین‌ورس"><Image src="/assets/chinverse/logos/chinverse-wordmark.png" alt="لوگوی چین‌ورس" width={156} height={65} className="h-auto w-[140px] object-contain sm:w-[156px]" priority /></Link>
             </header>
             <main className="mx-auto w-full max-w-[460px]">
-                <section className="relative isolate overflow-hidden px-5 pb-9 pt-7 text-center">
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[url('/assets/chinverse/learning-landscape.svg')] bg-cover bg-center opacity-80 dark:opacity-20" />
+                <section className="relative isolate mb-3 min-h-[224px] overflow-hidden rounded-b-[30px] px-5 pb-8 pt-6 text-center">
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[url('/assets/chinverse/profile/learning-hero-v2.webp')] bg-cover bg-center dark:opacity-35" />
                     {loadError ? <div role="alert" className="rounded-2xl bg-white/95 p-4 text-sm leading-7 text-slate-700 dark:bg-slate-800 dark:text-slate-200">اطلاعات حساب دریافت نشد.<button type="button" onClick={() => void loadUser()} className="mx-auto mt-2 block min-h-11 px-4 font-bold text-[#155aa6] dark:text-blue-300">تلاش دوباره</button></div>
                     : user === undefined ? <div role="status" aria-label="در حال دریافت پروفایل" className="mx-auto flex h-40 items-center justify-center"><Loader2 className="size-7 animate-spin text-[#155aa6]" /></div>
                     : user ? <>
@@ -90,7 +90,7 @@ export default function ProfilePage() {
                         <Link href="/login?next=%2Fprofile" className="mt-4 inline-flex min-h-11 items-center rounded-2xl bg-[#155aa6] px-6 text-sm font-bold text-white">ورود به حساب</Link>
                     </div>}
                 </section>
-                {user && <LearningRoadmap key={user.id} />}
+                {user && <LearningRoadmap key={user.id} userId={Number(user.id)} />}
             </main>
             <ImageAdjustModal file={pendingAvatar} isOpen={Boolean(pendingAvatar)} title="تنظیم عکس پروفایل" aspectRatio={1} frameClassName="rounded-full" onCancel={() => setPendingAvatar(null)} onConfirm={(file) => void uploadAvatar(file)} />
         </div>

@@ -42,6 +42,10 @@ async function setup(page: Page) {
         else if (endpoint === "/learning-path") {
             if (pathFails) return route.fulfill({ status: 503, json: { detail: "temporary failure" } });
             body = { steps: steps(), completed_count: complete ? 1 : 0, total_count: 3, next_lesson_id: complete ? 601 : 501 };
+        } else if (endpoint === "/courses/") {
+            body = [{ id: 121, slug: "hsk-1", subcategory_slug: "hsk", title: "HSK 1", description: "", level: "beginner", sections: [{ id: 1, lessons: [
+                { id: 501, metadata_json: { lesson_index: 1 } }, { id: 502, metadata_json: { lesson_index: 2 } },
+            ] }] }];
         } else if (endpoint === "/courses/121" || endpoint === "/courses/122") {
             const isPodcast = endpoint.endsWith("122");
             body = { id: isPodcast ? 122 : 121, title: isPodcast ? "کاوش" : "HSK 1", description: "دورهٔ آزمایشی", level: "beginner", sections: [{ id: 1, lessons: isPodcast ? [{ id: 601, title: "مکالمهٔ واقعی" }] : [{ id: 501, title: "آشنایی و شروع سفر" }, { id: 502, title: "الفبا و تلفظ پایه" }] }] };
@@ -70,7 +74,8 @@ test("profile has only identity, header shortcuts and sequential learning cards"
     await page.goto("/profile");
     await expect(page.getByRole("heading", { name: "تارا نمایشی", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "مسیر یادگیری", exact: true })).toBeVisible();
-    await expect(page.getByRole("list", { name: "مرحله‌های مسیر یادگیری" }).locator("li")).toHaveCount(3);
+    await expect(page.getByRole("list", { name: "مرحله‌های مسیر یادگیری" }).locator("li")).toHaveCount(16);
+    await expect(page.locator('[data-availability="upcoming"]')).toHaveCount(13);
     await expect(page.locator('[data-state="locked"] a')).toHaveCount(0);
     await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
     for (const label of ["درباره من", "رزومه", "گالری", "خدمات", "عنوان قدیمی", "تهران", "ویترین", "پیام‌های من"]) await expect(page.getByText(label, { exact: true })).toHaveCount(0);
@@ -92,9 +97,20 @@ test("home hosts the forum, keeps learning progress and offers support from both
     await page.goto("/");
     await expect(page.getByRole("button", { name: "تالار گفتگو", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("textbox", { name: "متن سوال", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "تالار گفتگو", exact: true })).toHaveCount(0);
     await expect(page.getByText("فعالیت‌ها", { exact: true })).toHaveCount(0);
     await expect(page.getByText("پیام‌های من", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "پشتیبانی", exact: true })).toHaveAttribute("href", "/support");
+    const support = page.locator(".forum-support-shortcut");
+    const placement = await support.evaluate(element => {
+        const button = element.getBoundingClientRect(), frame = element.closest(".app-frame")!.getBoundingClientRect();
+        const nav = document.querySelector('[aria-label="ناوبری اصلی"]')!.getBoundingClientRect();
+        return { right: frame.right - button.right, aboveNavigation: button.bottom < nav.top, width: button.width };
+    });
+    expect(placement.right).toBeGreaterThanOrEqual(16);
+    expect(placement.right).toBeLessThanOrEqual(24);
+    expect(placement.aboveNavigation).toBe(true);
+    expect(placement.width).toBe(52);
     await page.getByRole("link", { name: "مقالات", exact: true }).click();
     await expect(page).toHaveURL(/section=articles/);
     await page.reload();
@@ -160,12 +176,79 @@ test("failed path requests remain retryable and retired product URLs redirect", 
     }
 });
 
-test("an empty published catalog shows a useful empty state without invented locked lessons", async ({ page }) => {
+test("partial watching is visible on the path and does not unlock the next step", async ({ page }) => {
+    await page.clock.install();
+    await setup(page);
+    await page.goto("/profile");
+    await page.getByRole("link", { name: "مرحلهٔ ۱: آشنایی و شروع سفر", exact: true }).click();
+    const video = page.locator("video");
+    await expect(video).toBeVisible();
+    await expect(page.locator("[data-watch-progress]")).toBeVisible();
+    await video.evaluate(async (element: HTMLVideoElement) => { await element.play(); });
+    await page.clock.runFor(5_000);
+    await video.evaluate((element: HTMLVideoElement) => element.pause());
+    await page.clock.resume();
+    await expect(page.locator("[data-watch-progress]")).toContainText("۵۰٪");
+    await page.getByRole("link", { name: "بازگشت به مسیر یادگیری", exact: true }).click();
+    await expect(page.getByText("۵۰٪ تماشا شده · ادامهٔ درس", { exact: true })).toBeVisible();
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
+    await expect(page.getByRole("link", { name: "مرحلهٔ ۲: مکالمهٔ واقعی", exact: true })).toHaveCount(0);
+});
+
+test("secondary headers share a centered rounded card across settings and saved collections", async ({ page }, info) => {
+    await setup(page);
+    for (const route of ["/settings", "/settings/appearance", "/settings/about", "/settings/app", "/settings/daily", "/account", "/account/security", "/profile/collections"]) {
+        await page.goto(route);
+        const header = page.locator('[data-header-variant="card"]');
+        await expect(header).toBeVisible();
+        const metrics = await header.evaluate(element => {
+            const card = element.getBoundingClientRect(), title = element.querySelector("[data-header-title]")!.getBoundingClientRect();
+            const back = element.querySelector("[data-back-button]")!.getBoundingClientRect(), frame = element.closest(".app-scroll")!.getBoundingClientRect();
+            return { radius: getComputedStyle(element).borderRadius, centered: Math.abs((card.left + card.width / 2) - (title.left + title.width / 2)), overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                backWidth: back.width, backHeight: back.height, backRight: frame.right - back.right, backTop: back.top - frame.top };
+        });
+        expect(metrics.radius).toBe("22px");
+        expect(metrics.centered).toBeLessThanOrEqual(1);
+        expect(metrics.overflow).toBeLessThanOrEqual(1);
+        expect(metrics.backWidth).toBe(46);
+        expect(metrics.backHeight).toBe(46);
+        expect(metrics.backRight).toBeCloseTo(29, 1);
+        expect(metrics.backTop).toBeCloseTo(29, 1);
+        if (route === "/settings/appearance" || route === "/account" || route === "/profile/collections") await page.screenshot({ path: path.resolve("../artifacts", `refined-header-${route.replaceAll("/", "-")}-${info.project.name}.png`) });
+    }
+    await expect(page.locator(".forum-support-shortcut")).toHaveCount(0);
+});
+
+test("one available video is followed by fourteen locked syllabus stages", async ({ page }, info) => {
+    await page.setViewportSize({ width: 390, height: 1400 });
+    const state = await setup(page);
+    await page.route("**/api/backend/learning-path", route => route.fulfill({ json: {
+        steps: [{ lesson_id: 501, course_id: 121, course_title: "HSK 1", domain: "hsk", title: "آشنایی و شروع سفر", summary: "اولین قدم در یادگیری زبان چینی", duration_minutes: 1, cover_url: null, kind: "lesson", state: "current" }],
+        completed_count: 0, total_count: 1, next_lesson_id: 501,
+    } }));
+    await page.goto("/profile");
+    await expect(page.getByRole("list", { name: "مرحله‌های مسیر یادگیری" }).locator("li")).toHaveCount(15);
+    const upcoming = page.locator('[data-availability="upcoming"]');
+    await expect(upcoming).toHaveCount(14);
+    await expect(upcoming.locator("a, button")).toHaveCount(0);
+    const locked = upcoming.first().locator('[aria-disabled="true"]');
+    await expect(locked).toBeVisible();
+    await expect(locked).toHaveAttribute("aria-label", /درس ۲.*قفل است/);
+    await locked.click();
+    await expect(page).toHaveURL(/\/profile$/);
+    expect(state.playbackQueries).toEqual([]);
+    await page.locator(".app-scroll").evaluate(element => element.scrollTo(0, 0));
+    await page.screenshot({ path: path.resolve("../artifacts", `upcoming-learning-stages-${info.project.name}.png`), scale: "css" });
+});
+
+test("an empty published catalog shows the planned syllabus with no playable lessons", async ({ page }) => {
     await setup(page);
     await page.route("**/api/backend/learning-path", route => route.fulfill({ json: { steps: [], total_count: 0, completed_count: 0, next_lesson_id: null } }));
     await page.goto("/profile");
     await expect(page.getByRole("heading", { name: "مسیرت به‌زودی شروع می‌شود", exact: true })).toBeVisible();
-    await expect(page.getByRole("list", { name: "مرحله‌های مسیر یادگیری" })).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "مرحله‌های مسیر یادگیری" }).locator("li")).toHaveCount(15);
+    await expect(page.locator('[data-availability="upcoming"] a')).toHaveCount(0);
+    await expect(page.locator('[data-availability="published"]')).toHaveCount(0);
     await expect(page.getByRole("link", { name: "رفتن به کاوش", exact: true })).toHaveAttribute("href", "/explore");
 });
 

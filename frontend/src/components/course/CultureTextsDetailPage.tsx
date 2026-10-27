@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getCultureTextsCourse } from "@/lib/cultureTextsCatalog";
 import { getPlannedLessonTitle } from "@/lib/plannedCourseCatalog";
@@ -38,17 +38,14 @@ export default function CultureTextsDetailPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
-                    <header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
-                        <BackButton href="/explore/culture-texts" label="بازگشت به فهرست متون کلاسیک آموزشی" />
-                        <div className="flex items-center gap-1">
+            <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                <>
+                    <AppHeader className="mb-0" backHref="/explore/culture-texts" backLabel="بازگشت به فهرست متون کلاسیک آموزشی" title={null} actions={<div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={"culture-texts"} slug={course.slug} courseId={publishedCourse?.id} />
                             <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] transition hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800">
                                 <MoreVertical size={22} />
                             </button>
-                        </div>
-                    </header>
+                        </div>} />
                     <section className="mt-4 grid min-h-[160px] grid-cols-2 items-center gap-2" dir="ltr">
                         <div data-course-heading className="min-w-0 text-center">
                             <h1 className="text-[15px] font-bold leading-6 text-[#343941] dark:text-white" lang="zh">{course.title}</h1>
@@ -65,7 +62,7 @@ export default function CultureTextsDetailPage() {
                                 className={course.detailImageAspect === "square" ? "object-cover object-[80%_center]" : "object-contain"} priority />
                         </div>
                     </section>
-                </div>
+                </>
 
                 <ReferenceIntroduction heading={course.introductionHeading || "معرفی دوره:"} paragraphs={course.description} />
 

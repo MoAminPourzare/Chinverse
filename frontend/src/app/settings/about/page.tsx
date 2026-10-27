@@ -11,7 +11,7 @@ const globeIcon = "/assets/chinverse/icons/Globe.svg";
 
 export default function SettingsAboutPage() {
     return (
-        <div className="min-h-full bg-[#f7f8fb] px-5 pb-10 pt-4" dir="rtl">
+        <div className="min-h-full bg-[#f7f8fb] px-4 pb-10 pt-4" dir="rtl">
             <AppHeader
                 title="درباره چین ورس"
                 backHref="/settings"

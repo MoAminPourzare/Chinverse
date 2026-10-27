@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, ChevronDown, ChevronUp, Loader2, MessageCircle, PenLine, Send, Trash2, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { ArticleLibrary } from "@/components/articles/ArticleLibrary";
 import { useOptionalCurrentUserId } from "@/hooks/useOptionalCurrentUserId";
 import { getMediaUrl } from "@/lib/media";
@@ -54,14 +54,10 @@ export default function CommunityForum({ standalone = false }: { standalone?: bo
         return invalidate;
     }, [load, invalidate]);
 
-    return <div className={standalone ? "min-h-full bg-[#f9fafc] px-5 pb-8 pt-4 dark:bg-[#10151c]" : "mt-5 pb-4"} dir="rtl">
-        {standalone && <header data-page-header className="relative mb-6 flex h-12 items-center justify-center"><BackButton href="/" className="absolute right-0" /><h1 className="text-lg font-black text-slate-900 dark:text-white">تالار گفتگو</h1></header>}
-        <section aria-labelledby="forum-title">
-            <div className="flex items-center justify-between gap-3">
-                <h2 id="forum-title" className="text-base font-black text-slate-900 dark:text-white">تالار گفتگو</h2>
-                <Link href="/support" aria-label="پشتیبانی" className="flex size-11 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#155aa6] transition hover:bg-blue-100 dark:bg-slate-800"><Image src="/assets/chinverse/icons/Support & Help.svg" alt="" width={30} height={30} className="size-8 object-contain" /></Link>
-            </div>
-            <nav aria-label="بخش‌های تالار گفتگو" className="mb-6 mt-4 flex gap-5 border-b border-slate-200">
+    return <div className={standalone ? "min-h-full bg-[#f9fafc] px-4 pb-8 pt-4 dark:bg-[#10151c]" : "mt-5 pb-4"} dir="rtl">
+        {standalone && <AppHeader title="تالار گفتگو" backHref="/" />}
+        <section aria-label="تالار گفتگو">
+            <nav aria-label="بخش‌های تالار گفتگو" className="mb-5 flex gap-5 border-b border-slate-200 dark:border-slate-700">
                 {[{ id: "questions", label: "سوالات شما", Icon: MessageCircle }, { id: "articles", label: "مقالات", Icon: BookOpen }].map(({ id, label, Icon }) => <Link key={id} href={sectionHref(id)} scroll={false} aria-current={activeSection === id ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 border-b-2 px-1 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#155aa6]", activeSection === id ? "border-[#155aa6] text-[#155aa6]" : "border-transparent text-slate-500 hover:text-[#155aa6]")}><Icon aria-hidden className="size-4" />{label}</Link>)}
             </nav>
             {loadError ? <div role="alert" className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600"><p>{loadError}</p><button type="button" onClick={() => void load()} className="mt-3 min-h-11 rounded-xl bg-[#155aa6] px-4 font-bold text-white">تلاش دوباره</button></div> : isLoading ? <LoadingList /> : activeSection === "articles" ? <section><SectionHeader title="مقالات" description="در این بخش، سوالات پرتکرار یا موضوعات جالب توسط تیم ما تبدیل به مقاله میشه. می‌تونی مقاله‌ها رو بخونی، زیرش نظر بدی یا سوال جدید مطرح کنی." /><div className="mt-4"><ArticleLibrary articles={articles} /></div></section> : <QuestionsSection questions={questions} isLoading={false} currentUserId={currentUserId} setQuestions={setQuestions} />}

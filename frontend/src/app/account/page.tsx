@@ -8,6 +8,7 @@ import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
 import SafeBackButton from "@/components/ui/SafeBackButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
@@ -193,13 +194,8 @@ export default function AccountPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5">
-                <header data-page-header className="relative flex h-11 items-center justify-center">
-                    <SafeBackButton fallback="/profile" className="absolute right-0 top-0" />
-                    <h1 className="text-[17px] font-black text-[#2f3238]">حساب کاربری</h1>
-                    <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center">
-                        <Image src={accountIcon} alt="" width={30} height={30} className="h-8 w-8 object-contain" />
-                    </div>
-                </header>
+                <AppHeader title="حساب کاربری" className="mb-0" backControl={<SafeBackButton fallback="/profile" />}
+                    icon={<Image src={accountIcon} alt="" width={28} height={28} />} />
 
                 <div className="flex flex-col items-center pb-4 pt-2">
                     <input

@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Music2, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getMusicArtist } from "@/lib/musicArtistCatalog";
 import { getReturnToHref } from "@/lib/returnTo";
@@ -47,11 +47,9 @@ export default function MusicArtistDetailPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
-                    <header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
-                        <BackButton href="/explore/music" label="بازگشت به فهرست موسیقی" />
-                        <div className="flex items-center gap-1">
+            <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                <>
+                    <AppHeader className="mb-0" backHref="/explore/music" backLabel="بازگشت به فهرست موسیقی" title={null} actions={<div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={"music"} slug={artist.slug} courseId={publishedCourse?.id} />
                             <button
                                 type="button"
@@ -61,8 +59,7 @@ export default function MusicArtistDetailPage() {
                             >
                                 <MoreVertical size={22} />
                             </button>
-                        </div>
-                    </header>
+                        </div>} />
 
                     <section className="mt-4 grid grid-cols-2 items-center gap-4" dir="ltr">
                         <div data-course-heading className="min-w-0 text-center" dir="ltr">
@@ -78,7 +75,7 @@ export default function MusicArtistDetailPage() {
                             <Image src={artist.detailPortraitPath || artist.portraitPath} alt={`تصویر ${artist.displayName}`} fill sizes="155px" className="object-contain" priority />
                         </div>
                     </section>
-                </div>
+                </>
 
                 <ReferenceIntroduction heading="بیوگرافی:" paragraphs={artist.biography} />
                 <section className="mt-6 text-right text-[12px] leading-6 text-[#40464f] dark:text-slate-300" aria-label="سبک">

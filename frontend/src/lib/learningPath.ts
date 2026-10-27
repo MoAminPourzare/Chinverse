@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import type { Course } from "@/lib/courses";
 
 export interface LearningPathStep {
     lesson_id: number;
@@ -31,4 +32,12 @@ export async function fetchLearningPath(signal?: AbortSignal): Promise<LearningP
 export function learningPathLessonHref(step: LearningPathStep) {
     const query = new URLSearchParams({ lesson: String(step.lesson_id), roadmap: "1", returnTo: "/profile" });
     return `/watch/${encodeURIComponent(step.domain)}/${step.course_id}?${query}`;
+}
+
+/** Public curriculum metadata only; publication/access still comes from the path. */
+export async function fetchLearningPathCatalog(signal?: AbortSignal): Promise<Course[]> {
+    const response = await api.get<Course[]>("/courses/", {
+        params: { subcategory_slug: "hsk", limit: 1000 }, signal, chinverseCacheTtlMs: 0,
+    });
+    return Array.isArray(response.data) ? response.data : [];
 }

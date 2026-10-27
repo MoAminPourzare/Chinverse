@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import SafeBackButton from "@/components/ui/SafeBackButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { getMediaUrl } from "@/lib/media";
 import { AppNotification, notificationService, NotificationType } from "@/services/notification.service";
 import { useAdaptivePolling } from "@/hooks/useAdaptivePolling";
@@ -100,11 +101,8 @@ export default function NotificationsPage() {
     };
 
     return (
-        <div className="min-h-full bg-[#f9fafc] px-5 pb-8 pt-4" dir="rtl">
-            <header data-page-header className="relative flex h-12 items-center justify-center">
-                <SafeBackButton fallback="/" className="absolute right-0" />
-                <h1 className="text-[18px] font-black text-[#2f3238]">اعلان‌ها</h1>
-            </header>
+        <div className="min-h-full bg-[#f9fafc] px-4 pb-8 pt-4" dir="rtl">
+            <AppHeader title="اعلان‌ها" backControl={<SafeBackButton fallback="/" />} />
 
             <main className="mt-6">
                 {isLoading ? (

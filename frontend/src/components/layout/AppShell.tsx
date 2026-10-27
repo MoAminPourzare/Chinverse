@@ -9,6 +9,7 @@ import ThemeController from "@/components/layout/ThemeController";
 import MobileUxController from "@/components/layout/MobileUxController";
 import { PwaProvider } from "@/components/pwa/PwaProvider";
 import ScrollRestoration from "@/components/layout/ScrollRestoration";
+import ForumSupportShortcut from "@/components/layout/ForumSupportShortcut";
 
 const navHiddenPrefixes = [
     "/login",
@@ -44,6 +45,7 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
                     </div>
                     <Suspense fallback={null}><ScrollRestoration scroll={scrollElement} /></Suspense>
                     {showBottomNav && <BottomNav />}
+                    <Suspense fallback={null}><ForumSupportShortcut /></Suspense>
                 </div>
             </div>
         </PwaProvider>

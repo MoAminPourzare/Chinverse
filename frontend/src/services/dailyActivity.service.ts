@@ -1,4 +1,5 @@
-import api from "@/lib/api";
+import api, { refreshAccessToken } from "@/lib/api";
+import { isHttpStatus } from "@/lib/http";
 
 export interface DailyActivityDay {
     date: string;
@@ -59,7 +60,16 @@ export const dailyActivityService = {
     },
 
     async recordVideoProgress(payload: VideoProgressPayload): Promise<{ lesson_completed: boolean }> {
-        const response = await api.post<{ lesson_completed: boolean }>("/daily-activity/video-progress", payload);
-        return response.data;
+        const save = () => api.post<{ lesson_completed: boolean }>("/daily-activity/video-progress", payload, {
+            adapter: ["fetch", "xhr"],
+            fetchOptions: { keepalive: true },
+        });
+        try { return (await save()).data; }
+        catch (error) {
+            // A 401 is rejected by authentication before any activity is written.
+            // Do not automatically replay ambiguous network/5xx failures.
+            if (!isHttpStatus(error, 401) || !await refreshAccessToken()) throw error;
+            return (await save()).data;
+        }
     },
 };

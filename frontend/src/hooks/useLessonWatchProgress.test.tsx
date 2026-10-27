@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { useRef } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useLessonWatchProgress } from "./useLessonWatchProgress";
+import { LESSON_PROGRESS_EVENT, readLessonProgress } from "@/lib/lessonProgress";
 
 const record = vi.hoisted(() => vi.fn());
 vi.mock("@/services/dailyActivity.service", () => ({ dailyActivityService: { recordVideoProgress: record } }));
@@ -34,6 +35,7 @@ async function advance(state: { position: number }, seconds: number, speed = 1) 
 
 beforeEach(() => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+    localStorage.clear();
     record.mockReset().mockResolvedValue({ lesson_completed: false });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -44,18 +46,20 @@ it("records advancing playback and keeps actual study time correct at double spe
     state.rate = 2;
     fireEvent.play(screen.getByTestId("video"));
     await advance(state, 8, 2);
-    expect(record).toHaveBeenCalledWith(expect.objectContaining({ lesson_id: 1, seconds_delta: 16, study_seconds_delta: 8 }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "save" })); });
+    expect(record.mock.calls.reduce((sum, [payload]) => sum + payload.seconds_delta, 0)).toBe(16);
+    expect(record.mock.calls.reduce((sum, [payload]) => sum + payload.study_seconds_delta, 0)).toBe(8);
 });
 
 it("keeps a failed save retryable and only marks completion after a server acknowledgement", async () => {
     record.mockRejectedValueOnce(new Error("offline")).mockResolvedValue({ lesson_completed: true });
     render(<Player />);
     const { state } = media();
-    await advance(state, 15);
+    await advance(state, 5);
     expect(screen.getByTestId("state")).toHaveTextContent("error");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "save" })); });
     expect(screen.getByTestId("state")).toHaveTextContent("completed");
-    expect(record.mock.calls[1][0].seconds_delta).toBe(15);
+    expect(record.mock.calls[1][0].seconds_delta).toBe(5);
 });
 
 it("freezes the former lesson's last position when a save finishes after switching lessons", async () => {
@@ -69,4 +73,20 @@ it("freezes the former lesson's last position when a save finishes after switchi
     await act(async () => { resolve({ lesson_completed: true }); });
     expect(record.mock.calls[1][0]).toMatchObject({ lesson_id: 1, position_seconds: 15 });
     expect(screen.getByTestId("state")).not.toHaveTextContent("completed");
+});
+
+it("notifies the profile when the final save finishes after the player unmounts", async () => {
+    let resolve!: (value: { lesson_completed: boolean }) => void;
+    record.mockImplementationOnce(() => new Promise(value => { resolve = value; }));
+    const saved = vi.fn();
+    window.addEventListener(LESSON_PROGRESS_EVENT, saved);
+    const view = render(<Player />);
+    const { state } = media();
+    await advance(state, 5);
+    expect(readLessonProgress(7, 1).watchedSeconds).toBe(0);
+    view.unmount();
+    await act(async () => { resolve({ lesson_completed: true }); });
+    expect(saved).toHaveBeenCalledTimes(1);
+    expect(readLessonProgress(7, 1)).toMatchObject({ watchedSeconds: 5, positionSeconds: 5, durationSeconds: 100 });
+    window.removeEventListener(LESSON_PROGRESS_EVENT, saved);
 });

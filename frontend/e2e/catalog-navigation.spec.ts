@@ -27,6 +27,17 @@ const collections = [
     ["classical", "baijia-talk-classical-chinese-introduction"],
 ];
 
+async function expectStandardBack(page: import("@playwright/test").Page) {
+    const metrics = await page.locator("[data-back-button]").first().evaluate(element => {
+        const button = element.getBoundingClientRect(), frame = element.closest(".app-scroll")!.getBoundingClientRect();
+        return { width: button.width, height: button.height, right: frame.right - button.right, top: button.top - frame.top };
+    });
+    expect(metrics.width).toBe(46);
+    expect(metrics.height).toBe(46);
+    expect(metrics.right).toBeCloseTo(29, 1);
+    expect(metrics.top).toBeCloseTo(29, 1);
+}
+
 test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.route("**/api/backend/**", (route) => route.fulfill({ json: [] }));
@@ -40,12 +51,14 @@ for (const [domain, slug] of collections) {
         await page.goto(basePath);
         const entries = page.locator(`main a[href^="${basePath}/lesson/"]`);
         await expect(entries.first()).toBeVisible();
+        await expectStandardBack(page);
         // Verify both boundaries of each list, including repeat-number reference collections.
         for (const boundary of ["first", "last"] as const) {
             const href = await entries[boundary]().getAttribute("href");
             await entries[boundary]().click();
             await expect(page).toHaveURL(new RegExp(`${href}$`));
             await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+            await expectStandardBack(page);
             await expect(page.getByRole("heading", { name: /پیدا نشد/ })).toHaveCount(0);
             await expect(page.locator("main a[href^='/watch/']")).toHaveCount(0);
             await expect(page.locator("main").getByText(/فایل اصلی این .* هنوز منتشر نشده است\./)).toBeVisible();

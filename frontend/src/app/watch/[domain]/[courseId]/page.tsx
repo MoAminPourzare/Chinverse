@@ -18,7 +18,8 @@ import { getDirectionalTextProps } from "@/lib/textDirection";
 import { getJourneyHref, getReturnToHref } from "@/lib/returnTo";
 import { getHighlightStyle, useLearningPreferences } from "@/lib/learningPreferences";
 import Surface from "@/components/ui/Surface";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
+import WatchProgressStatus from "@/components/lms/WatchProgressStatus";
 import { useLessonWatchProgress } from "@/hooks/useLessonWatchProgress";
 import { fetchLearningPath, learningPathLessonHref, type LearningPath } from "@/lib/learningPath";
 import { lessonPlaybackService } from "@/services/lessonPlayback.service";
@@ -749,19 +750,15 @@ export default function SharedWatchPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
-                <header data-page-header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
-                    <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-2" dir="rtl">
-                        <BackButton href={`/${encodeURIComponent(domain)}/${course.id}`} className="justify-self-start" />
-                        <div data-header-title className="min-w-0 text-center" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-4">
+                <AppHeader className="mb-0" backHref={`/${encodeURIComponent(domain)}/${course.id}`} title={
+                        <div className="min-w-0 text-center" dir="rtl">
                             <p className="truncate text-[11px] font-black text-[#155aa6]" {...getDirectionalTextProps(course.title)}>{course.title}</p>
                             <h1 className="truncate text-sm font-black text-slate-900" {...getDirectionalTextProps(currentLesson.title)}>{currentLesson.title}</h1>
                         </div>
-                        <button type="button" onClick={openAppearanceSettings} aria-label="تنظیمات نمایش درس" className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0]">
+                    } icon={<button type="button" onClick={openAppearanceSettings} aria-label="تنظیمات نمایش درس" className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 dark:text-slate-100">
                             <MoreVertical size={20} />
-                        </button>
-                    </div>
-                </header>
+                        </button>} />
 
                 <section className="shrink-0 overflow-hidden rounded-[24px] border border-[#dfe6f0] bg-white p-2 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
                     <div
@@ -837,6 +834,8 @@ export default function SharedWatchPage() {
                         )}
                     </div>
                 </section>
+
+                {currentUserId && playback && !playbackError && <WatchProgressStatus {...watchProgress} />}
 
                 <Surface as="section" className="rounded-[24px] border-[#dfe6f0] bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-none">
                     {knowledgeError && <div role="alert" className="mb-3 rounded-xl bg-rose-50 p-3 text-xs leading-6 text-rose-700">وضعیت واژه‌ها دریافت نشد. <button type="button" onClick={() => setKnowledgeVersion((value) => value + 1)} className="min-h-11 font-bold underline">دوباره تلاش کن</button></div>}

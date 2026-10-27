@@ -12,7 +12,7 @@ import {
 } from "@/lib/courses";
 import { getMediaUrl } from "@/lib/media";
 import { getDirectionalTextProps, getTextAlign } from "@/lib/textDirection";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 
 type CourseExploreLayout = "hsk" | "list" | "portrait" | "square";
 
@@ -116,14 +116,8 @@ export default function CourseExplorePage({
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-5">
-                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                    <BackButton href="/explore" label="بازگشت به کاوش" className="justify-self-start" />
-                    <div data-header-title className="min-w-0 flex-1" dir="rtl">
-                        <h1 className="truncate text-center text-[20px] font-black text-[#25272d]">{displayTitle}</h1>
-                    </div>
-                    <span aria-hidden />
-                </header>
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-4 px-4 py-4">
+                <AppHeader title={displayTitle} backHref="/explore" backLabel="بازگشت به کاوش" className="mb-0" />
 
                 {loading ? (
                     <StateCard text="در حال بارگذاری…" />

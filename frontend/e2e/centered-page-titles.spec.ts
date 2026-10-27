@@ -88,10 +88,17 @@ for (const width of [320, 390]) {
             expect(alignment.align, url).toBe("center");
             expect(alignment.centerDelta, url).toBeLessThanOrEqual(1.5);
             expect(alignment.textRight, url).toBeLessThanOrEqual(alignment.backLeft - 1);
-            if (["course", "service", "post"].includes(name)) {
+            {
                 const titleBox = (await title.boundingBox())!;
                 const backBox = (await header.locator("[data-back-button]").boundingBox())!;
-                expect(Math.abs(titleBox.y + titleBox.height / 2 - backBox.y - backBox.height / 2), url).toBeLessThanOrEqual(1);
+                // Long titles may grow the header; navigation keeps its fixed
+                // top inset instead of moving down to the text block's center.
+                if (titleBox.height <= 46) expect(Math.abs(titleBox.y + titleBox.height / 2 - backBox.y - backBox.height / 2), url).toBeLessThanOrEqual(1);
+                const frame = (await page.locator(".app-scroll").boundingBox())!;
+                expect(backBox.width, url).toBe(46);
+                expect(backBox.height, url).toBe(46);
+                expect(backBox.y - frame.y, url).toBeCloseTo(29, 1);
+                expect(frame.x + frame.width - backBox.x - backBox.width, url).toBeCloseTo(29, 1);
             }
             const copy = title.locator("p");
             for (const paragraph of await copy.all()) await expect(paragraph).toHaveCSS("text-align", "center");

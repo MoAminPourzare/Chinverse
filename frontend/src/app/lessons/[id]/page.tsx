@@ -6,6 +6,8 @@ import { MoreVertical } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import Surface from "@/components/ui/Surface";
 import SafeBackButton from "@/components/ui/SafeBackButton";
+import { AppHeader } from "@/components/ui/IconButton";
+import WatchProgressStatus from "@/components/lms/WatchProgressStatus";
 import { getReturnToHref } from "@/lib/returnTo";
 import {
     findActivePlaybackCueIndex,
@@ -33,7 +35,7 @@ export default function LessonPlayerPage() {
     const [retryable, setRetryable] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const currentUserId = useOptionalCurrentUserId();
-    useLessonWatchProgress(videoRef, Number.isSafeInteger(lessonId) ? lessonId : null, currentUserId, Boolean(playback && playback.lesson.id === lessonId));
+    const watchProgress = useLessonWatchProgress(videoRef, Number.isSafeInteger(lessonId) ? lessonId : null, currentUserId, Boolean(playback && playback.lesson.id === lessonId));
     const pendingResumeRef = useRef<{ position: number; shouldPlay: boolean } | null>(null);
 
     const loadPlayback = useCallback(async (forceRefresh = false, preservePosition = false) => {
@@ -145,14 +147,8 @@ export default function LessonPlayerPage() {
 
     return (
         <div className="flex min-h-full flex-col bg-[#f7f8fa] px-4 pb-5 pt-4" dir="rtl">
-            <header data-page-header className="grid shrink-0 grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                <SafeBackButton fallback="/explore" className="justify-self-start" />
-                <div data-header-title className="min-w-0 text-center" dir="rtl">
-                    <h1 className="truncate text-base font-black text-slate-900">{playback?.lesson.title || "درس"}</h1>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">پخش رسانهٔ منتشرشده</p>
-                </div>
-                <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-[#dfe6f0]" aria-label="تنظیمات نمایش"><MoreVertical size={20} /></button>
-            </header>
+            <AppHeader title={playback?.lesson.title || "درس"} backControl={<SafeBackButton fallback="/explore" />}
+                icon={<button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 dark:text-slate-100" aria-label="تنظیمات نمایش"><MoreVertical size={20} /></button>} />
             <main className="mx-auto mt-4 flex w-full max-w-[430px] flex-1 flex-col gap-4">
                 <Surface className="overflow-hidden p-0">
                     <div className="relative aspect-video w-full bg-slate-950">
@@ -181,6 +177,7 @@ export default function LessonPlayerPage() {
                         {error && <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/75 px-6 text-center text-sm font-black leading-7 text-white" role="alert"><span>{error}</span><div className="flex gap-2">{error.includes("وارد حساب") && <a href={`/login?next=${encodeURIComponent(`/lessons/${lessonId}`)}`} className="rounded-xl bg-white px-4 py-2 text-xs text-slate-900">ورود</a>}{error.includes("اشتراک") && <a href="/settings/subscription" className="rounded-xl bg-white px-4 py-2 text-xs text-slate-900">اشتراک</a>}{retryable && <button type="button" onClick={() => void loadPlayback(true, true)} className="rounded-xl bg-white px-4 py-2 text-xs text-slate-900">تلاش دوباره</button>}</div></div>}
                     </div>
                 </Surface>
+                {currentUserId && playback && !error && <WatchProgressStatus {...watchProgress} />}
                 <Surface className="p-4">
                     {playback && playback.subtitles.length > 1 && <label className="mb-3 flex items-center justify-between gap-3 text-xs font-black text-slate-600">زبان زیرنویس<select value={track?.language || ""} onChange={(event) => setSelectedLanguage(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs" aria-label="زبان زیرنویس">{playback.subtitles.map((item) => <option key={item.id} value={item.language}>{languageLabels[item.language] || item.language.toUpperCase()}</option>)}</select></label>}
                     {track && <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-slate-500" aria-label="کیفیت زیرنویس"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">همگام‌سازی تأییدشده</span>{track.qualityScore !== null && <span>امتیاز کیفیت: {Math.round(track.qualityScore)}٪</span>}{track.qualityWarnings.length > 0 && <span className="text-amber-700">{track.qualityWarnings.length} هشدار غیرمسدودکننده</span>}</div>}

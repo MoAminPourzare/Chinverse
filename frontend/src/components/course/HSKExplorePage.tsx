@@ -1,17 +1,13 @@
 import Image from "@/components/ui/PublicMediaImage";
 import Link from "@/components/ui/ReturnAwareLink";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { HSK_CATALOG } from "@/lib/hskCatalog";
 
 export default function HSKExplorePage() {
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-5">
-                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                    <BackButton href="/explore" label="بازگشت به کاوش" />
-                    <h1 data-header-title className="text-center text-[22px] font-black tracking-wide text-[#25272d] dark:text-white">HSK</h1>
-                    <span aria-hidden />
-                </header>
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 py-4">
+                <AppHeader className="mb-0" title="HSK" backHref="/explore" backLabel="بازگشت به کاوش" />
 
                 <div className="motion-list grid grid-cols-3 gap-2.5" dir="rtl">
                     {HSK_CATALOG.map((course) => (

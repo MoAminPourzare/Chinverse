@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog } from "@headlessui/react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { useSearchParams } from "next/navigation";
 import { LegalDocumentBody } from "@/components/legal/LegalDocumentBody";
 import { LEGAL_DOCUMENTS, type LegalDocumentKind } from "@/lib/legalDocuments";
@@ -39,10 +39,8 @@ export default function SignupLegalDialog() {
             <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
             <div className="fixed inset-0 flex items-center justify-center p-4">
                 <Dialog.Panel className="flex min-h-0 max-h-full w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] bg-white text-right shadow-2xl">
-                    <div className="relative flex min-h-[72px] shrink-0 items-center justify-center border-b border-slate-100 px-5 py-3">
-                        <BackButton onClick={close} label="بازگشت به ثبت‌نام" className="absolute right-5 top-1/2 -translate-y-1/2" />
-                        <Dialog.Title className="px-14 text-center text-base font-black text-slate-950">{document.title}</Dialog.Title>
-                    </div>
+                    <AppHeader className="mb-0 shrink-0" sticky={false} onBack={close} backLabel="بازگشت به ثبت‌نام"
+                        title={<Dialog.Title className="text-center text-base font-black text-slate-950">{document.title}</Dialog.Title>} />
                     <div className="min-h-0 overflow-y-auto overscroll-contain px-5 pb-6">
                         <nav aria-label="اسناد حقوقی ثبت‌نام" className="mt-4 flex flex-wrap gap-2">
                             {(Object.keys(LEGAL_DOCUMENTS) as LegalDocumentKind[]).map((key) => (

@@ -26,7 +26,7 @@ import { getDirectionalTextProps } from "@/lib/textDirection";
 import Surface from "@/components/ui/Surface";
 import LessonCard from "@/components/course/LessonCard";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import LikeButton from "@/components/engagement/LikeButton";
 
 interface CourseDetailPageProps {
@@ -179,15 +179,11 @@ export default function CourseDetailPage({
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28" dir="rtl">
-            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-4 py-5">
-                <header data-page-header className="sticky top-0 z-20 -mx-4 bg-[#f7f8fa]/90 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92">
-                    <div className="grid grid-cols-[100px_minmax(0,1fr)_100px] items-center gap-2" dir="rtl">
-                        <BackButton href={explorePath} className="justify-self-start" />
-                        <div data-header-title data-course-heading className="min-w-0 flex-1 text-center" dir="rtl">
+            <main className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-4 py-4">
+                <AppHeader className="mb-0" backHref={explorePath} title={<div data-course-heading className="min-w-0 flex-1 text-center" dir="rtl">
                             <p className="text-[11px] font-black text-[#155aa6]">{label}</p>
                             <h1 className="truncate text-sm font-black text-slate-900" {...courseTitleProps}>{course.title}</h1>
-                        </div>
-                        <div className="flex items-center gap-2">
+                        </div>} actions={<div className="flex items-center gap-2">
                             <CollectionBookmarkButton domain={domain} courseId={course.id} slug={course.slug && getCatalogCollection({ domain, slug: course.slug }) ? course.slug : undefined} />
                             <button
                                 type="button"
@@ -197,9 +193,7 @@ export default function CourseDetailPage({
                             >
                                 <MoreVertical size={20} />
                             </button>
-                        </div>
-                    </div>
-                </header>
+                        </div>} />
 
                 <section className="overflow-hidden rounded-[24px] border border-[#dfe6f0] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
                     <div className={`relative bg-slate-100 ${hasPosterLayout ? "aspect-[3/4]" : "aspect-[4/3]"}`}>

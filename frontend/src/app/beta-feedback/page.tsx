@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Loader2, MessageSquarePlus, X } from 'lucide-react';
-import { IconButton } from '@/components/ui/IconButton';
+import { CheckCircle2, Loader2, MessageSquarePlus } from 'lucide-react';
+import { AppHeader } from '@/components/ui/IconButton';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { authService } from '@/services/auth.service';
 import {
@@ -132,12 +132,8 @@ export default function BetaFeedbackPage() {
     };
 
     return (
-        <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5 dark:bg-[#10151c]" dir="rtl">
-            <header data-page-header className="grid grid-cols-[44px_1fr_44px] items-center">
-                <IconButton onClick={close} label="بستن"><X size={20} /></IconButton>
-                <h1 className="text-center text-lg font-black text-slate-900 dark:text-white">بازخورد بتای چین‌ورس</h1>
-                <span aria-hidden />
-            </header>
+        <div className="flex min-h-full flex-col bg-[#f7f8fa] px-4 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
+            <AppHeader title="بازخورد بتای چین‌ورس" onBack={close} icon={<MessageSquarePlus size={23} />} />
 
             {!isReady ? (
                 <main className="flex flex-1 items-center justify-center" aria-live="polite">
