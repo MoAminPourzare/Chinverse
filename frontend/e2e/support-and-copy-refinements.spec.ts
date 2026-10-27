@@ -37,10 +37,14 @@ for (const scenario of [{ width: 320, theme: "light" }, { width: 390, theme: "li
         await page.setViewportSize({ width: scenario.width, height: 844 });
         await page.addInitScript((theme) => localStorage.setItem("chinverse.learningPreferences.v1", JSON.stringify({ theme })), scenario.theme);
         await ready(page, "/support");
-        const logo = page.getByRole("img", { name: "چین‌ورس", exact: true });
-        await expect(logo).toHaveAttribute("src", /chinverse-wordmark/);
-        const close = (await page.getByRole("button", { name: "بستن", exact: true }).boundingBox())!;
-        expect(close.x).toBeLessThan((await logo.boundingBox())!.x);
+        const header = page.locator('[data-header-variant="card"]');
+        await expect(header.getByRole("heading", { name: "پشتیبانی", exact: true })).toBeVisible();
+        const back = (await header.getByRole("button", { name: "بازگشت", exact: true }).boundingBox())!;
+        const frame = (await page.locator(".app-scroll").boundingBox())!;
+        expect(back.width).toBeCloseTo(46, 1);
+        expect(back.height).toBeCloseTo(46, 1);
+        expect(frame.x + frame.width - back.x - back.width).toBeCloseTo(29, 1);
+        expect(back.y - frame.y).toBeCloseTo(29, 1);
         await page.getByLabel("پیام پشتیبانی", { exact: true }).fill("این پیام آزمایشی برای بررسی ارسال و طراحی صفحه است.");
         await page.getByRole("button", { name: "ارسال پیام", exact: true }).click();
         await expect(page.getByRole("heading", { name: "پیامت به دست ما رسید!", exact: true })).toBeVisible();

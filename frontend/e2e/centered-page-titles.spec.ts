@@ -70,6 +70,9 @@ for (const width of [320, 390]) {
             const header = page.locator(name === "conversation" ? ".app-scroll header" : "[data-page-header]").first();
             await expect(header).toBeVisible();
             await page.waitForFunction(() => document.fonts.status === "loaded");
+            // Finish Next's visible-link prefetches before scrolling or replacing
+            // the document; WebKit reports cancelled prefetches as page errors.
+            await page.waitForLoadState("networkidle");
             if (name !== "conversation") await expect.poll(() => header.evaluate(el => el.style.getPropertyValue("--app-header-top")), { message: url }).not.toBe("");
             else await expect(header.getByRole("heading", { level: 1 })).toHaveText("مشاور سفر چین");
             const title = await header.locator("[data-header-title]").count() ? header.locator("[data-header-title]").first() : header.locator("h1");
@@ -112,6 +115,7 @@ for (const width of [320, 390]) {
                 await page.screenshot({ path: path.resolve("../artifacts", `centered-title-${name}-${info.project.name}.png`) });
             }
             expect(await page.locator(".app-scroll").evaluate(el => el.scrollWidth - el.clientWidth), url).toBeLessThanOrEqual(1);
+            await page.waitForLoadState("networkidle");
         }
         expect(errors).toEqual([]);
     });
