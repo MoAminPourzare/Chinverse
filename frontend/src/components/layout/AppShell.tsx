@@ -40,7 +40,7 @@ export default function AppShell({ children, releaseSha }: { children: ReactNode
                     <ThemeController />
                     <MobileUxController />
                     <NotificationToaster />
-                    <div ref={setScrollElement} className={`app-scroll ${showBottomNav ? "pb-24" : ""}`}>
+                    <div ref={setScrollElement} className={`app-scroll no-scrollbar ${showBottomNav ? "pb-24" : ""}`}>
                         <RouteTransition>{children}</RouteTransition>
                     </div>
                     <Suspense fallback={null}><ScrollRestoration scroll={scrollElement} /></Suspense>
