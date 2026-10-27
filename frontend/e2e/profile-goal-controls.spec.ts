@@ -39,58 +39,6 @@ test.beforeEach(async ({ page }) => {
     });
 });
 
-test("account searches all 46 titles and sorted countries, then saves the exact selected values", async ({ page }) => {
-    await ready(page, "/account");
-    const main = page.locator("main:visible");
-    await main.getByRole("button", { name: "حذف عنوان شغلی مترجم زبان چینی", exact: true }).click();
-    await main.locator("#account-headline").click();
-    await expect(main.getByRole("group", { name: "گزینه‌های عنوان شغلی", exact: true }).getByRole("button")).toHaveCount(46);
-    const search = main.getByRole("searchbox", { name: "جست‌وجوی عنوان شغلی", exact: true });
-    await search.fill("مطالعات چين");
-    await search.press("Enter");
-    await expect(main.locator("#account-headline")).toContainText(requestedTitle);
-    await main.locator("#account-country").click();
-    const countries = main.getByRole("group", { name: "گزینه‌های کشور یا منطقه", exact: true });
-    const labels = await countries.getByRole("button").allTextContents();
-    expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b, "fa")));
-    const countrySearch = main.getByRole("searchbox", { name: "جست‌وجوی کشور یا منطقه", exact: true });
-    await countrySearch.fill("آلمان");
-    await countries.getByRole("button", { name: "آلمان", exact: true }).click();
-    await main.locator("#account-country").click();
-    await expect(main.getByRole("searchbox", { name: "جست‌وجوی کشور یا منطقه", exact: true })).toHaveValue("");
-    await main.getByRole("searchbox", { name: "جست‌وجوی کشور یا منطقه", exact: true }).press("Escape");
-    await expect(main.locator("#account-country")).toBeFocused();
-    const request = page.waitForRequest((r) => r.url().endsWith("/users/me/profile") && r.method() === "PUT");
-    await main.getByRole("button", { name: "ذخیره", exact: true }).click();
-    expect((await request).postDataJSON()).toMatchObject({ headline: requestedTitle, country: "آلمان" });
-    await noOverflow(page);
-});
-
-test("showcase searches job and country filters and filters by both headline and resume titles", async ({ page }) => {
-    await ready(page, "/showcase");
-    await page.getByRole("button", { name: "فیلترها", exact: true }).click();
-    await page.getByRole("button", { name: "عنوان شغلی", exact: true }).click();
-    const choices = page.getByRole("group", { name: "گزینه‌های عنوان شغلی", exact: true });
-    await expect(choices.getByRole("button")).toHaveCount(46);
-    const search = page.getByRole("searchbox", { name: "جست‌وجوی عنوان شغلی", exact: true });
-    await search.fill("مطالعات چين");
-    await choices.getByRole("button", { name: requestedTitle, exact: true }).click();
-    await search.fill("مترجم شفاهی");
-    await choices.getByRole("button", { name: "مترجم شفاهی چینی", exact: true }).click();
-    await page.getByRole("button", { name: "بستن", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "متخصص مطالعات", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "مترجم رزومه", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "مدرس آزمایشی", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "فیلترها", exact: true }).click();
-    await page.getByRole("button", { name: "لوکیشن", exact: true }).click();
-    await page.getByRole("searchbox", { name: "جست‌وجوی کشور/منطقه", exact: true }).fill("كانادا");
-    await page.getByRole("button", { name: "کانادا", exact: true }).click();
-    await page.getByRole("button", { name: "بستن", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "متخصص مطالعات", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "مترجم رزومه", exact: true })).toHaveCount(0);
-    await noOverflow(page);
-});
-
 for (const width of [320, 390]) {
     test(`daily goal selects ten-minute ticks and single minutes with a stable box at ${width}px`, async ({ page }) => {
         await page.setViewportSize({ width, height: 844 });

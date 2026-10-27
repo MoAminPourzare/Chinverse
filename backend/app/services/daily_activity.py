@@ -23,15 +23,14 @@ async def record_video_watch(
     user_id: int,
     lesson_id: int,
     seconds_delta: int,
+    study_seconds_delta: int | None = None,
     position_seconds: int = 0,
     duration_seconds: int = 0,
 ) -> dict[str, Any]:
     safe_delta = max(0, min(int(seconds_delta), 300))
+    safe_study_delta = safe_delta if study_seconds_delta is None else max(0, min(study_seconds_delta, 300))
     activity_date = today_local()
-    if safe_delta <= 0:
-        return await get_today_activity(db, user_id=user_id)
-
-    completed = bool(duration_seconds > 0 and position_seconds >= max(duration_seconds - 20, duration_seconds * 0.9))
+    # Completion is based on accumulated playback, never a seek to the end.
     await db.execute(
         text(
             """
@@ -58,20 +57,42 @@ async def record_video_watch(
             "activity_date": activity_date,
             "seconds_delta": safe_delta,
             "position_seconds": max(0, int(position_seconds)),
-            "completed": completed,
+            "completed": False,
         },
     )
-    await _increment_study_session(
-        db,
-        user_id=user_id,
-        activity_date=activity_date,
-        watched_seconds_delta=safe_delta,
-        learned_words_delta=0,
-        reviewed_words_delta=0,
+    progress = await db.execute(
+        text("""
+            SELECT COALESCE(SUM(watched_seconds), 0) AS watched_seconds,
+                   COALESCE(MAX(last_position_seconds), 0) AS position_seconds,
+                   BOOL_OR(completed) AS completed
+            FROM user_lesson_watch_progress
+            WHERE user_id = :user_id AND lesson_id = :lesson_id
+        """),
+        {"user_id": user_id, "lesson_id": lesson_id},
     )
-    await refresh_user_streak(db, user_id=user_id)
+    row = progress.mappings().one()
+    completed = bool(row["completed"]) or video_watch_is_complete(
+        watched_seconds=int(row["watched_seconds"]),
+        position_seconds=int(row["position_seconds"]),
+        duration_seconds=duration_seconds,
+    )
+    if completed:
+        await db.execute(text("""
+            UPDATE user_lesson_watch_progress SET completed = true
+            WHERE user_id = :user_id AND lesson_id = :lesson_id AND date = :activity_date
+        """), {"user_id": user_id, "lesson_id": lesson_id, "activity_date": activity_date})
+    if safe_study_delta > 0:
+        await _increment_study_session(
+            db, user_id=user_id, activity_date=activity_date, watched_seconds_delta=safe_study_delta,
+            learned_words_delta=0, reviewed_words_delta=0,
+        )
+        await refresh_user_streak(db, user_id=user_id)
     await db.commit()
-    return await get_today_activity(db, user_id=user_id)
+    return {**await get_today_activity(db, user_id=user_id), "lesson_completed": completed}
+
+
+def video_watch_is_complete(*, watched_seconds: int, position_seconds: int, duration_seconds: int) -> bool:
+    return duration_seconds > 0 and min(watched_seconds, position_seconds) >= duration_seconds * 0.9
 
 
 async def record_words_learned(

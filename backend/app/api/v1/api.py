@@ -1,8 +1,8 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, chat, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust, beta
+from app.api.v1.endpoints import admin, auth, users, gallery, courses, course_admin, media, services, feed, community, vocabulary, leitner, notifications, daily_activity, referrals, subscriptions, engagements, trust, beta
 from app.core.config import settings
 from app.api.v1.endpoints import collections
-from app.api.v1.endpoints import dictionary_audio
+from app.api.v1.endpoints import dictionary_audio, learning_path
 
 api_router = APIRouter()
 
@@ -35,14 +35,14 @@ api_router.include_router(media.router)
 # ===== COMMUNITY =====
 api_router.include_router(community.router, prefix="/community", tags=["community"])
 
-# ===== CHAT =====
-api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
-
 # ===== NOTIFICATIONS =====
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 
 # ===== ENGAGEMENTS =====
 api_router.include_router(engagements.router, prefix="/engagements", tags=["engagements"])
+
+# ===== LEARNING PATH =====
+api_router.include_router(learning_path.router, prefix="/learning-path", tags=["learning-path"])
 
 # ===== DAILY ACTIVITY =====
 api_router.include_router(daily_activity.router, prefix="/daily-activity", tags=["daily-activity"])

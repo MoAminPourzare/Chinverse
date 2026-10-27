@@ -178,18 +178,19 @@ async def test_message_reports_are_private_and_deduplicated():
         first_user_id, first_headers = await authenticated_user(client)
         second_user_id, second_headers = await authenticated_user(client)
 
-        message = await client.post(
-            "/api/v1/chat",
-            headers=second_headers,
-            json={"receiver_id": first_user_id, "content": "reportable message"},
-        )
-        assert message.status_code == 200, message.text
+        # Retained historical messages can still be reported by their recipients.
+        from app.models.social import Message
+        async with SessionLocal() as db:
+            message = Message(sender_id=second_user_id, receiver_id=first_user_id, content="historical reportable message")
+            db.add(message)
+            await db.commit()
+            message_id = message.id
 
         _, third_headers = await authenticated_user(client)
 
         report_payload = {
             "target_type": "message",
-            "target_id": message.json()["id"],
+            "target_id": message_id,
             "reason": "harassment",
             "details": "integration security test",
         }

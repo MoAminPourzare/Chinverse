@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const publicRoutes = ["/", "/explore", "/showcase", "/community", "/support"];
+const publicRoutes = ["/", "/explore", "/profile", "/community", "/support"];
 
 test.describe("phase four public journey shell", () => {
   for (const route of publicRoutes) {
@@ -18,21 +18,21 @@ test.describe("phase four public journey shell", () => {
     });
   }
 
-  test("support is available in messages and absent on other primary pages", async ({ page }) => {
-    for (const route of ["/", "/showcase", "/community", "/explore", "/leitner"]) {
+  test("support is available in the forum and settings", async ({ page }) => {
+    for (const route of ["/", "/community", "/settings"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
-      await expect(page.getByRole("link", { name: "پشتیبانی", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /^پشتیبانی/ })).toBeVisible();
     }
-    await page.goto("/chat", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("link", { name: "پشتیبانی", exact: true })).toBeVisible();
+    for (const route of ["/profile", "/explore", "/leitner"]) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(".app-support-button")).toHaveCount(0);
+    }
   });
 
-  test("chat exposes a retryable network error instead of an empty inbox", async ({ page }) => {
-    await page.route("**/api/backend/chat/conversations**", (route) => route.abort("failed"));
+  test("the retired messages URL returns to the forum", async ({ page }) => {
     await page.goto("/chat", { waitUntil: "domcontentloaded" });
-
-    await expect(page.getByRole("heading", { name: "پیام‌ها باز نشد" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "تلاش دوباره" })).toBeVisible();
+    await expect(page).toHaveURL(url => url.pathname === "/" && url.searchParams.get("tab") === "forum");
+    await expect(page.getByRole("button", { name: "تالار گفتگو", exact: true })).toBeVisible();
   });
 
   test("notifications exposes its empty copy and browser back restores the prior route", async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe("phase four public journey shell", () => {
     await expect(page.getByText("اینجا محل نمایش همه ی اعلان هاست.", { exact: false })).toBeVisible();
 
     await page.goto("/explore", { waitUntil: "domcontentloaded" });
-    await page.goto("/showcase", { waitUntil: "domcontentloaded" });
+    await page.goto("/profile", { waitUntil: "domcontentloaded" });
     await page.goBack();
     await expect(page).toHaveURL(/\/explore$/);
   });

@@ -1,6 +1,6 @@
 import Link from "@/components/ui/ReturnAwareLink";
 import { Play } from "lucide-react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 
 interface CatalogEntryPageProps {
     entry?: { collectionTitle: string; title: string; subtitle?: string; summary?: string };
@@ -15,7 +15,7 @@ interface CatalogEntryPageProps {
 /** Opening an entry is independent from whether its media has been published. */
 export default function CatalogEntryPage({ entry, backHref, watchHref, isLoading, hasError, previousHref, nextHref }: CatalogEntryPageProps) {
     if (!entry) {
-        return <main className="mx-auto max-w-[430px] px-5 py-8" dir="rtl">
+        return <main className="mx-auto max-w-[430px] px-4 py-8" dir="rtl">
             <h1 className="text-lg font-bold text-slate-900 dark:text-white">این بخش پیدا نشد</h1>
             <Link back href={backHref} className="mt-5 inline-flex rounded-xl bg-[#155aa6] px-4 py-3 text-sm font-bold text-white">بازگشت به فهرست</Link>
         </main>;
@@ -24,15 +24,13 @@ export default function CatalogEntryPage({ entry, backHref, watchHref, isLoading
         : isLoading ? "در حال بررسی ویدیوی منتشرشده…"
             : watchHref ? "ویدیو آمادهٔ پخش است." : "فایل اصلی این بخش هنوز منتشر نشده است.";
     return <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-        <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-            <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                <BackButton href={backHref} label={`بازگشت به ${entry.collectionTitle}`} />
-                <div data-header-title className="min-w-0 text-center">
+        <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+            <AppHeader backHref={backHref} backLabel={`بازگشت به ${entry.collectionTitle}`} title={
+                <div className="min-w-0 text-center">
                     <p className="text-[11px] font-bold text-[#155aa6] dark:text-sky-300">{entry.collectionTitle}</p>
-                    <h1 className="mt-1 break-words font-cjk text-lg font-bold text-[#343941] dark:text-white">{entry.title}</h1>
+                    <h1 className="mt-1 break-words font-cjk text-base font-bold text-[#343941] dark:text-white">{entry.title}</h1>
                 </div>
-                <span aria-hidden />
-            </header>
+            } />
             <section className="mt-5 overflow-hidden rounded-[22px] bg-[#17202c] p-7 text-center text-white" aria-label="وضعیت ویدیو">
                 <Play size={30} className="mx-auto" aria-hidden />
                 <h2 className="mt-4 text-base font-bold">{watchHref ? "ویدیو آماده است" : "ویدیو هنوز منتشر نشده"}</h2>

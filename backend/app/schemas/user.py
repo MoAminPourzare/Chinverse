@@ -476,3 +476,8 @@ class User(UserInDBBase):
 
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+class PublicUserIdentity(BaseModel):
+    id: int
+    display_name: str | None = None
+    avatar_url: str | None = None

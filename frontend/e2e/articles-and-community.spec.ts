@@ -149,7 +149,8 @@ test("article library opens the complete imported article and retains its select
         await route.fulfill({ status: pathname.endsWith("/auth/refresh") ? 401 : 200, contentType: "application/json", body: JSON.stringify(body) });
     });
     await page.goto("/community?section=articles");
-    await expect(page.getByRole("link", { name: "پیام‌های من گفتگوهای خصوصی و پشتیبانی" })).toHaveAttribute("href", "/chat");
+    await expect(page.getByRole("link", { name: "پشتیبانی", exact: true })).toHaveAttribute("href", "/support");
+    await expect(page.getByText("پیام‌های من", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "مقالات", exact: true })).toHaveAttribute("aria-current", "page");
     await page.getByRole("link", { name: /خواندن مقاله/ }).click();
     await expect(page).toHaveURL(new RegExp(`/articles/${source.slug}$`));

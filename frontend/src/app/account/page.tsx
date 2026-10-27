@@ -3,25 +3,15 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Image from "@/components/ui/PublicMediaImage";
-import { ChevronDown, Loader2, LogOut, Pencil, Trash2, X } from "lucide-react";
-import { getProfileJobTitles } from "@/lib/profileJobTitles";
+import { Loader2, LogOut, Pencil, Trash2 } from "lucide-react";
 import { userService, UserProfile } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import { getMediaUrl } from "@/lib/media";
 import SafeBackButton from "@/components/ui/SafeBackButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-import SearchableOptionList from "@/components/ui/SearchableOptionList";
 import ImageAdjustModal from "@/components/ui/ImageAdjustModal";
 import { cn } from "@/lib/cn";
-import {
-    COUNTRY_REGION_OPTIONS,
-    GENDER_OPTIONS,
-    PROFILE_HEADLINE_OPTIONS,
-    getProvinceOptions,
-    isKnownProfileHeadline,
-    isKnownProvinceForCountry,
-    requiresProvince,
-} from "@/profileOptions";
 import {
     cleanApiValidationMessage,
     hasOnlyPersianNameCharacters,
@@ -31,18 +21,15 @@ import {
     normalizePersianName,
     validateImageFile,
     validatePersianName,
-    validateTextLength,
     validationMessage,
 } from "@/validation";
 
-interface AccountFormState extends UserProfile {
+interface AccountFormState extends Pick<UserProfile, "display_name" | "avatar_url"> {
     email: string;
     phone: string;
 }
 
 const accountIcon = "/assets/chinverse/icons/profile.svg";
-const legacyJobTitles = new Set(["مترجم زبان چینی", "راهنمای تور چین", "تولیدکننده محتوای چینی", "مشاور تحصیل در چین", "بازرگان و واردات از چین", "متخصص فرهنگ چین", "زیرنویس و دوبله چینی"]);
-const getAccountJobTitles = (profile?: UserProfile) => getProfileJobTitles(profile).filter((title) => isKnownProfileHeadline(title) || legacyJobTitles.has(title));
 export default function AccountPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -54,19 +41,12 @@ export default function AccountPage() {
     const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formMessage, setFormMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-    const [openPicker, setOpenPicker] = useState<"headline" | "gender" | "country" | "city" | null>(null);
 
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
-        headline: "",
-        job_titles: [],
-        gender: "",
-        city: "",
-        country: "",
         email: "",
         phone: "",
         avatar_url: "",
-        profile_truth_confirmed: false,
     });
 
     useEffect(() => {
@@ -75,15 +55,9 @@ export default function AccountPage() {
                 const userData = await userService.getMe();
                 setFormData({
                     display_name: userData.profile?.display_name || "",
-                    headline: getAccountJobTitles(userData.profile)[0] || "",
-                    job_titles: getAccountJobTitles(userData.profile),
-                    gender: userData.profile?.gender || "",
-                    city: userData.profile?.city || "",
-                    country: userData.profile?.country || "",
                     email: userData.email || "",
                     phone: userData.phone || "",
                     avatar_url: userData.profile?.avatar_url || "",
-                    profile_truth_confirmed: Boolean(userData.profile?.profile_truth_confirmed),
                 });
                 setAvatarMarkedForDeletion(false);
             } catch (error) {
@@ -102,7 +76,6 @@ export default function AccountPage() {
         setFormData((prev) => ({
             ...prev,
             [name]: value,
-            ...(name === "country" && (!requiresProvince(value) || !isKnownProvinceForCountry(value, prev.city)) ? { city: "" } : {}),
         }));
         setFieldErrors((current) => ({
             ...current,
@@ -110,38 +83,6 @@ export default function AccountPage() {
                 ? "نام را فقط با حروف فارسی بنویس؛ زبان صفحه‌کلید را روی فارسی بگذار."
                 : "",
         }));
-        setFormMessage(null);
-    };
-
-    const handleOptionSelect = (name: "headline" | "gender" | "country" | "city", value: string) => {
-        if (name === "headline") {
-            setFormData((prev) => {
-                const titles = prev.job_titles || [];
-                const nextTitles = titles.includes(value) ? titles.filter((title) => title !== value) : [...titles, value];
-                return { ...prev, headline: nextTitles[0] || "", job_titles: nextTitles };
-            });
-            setFieldErrors((current) => ({ ...current, headline: "" }));
-            setFormMessage(null);
-            return;
-        }
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-            ...(name === "country" && (!requiresProvince(value) || !isKnownProvinceForCountry(value, prev.city)) ? { city: "" } : {}),
-        }));
-        setFieldErrors((current) => ({
-            ...current,
-            [name]: "",
-            ...(name === "country" ? { city: "" } : {}),
-        }));
-        setFormMessage(null);
-        setOpenPicker(null);
-    };
-
-    const handleTruthConfirmChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { checked } = e.target;
-        setFormData((prev) => ({ ...prev, profile_truth_confirmed: checked }));
-        setFieldErrors((current) => ({ ...current, profile_truth_confirmed: "" }));
         setFormMessage(null);
     };
 
@@ -182,22 +123,10 @@ export default function AccountPage() {
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        const shouldValidateProvince = requiresProvince(formData.country);
+        if (saving) return;
         const nextErrors = {
-            country: validationMessage(validateTextLength(formData.country || "", "کشور/منطقه", { max: 80 })),
             display_name: validationMessage(validatePersianName(formData.display_name || "")),
-            headline: validationMessage(validateTextLength(formData.headline || "", "عنوان شغلی", { required: true })),
-            gender: validationMessage(validateTextLength(formData.gender || "", "جنسیت", { max: 32 })),
-            city: validationMessage(validateTextLength(formData.city || "", "استان", { max: 80 })),
-            profile_truth_confirmed: formData.profile_truth_confirmed
-                ? ""
-                : "برای ذخیره اطلاعات، تایید صحت پروفایل را تیک بزن.",
         };
-        if (shouldValidateProvince && !formData.city) {
-            nextErrors.city = "استان را انتخاب کن.";
-        } else if (shouldValidateProvince && !isKnownProvinceForCountry(formData.country, formData.city)) {
-            nextErrors.city = "استان انتخاب‌شده با کشور/منطقه سازگار نیست.";
-        }
         setFieldErrors(nextErrors);
         setFormMessage(null);
         if (Object.values(nextErrors).some(Boolean)) return;
@@ -213,12 +142,6 @@ export default function AccountPage() {
 
             await userService.updateProfile({
                 display_name: normalizePersianName(formData.display_name || ""),
-                headline: (formData.headline || "").trim(),
-                job_titles: formData.job_titles || [],
-                gender: formData.gender?.trim() || "",
-                city: shouldValidateProvince ? formData.city?.trim() : "",
-                country: formData.country?.trim(),
-                profile_truth_confirmed: Boolean(formData.profile_truth_confirmed),
             });
 
             setAvatarFile(null);
@@ -227,15 +150,9 @@ export default function AccountPage() {
             const userData = await userService.getMe();
             setFormData({
                 display_name: userData.profile?.display_name || "",
-                headline: getAccountJobTitles(userData.profile)[0] || "",
-                job_titles: getAccountJobTitles(userData.profile),
-                gender: userData.profile?.gender || "",
-                city: userData.profile?.city || "",
-                country: userData.profile?.country || "",
                 email: userData.email || "",
                 phone: userData.phone || "",
                 avatar_url: userData.profile?.avatar_url || "",
-                profile_truth_confirmed: Boolean(userData.profile?.profile_truth_confirmed),
             });
             setAvatarMarkedForDeletion(false);
 
@@ -272,20 +189,13 @@ export default function AccountPage() {
         );
     }
 
-    const provinceOptions = getProvinceOptions(formData.country);
-    const shouldShowProvince = provinceOptions.length > 0;
     const hasAvatarImage = Boolean(avatarPreview || avatarFile || formData.avatar_url);
 
     return (
         <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4" dir="rtl">
             <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5">
-                <header data-page-header className="relative flex h-11 items-center justify-center">
-                    <SafeBackButton fallback="/profile" className="absolute right-0 top-0" />
-                    <h1 className="text-[17px] font-black text-[#2f3238]">حساب کاربری</h1>
-                    <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center">
-                        <Image src={accountIcon} alt="" width={30} height={30} className="h-8 w-8 object-contain" />
-                    </div>
-                </header>
+                <AppHeader title="حساب کاربری" className="mb-0" backControl={<SafeBackButton fallback="/profile" />}
+                    icon={<Image src={accountIcon} alt="" width={28} height={28} />} />
 
                 <div className="flex flex-col items-center pb-4 pt-2">
                     <input
@@ -374,92 +284,8 @@ export default function AccountPage() {
                         error={fieldErrors.display_name}
                     />
 
-                    <FloatingField label="عنوان شغلی" error={fieldErrors.headline}>
-                        <OptionPicker
-                            id="account-headline"
-                            label="عنوان شغلی"
-                            value={formData.headline || ""}
-                            selectedValues={formData.job_titles || []}
-                            placeholder="انتخاب شغل"
-                            options={PROFILE_HEADLINE_OPTIONS}
-                            isOpen={openPicker === "headline"}
-                            onToggle={() => setOpenPicker((current) => current === "headline" ? null : "headline")}
-                            onSelect={(value) => handleOptionSelect("headline", value)}
-                        />
-                    </FloatingField>
-
-                    <FloatingField label="جنسیت" error={fieldErrors.gender}>
-                        <OptionPicker
-                            id="account-gender"
-                            label="جنسیت"
-                            value={formData.gender || ""}
-                            placeholder="انتخاب جنسیت"
-                            options={GENDER_OPTIONS}
-                            isOpen={openPicker === "gender"}
-                            clearLabel="بدون جنسیت"
-                            onToggle={() => setOpenPicker((current) => current === "gender" ? null : "gender")}
-                            onSelect={(value) => handleOptionSelect("gender", value)}
-                        />
-                    </FloatingField>
-
-                    <FloatingField label="کشور/منطقه" error={fieldErrors.country}>
-                        <OptionPicker
-                            id="account-country"
-                            label="کشور یا منطقه"
-                            value={formData.country || ""}
-                            placeholder="انتخاب کشور/منطقه"
-                            options={COUNTRY_REGION_OPTIONS}
-                            isOpen={openPicker === "country"}
-                            clearLabel="بدون کشور/منطقه"
-                            onToggle={() => setOpenPicker((current) => current === "country" ? null : "country")}
-                            onSelect={(value) => handleOptionSelect("country", value)}
-                        />
-                    </FloatingField>
-
-                    {shouldShowProvince && (
-                        <FloatingField label="استان" error={fieldErrors.city}>
-                            <OptionPicker
-                                id="account-city"
-                                label="استان"
-                                value={formData.city || ""}
-                                placeholder="انتخاب استان"
-                                options={provinceOptions}
-                                isOpen={openPicker === "city"}
-                                onToggle={() => setOpenPicker((current) => current === "city" ? null : "city")}
-                                onSelect={(value) => handleOptionSelect("city", value)}
-                            />
-                        </FloatingField>
-                    )}
-
-                    <AccountField
-                        label="لوکیشن"
-                        name="city"
-                        value={formData.city || ""}
-                        onChange={handleInputChange}
-                        placeholder="تهران / ایران"
-                        error={fieldErrors.city}
-                    />
-
                     <AccountField label="شماره موبایل" name="phone" value={formData.phone || ""} readOnly dir="ltr" />
                     <AccountField label="ایمیل" name="email" value={formData.email || ""} readOnly dir="ltr" />
-
-                    <div>
-                        <label className="flex items-start gap-3 rounded-[16px] border border-[#d6e1ee] bg-white/70 px-4 py-3 text-right">
-                            <input
-                                id="account-profile-truth"
-                                type="checkbox"
-                                checked={Boolean(formData.profile_truth_confirmed)}
-                                onChange={handleTruthConfirmChange}
-                                aria-invalid={Boolean(fieldErrors.profile_truth_confirmed)}
-                                aria-describedby={fieldErrors.profile_truth_confirmed ? "account-profile-truth-error" : undefined}
-                                className="mt-1 h-5 w-5 shrink-0 accent-[#155aa6]"
-                            />
-                            <span className="text-[13px] font-bold leading-7 text-[#2f3238]">
-                                تایید می‌کنم اطلاعات پروفایل، عناوین شغلی، مهارت‌ها و خدماتم درست و واقعی است و مسئولیت آن‌ها با خودم است.
-                            </span>
-                        </label>
-                        <FieldError id="account-profile-truth-error" message={fieldErrors.profile_truth_confirmed} />
-                    </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-1">
                         <button
@@ -470,7 +296,7 @@ export default function AccountPage() {
                             <LogOut className="h-4 w-4" />
                             خروج
                         </button>
-                        <PrimaryButton type="submit" className="w-full rounded-full" leadingIcon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
+                        <PrimaryButton type="submit" disabled={saving} className="w-full rounded-full" leadingIcon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
                             {saving ? "در حال ذخیره…" : "ذخیره"}
                         </PrimaryButton>
                     </div>
@@ -503,7 +329,6 @@ function AccountField({
     label: string;
     error?: string;
 } & InputHTMLAttributes<HTMLInputElement>) {
-    if (inputProps.name === "city") return null;
     const fieldId = inputProps.id || `account-${inputProps.name || "field"}`;
     const errorId = `${fieldId}-error`;
 
@@ -521,87 +346,6 @@ function AccountField({
                 )}
             />
         </FloatingField>
-    );
-}
-
-function OptionPicker({
-    id,
-    label,
-    value,
-    placeholder,
-    options,
-    isOpen,
-    clearLabel,
-    onToggle,
-    onSelect,
-    selectedValues,
-}: {
-    id: string;
-    label: string;
-    value: string;
-    placeholder: string;
-    options: string[];
-    isOpen: boolean;
-    clearLabel?: string;
-    onToggle: () => void;
-    onSelect: (value: string) => void;
-    selectedValues?: string[];
-}) {
-    const triggerRef = useRef<HTMLButtonElement>(null);
-    return (
-        <div className="relative" onKeyDown={(event) => {
-            if (isOpen && event.key === "Escape") {
-                event.preventDefault();
-                onToggle();
-                triggerRef.current?.focus();
-            }
-        }}>
-            <button
-                ref={triggerRef}
-                id={id}
-                type="button"
-                onClick={onToggle}
-                aria-label={`${label}: ${selectedValues?.length ? selectedValues.join("، ") : value || placeholder}`}
-                aria-expanded={isOpen}
-                aria-controls={isOpen ? `${id}-options` : undefined}
-                className={cn(
-                    "flex min-h-11 w-full items-center justify-between gap-3 rounded-[8px] bg-[#f7f8fb] px-4 py-2 text-center text-[15px] font-bold text-[#2f3238] outline-none transition-all duration-300",
-                    isOpen && "bg-white text-[#155aa6]",
-                )}
-            >
-                <ChevronDown className={cn("h-4 w-4 shrink-0 text-[#155aa6] transition-transform duration-300", isOpen && "rotate-180")} />
-                <span className={cn("min-w-0 flex-1", !value && "text-slate-400", selectedValues ? "break-words leading-7" : "truncate")}>{selectedValues?.length ? selectedValues.join("، ") : value || placeholder}</span>
-                <span className="h-4 w-4 shrink-0" aria-hidden />
-            </button>
-
-            {selectedValues && (
-                <div className="px-3 pb-3">
-                    <p className="my-2 text-center text-xs leading-6 text-slate-500">می‌تونی چند عنوان انتخاب کنی. اولین عنوان، عنوان اصلی پروفایلت است.</p>
-                    {selectedValues.length > 0 && <div className="flex flex-wrap justify-center gap-2" aria-label="عناوین شغلی انتخاب‌شده">
-                        {selectedValues.map((title) => <button key={title} type="button" aria-label={`حذف عنوان شغلی ${title}`} onClick={() => onSelect(title)} className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#eef6ff] px-3 py-1 text-xs leading-6 text-[#155aa6]">
-                            <span>{title}</span><X aria-hidden size={14} />
-                        </button>)}
-                    </div>}
-                </div>
-            )}
-
-            {isOpen && (
-                <div id={`${id}-options`} className="tab-content-motion border-t border-[#d5e1ef] bg-white/80 px-2 pb-2 pt-3">
-                    <SearchableOptionList
-                        label={label}
-                        options={options}
-                        selectedValues={selectedValues || (value ? [value] : [])}
-                        searchable={id === "account-headline" || id === "account-country" || id === "account-city"}
-                        clearLabel={clearLabel}
-                        onClear={() => onSelect("")}
-                        onSelect={(option) => {
-                            onSelect(option);
-                            if (!selectedValues) triggerRef.current?.focus();
-                        }}
-                    />
-                </div>
-            )}
-        </div>
     );
 }
 

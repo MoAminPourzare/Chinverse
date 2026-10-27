@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 
 test.setTimeout(90_000);
-const serviceHint = "اینجا دقیق‌تر بگو چه خدماتی ارائه می‌دی، این خدمات برای چه کسایی مناسبه، چه مزیت‌هایی داره و چرا مشتری‌ها باید خدمات تو رو انتخاب کنن.";
 const word = {
     id: 1, chinese: "学习", pinyin: "xuéxí", chinese_meaning: "学习知识", persian_meaning: "یادگیری",
     definitions: [
@@ -38,41 +37,6 @@ async function ready(page: Page, url: string) {
     await expect(page.locator(".route-panel:visible").first()).toHaveCSS("opacity", "1");
     await page.evaluate(() => document.fonts.ready);
 }
-
-test("profile guidance is centered and description fields match the approved biography font", async ({ page }) => {
-    await ready(page, "/profile");
-    const content = page.locator("[data-centered-copy]");
-    for (const tab of ["درباره من", "مجموعه‌های منتخب", "رزومه", "گالری", "خدمات"]) {
-        await page.getByRole("button", { name: tab, exact: true }).click();
-        await expect(content.locator("h3").first()).toBeVisible();
-        await expect(content.locator("p").first()).toHaveCSS("text-align", "center");
-    }
-    await page.getByRole("button", { name: "افزودن خدمت", exact: true }).click();
-    const description = page.getByPlaceholder(serviceHint, { exact: true });
-    await expect(description).toHaveCSS("font-size", "13px");
-    await expect(description).toHaveCSS("line-height", "24px");
-    expect(await description.evaluate((node) => getComputedStyle(node, "::placeholder").fontSize)).toBe("13px");
-    await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "گالری", exact: true }).click();
-    await page.getByRole("button", { name: "افزودن عکس", exact: true }).click();
-    const caption = page.getByPlaceholder("هر عکسی یه داستانی داره؛ داستانتو اینجا بنویس!", { exact: true });
-    await expect(caption).toHaveCSS("font-size", "13px");
-    await expect(caption).toHaveCSS("line-height", "24px");
-});
-
-test("message and notification guidance is centered and network copy uses the requested names", async ({ page }) => {
-    await ready(page, "/chat");
-    await expect(page.getByText(/در این بخش می‌تونی با افراد شبکه‌ات/)).toHaveCSS("text-align", "center");
-    await ready(page, "/notifications");
-    await expect(page.getByRole("heading", { name: "هنوز هیچ اعلانی نداری!", exact: true })).toBeVisible();
-    await expect(page.getByText(/اینجا محل نمایش همه/)).toHaveCSS("text-align", "center");
-    await ready(page, "/profile/network");
-    await expect(page.getByRole("button", { name: "دنبال‌کنندگان (0)", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "هنوز کسی دنبالت نمی‌کنه!", exact: true })).toBeVisible();
-    await expect(page.getByText("وقتی کسی پروفایلت رو دنبال کنه، می‌تونی اینجا ببینیش", { exact: true })).toHaveCSS("text-align", "center");
-    await page.getByRole("button", { name: "دنبال می‌کنم (0)", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "هنوز کسی رو دنبال نمی‌کنی!", exact: true })).toBeVisible();
-});
 
 test("daily Chinese quote is centered and both highlight menus call the amber swatch yellow", async ({ page }) => {
     await ready(page, "/settings/daily");

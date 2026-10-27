@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { ChevronLeft } from "lucide-react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { IncompleteFeature, releaseConfig } from "@/config/release";
 import { authService } from "@/services/auth.service";
 
@@ -58,9 +58,14 @@ const settingsItems: SettingsItem[] = [
         beta: true,
     },
     {
-        title: "درباره چین ورس",
+        title: "درباره چین‌ورس",
         href: "/settings/about",
         icon: "/assets/chinverse/icons/About chinverse.svg",
+    },
+    {
+        title: "پشتیبانی",
+        href: "/support",
+        icon: "/assets/chinverse/icons/Support & Help.svg",
     },
     {
         title: "معرفی چین ورس به دوستان",
@@ -142,11 +147,8 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="min-h-full bg-[#f7f8fb] px-6 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
-            <header data-page-header className="relative flex h-11 items-center justify-center">
-                <BackButton href="/profile" className="absolute right-0 top-0" />
-                <h1 className="text-[18px] font-black text-[#2f3238] dark:text-[#f4f7fb]">تنظیمات</h1>
-            </header>
+        <div className="min-h-full bg-[#f7f8fb] px-4 pb-8 pt-4 dark:bg-[#10151c]" dir="rtl">
+            <AppHeader title="تنظیمات" backHref="/profile" icon={<Image src="/assets/chinverse/icons/Setting.svg" alt="" width={28} height={28} />} />
 
             <main className="mx-auto mt-6 flex w-full max-w-[430px] flex-col">
                 <div className="space-y-1">

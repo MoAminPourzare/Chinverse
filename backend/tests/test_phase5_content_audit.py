@@ -172,9 +172,9 @@ def test_repository_media_registry_covers_every_audited_asset() -> None:
     assets = discover_media_assets(REPO_ROOT)
     result = run_audit(REPO_ROOT, scan_source=False)
     # Includes the latest 33 Explore images and 69 SVG variants for the dark theme.
-    assert len(assets) == 504
-    assert result.media["asset_count"] == 504
-    assert result.media["image_count"] == 488
+    assert len(assets) == 507
+    assert result.media["asset_count"] == 507
+    assert result.media["image_count"] == 491
     assert result.media["video_count"] == 16
     assert result.media["registered_file_count"] == len(assets)
     assert not any(finding.gate == "structural" for finding in result.findings)
