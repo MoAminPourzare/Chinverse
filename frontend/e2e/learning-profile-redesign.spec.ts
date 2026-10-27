@@ -201,6 +201,7 @@ test("secondary headers share a centered rounded card across settings and saved 
         await page.goto(route);
         const header = page.locator('[data-header-variant="card"]');
         await expect(header).toBeVisible();
+        await expect.poll(() => header.locator("[data-back-button]").evaluate(element => element.getBoundingClientRect().width)).toBeCloseTo(46, 1);
         const metrics = await header.evaluate(element => {
             const card = element.getBoundingClientRect(), title = element.querySelector("[data-header-title]")!.getBoundingClientRect();
             const back = element.querySelector("[data-back-button]")!.getBoundingClientRect(), frame = element.closest(".app-scroll")!.getBoundingClientRect();
@@ -210,8 +211,8 @@ test("secondary headers share a centered rounded card across settings and saved 
         expect(metrics.radius).toBe("22px");
         expect(metrics.centered).toBeLessThanOrEqual(1);
         expect(metrics.overflow).toBeLessThanOrEqual(1);
-        expect(metrics.backWidth).toBe(46);
-        expect(metrics.backHeight).toBe(46);
+        expect(metrics.backWidth).toBeCloseTo(46, 1);
+        expect(metrics.backHeight).toBeCloseTo(46, 1);
         expect(metrics.backRight).toBeCloseTo(29, 1);
         expect(metrics.backTop).toBeCloseTo(29, 1);
         if (route === "/settings/appearance" || route === "/account" || route === "/profile/collections") await page.screenshot({ path: path.resolve("../artifacts", `refined-header-${route.replaceAll("/", "-")}-${info.project.name}.png`) });

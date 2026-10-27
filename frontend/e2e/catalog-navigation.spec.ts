@@ -28,12 +28,15 @@ const collections = [
 ];
 
 async function expectStandardBack(page: import("@playwright/test").Page) {
+    // WebKit can expose the route's initial 0.985 scale before its first paint.
+    // Measure the final layout, after the navigation transition settles.
+    await expect.poll(() => page.locator("[data-back-button]").first().evaluate(element => element.getBoundingClientRect().width)).toBeCloseTo(46, 1);
     const metrics = await page.locator("[data-back-button]").first().evaluate(element => {
         const button = element.getBoundingClientRect(), frame = element.closest(".app-scroll")!.getBoundingClientRect();
         return { width: button.width, height: button.height, right: frame.right - button.right, top: button.top - frame.top };
     });
-    expect(metrics.width).toBe(46);
-    expect(metrics.height).toBe(46);
+    expect(metrics.width).toBeCloseTo(46, 1);
+    expect(metrics.height).toBeCloseTo(46, 1);
     expect(metrics.right).toBeCloseTo(29, 1);
     expect(metrics.top).toBeCloseTo(29, 1);
 }

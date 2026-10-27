@@ -89,14 +89,15 @@ for (const width of [320, 390]) {
             expect(alignment.centerDelta, url).toBeLessThanOrEqual(1.5);
             expect(alignment.textRight, url).toBeLessThanOrEqual(alignment.backLeft - 1);
             {
+                await expect.poll(() => header.locator("[data-back-button]").evaluate(element => element.getBoundingClientRect().width)).toBeCloseTo(46, 1);
                 const titleBox = (await title.boundingBox())!;
                 const backBox = (await header.locator("[data-back-button]").boundingBox())!;
                 // Long titles may grow the header; navigation keeps its fixed
                 // top inset instead of moving down to the text block's center.
                 if (titleBox.height <= 46) expect(Math.abs(titleBox.y + titleBox.height / 2 - backBox.y - backBox.height / 2), url).toBeLessThanOrEqual(1);
                 const frame = (await page.locator(".app-scroll").boundingBox())!;
-                expect(backBox.width, url).toBe(46);
-                expect(backBox.height, url).toBe(46);
+                expect(backBox.width, url).toBeCloseTo(46, 1);
+                expect(backBox.height, url).toBeCloseTo(46, 1);
                 expect(backBox.y - frame.y, url).toBeCloseTo(29, 1);
                 expect(frame.x + frame.width - backBox.x - backBox.width, url).toBeCloseTo(29, 1);
             }
