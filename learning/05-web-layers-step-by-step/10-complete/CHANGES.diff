@@ -1,0 +1,333 @@
+--- previous/direct-dom.html
++++ current/direct-dom.html
+@@ -0,0 +1,27 @@
++<!doctype html>
++<html lang="fa" dir="rtl">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <title>دکمه با DOM مستقیم | آزمایشگاه وب</title>
++    <link rel="stylesheet" href="/src/styles.css" />
++  </head>
++  <body>
++    <main class="page-shell">
++      <section class="store-panel direct-panel">
++        <span class="eyebrow">مقایسه با نسخهٔ React</span>
++        <h1>این بار بدون React</h1>
++        <p>HTML از ابتدا دکمه را دارد. JavaScript مستقیماً متن، کلاس و ویژگی DOM آن را تغییر می‌دهد.</p>
++        <button id="direct-button" type="button" class="choose-button" aria-pressed="false">انتخاب کتاب</button>
++        <h3>DOM واقعی دکمه بعد از هر کلیک</h3>
++        <pre id="direct-dom-output" class="code-view" dir="ltr"></pre>
++        <h3>دستور اصلی تغییر</h3>
++        <pre class="code-view" dir="ltr">button.textContent = selected ? "انتخاب شده ✓" : "انتخاب کتاب";
++button.classList.toggle("is-selected", selected);
++button.setAttribute("aria-pressed", String(selected));</pre>
++        <a class="text-link" href="/">برگشت به نسخهٔ React ←</a>
++      </section>
++    </main>
++    <script type="module" src="/direct-dom.js"></script>
++  </body>
++</html>
+--- previous/direct-dom.js
++++ current/direct-dom.js
+@@ -0,0 +1,15 @@
++// این صفحه React ندارد. تمام تغییرات دکمه با DOM API انجام می‌شود.
++const button = document.getElementById("direct-button");
++const output = document.getElementById("direct-dom-output");
++if (!button || !output) throw new Error("دکمه یا محل نمایش خروجی پیدا نشد.");
++
++let selected = false;
++output.textContent = button.outerHTML;
++
++button.addEventListener("click", () => {
++    selected = !selected;
++    button.textContent = selected ? "انتخاب شده ✓" : "انتخاب کتاب";
++    button.classList.toggle("is-selected", selected);
++    button.setAttribute("aria-pressed", String(selected));
++    output.textContent = button.outerHTML;
++});
+--- previous/index.html
++++ current/index.html
+@@ -3,9 +3,10 @@
+   <head>
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+-    <title>کتابخانهٔ کوچک ما</title>
++    <title>از کد تا صفحه | آزمایشگاه وب</title>
+   </head>
+   <body>
++    <!-- HTML فقط محل شروع را می‌سازد؛ React محتوای این بخش را مدیریت می‌کند. -->
+     <div id="root"></div>
+     <script type="module" src="/src/main.tsx"></script>
+   </body>
+--- previous/src/App.tsx
++++ current/src/App.tsx
+@@ -1,10 +1,14 @@
+ import { useState } from "react";
+ import { books } from "./books";
+ import BookCard from "./BookCard";
++import Inspector from "./Inspector";
+ 
+ export default function App() {
++    // React این دو وضعیت را بین renderها نگه می‌دارد.
+     const [query, setQuery] = useState("");
+     const [selectedId, setSelectedId] = useState<string | null>(null);
++
++    // این قسمت منطق JavaScript است، حتی اگر داخل فایل .tsx نوشته شده باشد.
+     const normalizedQuery = query.trim().toLowerCase();
+     const visibleBooks = books.filter((book) =>
+         `${book.title} ${book.topic}`.toLowerCase().includes(normalizedQuery),
+@@ -12,39 +16,78 @@
+     const selectedBook = books.find((book) => book.id === selectedId);
+ 
+     function handleSelect(bookId: string) {
++        // تغییر state را درخواست می‌کنیم؛ تغییر متن و کلاس DOM کار React DOM است.
+         setSelectedId((current) => current === bookId ? null : bookId);
+     }
+ 
+     return (
+-        <main className="page-shell">
+-            <h1>کتابخانهٔ کوچک ما</h1>
+-            <span className="count-badge">{visibleBooks.length} کتاب</span>
+-            <label className="search-label" htmlFor="book-search">جست‌وجوی عنوان یا فناوری</label>
+-            <input
+-                id="book-search"
+-                className="search-input"
+-                placeholder="مثلاً React یا تایپ‌اسکریپت"
+-                value={query}
+-                onChange={(event) => setQuery(event.currentTarget.value)}
+-            />
+-            <div id="selection-summary" className="selection-summary" aria-live="polite">
+-                انتخاب فعلی: {selectedBook?.title ?? "هنوز کتابی انتخاب نکرده‌ای"}
+-            </div>
+-            <div id="book-list" className="book-list">
+-                {visibleBooks.map((book) => (
+-                    <BookCard
+-                        key={book.id}
+-                        book={book}
+-                        selected={book.id === selectedId}
+-                        onSelect={handleSelect}
++        <div className="page-shell">
++            <header className="hero">
++                <span className="eyebrow">آزمایشگاه مستقل · پایان ساخت مرحله‌ای</span>
++                <h1>از کد تا صفحه</h1>
++                <p>یک فروشگاه کوچک برای دیدن نقش هر فناوری، از تعریف داده تا تغییر دکمه در مرورگر.</p>
++                <div className="layer-strip" aria-label="لایه‌های مثال">
++                    <span>TypeScript · قرارداد</span><span>JavaScript · اجرا</span>
++                    <span>JSX · توصیف</span><span>React · وضعیت</span><span>DOM · صفحهٔ فعلی</span>
++                </div>
++            </header>
++
++            <main className="lesson-grid">
++                <section className="store-panel" aria-labelledby="store-heading">
++                    <div className="panel-heading">
++                        <div><span className="eyebrow">۱ / با مثال کار کن</span><h2 id="store-heading">کتابخانهٔ کوچک ما</h2></div>
++                        <span className="count-badge">{visibleBooks.length} کتاب</span>
++                    </div>
++
++                    <label className="search-label" htmlFor="book-search">جست‌وجوی عنوان یا فناوری</label>
++                    <input
++                        id="book-search"
++                        className="search-input"
++                        placeholder="مثلاً React یا تایپ‌اسکریپت"
++                        value={query}
++                        onChange={(event) => setQuery(event.currentTarget.value)}
+                     />
+-                ))}
+-                {visibleBooks.length === 0 && <p className="empty-state">کتابی پیدا نشد؛ عبارت جست‌وجو را تغییر بده.</p>}
+-            </div>
+-            <section className="state-panel" aria-label="وضعیت برنامه">
+-                <h2>state فعلی</h2>
+-                <pre dir="ltr">{JSON.stringify({ query, selectedId }, null, 2)}</pre>
++
++                    <div id="selection-summary" className="selection-summary" aria-live="polite">
++                        <span>انتخاب فعلی</span>
++                        <strong>{selectedBook?.title ?? "هنوز کتابی انتخاب نکرده‌ای"}</strong>
++                    </div>
++
++                    <div id="book-list" className="book-list">
++                        {visibleBooks.map((book) => (
++                            <BookCard
++                                key={book.id}
++                                book={book}
++                                selected={book.id === selectedId}
++                                onSelect={handleSelect}
++                            />
++                        ))}
++                        {visibleBooks.length === 0 && <p className="empty-state">کتابی پیدا نشد؛ عبارت جست‌وجو را تغییر بده.</p>}
++                    </div>
++
++                    <div className="state-panel">
++                        <h3>state فعلی در React</h3>
++                        <pre dir="ltr">{JSON.stringify({ query, selectedId }, null, 2)}</pre>
++                        <p>تایپ کن یا یک کتاب را انتخاب کن؛ این مقدارها تغییر می‌کنند و نمایش دوباره محاسبه می‌شود.</p>
++                    </div>
++                    <a className="text-link" href="/direct-dom.html">همین ایده را بدون React، با DOM مستقیم ببین ←</a>
++                </section>
++
++                <Inspector />
++            </main>
++
++            <section className="technology-map">
++                <span className="eyebrow">۳ / هر ابزار چه مسئولیتی دارد؟</span>
++                <div className="role-grid">
++                    <div><h3>HTML + CSS</h3><p>HTML نقطهٔ شروع سند است. CSS ظاهر، فاصله و رنگ کارت‌ها را مشخص می‌کند.</p></div>
++                    <div><h3>TypeScript</h3><p>ورودی درست کتاب و کامپوننت را هنگام توسعه بررسی می‌کند. نوع Book از کد اجرایی حذف می‌شود؛ سورس برای آموزش قابل مشاهده است.</p></div>
++                    <div><h3>JavaScript + JSX</h3><p>فیلتر و handlerها منطق اجرایی‌اند. JSX ساختار نمایش را توصیف می‌کند و قبل از اجرا به JavaScript تبدیل می‌شود.</p></div>
++                    <div><h3>React + React DOM</h3><p>React وضعیت و محاسبهٔ رابط را مدیریت می‌کند؛ React DOM تغییرات لازم را در درخت صفحه اعمال می‌کند.</p></div>
++                    <div><h3>Vite</h3><p>سرور توسعه و تبدیل فایل‌های این مثال است. تبدیل سریع فایل با بررسی نوع TypeScript دو کار جدا هستند.</p></div>
++                    <div><h3>Next.js کجاست؟</h3><p>در این مثال استفاده نشده. برای ساخت صفحه‌های مسیر‌دار و اجرای بخش‌های سرور در پروژهٔ اصلی به آن می‌رسیم.</p></div>
++                </div>
+             </section>
+-        </main>
++            <footer>داده‌ها آموزشی‌اند · انتخاب با تازه‌سازی صفحه پاک می‌شود · هیچ اتصال دیتابیس یا ثبت سفارش نداریم</footer>
++        </div>
+     );
+ }
+--- previous/src/BookCard.tsx
++++ current/src/BookCard.tsx
+@@ -13,7 +13,7 @@
+     return (
+         <article className={selected ? "book-card is-selected" : "book-card"}>
+             <span className="book-topic">{book.topic}</span>
+-            <h2>{book.title}</h2>
++            <h3>{book.title}</h3>
+             <p className="book-price">{formatPrice(book.price)} <small>تومان</small></p>
+             <button
+                 type="button"
+--- previous/src/Inspector.tsx
++++ current/src/Inspector.tsx
+@@ -0,0 +1,36 @@
++// ابزار کمکی آموزش؛ منطق فروشگاه در App و BookCard است.
++import { useState } from "react";
++import source from "./BookCard.tsx?raw";
++import compiled from "../generated/BookCard.js?raw";
++
++type View = "source" | "compiled" | "dom";
++
++export default function Inspector() {
++    const [view, setView] = useState<View>("source");
++    const [domSnapshot, setDomSnapshot] = useState("برای خواندن DOM فعلی، دکمهٔ «خواندن DOM» را بزن.");
++
++    function readDom() {
++        const list = document.getElementById("book-list");
++        const html = list?.outerHTML ?? "فهرست در DOM پیدا نشد.";
++        setDomSnapshot(html.replace(/></g, ">\n<"));
++        setView("dom");
++    }
++
++    return (
++        <aside className="inspector" aria-label="مقایسهٔ کد و DOM">
++            <span className="eyebrow">۲ / پشت صحنه را ببین</span>
++            <h2>یک کامپوننت، سه نما</h2>
++            <div className="tabs" role="group" aria-label="انتخاب نمای کد">
++                <button type="button" aria-pressed={view === "source"} onClick={() => setView("source")}>سورس TSX</button>
++                <button type="button" aria-pressed={view === "compiled"} onClick={() => setView("compiled")}>JavaScript تبدیل‌شده</button>
++                <button type="button" aria-pressed={view === "dom"} onClick={readDom}>خواندن DOM</button>
++            </div>
++            <p className="inspector-note">
++                {view === "source" && "تعریف نوع‌ها، منطق JavaScript و JSX را کنار هم ببین. این همان فایل BookCard.tsx است."}
++                {view === "compiled" && "این خروجی آموزشی TypeScript از همین فایل است: interface حذف شده و JSX به فراخوانی JavaScript تبدیل شده. خروجی dev در Vite جزئیات ابزاری متفاوتی دارد."}
++                {view === "dom" && "این متن از DOM واقعیِ فهرست در لحظهٔ زدن دکمه خوانده شده است. بعد از تغییر انتخاب، دوباره «خواندن DOM» را بزن؛ دنبال is-selected و aria-pressed بگرد."}
++            </p>
++            <pre className="code-view" dir="ltr" tabIndex={0}><code>{view === "source" ? source : view === "compiled" ? compiled : domSnapshot}</code></pre>
++        </aside>
++    );
++}
+--- previous/src/main.tsx
++++ current/src/main.tsx
+@@ -2,7 +2,9 @@
+ import App from "./App";
+ import "./styles.css";
+ 
++// مرورگر HTML اولیه را خوانده و این گره را در DOM ساخته است.
+ const container = document.getElementById("root");
+ if (!container) throw new Error("محل شروع رابط پیدا نشد.");
+ 
++// React DOM مدیریت محتوای این گره را به عهده می‌گیرد.
+ createRoot(container).render(<App />);
+--- previous/src/raw-imports.d.ts
++++ current/src/raw-imports.d.ts
+@@ -0,0 +1,4 @@
++declare module "*?raw" {
++    const source: string;
++    export default source;
++}
+--- previous/src/styles.css
++++ current/src/styles.css
+@@ -1,22 +1,58 @@
+ * { box-sizing: border-box; }
+-:root { font-family: Tahoma, Arial, sans-serif; color: #152337; background: #f4f6f9; }
++:root { font-family: Tahoma, Arial, sans-serif; color: #152337; background: #f4f6f9; font-synthesis: none; }
+ body { margin: 0; }
+-.page-shell { width: min(720px, calc(100% - 32px)); margin: 40px auto; }
+-h1 { font-size: clamp(24px, 5vw, 32px); }
+-p { line-height: 1.9; }
+-.book-card { background: white; border: 1px solid #dce4ed; border-radius: 12px; padding: 20px; }
+-.book-topic { color: #577089; }
+-.book-price { color: #476078; }
+ button, input { font: inherit; }
+-.choose-button { background: #173d78; color: white; border: 0; border-radius: 8px; padding: 12px 16px; cursor: pointer; }
+-button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #d79730; outline-offset: 4px; }
+-.book-list { display: grid; gap: 14px; }
+-.count-badge { display: inline-block; margin-bottom: 16px; color: #17655b; }
++button, a { -webkit-tap-highlight-color: transparent; }
++button { cursor: pointer; }
++button:focus-visible, a:focus-visible, input:focus-visible, pre:focus-visible { outline: 3px solid #e9b867; outline-offset: 4px; }
++.page-shell { width: min(1280px, calc(100% - 64px)); margin: 0 auto; }
++.hero { padding: 48px 0 30px; }
++.eyebrow { font-size: 11px; color: #577089; font-weight: bold; letter-spacing: .2px; }
++h1 { font-size: clamp(30px, 4vw, 46px); margin: 13px 0; letter-spacing: -1.2px; }
++h2 { font-size: 21px; margin: 10px 0 20px; }
++h3 { font-size: 15px; line-height: 1.8; }
++.hero > p { color: #577089; font-size: 14px; line-height: 2; margin: 0; }
++.layer-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 25px; }
++.layer-strip span { background: #e7edf4; border: 1px solid #d8e2ec; padding: 8px 12px; border-radius: 7px; font-size: 11px; }
++.lesson-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 24px; align-items: start; }
++.lesson-grid > * { min-width: 0; }
++.state-panel pre { max-width: 100%; overflow-x: auto; }
++.store-panel, .inspector, .technology-map { padding: 26px; border: 1px solid #dce4ed; background: #fff; border-radius: 16px; }
++.panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
++.count-badge { font-size: 12px; padding: 8px 12px; border-radius: 20px; color: #17655b; background: #e8f5ef; white-space: nowrap; }
++.search-label { display: block; font-size: 12px; margin-bottom: 9px; }
++.search-input { width: 100%; min-height: 46px; border: 1px solid #cdd9e5; border-radius: 9px; padding: 10px 12px; background: #fbfcfe; font-size: 12px; color: #152337; }
++.selection-summary { display: flex; flex-direction: column; gap: 8px; background: #eef4fd; border-right: 3px solid #315fb3; padding: 15px; margin: 20px 0; border-radius: 7px; }
++.selection-summary span { color: #60728b; font-size: 10px; }
++.selection-summary strong { font-size: 13px; }
++.book-list { display: grid; gap: 12px; }
++.book-card { position: relative; border: 1px solid #dce4ed; border-radius: 11px; padding: 17px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 14px; transition: border-color .15s, background .15s; }
+ .book-card.is-selected { background: #f0f8f3; border-color: #489971; }
++.book-topic { font-family: Consolas, monospace; font-size: 10px; color: #64758c; grid-column: 1; direction: ltr; text-align: right; }
++.book-card h3 { margin: 0; grid-column: 1; }
++.book-price { margin: 5px 0 0; color: #476078; font-size: 13px; grid-column: 1; }
++.book-price small { font-size: 10px; }
++.choose-button { grid-column: 2; grid-row: 1 / span 3; background: #173d78; color: white; border: 0; border-radius: 8px; padding: 11px 14px; font-size: 11px; min-width: 105px; }
+ .is-selected .choose-button { background: #247451; }
+-.selection-summary { background: #eef4fd; border-right: 3px solid #315fb3; padding: 15px; margin: 20px 0; }
+-.state-panel { background: #e7edf4; border-radius: 8px; padding: 16px; margin-top: 20px; }
+-.state-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+-.search-label { display: block; margin: 20px 0 8px; }
+-.search-input { width: 100%; padding: 12px; border: 1px solid #cdd9e5; border-radius: 8px; margin-bottom: 16px; }
+-.empty-state { padding: 20px; text-align: center; }
++.state-panel { background: #f6f8fb; padding: 14px 17px; margin-top: 20px; border-radius: 9px; }
++.state-panel h3 { font-size: 12px; margin: 0; }
++.state-panel pre { font: 12px/1.8 Consolas, monospace; margin: 12px 0; color: #254d83; }
++.state-panel p, .inspector-note { color: #61728a; font-size: 11px; line-height: 2; }
++.text-link { display: inline-block; font-size: 11px; color: #315ca0; margin-top: 20px; line-height: 1.9; }
++.tabs { display: flex; flex-wrap: wrap; gap: 7px; }
++.tabs button { border: 1px solid #d7e1ed; background: #fff; color: #4b627e; border-radius: 7px; font-size: 10px; padding: 10px; }
++.tabs button[aria-pressed="true"] { color: #fff; background: #173d78; border-color: #173d78; }
++.inspector-note { min-height: 66px; margin: 14px 0; }
++.code-view { max-height: 620px; min-height: 450px; overflow: auto; margin: 0; padding: 18px; background: #132339; color: #d6e7fc; border-radius: 10px; text-align: left; font: 11px/1.9 Consolas, "Courier New", monospace; tab-size: 4; white-space: pre; }
++.technology-map { margin-top: 24px; }
++.role-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 25px; margin-top: 15px; }
++.role-grid h3 { margin: 0 0 5px; direction: ltr; text-align: right; font-family: Arial, sans-serif; font-size: 14px; }
++.role-grid p { color: #61728a; font-size: 11px; line-height: 2; margin: 0; }
++.empty-state { font-size: 13px; line-height: 2; padding: 25px; text-align: center; color: #61728a; }
++footer { font-size: 10px; line-height: 2; color: #6b7b91; padding: 23px 0 35px; }
++.direct-panel { max-width: 760px; margin: 45px auto; }
++.direct-panel .choose-button { margin: 20px 0; }
++.direct-panel .choose-button.is-selected { background: #247451; }
++.direct-panel pre { min-height: 0; }
++@media (max-width: 900px) { .lesson-grid { grid-template-columns: 1fr; } .role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .code-view { min-height: 260px; max-height: 430px; } }
++@media (max-width: 520px) { .page-shell { width: calc(100% - 28px); } .hero { padding-top: 28px; } .store-panel, .inspector, .technology-map { padding: 18px; } .role-grid { grid-template-columns: 1fr; } .book-card { padding: 13px; gap: 4px 8px; } .choose-button { min-width: 92px; padding: 10px; } .layer-strip span { font-size: 10px; } }

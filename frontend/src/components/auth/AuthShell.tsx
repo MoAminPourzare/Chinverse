@@ -22,7 +22,7 @@ export default function AuthShell({
 }: AuthShellProps) {
     return (
         <div className="min-h-full bg-[linear-gradient(180deg,#f8fbff_0%,#f4f7fb_100%)]" dir="rtl">
-            <main className="mx-auto flex min-h-full w-full max-w-[430px] flex-col gap-5 px-4 py-5">
+            <main className="mx-auto flex min-h-full w-full max-w-[430px] flex-col gap-5 px-4 py-4">
                 <AppHeader
                     title={title}
                     backHref={backHref}

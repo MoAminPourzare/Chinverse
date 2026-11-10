@@ -387,6 +387,25 @@ async def get_showcase_users(
     return showcase_users
 
 
+@router.get("/{user_id}/identity", response_model=schemas.PublicUserIdentity)
+async def get_public_user_identity(
+    user_id: int,
+    db: AsyncSession = Depends(deps.get_db),
+) -> Any:
+    result = await db.execute(
+        select(User).options(selectinload(User.profile))
+        .where(User.id == user_id, *showcase_user_filters())
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise not_found("User")
+    return {
+        "id": user.id,
+        "display_name": user.profile.display_name if user.profile else None,
+        "avatar_url": user.profile.avatar_url if user.profile else None,
+    }
+
+
 @router.get("/{user_id}/public", response_model=PublicUser)
 async def get_public_user_profile(
     user_id: int,

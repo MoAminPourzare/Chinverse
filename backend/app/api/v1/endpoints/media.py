@@ -24,6 +24,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.services.learning_path import require_learning_path_access
 from app.api import deps
 from app.api.v1.endpoints.course_admin import _load_course
 from app.api.errors import bad_request, forbidden, not_found, unauthorized
@@ -508,9 +509,14 @@ async def _published_subtitles(db: AsyncSession, lesson_id: int) -> list[Subtitl
 )
 async def lesson_playback(
     lesson_id: int,
+    learning_path: bool = False,
     db: AsyncSession = Depends(deps.get_db),
     current_user=Depends(deps.get_optional_session_user),
 ) -> Any:
+    if learning_path:
+        if not current_user:
+            raise unauthorized("Login is required for the learning path")
+        await require_learning_path_access(db, user_id=int(current_user.id), lesson_id=lesson_id)
     pair = await _load_published_lesson_media(db, lesson_id=lesson_id)
     user_id = int(current_user.id) if current_user else None
     if not pair:

@@ -158,7 +158,7 @@ export default function AccountSecurityPage() {
     };
 
     return (
-        <main className="min-h-full bg-[#f7f8fb] px-5 pb-10 pt-4" dir="rtl">
+        <main className="min-h-full bg-[#f7f8fb] px-4 pb-10 pt-4" dir="rtl">
             <AppHeader title="امنیت حساب" backHref="/settings" icon={<KeyRound size={22} />} />
             <div className="mx-auto mt-7 w-full max-w-[430px] space-y-9">
                 {message && <p role="status" aria-live="polite" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p>}

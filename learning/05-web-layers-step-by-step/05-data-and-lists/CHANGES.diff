@@ -1,0 +1,53 @@
+--- previous/src/App.jsx
++++ current/src/App.jsx
+@@ -1,14 +1,21 @@
++import { books } from "./books.js";
++import { formatPrice } from "./format-price.js";
++
+ export default function App() {
+     return (
+         <main className="page-shell">
+             <h1>کتابخانهٔ کوچک ما</h1>
+-            <p>همان یک کارت، این بار با React و JSX.</p>
+-            <article className="book-card">
+-                <span className="book-topic">JavaScript</span>
+-                <h2>جاوااسکریپت کاربردی</h2>
+-                <p className="book-price">۲۰۰٬۰۰۰ تومان</p>
+-                <button className="choose-button" type="button">انتخاب کتاب</button>
+-            </article>
++            <span className="count-badge">{books.length} کتاب</span>
++            <div id="book-list" className="book-list">
++                {books.map((book) => (
++                    <article key={book.id} className="book-card">
++                        <span className="book-topic">{book.topic}</span>
++                        <h2>{book.title}</h2>
++                        <p className="book-price">{formatPrice(book.price)} تومان</p>
++                        <button className="choose-button" type="button">انتخاب کتاب</button>
++                    </article>
++                ))}
++            </div>
+         </main>
+     );
+ }
+--- previous/src/books.js
++++ current/src/books.js
+@@ -0,0 +1,5 @@
++export const books = [
++    { id: "js", title: "جاوااسکریپت کاربردی", topic: "JavaScript", price: 200000 },
++    { id: "react", title: "ساخت رابط با ری‌اکت", topic: "React", price: 300000 },
++    { id: "ts", title: "تایپ‌اسکریپت در عمل", topic: "TypeScript", price: 250000 },
++];
+--- previous/src/format-price.js
++++ current/src/format-price.js
+@@ -0,0 +1,3 @@
++export function formatPrice(amount) {
++    return new Intl.NumberFormat("fa-IR").format(amount);
++}
+--- previous/src/styles.css
++++ current/src/styles.css
+@@ -10,3 +10,5 @@
+ button, input { font: inherit; }
+ .choose-button { background: #173d78; color: white; border: 0; border-radius: 8px; padding: 12px 16px; cursor: pointer; }
+ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #d79730; outline-offset: 4px; }
++.book-list { display: grid; gap: 14px; }
++.count-badge { display: inline-block; margin-bottom: 16px; color: #17655b; }

@@ -1,7 +1,5 @@
 import asyncio
-from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,14 +21,6 @@ def reset_chat_connections():
     chat.chat_manager.active_connections.clear()
 
 
-def ws_principal(user_id: int = 41):
-    return (
-        SimpleNamespace(id=user_id),
-        f"session-{user_id}",
-        datetime.now(UTC) + timedelta(minutes=5),
-    )
-
-
 def test_empty_chat_cursor_zero_is_a_valid_incremental_history_query():
     route = next(route for route in chat.router.routes if route.name == "get_message_history")
     field = next(field for field in route.dependant.query_params if field.name == "after_id")
@@ -49,138 +39,13 @@ def test_negative_chat_cursor_is_rejected_by_query_validation():
     assert errors
 
 
-def test_websocket_rejects_disallowed_browser_origin_before_authentication(monkeypatch):
-    authenticate = AsyncMock(return_value=ws_principal())
-    monkeypatch.setattr(chat, "_get_user_from_ws_token", authenticate)
-
+def test_private_messages_api_and_websocket_are_retired():
     with TestClient(app) as client:
-        with pytest.raises(WebSocketDisconnect) as rejected:
-            with client.websocket_connect(
-                "/api/v1/chat/ws",
-                headers={"Origin": DISALLOWED_ORIGIN},
-            ):
-                pass
-
-    assert rejected.value.code == 1008
-    authenticate.assert_not_awaited()
-
-
-def test_websocket_requires_auth_as_the_first_message(monkeypatch):
-    authenticate = AsyncMock(return_value=None)
-    monkeypatch.setattr(chat, "_get_user_from_ws_token", authenticate)
-
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/chat/ws",
-            headers={"Origin": ALLOWED_ORIGIN},
-        ) as websocket:
-            websocket.send_json({"type": "ping"})
-            with pytest.raises(WebSocketDisconnect) as rejected:
-                websocket.receive_json()
-
-    assert rejected.value.code == 1008
-    authenticate.assert_awaited_once_with("")
-
-
-def test_websocket_rejects_a_non_object_auth_payload(monkeypatch):
-    authenticate = AsyncMock(return_value=ws_principal())
-    monkeypatch.setattr(chat, "_get_user_from_ws_token", authenticate)
-
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/chat/ws",
-            headers={"Origin": ALLOWED_ORIGIN},
-        ) as websocket:
-            websocket.send_json(["auth", "token"])
-            with pytest.raises(WebSocketDisconnect) as rejected:
-                websocket.receive_json()
-
-    assert rejected.value.code == 1008
-    authenticate.assert_not_awaited()
-
-
-def test_websocket_rejects_an_invalid_access_token():
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/chat/ws",
-            headers={"Origin": ALLOWED_ORIGIN},
-        ) as websocket:
-            websocket.send_json({"type": "auth", "token": "not-a-jwt"})
-            with pytest.raises(WebSocketDisconnect) as rejected:
-                websocket.receive_json()
-
-    assert rejected.value.code == 1008
-
-
-def test_websocket_accepts_valid_auth_then_answers_ping(monkeypatch):
-    authenticate = AsyncMock(return_value=ws_principal())
-    session_is_active = AsyncMock(return_value=True)
-    monkeypatch.setattr(chat, "_get_user_from_ws_token", authenticate)
-    monkeypatch.setattr(chat, "_ws_session_is_active", session_is_active)
-
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/chat/ws",
-            headers={"Origin": ALLOWED_ORIGIN},
-        ) as websocket:
-            websocket.send_json({"type": "auth", "token": "valid-access-token"})
-            assert websocket.receive_json() == {
-                "type": "connection:ready",
-                "user_id": 41,
-            }
-
-            websocket.send_json({"type": "ping"})
-            assert websocket.receive_json() == {"type": "pong"}
-
-    authenticate.assert_awaited_once_with("valid-access-token")
-    session_is_active.assert_awaited()
-    assert chat.chat_manager.active_connections == {}
-
-
-def test_websocket_disconnects_after_session_revocation(monkeypatch):
-    authenticate = AsyncMock(return_value=ws_principal())
-    session_is_active = AsyncMock(side_effect=[True, False])
-    monkeypatch.setattr(chat, "_get_user_from_ws_token", authenticate)
-    monkeypatch.setattr(chat, "_ws_session_is_active", session_is_active)
-
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/chat/ws",
-            headers={"Origin": ALLOWED_ORIGIN},
-        ) as websocket:
-            websocket.send_json({"type": "auth", "token": "soon-revoked-token"})
-            assert websocket.receive_json()["type"] == "connection:ready"
-
-            websocket.send_json({"type": "ping"})
-            assert websocket.receive_json() == {"type": "pong"}
-            with pytest.raises(WebSocketDisconnect) as revoked:
-                websocket.receive_json()
-
-    assert revoked.value.code == 1008
-    assert session_is_active.await_count == 2
-    assert chat.chat_manager.active_connections == {}
-
-
-def test_websocket_rejects_a_non_object_payload_after_authentication(monkeypatch):
-    authenticate = AsyncMock(return_value=ws_principal())
-    session_is_active = AsyncMock(return_value=True)
-    monkeypatch.setattr(chat, "_get_user_from_ws_token", authenticate)
-    monkeypatch.setattr(chat, "_ws_session_is_active", session_is_active)
-
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/chat/ws",
-            headers={"Origin": ALLOWED_ORIGIN},
-        ) as websocket:
-            websocket.send_json({"type": "auth", "token": "valid-access-token"})
-            assert websocket.receive_json()["type"] == "connection:ready"
-
-            websocket.send_json(["ping"])
-            with pytest.raises(WebSocketDisconnect) as rejected:
-                websocket.receive_json()
-
-    assert rejected.value.code == 1008
-    assert chat.chat_manager.active_connections == {}
+        assert client.get("/api/v1/chat/conversations").status_code == 404
+        assert client.post("/api/v1/chat", json={"receiver_id": 2, "content": "retired"}).status_code == 404
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect("/api/v1/chat/ws"):
+                pytest.fail("Retired chat websocket accepted a connection")
 
 
 class RecordingWebSocket:

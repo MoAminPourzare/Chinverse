@@ -1,0 +1,76 @@
+--- previous/src/App.jsx
++++ current/src/App.jsx
+@@ -1,14 +1,36 @@
++import { useState } from "react";
+ import { books } from "./books.js";
+ import BookCard from "./BookCard";
+ 
+ export default function App() {
++    const [selectedId, setSelectedId] = useState(null);
++    const selectedBook = books.find((book) => book.id === selectedId);
++
++    function handleSelect(bookId) {
++        setSelectedId((current) => current === bookId ? null : bookId);
++    }
++
+     return (
+         <main className="page-shell">
+             <h1>کتابخانهٔ کوچک ما</h1>
+             <span className="count-badge">{books.length} کتاب</span>
++            <div id="selection-summary" className="selection-summary" aria-live="polite">
++                انتخاب فعلی: {selectedBook?.title ?? "هنوز کتابی انتخاب نکرده‌ای"}
++            </div>
+             <div id="book-list" className="book-list">
+-                {books.map((book) => <BookCard key={book.id} book={book} />)}
++                {books.map((book) => (
++                    <BookCard
++                        key={book.id}
++                        book={book}
++                        selected={book.id === selectedId}
++                        onSelect={handleSelect}
++                    />
++                ))}
+             </div>
++            <section className="state-panel" aria-label="وضعیت برنامه">
++                <h2>state فعلی</h2>
++                <pre dir="ltr">{JSON.stringify({ selectedId }, null, 2)}</pre>
++            </section>
+         </main>
+     );
+ }
+--- previous/src/BookCard.jsx
++++ current/src/BookCard.jsx
+@@ -1,12 +1,19 @@
+ import { formatPrice } from "./format-price.js";
+ 
+-export default function BookCard({ book }) {
++export default function BookCard({ book, selected, onSelect }) {
+     return (
+-        <article className="book-card">
++        <article className={selected ? "book-card is-selected" : "book-card"}>
+             <span className="book-topic">{book.topic}</span>
+             <h2>{book.title}</h2>
+             <p className="book-price">{formatPrice(book.price)} تومان</p>
+-            <button className="choose-button" type="button">انتخاب کتاب</button>
++            <button
++                className="choose-button"
++                type="button"
++                aria-pressed={selected}
++                onClick={() => onSelect(book.id)}
++            >
++                {selected ? "انتخاب شده ✓" : "انتخاب کتاب"}
++            </button>
+         </article>
+     );
+ }
+--- previous/src/styles.css
++++ current/src/styles.css
+@@ -12,3 +12,8 @@
+ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #d79730; outline-offset: 4px; }
+ .book-list { display: grid; gap: 14px; }
+ .count-badge { display: inline-block; margin-bottom: 16px; color: #17655b; }
++.book-card.is-selected { background: #f0f8f3; border-color: #489971; }
++.is-selected .choose-button { background: #247451; }
++.selection-summary { background: #eef4fd; border-right: 3px solid #315fb3; padding: 15px; margin: 20px 0; }
++.state-panel { background: #e7edf4; border-radius: 8px; padding: 16px; margin-top: 20px; }
++.state-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; }

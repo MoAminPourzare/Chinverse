@@ -4,7 +4,7 @@ import Image from "@/components/ui/PublicMediaImage";
 import Link from "@/components/ui/ReturnAwareLink";
 import { useParams, useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getReturnToHref } from "@/lib/returnTo";
@@ -64,9 +64,7 @@ export default function PlannedCourseDetailPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="rtl">
-                    <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
-                    <div className="flex items-center gap-1">
+                <AppHeader className="mb-0" backHref={`/explore/${domain}`} backLabel={`بازگشت به فهرست ${title}`} title={null} actions={<div className="flex items-center gap-1">
                         <CollectionBookmarkButton domain={domain} slug={course.slug} courseId={publishedCourse?.id} />
                         <button
                             type="button"
@@ -76,8 +74,7 @@ export default function PlannedCourseDetailPage({
                         >
                             <MoreVertical size={22} />
                         </button>
-                    </div>
-                </header>
+                    </div>} />
 
                 <section className="mt-3 grid grid-cols-[1fr_46%] items-center gap-3" dir="ltr">
                     <div data-course-heading className="min-w-0 text-center" dir="ltr">

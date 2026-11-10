@@ -31,7 +31,8 @@ jobs:
 
   frontend:
     name: Frontend
-    runs-on: ubuntu-latest
+    # Keep browser dependencies stable when ubuntu-latest changes releases.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend

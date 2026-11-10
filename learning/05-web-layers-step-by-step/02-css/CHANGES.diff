@@ -1,0 +1,25 @@
+--- previous/index.html
++++ current/index.html
+@@ -4,6 +4,7 @@
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <title>کتابخانهٔ کوچک ما</title>
++    <link rel="stylesheet" href="/src/styles.css" />
+   </head>
+   <body>
+     <main class="page-shell">
+--- previous/src/styles.css
++++ current/src/styles.css
+@@ -0,0 +1,12 @@
++* { box-sizing: border-box; }
++:root { font-family: Tahoma, Arial, sans-serif; color: #152337; background: #f4f6f9; }
++body { margin: 0; }
++.page-shell { width: min(720px, calc(100% - 32px)); margin: 40px auto; }
++h1 { font-size: clamp(24px, 5vw, 32px); }
++p { line-height: 1.9; }
++.book-card { background: white; border: 1px solid #dce4ed; border-radius: 12px; padding: 20px; }
++.book-topic { color: #577089; }
++.book-price { color: #476078; }
++button, input { font: inherit; }
++.choose-button { background: #173d78; color: white; border: 0; border-radius: 8px; padding: 12px 16px; cursor: pointer; }
++button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #d79730; outline-offset: 4px; }

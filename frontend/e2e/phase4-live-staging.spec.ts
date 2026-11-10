@@ -3,9 +3,6 @@ import {
   test,
   type APIRequestContext,
   type APIResponse,
-  type Browser,
-  type BrowserContext,
-  type Page,
 } from "@playwright/test";
 import { createHmac } from "node:crypto";
 
@@ -27,7 +24,6 @@ interface FixtureCredentials {
 interface LiveConfig {
   previewOrigin: string;
   apiBase: string;
-  wsUrl: string;
   bypassSecret: string;
   refreshCookieName: string;
   fixtureRunId: string;
@@ -50,11 +46,6 @@ interface Actor {
   accessToken: string;
   sessionId: string;
   userId: number;
-}
-
-interface LiveSocket {
-  context: BrowserContext;
-  page: Page;
 }
 
 interface RequestOptions {
@@ -147,7 +138,6 @@ function fixture(
 function loadConfig(): LiveConfig {
   const previewOrigin = normalizedOrigin("PHASE4_LIVE_PREVIEW_URL");
   const apiBase = normalizedApiBase();
-  const wsUrl = `${apiBase.replace(/^https:/, "wss:")}/chat/ws`;
   const fixtureRunId = requiredEnv("CHINVERSE_PHASE4_RUN_ID").toLowerCase();
   safeInvariant(
     FIXTURE_RUN_ID_PATTERN.test(fixtureRunId),
@@ -172,7 +162,6 @@ function loadConfig(): LiveConfig {
   return {
     previewOrigin,
     apiBase,
-    wsUrl,
     bypassSecret: requiredEnv("PHASE4_LIVE_VERCEL_BYPASS_SECRET"),
     refreshCookieName:
       process.env.PHASE4_LIVE_REFRESH_COOKIE_NAME?.trim() || REFRESH_COOKIE_DEFAULT,
@@ -406,164 +395,6 @@ async function refreshActor(actor: Actor, config: LiveConfig): Promise<StorageCo
   return before;
 }
 
-async function openLiveSocket(browser: Browser, actor: Actor, config: LiveConfig): Promise<LiveSocket> {
-  safeInvariant(new URL(config.wsUrl).search === "", "WebSocket URL must not contain query parameters");
-  const context = await browser.newContext({
-    storageState: await actor.api.storageState(),
-    locale: "fa-IR",
-    timezoneId: "Asia/Tehran",
-  });
-  const page = await context.newPage();
-  try {
-    const healthResponse = await page.goto(`${config.previewOrigin}/api/health`, {
-      waitUntil: "domcontentloaded",
-    });
-    safeInvariant(healthResponse?.status() === 200, `${actor.label} browser bypass cookie was not accepted`);
-    await page.evaluate(
-      ({ wsUrl, token, expectedUserId }) =>
-        new Promise<void>((resolve, reject) => {
-          const socket = new WebSocket(wsUrl);
-          const state: {
-            socket: WebSocket;
-            events: Array<Record<string, unknown>>;
-            closeCode: number | null;
-          } = { socket, events: [], closeCode: null };
-          Reflect.set(window, "__phase4LiveSocket", state);
-          const timeout = window.setTimeout(() => reject(new Error("WebSocket ready timeout")), 12_000);
-          socket.onopen = () => socket.send(JSON.stringify({ type: "auth", token }));
-          socket.onerror = () => {
-            window.clearTimeout(timeout);
-            reject(new Error("WebSocket connection failed"));
-          };
-          socket.onclose = (event) => {
-            state.closeCode = event.code;
-          };
-          socket.onmessage = (event) => {
-            let payload: unknown;
-            try {
-              payload = JSON.parse(String(event.data));
-            } catch {
-              return;
-            }
-            if (!payload || typeof payload !== "object") return;
-            const message = payload as Record<string, unknown>;
-            if (message.type === "connection:ready") {
-              window.clearTimeout(timeout);
-              if (message.user_id !== expectedUserId) {
-                reject(new Error("WebSocket identity mismatch"));
-                return;
-              }
-              resolve();
-              return;
-            }
-            state.events.push(message);
-          };
-        }),
-      { wsUrl: config.wsUrl, token: actor.accessToken, expectedUserId: actor.userId },
-    );
-    return { context, page };
-  } catch (error) {
-    await context.close();
-    throw error;
-  }
-}
-
-async function waitForSocketEvent(
-  liveSocket: LiveSocket,
-  eventType: "message:new" | "messages:read",
-  messageId: number,
-): Promise<void> {
-  await liveSocket.page.evaluate(
-    ({ expectedType, expectedMessageId }) =>
-      new Promise<void>((resolve, reject) => {
-        const deadline = Date.now() + 12_000;
-        const poll = () => {
-          const state = Reflect.get(window, "__phase4LiveSocket") as
-            | { events: Array<Record<string, unknown>>; closeCode: number | null }
-            | undefined;
-          if (!state) {
-            reject(new Error("WebSocket state is unavailable"));
-            return;
-          }
-          const index = state.events.findIndex((event) => {
-            if (event.type !== expectedType) return false;
-            if (expectedType === "message:new") {
-              const message = event.message;
-              return (
-                Boolean(message) &&
-                typeof message === "object" &&
-                (message as Record<string, unknown>).id === expectedMessageId
-              );
-            }
-            const ids = event.message_ids;
-            return Array.isArray(ids) && ids.includes(expectedMessageId);
-          });
-          if (index >= 0) {
-            state.events.splice(index, 1);
-            resolve();
-            return;
-          }
-          if (state.closeCode !== null) {
-            reject(new Error(`WebSocket closed before ${expectedType}`));
-            return;
-          }
-          if (Date.now() >= deadline) {
-            reject(new Error(`WebSocket event timeout for ${expectedType}`));
-            return;
-          }
-          window.setTimeout(poll, 100);
-        };
-        poll();
-      }),
-    { expectedType: eventType, expectedMessageId: messageId },
-  );
-}
-
-async function closeLiveSocket(liveSocket: LiveSocket | undefined): Promise<void> {
-  if (!liveSocket) return;
-  try {
-    await liveSocket.page.evaluate(() => {
-      const state = Reflect.get(window, "__phase4LiveSocket") as
-        | { socket: WebSocket }
-        | undefined;
-      state?.socket.close(1000, "phase4-live-complete");
-    });
-  } catch {
-    // The server may already have closed the socket after a session revocation.
-  }
-  await liveSocket.context.close();
-}
-
-async function expectSocketRevoked(liveSocket: LiveSocket): Promise<void> {
-  const closeCode = await liveSocket.page.evaluate(
-    () =>
-      new Promise<number>((resolve, reject) => {
-        const state = Reflect.get(window, "__phase4LiveSocket") as
-          | { socket: WebSocket; closeCode: number | null }
-          | undefined;
-        if (!state) {
-          reject(new Error("WebSocket state is unavailable"));
-          return;
-        }
-        if (state.closeCode !== null) {
-          resolve(state.closeCode);
-          return;
-        }
-        const timeout = window.setTimeout(() => reject(new Error("WebSocket revoke timeout")), 12_000);
-        state.socket.addEventListener(
-          "close",
-          (event) => {
-            window.clearTimeout(timeout);
-            resolve(event.code);
-          },
-          { once: true },
-        );
-        state.socket.send(JSON.stringify({ type: "ping" }));
-      }),
-  );
-  safeInvariant(closeCode === 1008, `revoked WebSocket closed with ${closeCode}, not 1008`);
-}
-
 test.use({ trace: "off", screenshot: "off", video: "off" });
 test.describe.configure({ mode: "serial", retries: 0 });
 
@@ -572,7 +403,7 @@ test.skip(
   "Opt in with RUN_PHASE4_LIVE=1; the stateful suite runs only in desktop-chromium.",
 );
 
-test("phase four live staging user journeys", async ({ browser }) => {
+test("phase four live staging user journeys", async () => {
   test.setTimeout(300_000);
 
   const config = loadConfig();
@@ -584,10 +415,7 @@ test("phase four live staging user journeys", async ({ browser }) => {
   console.info(`[phase4-live] mutation run id: ${mutationRunId}`);
 
   const actors: Actor[] = [];
-  let u1Socket: LiveSocket | undefined;
-  let u2Socket: LiveSocket | undefined;
   let bypassCookie: StorageCookie | undefined;
-
   try {
     console.info("[phase4-live] bootstrap and authentication");
     bypassCookie = await bootstrapVercelBypass(config);
@@ -855,7 +683,7 @@ test("phase four live staging user journeys", async ({ browser }) => {
     safeInvariant(repliedTicket?.status === "closed", "support ticket did not close");
     safeInvariant(repliedTicket.admin_reply === supportReply, "support reply did not reach the ticket owner");
 
-    console.info("[phase4-live] removed blocking API, chat and realtime receipts");
+    console.info("[phase4-live] retired blocking and private messaging APIs");
     await actorRequest(u1, config, "/trust/blocks", { expected: 404 });
     await actorRequest(u1, config, `/trust/blocks/${u2.userId}`, {
       method: "POST",
@@ -866,39 +694,12 @@ test("phase four live staging user journeys", async ({ browser }) => {
       expected: 404,
     });
 
-    u1Socket = await openLiveSocket(browser, u1, config);
-    await closeLiveSocket(u1Socket);
-    u1Socket = await openLiveSocket(browser, u1, config);
-    u2Socket = await openLiveSocket(browser, u2, config);
-    const chatMessage = await safeJson<{ id?: unknown }>(
-      await actorRequest(u1, config, "/chat", {
-        method: "POST",
-        data: { receiver_id: u2.userId, content: `Synthetic realtime message ${mutationRunId}` },
-        expected: 200,
-      }),
-      "send realtime chat message",
-    );
-    safeInvariant(typeof chatMessage.id === "number", "chat message has no id");
-    const messageId = chatMessage.id;
-    await Promise.all([
-      waitForSocketEvent(u1Socket, "message:new", messageId),
-      waitForSocketEvent(u2Socket, "message:new", messageId),
-    ]);
-    const readResult = await safeJson<{ updated?: unknown; message_ids?: unknown }>(
-      await actorRequest(u2, config, `/chat/${u1.userId}/read`, {
-        method: "POST",
-        expected: 200,
-      }),
-      "mark chat read",
-    );
-    safeInvariant(typeof readResult.updated === "number" && readResult.updated >= 1, "chat read updated no messages");
-    safeInvariant(
-      Array.isArray(readResult.message_ids) && readResult.message_ids.includes(messageId),
-      "chat read result omitted the new message",
-    );
-    await waitForSocketEvent(u1Socket, "messages:read", messageId);
+    await actorRequest(u1, config, "/chat/conversations", { expected: 404 });
+    await actorRequest(u1, config, "/chat", {
+      method: "POST", data: { receiver_id: u2.userId, content: "retired feature probe" }, expected: 404,
+    });
 
-    console.info("[phase4-live] session ownership, revocation and WebSocket close");
+    console.info("[phase4-live] session ownership and revocation");
     const u2Second = await loginActor("u2-b", config.u2, config, bypassCookie);
     actors.push(u2Second);
     safeInvariant(u2Second.sessionId !== u2.sessionId, "second u2 login reused the first session id");
@@ -921,10 +722,6 @@ test("phase four live staging user journeys", async ({ browser }) => {
     });
     await actorRequest(u2, config, "/users/me", { expected: 401 });
     await actorRequest(u2Second, config, "/users/me", { expected: 200 });
-    await expectSocketRevoked(u2Socket);
-    await closeLiveSocket(u2Socket);
-    u2Socket = undefined;
-
     console.info("[phase4-live] refresh-token replay rejection");
     const replayApi = await playwrightRequest.newContext({
       baseURL: config.previewOrigin,
@@ -943,8 +740,6 @@ test("phase four live staging user journeys", async ({ browser }) => {
 
     console.info("[phase4-live] completed; external exact-email cleanup is still required");
   } finally {
-    await closeLiveSocket(u1Socket);
-    await closeLiveSocket(u2Socket);
     for (const actor of actors.reverse()) {
       await actor.api.dispose();
     }

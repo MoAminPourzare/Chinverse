@@ -1,0 +1,22 @@
+* { box-sizing: border-box; }
+:root { font-family: Tahoma, Arial, sans-serif; color: #152337; background: #f4f6f9; }
+body { margin: 0; }
+.page-shell { width: min(720px, calc(100% - 32px)); margin: 40px auto; }
+h1 { font-size: clamp(24px, 5vw, 32px); }
+p { line-height: 1.9; }
+.book-card { background: white; border: 1px solid #dce4ed; border-radius: 12px; padding: 20px; }
+.book-topic { color: #577089; }
+.book-price { color: #476078; }
+button, input { font: inherit; }
+.choose-button { background: #173d78; color: white; border: 0; border-radius: 8px; padding: 12px 16px; cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #d79730; outline-offset: 4px; }
+.book-list { display: grid; gap: 14px; }
+.count-badge { display: inline-block; margin-bottom: 16px; color: #17655b; }
+.book-card.is-selected { background: #f0f8f3; border-color: #489971; }
+.is-selected .choose-button { background: #247451; }
+.selection-summary { background: #eef4fd; border-right: 3px solid #315fb3; padding: 15px; margin: 20px 0; }
+.state-panel { background: #e7edf4; border-radius: 8px; padding: 16px; margin-top: 20px; }
+.state-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.search-label { display: block; margin: 20px 0 8px; }
+.search-input { width: 100%; padding: 12px; border: 1px solid #cdd9e5; border-radius: 8px; margin-bottom: 16px; }
+.empty-state { padding: 20px; text-align: center; }

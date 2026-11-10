@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, Home, Search, ShieldCheck, User, Users } from "lucide-react";
+import { Brain, Home, Search, ShieldCheck, User } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { adminService } from "@/lib/admin";
 import { authService } from "@/services/auth.service";
@@ -46,7 +46,6 @@ export default function BottomNav() {
         { name: "خانه", href: "/", icon: Home },
         { name: "لایتنر", href: "/leitner", icon: Brain },
         { name: "کاوش", href: "/explore", icon: Search },
-        { name: "ویترین", href: "/showcase", icon: Users },
         { name: "پروفایل", href: "/profile", icon: User },
         ...(isAdmin ? [{ name: "ادمین", href: "/admin", icon: ShieldCheck }] : []),
     ];
@@ -58,6 +57,7 @@ export default function BottomNav() {
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href ||
+                            (item.href === "/" && pathname === "/community") ||
                             (item.href !== "/" && pathname.startsWith(item.href));
 
                         return (

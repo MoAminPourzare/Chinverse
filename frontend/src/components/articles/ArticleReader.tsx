@@ -4,7 +4,7 @@ import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Clock3, Loader2, MessageCircle } from "lucide-react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { ArticleBody } from "./ArticleBody";
 import { articleHref, articleMediaUrl, readingMinutes } from "@/lib/articles";
 import { getDirectionalTextProps } from "@/lib/textDirection";
@@ -63,11 +63,8 @@ export function ArticleReader({ identifier }: { identifier: string }) {
     }
 
     const headings = article?.document?.blocks.flatMap((block, index) => block.type === "heading" ? [{ text: block.text, id: `section-${index}` }] : []) || [];
-    return <div className="min-h-full bg-[#f9fafc] px-5 pb-10 pt-4" dir="rtl">
-        <header data-page-header className="relative mb-6 flex h-12 items-center justify-center">
-            <BackButton href="/community?section=articles" className="absolute right-0" />
-            <span className="text-sm font-bold text-slate-600">مقالات چین‌ورس</span>
-        </header>
+    return <div className="min-h-full bg-[#f9fafc] px-4 pb-10 pt-4" dir="rtl">
+        <AppHeader title="مقالات چین‌ورس" backHref="/community?section=articles" icon={<BookOpen size={23} />} />
         {isLoading ? <div role="status" className="flex justify-center gap-2 py-20 text-sm text-slate-500"><Loader2 aria-hidden className="size-5 animate-spin" />در حال باز کردن مقاله…</div> : loadError || !article ? <div role="alert" className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-8 text-slate-600"><p>{loadError}</p><button type="button" onClick={() => void load()} className="mt-4 min-h-11 rounded-xl bg-[#155aa6] px-5 font-bold text-white">تلاش دوباره</button></div> : <>
             <article>
                 <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold leading-6 text-[#155aa6]"><BookOpen aria-hidden className="size-3.5" />{article.document?.category || "یادگیری زبان چینی"}</span>

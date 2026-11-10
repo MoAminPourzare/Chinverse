@@ -31,7 +31,6 @@ from app.core.paths import (
 )
 from app.core.request_size import RequestSizeLimitMiddleware
 from app.db.session import engine
-from app.api.v1.endpoints.chat import start_chat_realtime, stop_chat_realtime
 
 configure_logging()
 configure_sentry()
@@ -40,7 +39,6 @@ deployed_release_sha = resolve_release_sha(settings.RELEASE_SHA)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    await start_chat_realtime()
     audio_import = None
     from scripts.sync_client_demo import run_background_import as import_client_demo
     demo_import = asyncio.create_task(import_client_demo())
@@ -63,7 +61,6 @@ async def lifespan(_app: FastAPI):
                 await audio_import
             except asyncio.CancelledError:
                 pass
-        await stop_chat_realtime()
         await engine.dispose()
         sentry_sdk.flush(timeout=2.0)
 

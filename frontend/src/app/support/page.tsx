@@ -3,10 +3,10 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Clock3, Loader2, MessageSquareText, RefreshCw, X } from 'lucide-react';
+import { Clock3, Headset, Loader2, MessageSquareText, RefreshCw } from 'lucide-react';
 import { communityService, type SupportTicket } from '@/services/community.service';
 import { authService } from '@/services/auth.service';
-import { IconButton } from '@/components/ui/IconButton';
+import { AppHeader, IconButton } from '@/components/ui/IconButton';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { validateTextLength, validationMessage } from '@/validation';
 
@@ -75,16 +75,8 @@ export default function SupportPage() {
     };
 
     return (
-        <div className="flex min-h-full flex-col bg-[#f7f8fa] px-5 pb-8 pt-5" dir="rtl">
-            <header data-page-header className="grid grid-cols-[44px_1fr_44px] items-center" dir="ltr">
-                <IconButton onClick={closeSupport} label="بستن" className="justify-self-end">
-                    <X size={20} />
-                </IconButton>
-                <div className="flex justify-center">
-                    <Image src="/assets/chinverse/logos/chinverse-wordmark.png" alt="چین‌ورس" width={602} height={250} className="h-auto w-[116px] object-contain" priority />
-                </div>
-                <span aria-hidden />
-            </header>
+        <div className="flex min-h-full flex-col bg-[#f7f8fa] px-4 pb-8 pt-4" dir="rtl">
+            <AppHeader title="پشتیبانی" onBack={closeSupport} icon={<Headset size={24} />} />
 
             {screen === 'success' ? (
                 <main className="flex flex-1 flex-col items-center px-2 pt-[clamp(56px,18dvh,140px)] text-right">

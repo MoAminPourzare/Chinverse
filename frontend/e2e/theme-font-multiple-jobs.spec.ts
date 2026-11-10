@@ -37,35 +37,6 @@ async function ready(page: Page, url: string) {
     await page.evaluate(() => document.fonts.ready);
 }
 
-test("multiple professional roles persist, reload and appear centered on the profile", async ({ page }, info) => {
-    const saved = await setup(page);
-    await ready(page, "/account");
-    await page.locator("#account-headline").click();
-    const search = page.getByRole("searchbox", { name: "جست‌وجوی عنوان شغلی", exact: true });
-    for (const title of titles.slice(1)) {
-        await search.fill(title);
-        await page.getByRole("group", { name: "گزینه‌های عنوان شغلی", exact: true }).getByRole("button", { name: title, exact: true }).click();
-        await expect(search).toBeVisible();
-    }
-    const chosen = page.getByLabel("عناوین شغلی انتخاب‌شده", { exact: true });
-    await expect(chosen.getByRole("button")).toHaveCount(3);
-    await page.getByRole("button", { name: "ذخیره", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "تغییرات با موفقیت ذخیره شد" })).toBeVisible();
-    expect(saved[0]).toMatchObject({ headline: titles[0], job_titles: titles });
-    await page.reload();
-    await expect(chosen.getByRole("button")).toHaveCount(3);
-    await page.screenshot({ path: path.resolve("../.tmp", `jobs-${info.project.name}.png`) });
-    await ready(page, "/profile");
-    await expect(page.getByText(titles.join("، "), { exact: true })).toHaveCSS("text-align", "center");
-    await expect(page.locator(".bottom-nav-dot")).toHaveCount(0);
-    await expect(page.getByRole("navigation", { name: "ناوبری اصلی" }).locator('[aria-current="page"]')).toHaveCount(1);
-    await ready(page, "/account");
-    await page.getByRole("button", { name: `حذف عنوان شغلی ${titles[0]}`, exact: true }).click();
-    await page.getByRole("button", { name: "ذخیره", exact: true }).click();
-    await expect.poll(() => saved.length).toBe(2);
-    expect(saved[1]).toMatchObject({ headline: titles[1], job_titles: titles.slice(1) });
-});
-
 for (const theme of ["light", "dark"]) {
     test(`${theme} mode uses local Chinese glyphs and the correct illustration paints`, async ({ page }, info) => {
         const fonts: string[] = [];

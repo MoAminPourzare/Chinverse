@@ -103,6 +103,7 @@ async def list_notifications(
             LEFT JOIN users u ON u.id = n.actor_user_id
             LEFT JOIN user_profiles p ON p.user_id = u.id
             WHERE n.user_id = :user_id
+              AND n.type NOT IN ('message', 'follow', 'post', 'service')
               AND (CAST(:unread_only AS BOOLEAN) = false OR n.is_read = false)
               AND (
                   CAST(:after_id AS BIGINT) IS NULL
@@ -131,6 +132,7 @@ async def unread_count(db: AsyncSession, *, user_id: int) -> int:
             SELECT count(*)
             FROM user_notifications
             WHERE user_id = :user_id AND is_read = false
+              AND type NOT IN ('message', 'follow', 'post', 'service')
             """
         ),
         {"user_id": user_id},
