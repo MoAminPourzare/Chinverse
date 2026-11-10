@@ -1,0 +1,23 @@
+--- previous/index.html
++++ current/index.html
+@@ -0,0 +1,20 @@
++<!doctype html>
++<html lang="fa" dir="rtl">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <title>کتابخانهٔ کوچک ما</title>
++  </head>
++  <body>
++    <main class="page-shell">
++      <h1>کتابخانهٔ کوچک ما</h1>
++      <p>یک کتاب برای شروع؛ هر بار یک قابلیت اضافه می‌کنیم.</p>
++      <article class="book-card" id="book-card">
++        <span class="book-topic">JavaScript</span>
++        <h2>جاوااسکریپت کاربردی</h2>
++        <p class="book-price">۲۰۰٬۰۰۰ تومان</p>
++        <button id="choose-button" class="choose-button" type="button">انتخاب کتاب</button>
++      </article>
++    </main>
++  </body>
++</html>

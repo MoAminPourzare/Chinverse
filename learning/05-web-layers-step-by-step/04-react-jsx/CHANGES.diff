@@ -1,0 +1,78 @@
+--- previous/index.html
++++ current/index.html
+@@ -4,20 +4,9 @@
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <title>کتابخانهٔ کوچک ما</title>
+-    <link rel="stylesheet" href="/src/styles.css" />
+   </head>
+   <body>
+-    <main class="page-shell">
+-      <h1>کتابخانهٔ کوچک ما</h1>
+-      <p>یک کتاب برای شروع؛ هر بار یک قابلیت اضافه می‌کنیم.</p>
+-      <article class="book-card" id="book-card">
+-        <span class="book-topic">JavaScript</span>
+-        <h2>جاوااسکریپت کاربردی</h2>
+-        <p class="book-price">۲۰۰٬۰۰۰ تومان</p>
+-        <button id="choose-button" class="choose-button" type="button" aria-pressed="false">انتخاب کتاب</button>
+-      </article>
+-      <p id="selection-summary" role="status">هنوز کتابی انتخاب نکرده‌ای</p>
+-    </main>
+-    <script type="module" src="/src/main.js"></script>
++    <div id="root"></div>
++    <script type="module" src="/src/main.jsx"></script>
+   </body>
+ </html>
+--- previous/src/App.jsx
++++ current/src/App.jsx
+@@ -0,0 +1,14 @@
++export default function App() {
++    return (
++        <main className="page-shell">
++            <h1>کتابخانهٔ کوچک ما</h1>
++            <p>همان یک کارت، این بار با React و JSX.</p>
++            <article className="book-card">
++                <span className="book-topic">JavaScript</span>
++                <h2>جاوااسکریپت کاربردی</h2>
++                <p className="book-price">۲۰۰٬۰۰۰ تومان</p>
++                <button className="choose-button" type="button">انتخاب کتاب</button>
++            </article>
++        </main>
++    );
++}
+--- previous/src/main.js
++++ current/src/main.js
+@@ -1,14 +0,0 @@
+-const button = document.getElementById("choose-button");
+-const card = document.getElementById("book-card");
+-const summary = document.getElementById("selection-summary");
+-if (!button || !card || !summary) throw new Error("بخش‌های لازم صفحه پیدا نشدند.");
+-
+-let selected = false;
+-
+-button.addEventListener("click", () => {
+-    selected = !selected;
+-    button.textContent = selected ? "انتخاب شده ✓" : "انتخاب کتاب";
+-    button.setAttribute("aria-pressed", String(selected));
+-    card.classList.toggle("is-selected", selected);
+-    summary.textContent = selected ? "انتخاب فعلی: جاوااسکریپت کاربردی" : "هنوز کتابی انتخاب نکرده‌ای";
+-});
+--- previous/src/main.jsx
++++ current/src/main.jsx
+@@ -0,0 +1,8 @@
++import { createRoot } from "react-dom/client";
++import App from "./App";
++import "./styles.css";
++
++const container = document.getElementById("root");
++if (!container) throw new Error("محل شروع رابط پیدا نشد.");
++
++createRoot(container).render(<App />);
+--- previous/src/styles.css
++++ current/src/styles.css
+@@ -10,5 +10,3 @@
+ button, input { font: inherit; }
+ .choose-button { background: #173d78; color: white; border: 0; border-radius: 8px; padding: 12px 16px; cursor: pointer; }
+ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #d79730; outline-offset: 4px; }
+-.book-card.is-selected { background: #f0f8f3; border-color: #489971; }
+-.is-selected .choose-button { background: #247451; }

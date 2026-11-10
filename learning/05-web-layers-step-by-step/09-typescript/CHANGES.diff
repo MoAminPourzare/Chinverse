@@ -1,0 +1,271 @@
+--- previous/index.html
++++ current/index.html
+@@ -7,6 +7,6 @@
+   </head>
+   <body>
+     <div id="root"></div>
+-    <script type="module" src="/src/main.jsx"></script>
++    <script type="module" src="/src/main.tsx"></script>
+   </body>
+ </html>
+--- previous/src/App.jsx
++++ current/src/App.jsx
+@@ -1,50 +0,0 @@
+-import { useState } from "react";
+-import { books } from "./books.js";
+-import BookCard from "./BookCard";
+-
+-export default function App() {
+-    const [query, setQuery] = useState("");
+-    const [selectedId, setSelectedId] = useState(null);
+-    const normalizedQuery = query.trim().toLowerCase();
+-    const visibleBooks = books.filter((book) =>
+-        `${book.title} ${book.topic}`.toLowerCase().includes(normalizedQuery),
+-    );
+-    const selectedBook = books.find((book) => book.id === selectedId);
+-
+-    function handleSelect(bookId) {
+-        setSelectedId((current) => current === bookId ? null : bookId);
+-    }
+-
+-    return (
+-        <main className="page-shell">
+-            <h1>کتابخانهٔ کوچک ما</h1>
+-            <span className="count-badge">{visibleBooks.length} کتاب</span>
+-            <label className="search-label" htmlFor="book-search">جست‌وجوی عنوان یا فناوری</label>
+-            <input
+-                id="book-search"
+-                className="search-input"
+-                placeholder="مثلاً React یا تایپ‌اسکریپت"
+-                value={query}
+-                onChange={(event) => setQuery(event.currentTarget.value)}
+-            />
+-            <div id="selection-summary" className="selection-summary" aria-live="polite">
+-                انتخاب فعلی: {selectedBook?.title ?? "هنوز کتابی انتخاب نکرده‌ای"}
+-            </div>
+-            <div id="book-list" className="book-list">
+-                {visibleBooks.map((book) => (
+-                    <BookCard
+-                        key={book.id}
+-                        book={book}
+-                        selected={book.id === selectedId}
+-                        onSelect={handleSelect}
+-                    />
+-                ))}
+-                {visibleBooks.length === 0 && <p className="empty-state">کتابی پیدا نشد؛ عبارت جست‌وجو را تغییر بده.</p>}
+-            </div>
+-            <section className="state-panel" aria-label="وضعیت برنامه">
+-                <h2>state فعلی</h2>
+-                <pre dir="ltr">{JSON.stringify({ query, selectedId }, null, 2)}</pre>
+-            </section>
+-        </main>
+-    );
+-}
+--- previous/src/App.tsx
++++ current/src/App.tsx
+@@ -0,0 +1,50 @@
++import { useState } from "react";
++import { books } from "./books";
++import BookCard from "./BookCard";
++
++export default function App() {
++    const [query, setQuery] = useState("");
++    const [selectedId, setSelectedId] = useState<string | null>(null);
++    const normalizedQuery = query.trim().toLowerCase();
++    const visibleBooks = books.filter((book) =>
++        `${book.title} ${book.topic}`.toLowerCase().includes(normalizedQuery),
++    );
++    const selectedBook = books.find((book) => book.id === selectedId);
++
++    function handleSelect(bookId: string) {
++        setSelectedId((current) => current === bookId ? null : bookId);
++    }
++
++    return (
++        <main className="page-shell">
++            <h1>کتابخانهٔ کوچک ما</h1>
++            <span className="count-badge">{visibleBooks.length} کتاب</span>
++            <label className="search-label" htmlFor="book-search">جست‌وجوی عنوان یا فناوری</label>
++            <input
++                id="book-search"
++                className="search-input"
++                placeholder="مثلاً React یا تایپ‌اسکریپت"
++                value={query}
++                onChange={(event) => setQuery(event.currentTarget.value)}
++            />
++            <div id="selection-summary" className="selection-summary" aria-live="polite">
++                انتخاب فعلی: {selectedBook?.title ?? "هنوز کتابی انتخاب نکرده‌ای"}
++            </div>
++            <div id="book-list" className="book-list">
++                {visibleBooks.map((book) => (
++                    <BookCard
++                        key={book.id}
++                        book={book}
++                        selected={book.id === selectedId}
++                        onSelect={handleSelect}
++                    />
++                ))}
++                {visibleBooks.length === 0 && <p className="empty-state">کتابی پیدا نشد؛ عبارت جست‌وجو را تغییر بده.</p>}
++            </div>
++            <section className="state-panel" aria-label="وضعیت برنامه">
++                <h2>state فعلی</h2>
++                <pre dir="ltr">{JSON.stringify({ query, selectedId }, null, 2)}</pre>
++            </section>
++        </main>
++    );
++}
+--- previous/src/BookCard.jsx
++++ current/src/BookCard.jsx
+@@ -1,19 +0,0 @@
+-import { formatPrice } from "./format-price.js";
+-
+-export default function BookCard({ book, selected, onSelect }) {
+-    return (
+-        <article className={selected ? "book-card is-selected" : "book-card"}>
+-            <span className="book-topic">{book.topic}</span>
+-            <h2>{book.title}</h2>
+-            <p className="book-price">{formatPrice(book.price)} تومان</p>
+-            <button
+-                className="choose-button"
+-                type="button"
+-                aria-pressed={selected}
+-                onClick={() => onSelect(book.id)}
+-            >
+-                {selected ? "انتخاب شده ✓" : "انتخاب کتاب"}
+-            </button>
+-        </article>
+-    );
+-}
+--- previous/src/BookCard.tsx
++++ current/src/BookCard.tsx
+@@ -0,0 +1,28 @@
++import type { Book } from "./types";
++import { formatPrice } from "./format-price.js";
++
++// TypeScript: چه ورودی‌هایی برای این کامپوننت معتبر هستند؟
++interface BookCardProps {
++    book: Book;
++    selected: boolean;
++    onSelect: (bookId: string) => void;
++}
++
++export default function BookCard({ book, selected, onSelect }: BookCardProps) {
++    // JSX: نمایش مطلوب بر اساس ورودی‌های فعلی؛ شیء DOM را دستی تغییر نمی‌دهیم.
++    return (
++        <article className={selected ? "book-card is-selected" : "book-card"}>
++            <span className="book-topic">{book.topic}</span>
++            <h2>{book.title}</h2>
++            <p className="book-price">{formatPrice(book.price)} <small>تومان</small></p>
++            <button
++                type="button"
++                className="choose-button"
++                aria-pressed={selected}
++                onClick={() => onSelect(book.id)}
++            >
++                {selected ? "انتخاب شده ✓" : "انتخاب کتاب"}
++            </button>
++        </article>
++    );
++}
+--- previous/src/books.js
++++ current/src/books.js
+@@ -1,5 +0,0 @@
+-export const books = [
+-    { id: "js", title: "جاوااسکریپت کاربردی", topic: "JavaScript", price: 200000 },
+-    { id: "react", title: "ساخت رابط با ری‌اکت", topic: "React", price: 300000 },
+-    { id: "ts", title: "تایپ‌اسکریپت در عمل", topic: "TypeScript", price: 250000 },
+-];
+--- previous/src/books.ts
++++ current/src/books.ts
+@@ -0,0 +1,8 @@
++import type { Book } from "./types";
++
++// این آرایه دادهٔ واقعیِ همین مثال است؛ Book[] فقط قرارداد نوع آن است.
++export const books: Book[] = [
++    { id: "js", title: "جاوااسکریپت کاربردی", topic: "JavaScript", price: 200000 },
++    { id: "react", title: "ساخت رابط با ری‌اکت", topic: "React", price: 300000 },
++    { id: "ts", title: "تایپ‌اسکریپت در عمل", topic: "TypeScript", price: 250000 },
++];
+--- previous/src/format-price.js
++++ current/src/format-price.js
+@@ -1,3 +1,6 @@
++// JavaScript معمولی: این تابع هنگام اجرای صفحه، عدد را به متن تبدیل می‌کند.
++// کامنت JSDoc زیر فقط برای راهنمای ویرایشگر و بررسی نوع است؛ دستور اجرایی نیست.
++/** @param {number} amount */
+ export function formatPrice(amount) {
+     return new Intl.NumberFormat("fa-IR").format(amount);
+ }
+--- previous/src/main.jsx
++++ current/src/main.jsx
+@@ -1,8 +0,0 @@
+-import { createRoot } from "react-dom/client";
+-import App from "./App";
+-import "./styles.css";
+-
+-const container = document.getElementById("root");
+-if (!container) throw new Error("محل شروع رابط پیدا نشد.");
+-
+-createRoot(container).render(<App />);
+--- previous/src/main.tsx
++++ current/src/main.tsx
+@@ -0,0 +1,8 @@
++import { createRoot } from "react-dom/client";
++import App from "./App";
++import "./styles.css";
++
++const container = document.getElementById("root");
++if (!container) throw new Error("محل شروع رابط پیدا نشد.");
++
++createRoot(container).render(<App />);
+--- previous/src/types.ts
++++ current/src/types.ts
+@@ -0,0 +1,7 @@
++// TypeScript: قرارداد اطلاعات کتاب. این تعریف در JavaScript اجرایی باقی نمی‌ماند.
++export interface Book {
++    id: string;
++    title: string;
++    topic: string;
++    price: number;
++}
+--- previous/tsconfig.json
++++ current/tsconfig.json
+@@ -0,0 +1,39 @@
++{
++  "compilerOptions": {
++    "target": "ES2020",
++    "lib": [
++      "ES2020",
++      "DOM",
++      "DOM.Iterable"
++    ],
++    "module": "ESNext",
++    "moduleResolution": "Bundler",
++    "jsx": "react-jsx",
++    "strict": true,
++    "noEmit": true,
++    "allowJs": true,
++    "checkJs": true,
++    "skipLibCheck": true,
++    "types": [
++      "react",
++      "react-dom"
++    ],
++    "typeRoots": [
++      "../../../frontend/node_modules/@types"
++    ],
++    "paths": {
++      "react": [
++        "../../../frontend/node_modules/@types/react/index.d.ts"
++      ],
++      "react/jsx-runtime": [
++        "../../../frontend/node_modules/@types/react/jsx-runtime.d.ts"
++      ],
++      "react-dom/client": [
++        "../../../frontend/node_modules/@types/react-dom/client.d.ts"
++      ]
++    }
++  },
++  "include": [
++    "src"
++  ]
++}
