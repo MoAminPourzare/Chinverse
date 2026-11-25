@@ -525,7 +525,10 @@ export default function SharedWatchPage() {
     }, [currentUserId, lessonWords, knowledgeVersion]);
 
     useEffect(() => {
-        if (lessonEnded) completionRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        if (!lessonEnded) return;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        // Center the actions in the scrollport so the bottom navigation cannot cover them.
+        completionRef.current?.scrollIntoView({ block: "center", behavior: reduceMotion ? "instant" : "smooth" });
     }, [lessonEnded]);
 
     const syncedTranscript = useMemo(() => baseTranscript.map((entry, index) => ({
