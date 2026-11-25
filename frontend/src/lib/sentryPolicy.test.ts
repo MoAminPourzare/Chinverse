@@ -79,6 +79,29 @@ describe("Sentry privacy policy", () => {
     }).enabled).toBe(false);
   });
 
+  it("limits SDK collection even when error reporting is enabled", () => {
+    const options = sentryRuntimeOptions({
+      enabled: true,
+      dsn: "https://public@example.invalid/1",
+      environment: "production",
+    });
+
+    expect(options.enabled).toBe(true);
+    expect(options.dataCollection).toEqual({
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: { allow: ["x-request-id"] }, response: false },
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+      frameContextLines: 0,
+    });
+    expect(options.tracesSampler()).toBe(0);
+    expect(options.tracePropagationTargets).toEqual([]);
+    expect(options.beforeSend).toBe(sanitizeSentryEvent);
+  });
+
   it("scrubs routes and common secret formats", () => {
     expect(safeRoute("/api/backend/chat?access_token=secret#x")).toBe("/api/backend/chat");
     expect(safeRoute("GET /chat/42?access_token=secret")).toBe("GET /chat/:id");
