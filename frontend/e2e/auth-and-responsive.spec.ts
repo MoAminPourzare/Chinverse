@@ -58,6 +58,66 @@ test("staging blocks search indexing and incomplete routes", async ({ request })
 });
 
 test.describe("authentication forms", () => {
+  test("signup waits for email and both tabs continue after confirmation", async ({ page, context }) => {
+    const email = "verify-journey@example.com";
+    let verified = false;
+    let signupRequests = 0;
+    let resendRequests = 0;
+    await context.route("**/api/backend/**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname.endsWith("/signup")) {
+        signupRequests += 1;
+        await route.fulfill({ json: { id: 27, email, is_verified: false } });
+      } else if (url.pathname.endsWith("/auth/refresh")) {
+        await route.fulfill({ json: { access_token: "mock-verification-session" } });
+      } else if (url.pathname.endsWith("/auth/verification/status")) {
+        await route.fulfill({
+          json: { account_id: 27, email, email_verified: verified, account_verified: verified },
+        });
+      } else if (url.pathname.endsWith("/auth/verification/email/confirm")) {
+        expect(route.request().postDataJSON()).toEqual({ token: "test-email-token" });
+        verified = true;
+        await route.fulfill({ json: { account_id: 27, message: "Email verified." } });
+      } else if (url.pathname.endsWith("/auth/verification/email/request")) {
+        resendRequests += 1;
+        await route.fulfill({ json: { message: "Email sent." } });
+      } else {
+        await route.fulfill({ json: [] });
+      }
+    });
+
+    await page.goto("/signup");
+    await page.locator("#signup-display-name").fill("کاربر آزمایشی");
+    await page.locator("#signup-email").fill(email);
+    await page.locator("#signup-password").fill("A long test-only passphrase");
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "ثبت نام", exact: true }).click();
+    await expect(page).toHaveURL(/\/verify-account$/);
+    await expect(page.getByRole("heading", { name: "صندوق ایمیلت را چک کن" })).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    expect(signupRequests).toBe(1);
+    expect(resendRequests).toBe(0);
+
+    const emailTab = await context.newPage();
+    await emailTab.goto("/verify-account?email_token=test-email-token");
+    await expect(emailTab).toHaveURL("/");
+    await page.bringToFront();
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page).toHaveURL("/");
+    expect(resendRequests).toBe(0);
+  });
+
+  test("email confirmation asks for login in a browser without the account session", async ({ page }) => {
+    await page.route("**/api/backend/auth/verification/email/confirm", (route) =>
+      route.fulfill({ json: { account_id: 27, message: "Email verified." } }));
+    await page.route("**/api/backend/auth/refresh", (route) =>
+      route.fulfill({ status: 401, json: { detail: "Session expired" } }));
+
+    await page.goto("/verify-account?email_token=test-email-token");
+    await expect(page).toHaveURL(/\/login\?email_verified=1$/);
+    await expect(page.getByText("ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو.", { exact: true })).toBeVisible();
+  });
+
   for (const route of ["/login", "/signup"]) {
     test(`${route} can reveal and hide the password`, async ({ page }) => {
       await page.goto(route);

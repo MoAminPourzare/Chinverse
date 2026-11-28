@@ -35,9 +35,6 @@ export default function LoginPage() {
         if (params.get("email_verified") === "1") {
             return "ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو.";
         }
-        if (params.get("signup") === "1") {
-            return "حسابت ساخته شد. برای فعال‌کردن آن، لینک تأیید را در صندوق ایمیل یا پوشهٔ اسپم باز کن.";
-        }
         return "";
     });
 

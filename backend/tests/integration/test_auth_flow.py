@@ -175,12 +175,9 @@ async def test_refresh_replay_revokes_session_and_logout_revokes_new_session():
         )
         assert signup.status_code == 200, signup.text
 
-        login = await client.post(
-            "/api/v1/login/access-token",
-            data={"username": email, "password": password},
-        )
-        assert login.status_code == 200, login.text
-        first_token = login.json()["access_token"]
+        initial_session = await client.post("/api/v1/auth/refresh")
+        assert initial_session.status_code == 200, initial_session.text
+        first_token = initial_session.json()["access_token"]
         first_refresh_cookie = client.cookies.get(settings.REFRESH_COOKIE_NAME)
         assert first_refresh_cookie
 
@@ -252,14 +249,22 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
         assert len(delivered) == 1
         assert delivered[0][:2] == ("verify_email", email)
         initial_token = delivered[0][2]
+        account_id = signup.json()["id"]
+        assert client.cookies.get(settings.REFRESH_COOKIE_NAME)
+        pending = await client.post("/api/v1/auth/refresh")
+        assert pending.status_code == 200, pending.text
+        assert pending.json()["requires_verification"] is True
+        headers = {"Authorization": f"Bearer {pending.json()['access_token']}"}
 
-        login = await client.post(
-            "/api/v1/login/access-token",
-            data={"username": email, "password": password},
-        )
-        assert login.status_code == 200, login.text
-        assert login.json()["requires_verification"] is True
-        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as other_browser:
+            login = await other_browser.post(
+                "/api/v1/login/access-token", data={"username": email, "password": password},
+            )
+            assert login.status_code == 200, login.text
+            assert login.json()["requires_verification"] is True
+            other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+            assert (await other_browser.get("/api/v1/users/me", headers=other_headers)).status_code == 403
+        assert len(delivered) == 1
 
         blocked_profile = await client.get("/api/v1/users/me", headers=headers)
         assert blocked_profile.status_code == 403, blocked_profile.text
@@ -267,7 +272,10 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
             "/api/v1/auth/verification/status",
             headers=headers,
         )
-        assert initial_status.json()["account_verified"] is False
+        assert initial_status.json() == {
+            "account_id": account_id, "email": email,
+            "email_verified": False, "account_verified": False,
+        }
 
         email_request = await client.post(
             "/api/v1/auth/verification/email/request",
@@ -282,16 +290,22 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
             "/api/v1/auth/verification/email/confirm", json={"token": initial_token},
         )
         assert old_link.status_code == 401
-        email_confirm = await client.post(
-            "/api/v1/auth/verification/email/confirm",
-            json={"token": email_token},
-        )
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as mail_browser:
+            email_confirm = await mail_browser.post(
+                "/api/v1/auth/verification/email/confirm", json={"token": email_token},
+            )
+            assert not mail_browser.cookies.get(settings.REFRESH_COOKIE_NAME)
         assert email_confirm.status_code == 200, email_confirm.text
+        assert email_confirm.json()["account_id"] == account_id
+        assert len(delivered) == 2
 
         verified_profile = await client.get("/api/v1/users/me", headers=headers)
         assert verified_profile.status_code == 200, verified_profile.text
         verified_status = await client.get("/api/v1/auth/verification/status", headers=headers)
-        assert verified_status.json() == {"email_verified": True, "account_verified": True}
+        assert verified_status.json() == {
+            "account_id": account_id, "email": email,
+            "email_verified": True, "account_verified": True,
+        }
 
         reset_request = await client.post("/api/v1/auth/password/reset/request", json={"email": email})
         assert reset_request.status_code == 202

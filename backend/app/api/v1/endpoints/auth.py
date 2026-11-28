@@ -493,6 +493,8 @@ async def verification_status(
     current_user: User = Depends(deps.get_current_session_user),
 ) -> Any:
     return {
+        "account_id": current_user.id,
+        "email": current_user.email,
         "email_verified": bool(current_user.email_verified_at),
         "account_verified": current_user.is_verified,
     }
@@ -500,7 +502,7 @@ async def verification_status(
 
 @router.post(
     "/auth/verification/email/confirm",
-    response_model=schemas.MessageResponse,
+    response_model=schemas.EmailVerificationResult,
     dependencies=[Depends(auth_challenge_rate_limit)],
 )
 async def confirm_email_verification(
@@ -513,6 +515,8 @@ async def confirm_email_verification(
         token=payload.token,
         purpose="verify_email",
     )
+    if user.status != UserStatus.ACTIVE:
+        raise forbidden("Inactive user")
     user.email_verified_at = utc_now()
     user.is_verified = True
     await add_audit_event(
@@ -522,7 +526,7 @@ async def confirm_email_verification(
         actor_user_id=user.id,
     )
     await db.commit()
-    return {"message": "Email verified."}
+    return {"message": "Email verified.", "account_id": user.id}
 
 
 @router.post(
@@ -631,6 +635,7 @@ async def regenerate_admin_backup_codes(
 async def create_user_signup(
     *,
     request: Request,
+    response: Response,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(deps.get_db),
     user_in: schemas.UserCreate,
@@ -713,7 +718,9 @@ async def create_user_signup(
         actor_user_id=user.id,
         subject=security.hash_secret(email),
     )
+    _, refresh_token = await create_session(db, user=user, request=request, mfa_verified=False)
     await db.commit()
+    set_refresh_cookie(response, refresh_token)
 
     background_tasks.add_task(
         dispatch_challenge,

@@ -53,6 +53,7 @@ describe("account email delivery", () => {
 
     it("uses authenticated STARTTLS to send an email verification link", async () => {
         expect((await POST(request())).status).toBe(204);
+        expect(sendMail).toHaveBeenCalledTimes(1);
         expect(createTransport).toHaveBeenCalledWith(expect.objectContaining({
             host: "smtp.example.test",
             port: 587,
@@ -62,8 +63,11 @@ describe("account email delivery", () => {
         expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
             to: { name: "", address: "learner@example.test" },
             text: expect.stringContaining(`https://chinverse.test/verify-account?email_token=${token}`),
+            html: expect.stringMatching(/<a href="https:\/\/chinverse\.test\/verify-account\?email_token=[^"]+"[^>]*>تأیید حساب<\/a>/),
             headers: { IsTransactional: "True" },
         }));
+        expect(sendMail.mock.calls[0][0].html).toContain('href="{unsubscribe}"');
+        expect(sendMail.mock.calls[0][0].text).toContain("مدیریت دریافت ایمیل‌ها: {unsubscribe}");
     });
 
     it("builds the password reset message and respects the optional test recipient list", async () => {

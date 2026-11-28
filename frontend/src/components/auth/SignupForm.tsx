@@ -133,7 +133,7 @@ export default function SignupForm({ children }: { children: ReactNode }) {
                 accept_privacy: true,
                 accept_community_guidelines: true,
             });
-            router.push("/login?signup=1");
+            router.replace("/verify-account");
         } catch (err: unknown) {
             setTurnstileResetKey((value) => value + 1);
             const apiError = err as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };
@@ -345,7 +345,7 @@ export default function SignupForm({ children }: { children: ReactNode }) {
 
                 <TurnstileWidget action="signup" onTokenChange={setTurnstileToken} resetKey={turnstileResetKey} />
 
-                <PrimaryButton type="submit" className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
+                <PrimaryButton type="submit" disabled={loading} className="mt-2 w-full py-3.5" leadingIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}>
                     {loading ? "در حال ثبت…" : "ثبت نام"}
                 </PrimaryButton>
             </form>

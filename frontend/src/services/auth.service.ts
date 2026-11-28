@@ -32,6 +32,8 @@ export interface AuthResponse {
 }
 
 export interface VerificationStatus {
+    account_id: number;
+    email: string;
     email_verified: boolean;
     account_verified: boolean;
 }
@@ -72,11 +74,14 @@ export const authService = {
         const response = await api.post("/signup", payload, {
             headers: turnstile_token ? { "X-Turnstile-Token": turnstile_token } : {},
         });
+        clearAuthSession();
         return response.data;
     },
 
     async getVerificationStatus(): Promise<VerificationStatus> {
-        const response = await api.get<VerificationStatus>("/auth/verification/status");
+        const response = await api.get<VerificationStatus>("/auth/verification/status", {
+            chinverseCacheTtlMs: 0,
+        });
         return response.data;
     },
 
@@ -84,8 +89,9 @@ export const authService = {
         await api.post("/auth/verification/email/request");
     },
 
-    async confirmEmailVerification(token: string): Promise<void> {
-        await api.post("/auth/verification/email/confirm", { token });
+    async confirmEmailVerification(token: string): Promise<number> {
+        const response = await api.post<{ account_id: number }>("/auth/verification/email/confirm", { token });
+        return response.data.account_id;
     },
 
     async requestPasswordReset(email: string, turnstileToken?: string): Promise<void> {

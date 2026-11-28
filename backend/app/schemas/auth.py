@@ -41,8 +41,15 @@ class VerificationConfirm(BaseModel):
 
 
 class VerificationStatus(BaseModel):
+    account_id: int
+    email: EmailStr
     email_verified: bool
     account_verified: bool
+
+
+class EmailVerificationResult(BaseModel):
+    message: str
+    account_id: int
 
 
 class MfaSetupResponse(BaseModel):
