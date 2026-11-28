@@ -58,8 +58,9 @@ test("staging blocks search indexing and incomplete routes", async ({ request })
 });
 
 test.describe("authentication forms", () => {
-  test("signup waits for email and both tabs continue after confirmation", async ({ page, context }) => {
+  test("signup opens a code form and unlocks the app after email verification", async ({ page, context }) => {
     const email = "verify-journey@example.com";
+    const code = "a".repeat(43);
     let verified = false;
     let signupRequests = 0;
     let resendRequests = 0;
@@ -75,7 +76,11 @@ test.describe("authentication forms", () => {
           json: { account_id: 27, email, email_verified: verified, account_verified: verified },
         });
       } else if (url.pathname.endsWith("/auth/verification/email/confirm")) {
-        expect(route.request().postDataJSON()).toEqual({ token: "test-email-token" });
+        expect(route.request().headers().authorization).toBe("Bearer mock-verification-session");
+        if (route.request().postDataJSON().token !== code) {
+          await route.fulfill({ status: 401, json: { detail: "Invalid code" } });
+          return;
+        }
         verified = true;
         await route.fulfill({ json: { account_id: 27, message: "Email verified." } });
       } else if (url.pathname.endsWith("/auth/verification/email/request")) {
@@ -98,13 +103,14 @@ test.describe("authentication forms", () => {
     expect(signupRequests).toBe(1);
     expect(resendRequests).toBe(0);
 
-    const emailTab = await context.newPage();
-    const confirmationUrl = new URL("/verify-account?email_token=test-email-token", page.url());
-    await emailTab.setContent(`<a href="${confirmationUrl.href}">تأیید حساب</a>`);
-    await emailTab.getByRole("link", { name: "تأیید حساب" }).click();
-    await expect(emailTab).toHaveURL("/");
-    await page.bringToFront();
-    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    const input = page.getByLabel("کد تأیید داخل ایمیل");
+    const confirm = page.getByRole("button", { name: "تأیید و ورود", exact: true });
+    await expect(input).toBeVisible();
+    await input.fill("z".repeat(43));
+    await confirm.click();
+    await expect(page.getByRole("alert").filter({ hasText: "کد نادرست یا منقضی شده است." })).toBeVisible();
+    await input.fill(` ${code} `);
+    await confirm.click();
     await expect(page).toHaveURL("/");
     expect(resendRequests).toBe(0);
   });
@@ -142,9 +148,8 @@ test.describe("authentication forms", () => {
     await login();
     await expect(page.getByRole("heading", { name: "ثبت‌نامت را کامل کن" })).toBeVisible();
     await expect(page.getByText(/می‌توانی این صفحه را باز بگذاری/)).toHaveCount(0);
-    await page.getByText("لینک باز نمی‌شود؟", { exact: true }).click();
     await page.getByLabel("کد تأیید داخل ایمیل").fill(code);
-    await page.getByRole("button", { name: "تأیید حساب", exact: true }).click();
+    await page.getByRole("button", { name: "تأیید و ورود", exact: true }).click();
     await expect(page).toHaveURL("/");
 
     await login();
@@ -152,15 +157,18 @@ test.describe("authentication forms", () => {
     expect(resendRequests).toBe(0);
   });
 
-  test("email confirmation asks for login in a browser without the account session", async ({ page }) => {
-    await page.route("**/api/backend/auth/verification/email/confirm", (route) =>
-      route.fulfill({ json: { account_id: 27, message: "Email verified." } }));
+  test("the verification page requires a session and ignores old email links", async ({ page }) => {
+    let attempts = 0;
+    await page.route("**/api/backend/auth/verification/email/confirm", (route) => {
+      attempts += 1;
+      return route.fulfill({ json: { account_id: 27 } });
+    });
     await page.route("**/api/backend/auth/refresh", (route) =>
       route.fulfill({ status: 401, json: { detail: "Session expired" } }));
 
     await page.goto("/verify-account?email_token=test-email-token");
-    await expect(page).toHaveURL(/\/login\?email_verified=1$/);
-    await expect(page.getByText("ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو.", { exact: true })).toBeVisible();
+    await expect(page).toHaveURL("/login");
+    expect(attempts).toBe(0);
   });
 
   for (const route of ["/login", "/signup"]) {

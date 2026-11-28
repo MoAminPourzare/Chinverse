@@ -89,9 +89,8 @@ export const authService = {
         await api.post("/auth/verification/email/request");
     },
 
-    async confirmEmailVerification(token: string): Promise<number> {
-        const response = await api.post<{ account_id: number }>("/auth/verification/email/confirm", { token });
-        return response.data.account_id;
+    async confirmEmailVerification(token: string): Promise<void> {
+        await api.post("/auth/verification/email/confirm", { token });
     },
 
     async requestPasswordReset(email: string, turnstileToken?: string): Promise<void> {

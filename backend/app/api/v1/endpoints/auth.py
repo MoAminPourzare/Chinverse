@@ -516,11 +516,13 @@ async def confirm_email_verification(
     payload: schemas.VerificationConfirm,
     request: Request,
     db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_session_user),
 ) -> Any:
     user = await consume_challenge(
         db,
         token=payload.token,
         purpose="verify_email",
+        user_id=current_user.id,
     )
     if user.status != UserStatus.ACTIVE:
         raise forbidden("Inactive user")

@@ -29,14 +29,6 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-    const [notice] = useState(() => {
-        if (typeof window === "undefined") return "";
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("email_verified") === "1") {
-            return "ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو.";
-        }
-        return "";
-    });
 
     const togglePasswordVisibility = () => {
         const livePassword = passwordInputRef.current?.value;
@@ -103,12 +95,6 @@ export default function LoginPage() {
                     <p className="text-sm leading-6">{error}</p>
                 </div>
             )}
-            {notice && (
-                <p className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
-                    {notice}
-                </p>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <label htmlFor="login-email" className="flex flex-col gap-2.5">
                     <span className="text-sm font-semibold text-slate-700">ایمیل</span>

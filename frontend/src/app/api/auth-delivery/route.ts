@@ -6,16 +6,12 @@ export const maxDuration = 15;
 
 const templates = {
     verify_email: {
-        path: "/verify-account",
-        tokenName: "email_token",
-        subject: "حساب چین‌ورس را تأیید کن",
-        heading: "به چین‌ورس خوش اومدی!",
-        instruction: "برای فعال‌شدن حسابت و شروع یادگیری، نشانی ایمیلت را تأیید کن.",
-        button: "تأیید حساب",
+        subject: "کد تأیید ایمیل چین‌ورس",
+        heading: "کد تأیید ایمیلت",
+        instruction: "کد زیر را کپی کن و در صفحهٔ تأیید ایمیل چین‌ورس وارد کن.",
     },
     password_reset: {
         path: "/forgot-password",
-        tokenName: "token",
         subject: "بازیابی رمز عبور چین‌ورس",
         heading: "رمز تازه‌ای انتخاب کن",
         instruction: "درخواست بازیابی رمز حسابت در چین‌ورس ثبت شد. برای انتخاب رمز تازه، دکمهٔ زیر را بزن.",
@@ -25,18 +21,20 @@ const templates = {
 
 const emailPattern = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
 const opaqueTokenPattern = /^[A-Za-z0-9_-]{43}$/;
-const expiryNote = "این لینک تا ۳۰ دقیقه اعتبار دارد.";
 const ignoreNote = "اگر خودت این درخواست را ثبت نکردی، می‌توانی این ایمیل را نادیده بگیری.";
 
-function renderEmail(template: typeof templates[keyof typeof templates], url: URL, recoveryCode?: string) {
-    const recoveryText = "اگر دکمه باز نشد، این کد را کپی کن و در بخش «لینک باز نمی‌شود؟» در چین‌ورس وارد کن.";
+function renderEmail(
+    template: typeof templates[keyof typeof templates],
+    action: { code: string } | { url: URL; button: string },
+) {
+    const isCode = "code" in action;
+    const expiryNote = isCode ? "این کد تا ۳۰ دقیقه اعتبار دارد." : "این لینک تا ۳۰ دقیقه اعتبار دارد.";
     return {
         text: [
             template.heading,
             template.instruction,
             "",
-            `${template.button}: ${url.href}`,
-            ...(recoveryCode ? ["", recoveryText, recoveryCode] : []),
+            isCode ? action.code : `${action.button}: ${action.url.href}`,
             "",
             expiryNote,
             ignoreNote,
@@ -54,13 +52,11 @@ function renderEmail(template: typeof templates[keyof typeof templates], url: UR
         <tr><td align="right" style="padding:28px 24px">
           <h1 style="margin:0 0 12px;font-size:22px;line-height:1.6;color:#172940">${template.heading}</h1>
           <p style="margin:0 0 24px;font-size:15px;line-height:1.9;color:#334961">${template.instruction}</p>
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+          ${isCode ? `<p dir="ltr" style="margin:0;padding:14px;background:#e7f1fc;border-radius:10px;color:#172940;font:16px monospace;text-align:center;overflow-wrap:anywhere;word-break:break-all">${action.code}</p>` : `<table role="presentation" cellspacing="0" cellpadding="0"><tr>
             <td bgcolor="#155aa6" style="border-radius:10px">
-              <a href="${url.href}" style="display:inline-block;padding:13px 24px;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;line-height:1.5">${template.button}</a>
+              <a href="${action.url.href}" style="display:inline-block;padding:13px 24px;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;line-height:1.5">${action.button}</a>
             </td>
-          </tr></table>
-          ${recoveryCode ? `<p style="margin:20px 0 8px;color:#334961;font-size:13px;line-height:1.9">${recoveryText}</p>
-          <p dir="ltr" style="margin:0;padding:10px;background:#f0f5fa;border-radius:8px;color:#172940;font:13px monospace;overflow-wrap:anywhere;word-break:break-all">${recoveryCode}</p>` : ""}
+          </tr></table>`}
           <p style="margin:22px 0 0;color:#52677e;font-size:13px;line-height:1.9">${expiryNote} ${ignoreNote}</p>
         </td></tr>
         <tr><td align="right" style="padding:16px 24px;border-top:1px solid #e1ebf4;color:#52677e;font-size:12px">
@@ -102,28 +98,34 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null) as {
         purpose?: unknown;
         destination?: unknown;
+        token?: unknown;
         link?: unknown;
     } | null;
     if (!body || (body.purpose !== "verify_email" && body.purpose !== "password_reset")
         || typeof body.destination !== "string" || body.destination.length > 254
-        || !emailPattern.test(body.destination) || typeof body.link !== "string") {
+        || !emailPattern.test(body.destination)) {
         return reply(400);
     }
 
-    const template = templates[body.purpose];
-    const link = URL.parse(body.link);
-    const token = link?.searchParams.get(template.tokenName) ?? "";
-    if (link?.origin !== publicUrl.origin || link.pathname !== template.path || !opaqueTokenPattern.test(token)) {
-        return reply(400);
+    let action: { code: string } | { url: URL; button: string };
+    if (body.purpose === "verify_email") {
+        if (typeof body.token !== "string" || !opaqueTokenPattern.test(body.token)) return reply(400);
+        action = { code: body.token };
+    } else {
+        const { path, button } = templates.password_reset;
+        const link = typeof body.link === "string" ? URL.parse(body.link) : null;
+        const token = link?.searchParams.get("token") ?? "";
+        if (link?.origin !== publicUrl.origin || link.pathname !== path || !opaqueTokenPattern.test(token)) return reply(400);
+        const url = new URL(path, publicUrl);
+        url.searchParams.set("token", token);
+        action = { url, button };
     }
 
     const allowlist = (process.env.AUTH_EMAIL_TEST_RECIPIENTS ?? "")
         .split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
     if (allowlist.length && !allowlist.includes(body.destination.toLowerCase())) return reply(204);
 
-    // Rebuild from the configured origin and the validated token.
-    const actionUrl = new URL(template.path, publicUrl);
-    actionUrl.searchParams.set(template.tokenName, token);
+    const template = templates[body.purpose];
     const smtp = nodemailer.createTransport({
         host,
         port,
@@ -142,7 +144,7 @@ export async function POST(request: Request) {
             from: { name: "چین‌ورس", address: from },
             to: { name: "", address: body.destination },
             subject: template.subject,
-            ...renderEmail(template, actionUrl, body.purpose === "verify_email" ? token : undefined),
+            ...renderEmail(template, action),
             headers: { IsTransactional: "True" },
         });
         return reply(204);

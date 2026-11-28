@@ -291,18 +291,42 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
         duplicate_resend = await client.post("/api/v1/auth/verification/email/request", headers=headers)
         assert duplicate_resend.status_code == 429, duplicate_resend.text
         assert len(delivered) == 2
-        old_link = await client.post(
-            "/api/v1/auth/verification/email/confirm", json={"token": initial_token},
+        confirm_path = "/api/v1/auth/verification/email/confirm"
+        replaced_code = await client.post(
+            confirm_path, headers=headers, json={"token": initial_token},
         )
-        assert old_link.status_code == 401
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as mail_browser:
-            email_confirm = await mail_browser.post(
-                "/api/v1/auth/verification/email/confirm", json={"token": email_token},
+        assert replaced_code.status_code == 401
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as other_browser:
+            no_session = await other_browser.post(confirm_path, json={"token": email_token})
+            assert no_session.status_code == 401
+            other_signup = await other_browser.post(
+                "/api/v1/signup",
+                json={
+                    "email": f"other-verification-{uuid4().hex[:12]}@example.com",
+                    "password": password,
+                    "display_name": "کاربر آزمایشی",
+                    "accept_terms": True,
+                    "accept_privacy": True,
+                    "accept_community_guidelines": True,
+                },
             )
-            assert not mail_browser.cookies.get(settings.REFRESH_COOKIE_NAME)
+            assert other_signup.status_code == 200, other_signup.text
+            other_session = await other_browser.post("/api/v1/auth/refresh")
+            assert other_session.status_code == 200, other_session.text
+            wrong_account = await other_browser.post(
+                confirm_path,
+                headers={"Authorization": f"Bearer {other_session.json()['access_token']}"},
+                json={"token": email_token},
+            )
+            assert wrong_account.status_code == 401
+
+        email_confirm = await client.post(confirm_path, headers=headers, json={"token": email_token})
         assert email_confirm.status_code == 200, email_confirm.text
         assert email_confirm.json()["account_id"] == account_id
-        assert len(delivered) == 2
+        replay = await client.post(confirm_path, headers=headers, json={"token": email_token})
+        assert replay.status_code == 401
+        assert len(delivered) == 3
 
         verified_profile = await client.get("/api/v1/users/me", headers=headers)
         assert verified_profile.status_code == 200, verified_profile.text
@@ -315,9 +339,9 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
         reset_request = await client.post("/api/v1/auth/password/reset/request", json={"email": email})
         assert reset_request.status_code == 202
         assert reset_request.json()["debug_token"] is None
-        assert len(delivered) == 3
-        assert delivered[2][:2] == ("password_reset", email)
-        reset_token = delivered[2][2]
+        assert len(delivered) == 4
+        assert delivered[3][:2] == ("password_reset", email)
+        reset_token = delivered[3][2]
         new_password = "Another secure recovery passphrase 456!"
         reset_payload = {"token": reset_token, "new_password": new_password}
         reset = await client.post("/api/v1/auth/password/reset/confirm", json=reset_payload)
@@ -335,7 +359,7 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
         )
         assert new_login.status_code == 200, new_login.text
         assert new_login.json()["requires_verification"] is False
-        assert len(delivered) == 3
+        assert len(delivered) == 4
 
 
 @pytest.mark.asyncio

@@ -17,7 +17,7 @@ function request(overrides: Record<string, string> = {}, bearer = secret) {
         body: JSON.stringify({
             purpose: "verify_email",
             destination: "learner@example.test",
-            link: `https://chinverse.test/verify-account?email_token=${token}`,
+            token,
             ...overrides,
         }),
     });
@@ -46,12 +46,17 @@ describe("account email delivery", () => {
     });
 
     it("rejects a link to a different origin", async () => {
-        const link = `https://other.test/verify-account?email_token=${token}`;
-        expect((await POST(request({ link }))).status).toBe(400);
+        const link = `https://other.test/forgot-password?token=${token}`;
+        expect((await POST(request({ purpose: "password_reset", link }))).status).toBe(400);
         expect(createTransport).not.toHaveBeenCalled();
     });
 
-    it("uses authenticated STARTTLS to send an email verification link", async () => {
+    it("rejects invalid codes before contacting SMTP", async () => {
+        expect((await POST(request({ token: "invalid" }))).status).toBe(400);
+        expect(createTransport).not.toHaveBeenCalled();
+    });
+
+    it("uses authenticated STARTTLS to send an email verification code", async () => {
         expect((await POST(request())).status).toBe(204);
         expect(sendMail).toHaveBeenCalledTimes(1);
         expect(createTransport).toHaveBeenCalledWith(expect.objectContaining({
@@ -62,14 +67,15 @@ describe("account email delivery", () => {
         }));
         expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
             to: { name: "", address: "learner@example.test" },
-            text: expect.stringContaining(`https://chinverse.test/verify-account?email_token=${token}`),
-            html: expect.stringMatching(/<a href="https:\/\/chinverse\.test\/verify-account\?email_token=[^"]+"[^>]*>تأیید حساب<\/a>/),
+            subject: "کد تأیید ایمیل چین‌ورس",
             headers: { IsTransactional: "True" },
         }));
         expect(sendMail.mock.calls[0][0].html).toContain('href="{unsubscribe}"');
         expect(sendMail.mock.calls[0][0].text).toContain("مدیریت دریافت ایمیل‌ها: {unsubscribe}");
         expect(sendMail.mock.calls[0][0].html).toContain(`>${token}</p>`);
         expect(sendMail.mock.calls[0][0].text.split("\n")).toContain(token);
+        expect(sendMail.mock.calls[0][0].html).not.toContain("https://");
+        expect(sendMail.mock.calls[0][0].text).not.toContain("https://");
     });
 
     it("builds the password reset message and respects the optional test recipient list", async () => {

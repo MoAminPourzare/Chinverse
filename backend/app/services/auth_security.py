@@ -243,9 +243,10 @@ async def consume_challenge(
     *,
     token: str,
     purpose: str,
+    user_id: int | None = None,
 ) -> User:
     now = utc_now()
-    result = await db.execute(
+    query = (
         select(AuthChallenge, User)
         .join(User, User.id == AuthChallenge.user_id)
         .where(
@@ -254,6 +255,9 @@ async def consume_challenge(
         )
         .with_for_update()
     )
+    if user_id is not None:
+        query = query.where(AuthChallenge.user_id == user_id)
+    result = await db.execute(query)
     row = result.one_or_none()
     if not row:
         raise unauthorized("Verification token is invalid or expired")
