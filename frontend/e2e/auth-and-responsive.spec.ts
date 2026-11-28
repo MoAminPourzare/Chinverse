@@ -88,7 +88,7 @@ test.describe("authentication forms", () => {
     await page.goto("/signup?ref=CH12AB");
     await page.locator("#signup-display-name").fill("کاربر آزمایشی");
     await page.locator("#signup-email").fill("draft@example.invalid");
-    await page.locator("#signup-phone").fill("09121234567");
+    await expect(page.locator("#signup-phone")).toHaveCount(0);
     await page.locator("#signup-password").fill("A long test-only passphrase");
 
     for (const [title, slug, action] of [
@@ -119,7 +119,6 @@ test.describe("authentication forms", () => {
       await expect(page).toHaveURL(/\/signup\?ref=CH12AB$/);
       await expect(page.locator("#signup-display-name")).toHaveValue("کاربر آزمایشی");
       await expect(page.locator("#signup-email")).toHaveValue("draft@example.invalid");
-      await expect(page.locator("#signup-phone")).toHaveValue("09121234567");
       await expect(page.locator("#signup-password")).toHaveValue("A long test-only passphrase");
       await expect(page.getByRole("checkbox")).not.toBeChecked();
     }

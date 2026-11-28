@@ -1917,7 +1917,7 @@ function UsersTab({
         <Surface className={cn(panelClass, "motion-list p-4")}>
             <PanelTitle icon={<Users size={18} />} title="کاربران" subtitle="نقش‌ها از دیتابیس اعمال می‌شوند و تغییر نقش، نشست‌های قبلی کاربر را می‌بندد." />
             <div className="mt-4 flex gap-2">
-                <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="ایمیل یا موبایل" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="ایمیل کاربر" />
                 <button type="button" onClick={onRefresh} className="rounded-2xl bg-[#155aa6] px-4 text-sm font-black text-white">جست‌وجو</button>
             </div>
             <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-100">
@@ -1925,7 +1925,7 @@ function UsersTab({
                     <div key={user.id} className="grid gap-1 border-b border-slate-100 bg-white px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto]">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-black text-slate-950">{user.display_name || user.email}</p>
-                            <p className="truncate text-xs font-bold text-slate-400">{user.email} · {user.phone}</p>
+                            <p className="truncate text-xs font-bold text-slate-400">{user.email}</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-black text-slate-500">
                             <select

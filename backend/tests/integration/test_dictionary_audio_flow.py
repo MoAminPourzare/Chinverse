@@ -21,7 +21,7 @@ async def test_audio_publication_is_idempotent_and_preserves_curated_audio_and_s
     source.write_bytes(b"isolated-dictionary-audio-integration-test")
     digest = file_digest(source)
     async with SessionLocal.begin() as db:
-        user = User(email=f"audio-{suffix}@example.com", phone=f"09{uuid4().int % 10**9:09d}",
+        user = User(email=f"audio-{suffix}@example.com",
                     password_hash="isolated-test-only")
         word = DictionaryWord(chinese=f"音频-{suffix}", pinyin="yīnpín", level="HSK4", source="manual")
         curated = DictionaryWord(chinese=f"旧音-{suffix}", pinyin="jiùyīn", level="HSK3", source="manual",

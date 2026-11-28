@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 from dataclasses import dataclass
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -180,7 +179,6 @@ class FixtureSafetyError(RuntimeError):
 class FixtureAccount:
     label: str
     email: str
-    phone: str
     role: str
     display_name: str
 
@@ -210,21 +208,17 @@ def normalize_run_id(raw_value: str) -> str:
 def build_fixture_accounts(run_id: str) -> tuple[FixtureAccount, ...]:
     accounts = []
     for label, role in FIXTURE_ROLES.items():
-        phone_seed = hashlib.sha256(f"{run_id}:{label}".encode("ascii")).digest()
-        phone_suffix = int.from_bytes(phone_seed[:8], "big") % 1_000_000_000
         accounts.append(
             FixtureAccount(
                 label=label,
                 email=f"phase4-{run_id}-{label.replace('_', '-')}@{FIXTURE_EMAIL_DOMAIN}",
-                phone=f"09{phone_suffix:09d}",
                 role=role,
                 display_name=FIXTURE_DISPLAY_NAMES[label],
             )
         )
 
     emails = {account.email for account in accounts}
-    phones = {account.phone for account in accounts}
-    if len(emails) != len(accounts) or len(phones) != len(accounts):
+    if len(emails) != len(accounts):
         raise FixtureSafetyError("Run id produced duplicate fixture identities; use another run id.")
     return tuple(accounts)
 
@@ -311,7 +305,6 @@ def load_passwords(
         if password_contains_account_data(
             password,
             account.email.split("@", 1)[0],
-            account.phone,
         ):
             raise FixtureSafetyError(
                 f"Password in {environment_name} contains fixture account data."
@@ -349,7 +342,6 @@ async def fetch_fixture_rows(
     for_update: bool,
 ) -> list[asyncpg.Record]:
     emails = [account.email for account in accounts]
-    phones = [account.phone for account in accounts]
     # Lock only users: PostgreSQL rejects a blanket FOR UPDATE on the nullable
     # side of the profile LEFT JOIN.
     lock_clause = " FOR UPDATE OF u" if for_update else ""
@@ -359,7 +351,6 @@ async def fetch_fixture_rows(
             SELECT
                 u.id,
                 lower(u.email) AS email,
-                u.phone,
                 u.role,
                 u.is_verified,
                 u.status,
@@ -370,17 +361,15 @@ async def fetch_fixture_rows(
                     FROM legal_acceptances AS la
                     WHERE la.user_id = u.id
                       AND (la.document_type, la.document_version) IN (
-                          SELECT * FROM unnest($3::text[], $4::text[])
+                          SELECT * FROM unnest($2::text[], $3::text[])
                       )
                 ) AS legal_acceptance_count
             FROM users AS u
             LEFT JOIN user_profiles AS p ON p.user_id = u.id
             WHERE lower(u.email) = ANY($1::text[])
-               OR u.phone = ANY($2::text[])
             """
             + lock_clause,
             emails,
-            phones,
             list(LEGAL_DOCUMENT_VERSIONS),
             list(LEGAL_DOCUMENT_VERSIONS.values()),
         )
@@ -403,8 +392,7 @@ def fixture_state(
         if row is None:
             return "conflict"
         if (
-            str(row["phone"]) != account.phone
-            or str(row["role"]) != account.role
+            str(row["role"]) != account.role
             or not bool(row["is_verified"])
             or str(row["status"]) != "active"
             or str(row["display_name"]) != account.display_name
@@ -467,22 +455,19 @@ async def create_fixtures(
                 """
                 INSERT INTO users (
                     email,
-                    phone,
                     password_hash,
                     is_verified,
                     status,
                     role,
                     email_verified_at,
-                    phone_verified_at,
                     password_changed_at,
                     failed_login_attempts,
                     mfa_enabled
                 )
-                VALUES ($1, $2, $3, true, 'active', $4, now(), now(), now(), 0, false)
+                VALUES ($1, $2, true, 'active', $3, now(), now(), 0, false)
                 RETURNING id
                 """,
                 account.email,
-                account.phone,
                 password_hash,
                 account.role,
             )

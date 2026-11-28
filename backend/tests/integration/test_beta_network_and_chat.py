@@ -16,7 +16,7 @@ async def account(client):
     email = f"beta-social-{uuid4().hex}@example.com"
     password = "A secure social integration passphrase 123!"
     signup = await client.post('/api/v1/signup', json={
-        'email': email, 'phone': f"09{uuid4().int % 10**9:09d}",
+        'email': email,
         'password': password, 'display_name': 'کاربر آزمایشی شبکه',
         'accept_terms': True, 'accept_privacy': True, 'accept_community_guidelines': True,
     })

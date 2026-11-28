@@ -53,7 +53,6 @@ export interface UserProfile {
     headline?: string;
     job_titles?: string[];
     about_me?: string;
-    phone?: string;
     is_verified?: boolean;
     country?: string;
     city?: string;
@@ -70,7 +69,6 @@ export interface UserProfile {
 export interface User {
     id: string;
     email: string;
-    phone?: string;
     profile?: UserProfile;
 }
 
@@ -82,7 +80,7 @@ export const userService = {
     },
 
     // آپدیت کردن پروفایل
-    // دقت کن: فقط فیلدهای UserProfile را می‌فرستیم، نه ایمیل و موبایل را
+    // Only the profile fields are editable through this endpoint.
     async updateProfile(data: Partial<UserProfile>): Promise<User> {
         const response = await api.put<User>('/users/me/profile', data);
         return response.data;

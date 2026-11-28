@@ -19,13 +19,12 @@ pytestmark = pytest.mark.integration
 async def test_showcase_registration_service_details_and_visibility_policy(monkeypatch):
     monkeypatch.setattr(settings, "DEPLOYMENT_TIER", "staging")
     monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", False)
-    suffix = str(uuid4().int)[-9:]
     email = f"showcase-{uuid4().hex}@example.com"
     password = "Showcase regression passphrase 123!"
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
         signup = await client.post("/api/v1/signup", json={
-            "email": email, "phone": f"09{suffix}", "password": password,
+            "email": email, "password": password,
             "display_name": "عرفان آزمایشی",
             "accept_terms": True, "accept_privacy": True, "accept_community_guidelines": True,
         })
@@ -57,7 +56,7 @@ async def test_showcase_registration_service_details_and_visibility_policy(monke
         service_id = created.json()["id"]
 
         async with SessionLocal() as db:
-            control = User(email=f"verified-{uuid4().hex}@example.com", phone=f"08{suffix}",
+            control = User(email=f"verified-{uuid4().hex}@example.com",
                 password_hash="unused-fixture-hash", status=UserStatus.ACTIVE, is_verified=True)
             db.add(control)
             await db.flush()

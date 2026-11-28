@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Gift, Loader2, Mail, Lock, Phone, User, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Gift, Loader2, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import { openSignupLegalDocument } from "@/components/auth/SignupLegalDialog";
 import TurnstileWidget from "@/components/auth/TurnstileWidget";
@@ -16,10 +16,8 @@ import { cn } from "@/lib/cn";
 import {
     cleanApiValidationMessage,
     hasOnlyPersianNameCharacters,
-    normalizeIranMobile,
     normalizePersianName,
     validateEmail,
-    validateIranMobile,
     validatePassword,
     validatePersianName,
     validateReferralCode,
@@ -32,7 +30,6 @@ export default function SignupForm({ children }: { children: ReactNode }) {
     const [formData, setFormData] = useState({
         email: "",
         password: "",
-        phone: "",
         display_name: "",
         referral_code: "",
     });
@@ -87,7 +84,6 @@ export default function SignupForm({ children }: { children: ReactNode }) {
         const validators: Record<string, (currentValue: string) => string> = {
             display_name: (currentValue) => validationMessage(validatePersianName(currentValue)),
             email: (currentValue) => validationMessage(validateEmail(currentValue)),
-            phone: (currentValue) => validationMessage(validateIranMobile(currentValue)),
             password: (currentValue) => validationMessage(validatePassword(currentValue)),
             referral_code: (currentValue) => validationMessage(validateReferralCode(currentValue)),
         };
@@ -105,7 +101,6 @@ export default function SignupForm({ children }: { children: ReactNode }) {
         const nextErrors = {
             display_name: validationMessage(validatePersianName(formData.display_name)),
             email: validationMessage(validateEmail(formData.email)),
-            phone: validationMessage(validateIranMobile(formData.phone)),
             password: validationMessage(validatePassword(formData.password)),
             referral_code: releaseConfig.features.referrals
                 ? validationMessage(validateReferralCode(formData.referral_code))
@@ -131,7 +126,6 @@ export default function SignupForm({ children }: { children: ReactNode }) {
             await authService.signup({
                 ...formData,
                 email: formData.email.trim().toLowerCase(),
-                phone: normalizeIranMobile(formData.phone),
                 display_name: normalizePersianName(formData.display_name),
                 referral_code: referralCode || undefined,
                 turnstile_token: turnstileToken || undefined,
@@ -139,7 +133,7 @@ export default function SignupForm({ children }: { children: ReactNode }) {
                 accept_privacy: true,
                 accept_community_guidelines: true,
             });
-            router.push("/login");
+            router.push("/login?signup=1");
         } catch (err: unknown) {
             setTurnstileResetKey((value) => value + 1);
             const apiError = err as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };
@@ -147,16 +141,16 @@ export default function SignupForm({ children }: { children: ReactNode }) {
             if (Array.isArray(detail)) {
                 const issue = detail[0];
                 const field = issue?.loc?.at(-1);
-                if (typeof field === "string" && ["display_name", "email", "phone", "password", "referral_code"].includes(field)) {
+                if (typeof field === "string" && ["display_name", "email", "password", "referral_code"].includes(field)) {
                     setFieldErrors((current) => ({ ...current, [field]: cleanApiValidationMessage(issue.msg) }));
                 } else {
                     setError(cleanApiValidationMessage(issue?.msg || "اطلاعات واردشده را بررسی کن."));
                 }
             } else if (typeof detail === "string") {
-                if (detail.includes("ایمیل")) {
+                if (detail.includes("رمز عبور")) {
+                    setFieldErrors((current) => ({ ...current, password: detail }));
+                } else if (detail.includes("ایمیل")) {
                     setFieldErrors((current) => ({ ...current, email: detail }));
-                } else if (detail.includes("موبایل")) {
-                    setFieldErrors((current) => ({ ...current, phone: detail }));
                 } else if (detail.includes("دعوت")) {
                     setFieldErrors((current) => ({ ...current, referral_code: detail }));
                 } else {
@@ -249,33 +243,6 @@ export default function SignupForm({ children }: { children: ReactNode }) {
                         />
                     </div>
                     <FieldError id="signup-email-error" message={fieldErrors.email} />
-                </label>
-
-                <label htmlFor="signup-phone" className="flex flex-col gap-2.5">
-                    <span className="text-sm font-semibold text-slate-700">شماره موبایل</span>
-                    <div className="relative">
-                        <Phone className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                            id="signup-phone"
-                            type="text"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            dir="ltr"
-                            inputMode="numeric"
-                            autoComplete="tel"
-                            aria-invalid={Boolean(fieldErrors.phone)}
-                            aria-describedby={fieldErrors.phone ? "signup-phone-error" : undefined}
-                            placeholder="09121234567"
-                            className={cn(
-                                "w-full rounded-2xl border border-slate-200 bg-white px-10 py-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400",
-                                "focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/12",
-                                fieldErrors.phone && "border-rose-300 focus:border-rose-400 focus:ring-rose-100",
-                            )}
-                        />
-                    </div>
-                    <FieldError id="signup-phone-error" message={fieldErrors.phone} />
                 </label>
 
                 <label htmlFor="signup-password" className="flex flex-col gap-2.5">

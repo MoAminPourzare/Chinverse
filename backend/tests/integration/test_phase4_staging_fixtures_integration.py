@@ -48,28 +48,24 @@ async def create_sentinel_user(
     connection: asyncpg.Connection,
     *,
     email: str,
-    phone: str,
 ) -> int:
     user_id = await connection.fetchval(
         """
         INSERT INTO users (
             email,
-            phone,
             password_hash,
             is_verified,
             status,
             role,
             email_verified_at,
-            phone_verified_at,
             password_changed_at,
             failed_login_attempts,
             mfa_enabled
         )
-        VALUES ($1, $2, $3, true, 'active', 'user', now(), now(), now(), 0, false)
+        VALUES ($1, $2, true, 'active', 'user', now(), now(), 0, false)
         RETURNING id
         """,
         email,
-        phone,
         PASSWORD_CONTEXT.hash(runtime_password("sentinel")),
     )
     await connection.execute(
@@ -199,7 +195,6 @@ async def test_phase4_fixture_cleanup_is_scoped_and_rolls_back_outer_transaction
     }
     sentinel_suffix = uuid4().hex[:12]
     sentinel_email = f"phase4-sentinel-{sentinel_suffix}@example.com"
-    sentinel_phone = f"09{int(sentinel_suffix, 16) % 1_000_000_000:09d}"
 
     connection = await asyncpg.connect(isolated_test_database_url())
     outer_transaction = connection.transaction(isolation="serializable")
@@ -220,7 +215,6 @@ async def test_phase4_fixture_cleanup_is_scoped_and_rolls_back_outer_transaction
         sentinel_id = await create_sentinel_user(
             connection,
             email=sentinel_email,
-            phone=sentinel_phone,
         )
 
         dry_run = await cleanup_fixtures(connection, accounts, apply=False)

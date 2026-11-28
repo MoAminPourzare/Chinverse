@@ -47,7 +47,6 @@ async def _create_user(label: str) -> User:
     async with SessionLocal() as session:
         user = User(
             email=f"phase1-beta-{label}-{suffix}@example.test",
-            phone=f"09{uuid4().int % 10**9:09d}",
             password_hash="phase1-integration-password-hash",
             is_verified=True,
         )

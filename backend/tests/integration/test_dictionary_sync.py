@@ -22,7 +22,7 @@ async def test_dictionary_publication_is_idempotent_and_preserves_user_study_dat
     existing_chinese, new_chinese = f"原词-{suffix}", f"新词-{suffix}"
     deadline = datetime.now(UTC) + timedelta(days=7)
     async with SessionLocal.begin() as db:
-        user = User(email=f"dictionary-{suffix}@example.com", phone=f"09{uuid4().int % 10**9:09d}", password_hash="isolated-test-only")
+        user = User(email=f"dictionary-{suffix}@example.com", password_hash="isolated-test-only")
         word = DictionaryWord(chinese=existing_chinese, pinyin="yuán cí", level="HSK3", source="manual", status="published", audio_url="/uploads/pronunciation.wav")
         db.add_all([user, word])
         await db.flush()

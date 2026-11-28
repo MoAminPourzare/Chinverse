@@ -51,7 +51,6 @@ class AdminStat(BaseModel):
 class AdminUserSummary(BaseModel):
     id: int
     email: str
-    phone: str
     status: str
     is_verified: bool
     role: str
@@ -102,7 +101,6 @@ class AdminStatusUpdate(BaseModel):
 class AdminSupportUserSummary(BaseModel):
     id: int
     email: str
-    phone: str
     display_name: Optional[str] = None
 
 
@@ -130,7 +128,6 @@ def _admin_user_summary(user: User) -> dict[str, object]:
     return {
         "id": user.id,
         "email": user.email,
-        "phone": user.phone,
         "status": _enum_value(user.status),
         "is_verified": user.is_verified,
         "role": _enum_value(user.role),
@@ -152,7 +149,6 @@ def _admin_support_ticket(ticket: SupportTicket) -> dict[str, object]:
         "user": {
             "id": ticket.user.id,
             "email": ticket.user.email,
-            "phone": ticket.user.phone,
             "display_name": ticket.user.profile.display_name if ticket.user.profile else None,
         },
     }
@@ -775,7 +771,7 @@ async def admin_users(
     query = select(User).options(selectinload(User.profile))
     if q:
         term = f"%{q.strip()}%"
-        query = query.where(or_(User.email.ilike(term), User.phone.ilike(term)))
+        query = query.where(User.email.ilike(term))
 
     result = await db.execute(
         query.order_by(desc(User.created_at)).offset(pagination.skip).limit(pagination.limit)

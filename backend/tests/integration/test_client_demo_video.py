@@ -22,7 +22,7 @@ async def test_demo_install_is_atomic_resumable_and_preserves_previous_media(mon
     suffix = uuid4().hex
     monkeypatch.setattr(media, "_verify_media_storage_for_publish", AsyncMock())
     async with SessionLocal.begin() as db:
-        user = User(email=f"demo-{suffix}@example.com", phone=f"demo-{suffix}",
+        user = User(email=f"demo-{suffix}@example.com",
                     password_hash="isolated-demo-test", role="admin")
         db.add(user)
         await db.flush()

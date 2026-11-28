@@ -49,13 +49,11 @@ class QueueWebSocket:
 
 
 async def create_verified_access_token(client: AsyncClient) -> tuple[int, str, str]:
-    suffix = str(uuid4().int)[-9:]
     email = f"phase4-ws-{uuid4().hex[:12]}@example.com"
     signup = await client.post(
         "/api/v1/signup",
         json={
             "email": email,
-            "phone": f"09{suffix}",
             "password": PASSWORD,
             "display_name": "کاربر وب سوکت فاز چهار",
             "accept_terms": True,
@@ -70,7 +68,6 @@ async def create_verified_access_token(client: AsyncClient) -> tuple[int, str, s
         user = await session.get(User, user_id)
         now = datetime.now(UTC)
         user.email_verified_at = now
-        user.phone_verified_at = now
         user.is_verified = True
         await session.commit()
 

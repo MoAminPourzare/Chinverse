@@ -26,7 +26,6 @@ import {
 
 interface AccountFormState extends Pick<UserProfile, "display_name" | "avatar_url"> {
     email: string;
-    phone: string;
 }
 
 const accountIcon = "/assets/chinverse/icons/profile.svg";
@@ -45,7 +44,6 @@ export default function AccountPage() {
     const [formData, setFormData] = useState<AccountFormState>({
         display_name: "",
         email: "",
-        phone: "",
         avatar_url: "",
     });
 
@@ -56,7 +54,6 @@ export default function AccountPage() {
                 setFormData({
                     display_name: userData.profile?.display_name || "",
                     email: userData.email || "",
-                    phone: userData.phone || "",
                     avatar_url: userData.profile?.avatar_url || "",
                 });
                 setAvatarMarkedForDeletion(false);
@@ -151,7 +148,6 @@ export default function AccountPage() {
             setFormData({
                 display_name: userData.profile?.display_name || "",
                 email: userData.email || "",
-                phone: userData.phone || "",
                 avatar_url: userData.profile?.avatar_url || "",
             });
             setAvatarMarkedForDeletion(false);
@@ -284,7 +280,6 @@ export default function AccountPage() {
                         error={fieldErrors.display_name}
                     />
 
-                    <AccountField label="شماره موبایل" name="phone" value={formData.phone || ""} readOnly dir="ltr" />
                     <AccountField label="ایمیل" name="email" value={formData.email || ""} readOnly dir="ltr" />
 
                     <div className="grid grid-cols-2 gap-3 pt-1">

@@ -36,7 +36,6 @@ from app.services.auth_security import (
     add_audit_event,
     clear_refresh_cookie,
     consume_challenge,
-    consume_user_challenge,
     create_challenge,
     create_session,
     dispatch_challenge,
@@ -337,9 +336,8 @@ async def change_password(
     if password_contains_account_data(
         payload.new_password,
         current_user.email.split("@", 1)[0],
-        current_user.phone,
     ):
-        raise bad_request("رمز عبور نباید شامل ایمیل یا شماره موبایل باشد")
+        raise bad_request("رمز عبور نباید شامل نام کاربری ایمیل باشد")
 
     current_user.password_hash = security.get_password_hash(payload.new_password)
     current_user.password_changed_at = utc_now()
@@ -430,9 +428,8 @@ async def confirm_password_reset(
     if password_contains_account_data(
         payload.new_password,
         user.email.split("@", 1)[0],
-        user.phone,
     ):
-        raise bad_request("رمز عبور نباید شامل ایمیل یا شماره موبایل باشد")
+        raise bad_request("رمز عبور نباید شامل نام کاربری ایمیل باشد")
     user.password_hash = security.get_password_hash(payload.new_password)
     user.password_changed_at = utc_now()
     user.failed_login_attempts = 0
@@ -497,7 +494,6 @@ async def verification_status(
 ) -> Any:
     return {
         "email_verified": bool(current_user.email_verified_at),
-        "phone_verified": bool(current_user.phone_verified_at),
         "account_verified": current_user.is_verified,
     }
 
@@ -518,7 +514,7 @@ async def confirm_email_verification(
         purpose="verify_email",
     )
     user.email_verified_at = utc_now()
-    user.is_verified = bool(user.phone_verified_at)
+    user.is_verified = True
     await add_audit_event(
         db,
         event_type="auth.email_verified",
@@ -527,75 +523,6 @@ async def confirm_email_verification(
     )
     await db.commit()
     return {"message": "Email verified."}
-
-
-@router.post(
-    "/auth/verification/phone/request",
-    response_model=schemas.MessageResponse,
-    dependencies=[Depends(auth_challenge_rate_limit)],
-)
-async def request_phone_verification(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_session_user),
-) -> Any:
-    if current_user.phone_verified_at:
-        return {"message": "Phone is already verified."}
-    token = await create_challenge(
-        db,
-        user=current_user,
-        purpose="verify_phone",
-        destination=current_user.phone,
-        ttl_minutes=10,
-        numeric=True,
-    )
-    await add_audit_event(
-        db,
-        event_type="auth.phone_verification_requested",
-        request=request,
-        actor_user_id=current_user.id,
-    )
-    await db.commit()
-    background_tasks.add_task(
-        dispatch_challenge,
-        purpose="verify_phone",
-        destination=current_user.phone,
-        token=token,
-    )
-    return {
-        "message": "Phone verification code has been sent.",
-        "debug_token": _debug_token(token),
-    }
-
-
-@router.post(
-    "/auth/verification/phone/confirm",
-    response_model=schemas.MessageResponse,
-    dependencies=[Depends(auth_challenge_rate_limit)],
-)
-async def confirm_phone_verification(
-    payload: schemas.VerificationConfirm,
-    request: Request,
-    db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_session_user),
-) -> Any:
-    await consume_user_challenge(
-        db,
-        user_id=current_user.id,
-        token=payload.token,
-        purpose="verify_phone",
-    )
-    current_user.phone_verified_at = utc_now()
-    current_user.is_verified = bool(current_user.email_verified_at)
-    await add_audit_event(
-        db,
-        event_type="auth.phone_verified",
-        request=request,
-        actor_user_id=current_user.id,
-    )
-    await db.commit()
-    return {"message": "Phone verified."}
 
 
 @router.post(
@@ -719,19 +646,17 @@ async def create_user_signup(
         expected_action="signup",
     )
     email = str(user_in.email).strip().lower()
-    phone = user_in.phone.strip()
     display_name = user_in.display_name.strip()
     referral_code = (
         user_in.referral_code if settings.FEATURE_REFERRALS_ENABLED else None
     )
-    if not phone or not display_name:
-        raise bad_request("Phone and display name cannot be empty")
+    if not display_name:
+        raise bad_request("Display name cannot be empty")
     if password_contains_account_data(
         user_in.password,
         email.split("@", 1)[0],
-        phone,
     ):
-        raise bad_request("رمز عبور نباید شامل ایمیل یا شماره موبایل باشد")
+        raise bad_request("رمز عبور نباید شامل نام کاربری ایمیل باشد")
 
     if referral_code:
         referrer_user_id = await get_referrer_id_by_code(db, code=referral_code)
@@ -740,12 +665,9 @@ async def create_user_signup(
 
     if await db.scalar(select(User.id).where(func.lower(User.email) == email)):
         raise conflict("این ایمیل قبلاً ثبت شده است")
-    if await db.scalar(select(User.id).where(User.phone == phone)):
-        raise conflict("این شماره موبایل قبلاً ثبت شده است")
 
     user = User(
         email=email,
-        phone=phone,
         password_hash=security.get_password_hash(user_in.password),
         password_changed_at=utc_now(),
         is_verified=False,
@@ -784,14 +706,6 @@ async def create_user_signup(
         destination=email,
         ttl_minutes=30,
     )
-    phone_token = await create_challenge(
-        db,
-        user=user,
-        purpose="verify_phone",
-        destination=phone,
-        ttl_minutes=10,
-        numeric=True,
-    )
     await add_audit_event(
         db,
         event_type="auth.signup",
@@ -806,12 +720,6 @@ async def create_user_signup(
         purpose="verify_email",
         destination=email,
         token=email_token,
-    )
-    background_tasks.add_task(
-        dispatch_challenge,
-        purpose="verify_phone",
-        destination=phone,
-        token=phone_token,
     )
 
     result = await db.execute(

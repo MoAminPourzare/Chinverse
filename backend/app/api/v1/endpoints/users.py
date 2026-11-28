@@ -48,7 +48,7 @@ async def delete_user_account(
     request: Request,
     response: Response,
     db: AsyncSession = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_session_user),
     _rate_limit: None = Depends(write_rate_limit),
 ) -> Any:
     """
@@ -413,7 +413,7 @@ async def get_public_user_profile(
 ) -> Any:
     """
     Get public profile of a user.
-    Returns full public details (no email, phone, password).
+    Returns public profile details.
     """
     result = await db.execute(
         select(User)

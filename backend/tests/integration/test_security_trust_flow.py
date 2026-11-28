@@ -32,13 +32,11 @@ async def create_verified_user(
     *,
     role: UserRole = UserRole.USER,
 ) -> tuple[int, dict[str, str], str]:
-    suffix = str(uuid4().int)[-9:]
     email = f"{label}-{uuid4().hex[:10]}@example.com"
     signup = await client.post(
         "/api/v1/signup",
         json={
             "email": email,
-            "phone": f"09{suffix}",
             "password": PASSWORD,
             "display_name": "کاربر امنیت",
             **LEGAL_ACCEPTANCE,
@@ -51,7 +49,6 @@ async def create_verified_user(
         user = await db.get(User, user_id)
         now = datetime.now(UTC)
         user.email_verified_at = now
-        user.phone_verified_at = now
         user.is_verified = True
         user.role = role
         await db.commit()

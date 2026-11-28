@@ -16,7 +16,6 @@ export interface SignupRequest {
     email: string;
     password: string;
     referral_code?: string;
-    phone: string;
     display_name?: string;
     turnstile_token?: string;
     accept_terms: true;
@@ -34,7 +33,6 @@ export interface AuthResponse {
 
 export interface VerificationStatus {
     email_verified: boolean;
-    phone_verified: boolean;
     account_verified: boolean;
 }
 
@@ -88,14 +86,6 @@ export const authService = {
 
     async confirmEmailVerification(token: string): Promise<void> {
         await api.post("/auth/verification/email/confirm", { token });
-    },
-
-    async requestPhoneVerification(): Promise<void> {
-        await api.post("/auth/verification/phone/request");
-    },
-
-    async confirmPhoneVerification(token: string): Promise<void> {
-        await api.post("/auth/verification/phone/confirm", { token });
     },
 
     async requestPasswordReset(email: string, turnstileToken?: string): Promise<void> {

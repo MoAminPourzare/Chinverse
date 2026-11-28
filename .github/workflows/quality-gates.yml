@@ -162,9 +162,6 @@ jobs:
           poetry run python scripts/verify_phase7_schema.py
           poetry run python scripts/verify_phase8_schema.py
 
-      - name: Integration tests
-        run: poetry run python -m pytest -m integration
-
       - name: Verify migration rollback and rebuild
         run: |
           poetry run alembic downgrade base
@@ -177,6 +174,9 @@ jobs:
           poetry run python scripts/verify_phase6_schema.py
           poetry run python scripts/verify_phase7_schema.py
           poetry run python scripts/verify_phase8_schema.py
+
+      - name: Integration tests
+        run: poetry run python -m pytest -m integration
 
       - name: Build production container
         run: docker build --tag chinverse-backend:ci .

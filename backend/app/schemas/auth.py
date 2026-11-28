@@ -42,7 +42,6 @@ class VerificationConfirm(BaseModel):
 
 class VerificationStatus(BaseModel):
     email_verified: bool
-    phone_verified: bool
     account_verified: bool
 
 

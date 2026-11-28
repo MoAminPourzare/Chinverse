@@ -59,7 +59,7 @@ test.describe("phase four authenticated journeys", () => {
       admin_reply: reply,
       responded_at: reply ? now : null,
       created_at: now,
-      user: { id: 9, email: "learner@example.com", phone: "09120000000", display_name: "زبان‌آموز" },
+      user: { id: 9, email: "learner@example.com", display_name: "زبان‌آموز" },
     });
 
     await page.route("**/api/backend/**", async (route) => {

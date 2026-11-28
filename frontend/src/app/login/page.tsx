@@ -31,9 +31,14 @@ export default function LoginPage() {
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [notice] = useState(() => {
         if (typeof window === "undefined") return "";
-        return new URLSearchParams(window.location.search).get("email_verified") === "1"
-            ? "ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو."
-            : "";
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("email_verified") === "1") {
+            return "ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو.";
+        }
+        if (params.get("signup") === "1") {
+            return "حسابت ساخته شد. برای فعال‌کردن آن، لینک تأیید را در صندوق ایمیل یا پوشهٔ اسپم باز کن.";
+        }
+        return "";
     });
 
     const togglePasswordVisibility = () => {

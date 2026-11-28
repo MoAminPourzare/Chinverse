@@ -14,7 +14,6 @@ pytestmark = pytest.mark.integration
 
 
 async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
-    suffix = str(uuid4().int)[-9:]
     email = f"community-{uuid4().hex[:12]}@example.com"
     password = "Secure community passphrase 123!"
 
@@ -22,7 +21,6 @@ async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
         "/api/v1/signup",
         json={
             "email": email,
-            "phone": f"09{suffix}",
             "password": password,
             "display_name": "\u06a9\u0627\u0631\u0628\u0631 \u0622\u0632\u0645\u0627\u06cc\u0634\u06cc",
             "accept_terms": True,
@@ -35,7 +33,6 @@ async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
     async with SessionLocal() as db:
         user = await db.get(User, signup.json()["id"])
         user.email_verified_at = datetime.now(UTC)
-        user.phone_verified_at = datetime.now(UTC)
         user.is_verified = True
         await db.commit()
 

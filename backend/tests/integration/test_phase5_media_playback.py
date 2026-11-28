@@ -44,13 +44,11 @@ LEGAL_ACCEPTANCE = {
 
 
 async def _create_verified_user(client: AsyncClient, label: str) -> tuple[int, dict[str, str]]:
-    suffix = str(uuid4().int)[-9:]
     email = f"phase5-{label}-{uuid4().hex[:10]}@example.com"
     signup = await client.post(
         "/api/v1/signup",
         json={
             "email": email,
-            "phone": f"09{suffix}",
             "password": PASSWORD,
             "display_name": "کاربر رسانه فاز پنج",
             **LEGAL_ACCEPTANCE,
@@ -64,7 +62,6 @@ async def _create_verified_user(client: AsyncClient, label: str) -> tuple[int, d
         assert user is not None
         now = datetime.now(UTC)
         user.email_verified_at = now
-        user.phone_verified_at = now
         user.is_verified = True
         await db.commit()
 
@@ -106,7 +103,6 @@ async def _create_media_fixture(
     async with SessionLocal() as db:
         user = User(
             email=f"phase5-media-{suffix}@example.com",
-            phone=f"+989{suffix[:9]}",
             password_hash="phase5-test-only",
             is_verified=True,
             status=UserStatus.ACTIVE,

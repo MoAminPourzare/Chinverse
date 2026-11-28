@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 import json
+import logging
 import secrets
 from typing import Any
 from urllib.parse import urlencode
@@ -21,6 +22,8 @@ from app.models.security import (
     SecurityAuditEvent,
 )
 from app.models.user import User, UserRole
+
+logger = logging.getLogger(__name__)
 
 
 def utc_now() -> datetime:
@@ -208,7 +211,6 @@ async def create_challenge(
     purpose: str,
     destination: str,
     ttl_minutes: int,
-    numeric: bool = False,
 ) -> str:
     now = utc_now()
     await db.execute(
@@ -220,11 +222,7 @@ async def create_challenge(
         )
         .values(consumed_at=now)
     )
-    token = (
-        f"{secrets.randbelow(1_000_000):06d}"
-        if numeric
-        else security.generate_opaque_token(32)
-    )
+    token = security.generate_opaque_token(32)
     db.add(
         AuthChallenge(
             id=str(uuid4()),
@@ -273,44 +271,6 @@ async def consume_challenge(
     return user
 
 
-async def consume_user_challenge(
-    db: AsyncSession,
-    *,
-    user_id: int,
-    token: str,
-    purpose: str,
-) -> None:
-    """Consume a short-lived challenge while persisting failed numeric attempts."""
-    now = utc_now()
-    result = await db.execute(
-        select(AuthChallenge)
-        .where(
-            AuthChallenge.user_id == user_id,
-            AuthChallenge.purpose == purpose,
-            AuthChallenge.consumed_at.is_(None),
-        )
-        .order_by(AuthChallenge.created_at.desc())
-        .with_for_update()
-    )
-    challenge = result.scalar_one_or_none()
-    if not challenge:
-        raise unauthorized("Verification token is invalid or expired")
-
-    challenge.attempts += 1
-    token_matches = secrets.compare_digest(
-        challenge.token_hash,
-        security.hash_secret(token.strip()),
-    )
-    if challenge.expires_at <= now or not token_matches or challenge.attempts > 8:
-        if challenge.attempts >= 8 or challenge.expires_at <= now:
-            challenge.consumed_at = now
-        # Failure state must persist even though the caller returns a 401.
-        await db.commit()
-        raise unauthorized("Verification token is invalid or expired")
-
-    challenge.consumed_at = now
-
-
 async def dispatch_challenge(
     *,
     purpose: str,
@@ -334,13 +294,18 @@ async def dispatch_challenge(
         settings.PROVIDER_READ_TIMEOUT_SECONDS,
         connect=settings.PROVIDER_CONNECT_TIMEOUT_SECONDS,
     )
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.post(
-            settings.AUTH_DELIVERY_WEBHOOK_URL,
-            headers=headers,
-            json=payload,
-        )
-        response.raise_for_status()
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                settings.AUTH_DELIVERY_WEBHOOK_URL,
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        logger.warning("Account email delivery failed for %s: HTTP %s", purpose, exc.response.status_code)
+    except httpx.RequestError as exc:
+        logger.warning("Account email delivery failed for %s: %s", purpose, type(exc).__name__)
 
 
 def challenge_public_url(*, purpose: str, token: str) -> str | None:

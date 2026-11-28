@@ -7,7 +7,6 @@ const requestedTitle = "کارشناس مطالعات چین";
 const account = {
     id: 901,
     email: "controls@example.com",
-    phone: "09121234567",
     profile: { display_name: "کاربر آزمایشی", headline: "مترجم زبان چینی", country: "کانادا", gender: "خانم", profile_truth_confirmed: true },
 };
 
