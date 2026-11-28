@@ -99,12 +99,14 @@ test.describe("authentication forms", () => {
     expect(resendRequests).toBe(0);
 
     const emailTab = await context.newPage();
-    const emailButton = "https://mail-relay.example/verification";
-    await emailTab.route(emailButton, (route) => route.fulfill({
-      status: 302,
-      headers: { location: new URL("/verify-account?email_token=test-email-token", page.url()).href },
+    const mailPage = "https://mail-relay.example/message";
+    const confirmationUrl = new URL("/verify-account?email_token=test-email-token", page.url());
+    await emailTab.route(mailPage, (route) => route.fulfill({
+      contentType: "text/html; charset=utf-8",
+      body: `<a href="${confirmationUrl.href}">تأیید حساب</a>`,
     }));
-    await emailTab.goto(emailButton);
+    await emailTab.goto(mailPage);
+    await emailTab.getByRole("link", { name: "تأیید حساب" }).click();
     await expect(emailTab).toHaveURL("/");
     await page.bringToFront();
     await page.evaluate(() => window.dispatchEvent(new Event("focus")));
