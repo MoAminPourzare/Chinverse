@@ -58,6 +58,68 @@ test("staging blocks search indexing and incomplete routes", async ({ request })
 });
 
 test.describe("authentication forms", () => {
+  test("password recovery accepts an emailed code and keeps focused fields clear of their labels", async ({ page }) => {
+    const email = "password-recovery@example.com";
+    const code = "r".repeat(43);
+    const newPassword = "A secure recovery passphrase!";
+    let requests = 0;
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.route("**/api/backend/auth/password/reset/request", async (route) => {
+      expect(route.request().postDataJSON()).toEqual({ email, turnstile_token: null });
+      requests += 1;
+      await route.fulfill({ status: 202, json: { message: "Accepted" } });
+    });
+    await page.route("**/api/backend/auth/password/reset/confirm", async (route) => {
+      const data = route.request().postDataJSON();
+      expect(data.new_password).toBe(newPassword);
+      if (data.token !== code) {
+        await route.fulfill({ status: 401, json: { detail: "Invalid code" } });
+        return;
+      }
+      await route.fulfill({ json: { message: "Password reset" } });
+    });
+
+    const focusedField = async (id: string) => {
+      const field = page.locator(`#${id}:visible`);
+      await field.focus();
+      await expect(field).toBeFocused();
+      const labelBox = await page.locator(`label[for="${id}"]:visible`).boundingBox();
+      const fieldBox = await field.boundingBox();
+      expect(labelBox).not.toBeNull();
+      expect(fieldBox).not.toBeNull();
+      expect(fieldBox!.y - (labelBox!.y + labelBox!.height)).toBeGreaterThanOrEqual(10);
+      return field;
+    };
+
+    await page.goto("/forgot-password");
+    const emailField = await focusedField("reset-email");
+    await emailField.fill(email);
+    await page.getByRole("button", { name: "ارسال کد بازیابی", exact: true }).click();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    const codeField = await focusedField("reset-code");
+    const password = await focusedField("reset-new-password");
+    await page.getByRole("button", { name: "دریافت کد تازه یا تغییر ایمیل", exact: true }).click();
+    await expect(emailField).toHaveValue(email);
+    await page.getByRole("button", { name: "ارسال کد بازیابی", exact: true }).click();
+    expect(requests).toBe(2);
+    await codeField.fill("x".repeat(43));
+    await password.fill(newPassword);
+    const confirm = page.getByRole("button", { name: "ثبت رمز عبور جدید", exact: true });
+    await confirm.click();
+    await expect(page.getByRole("alert").filter({ hasText: "کد بازیابی نادرست یا منقضی شده است." })).toBeVisible();
+    await codeField.fill(` ${code} `);
+    await confirm.click();
+    await expect(page).toHaveURL(/\/login\?password_reset=1$/);
+    await expect(page.getByText("رمز عبور عوض شد. با رمز جدید وارد شو.", { exact: true })).toBeVisible();
+  });
+
+  test("an existing recovery link pre-fills the code and removes it from the address bar", async ({ page }) => {
+    const previousCode = "r".repeat(43);
+    await page.goto(`/forgot-password?token=${previousCode}`);
+    await expect(page.getByLabel("کد بازیابی")).toHaveValue(previousCode);
+    await expect(page).toHaveURL("/forgot-password");
+  });
+
   test("signup opens a code form and unlocks the app after email verification", async ({ page, context }) => {
     const email = "verify-journey@example.com";
     const code = "a".repeat(43);

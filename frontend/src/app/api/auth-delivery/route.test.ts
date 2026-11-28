@@ -26,7 +26,6 @@ function request(overrides: Record<string, string> = {}, bearer = secret) {
 beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("AUTH_DELIVERY_WEBHOOK_SECRET", secret);
-    vi.stubEnv("AUTH_EMAIL_PUBLIC_URL", "https://chinverse.test");
     vi.stubEnv("AUTH_SMTP_HOST", "smtp.example.test");
     vi.stubEnv("AUTH_SMTP_PORT", "587");
     vi.stubEnv("AUTH_SMTP_USER", "test-smtp-user");
@@ -45,14 +44,8 @@ describe("account email delivery", () => {
         expect(createTransport).not.toHaveBeenCalled();
     });
 
-    it("rejects a link to a different origin", async () => {
-        const link = `https://other.test/forgot-password?token=${token}`;
-        expect((await POST(request({ purpose: "password_reset", link }))).status).toBe(400);
-        expect(createTransport).not.toHaveBeenCalled();
-    });
-
-    it("rejects invalid codes before contacting SMTP", async () => {
-        expect((await POST(request({ token: "invalid" }))).status).toBe(400);
+    it.each(["verify_email", "password_reset"])("rejects invalid codes for %s before contacting SMTP", async (purpose) => {
+        expect((await POST(request({ purpose, token: "invalid" }))).status).toBe(400);
         expect(createTransport).not.toHaveBeenCalled();
     });
 
@@ -78,17 +71,23 @@ describe("account email delivery", () => {
         expect(sendMail.mock.calls[0][0].text).not.toContain("https://");
     });
 
-    it("builds the password reset message and respects the optional test recipient list", async () => {
+    it("includes a copyable recovery code and respects the optional test recipient list", async () => {
         vi.stubEnv("AUTH_EMAIL_TEST_RECIPIENTS", "tester@example.test");
-        const link = `https://chinverse.test/forgot-password?token=${token}`;
-        expect((await POST(request({ purpose: "password_reset", link }))).status).toBe(204);
+        const purpose = "password_reset";
+        expect((await POST(request({ purpose }))).status).toBe(204);
         expect(sendMail).not.toHaveBeenCalled();
 
         const destination = "tester@example.test";
-        expect((await POST(request({ purpose: "password_reset", link, destination }))).status).toBe(204);
+        const oldLink = `https://chinverse.test/forgot-password?token=${token}`;
+        expect((await POST(request({ purpose, destination, link: oldLink }))).status).toBe(204);
         expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
-            subject: "بازیابی رمز عبور چین‌ورس",
-            text: expect.stringContaining(link),
+            subject: "کد بازیابی رمز عبور چین‌ورس",
+            headers: { IsTransactional: "True" },
         }));
+        const message = sendMail.mock.calls[0][0];
+        expect(message.html).toContain(`>${token}</p>`);
+        expect(message.text.split("\n")).toContain(token);
+        expect(message.html).not.toContain("https://");
+        expect(message.text).not.toContain("https://");
     });
 });

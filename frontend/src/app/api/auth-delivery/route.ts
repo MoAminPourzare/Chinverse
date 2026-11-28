@@ -11,30 +11,24 @@ const templates = {
         instruction: "کد زیر را کپی کن و در صفحهٔ تأیید ایمیل چین‌ورس وارد کن.",
     },
     password_reset: {
-        path: "/forgot-password",
-        subject: "بازیابی رمز عبور چین‌ورس",
-        heading: "رمز تازه‌ای انتخاب کن",
-        instruction: "درخواست بازیابی رمز حسابت در چین‌ورس ثبت شد. برای انتخاب رمز تازه، دکمهٔ زیر را بزن.",
-        button: "انتخاب رمز جدید",
+        subject: "کد بازیابی رمز عبور چین‌ورس",
+        heading: "کد بازیابی رمز عبور",
+        instruction: "کد زیر را کپی کن و در صفحهٔ بازیابی رمز عبور چین‌ورس وارد کن.",
     },
 } as const;
 
 const emailPattern = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
 const opaqueTokenPattern = /^[A-Za-z0-9_-]{43}$/;
+const expiryNote = "این کد تا ۳۰ دقیقه اعتبار دارد.";
 const ignoreNote = "اگر خودت این درخواست را ثبت نکردی، می‌توانی این ایمیل را نادیده بگیری.";
 
-function renderEmail(
-    template: typeof templates[keyof typeof templates],
-    action: { code: string } | { url: URL; button: string },
-) {
-    const isCode = "code" in action;
-    const expiryNote = isCode ? "این کد تا ۳۰ دقیقه اعتبار دارد." : "این لینک تا ۳۰ دقیقه اعتبار دارد.";
+function renderEmail(template: typeof templates[keyof typeof templates], code: string) {
     return {
         text: [
             template.heading,
             template.instruction,
             "",
-            isCode ? action.code : `${action.button}: ${action.url.href}`,
+            code,
             "",
             expiryNote,
             ignoreNote,
@@ -52,11 +46,7 @@ function renderEmail(
         <tr><td align="right" style="padding:28px 24px">
           <h1 style="margin:0 0 12px;font-size:22px;line-height:1.6;color:#172940">${template.heading}</h1>
           <p style="margin:0 0 24px;font-size:15px;line-height:1.9;color:#334961">${template.instruction}</p>
-          ${isCode ? `<p dir="ltr" style="margin:0;padding:14px;background:#e7f1fc;border-radius:10px;color:#172940;font:16px monospace;text-align:center;overflow-wrap:anywhere;word-break:break-all">${action.code}</p>` : `<table role="presentation" cellspacing="0" cellpadding="0"><tr>
-            <td bgcolor="#155aa6" style="border-radius:10px">
-              <a href="${action.url.href}" style="display:inline-block;padding:13px 24px;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;line-height:1.5">${action.button}</a>
-            </td>
-          </tr></table>`}
+          <p dir="ltr" style="margin:0;padding:14px;background:#e7f1fc;border-radius:10px;color:#172940;font:16px monospace;text-align:center;overflow-wrap:anywhere;word-break:break-all">${code}</p>
           <p style="margin:22px 0 0;color:#52677e;font-size:13px;line-height:1.9">${expiryNote} ${ignoreNote}</p>
         </td></tr>
         <tr><td align="right" style="padding:16px 24px;border-top:1px solid #e1ebf4;color:#52677e;font-size:12px">
@@ -89,9 +79,8 @@ export async function POST(request: Request) {
     const pass = process.env.AUTH_SMTP_PASSWORD;
     const from = process.env.AUTH_SMTP_FROM?.trim();
     const port = Number(process.env.AUTH_SMTP_PORT || "587");
-    const publicUrl = URL.parse(process.env.AUTH_EMAIL_PUBLIC_URL ?? "");
     if (!host || !user || !pass || !from || !emailPattern.test(from)
-        || publicUrl?.protocol !== "https:" || !Number.isInteger(port) || port < 1 || port > 65535) {
+        || !Number.isInteger(port) || port < 1 || port > 65535) {
         return reply(503);
     }
 
@@ -99,26 +88,12 @@ export async function POST(request: Request) {
         purpose?: unknown;
         destination?: unknown;
         token?: unknown;
-        link?: unknown;
     } | null;
     if (!body || (body.purpose !== "verify_email" && body.purpose !== "password_reset")
         || typeof body.destination !== "string" || body.destination.length > 254
-        || !emailPattern.test(body.destination)) {
+        || !emailPattern.test(body.destination)
+        || typeof body.token !== "string" || !opaqueTokenPattern.test(body.token)) {
         return reply(400);
-    }
-
-    let action: { code: string } | { url: URL; button: string };
-    if (body.purpose === "verify_email") {
-        if (typeof body.token !== "string" || !opaqueTokenPattern.test(body.token)) return reply(400);
-        action = { code: body.token };
-    } else {
-        const { path, button } = templates.password_reset;
-        const link = typeof body.link === "string" ? URL.parse(body.link) : null;
-        const token = link?.searchParams.get("token") ?? "";
-        if (link?.origin !== publicUrl.origin || link.pathname !== path || !opaqueTokenPattern.test(token)) return reply(400);
-        const url = new URL(path, publicUrl);
-        url.searchParams.set("token", token);
-        action = { url, button };
     }
 
     const allowlist = (process.env.AUTH_EMAIL_TEST_RECIPIENTS ?? "")
@@ -144,7 +119,7 @@ export async function POST(request: Request) {
             from: { name: "چین‌ورس", address: from },
             to: { name: "", address: body.destination },
             subject: template.subject,
-            ...renderEmail(template, action),
+            ...renderEmail(template, body.token),
             headers: { IsTransactional: "True" },
         });
         return reply(204);

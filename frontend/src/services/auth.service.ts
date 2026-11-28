@@ -105,6 +105,7 @@ export const authService = {
             token,
             new_password: newPassword,
         });
+        clearAuthSession();
     },
 
     async changePassword(currentPassword: string, newPassword: string): Promise<void> {
