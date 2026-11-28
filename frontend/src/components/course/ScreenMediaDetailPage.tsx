@@ -7,7 +7,7 @@ import { MoreVertical, Play, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
 import ScreenMediaCredits from "@/components/course/ScreenMediaCredits";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getReturnToHref } from "@/lib/returnTo";
 import {
@@ -111,16 +111,13 @@ export default function ScreenMediaDetailPage({
 
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-                <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                    <header data-page-header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
-                        <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
-                        <div className="flex items-center gap-1">
+                <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                    <AppHeader className="mb-0" backHref={`/explore/${domain}`} backLabel={`بازگشت به فهرست ${title}`} title={null} actions={<div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />
                             <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] dark:text-slate-100">
                                 <MoreVertical size={22} />
                             </button>
-                        </div>
-                    </header>
+                        </div>} />
 
                     <section className={`mt-4 grid items-center gap-4 ${showAnimationCards ? "grid-cols-2" : "grid-cols-[1fr_40%]"}`} dir="ltr">
                         <div data-course-heading className="min-w-0 text-center">
@@ -157,17 +154,14 @@ export default function ScreenMediaDetailPage({
     if ((showSeriesCards || showAnimationCards) && item.episodeCount) {
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-                <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                    <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
-                        <header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
-                            <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
-                            <div className="flex items-center gap-1">
+                <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                    <>
+                        <AppHeader className="mb-0" backHref={`/explore/${domain}`} backLabel={`بازگشت به فهرست ${title}`} title={null} actions={<div className="flex items-center gap-1">
                                 <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />
                                 <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] dark:text-slate-100">
                                     <MoreVertical size={22} />
                                 </button>
-                            </div>
-                        </header>
+                            </div>} />
 
                         <section className={`mt-4 grid items-center gap-4 ${showAnimationCards ? "grid-cols-2" : "grid-cols-[1fr_40%]"}`} dir="ltr">
                             <div data-course-heading className="min-w-0 text-center">
@@ -183,7 +177,7 @@ export default function ScreenMediaDetailPage({
                                 <Image src={item.posterPath} alt={`پوستر ${itemNoun} ${item.title}`} fill sizes="155px" className="object-contain" priority />
                             </div>
                         </section>
-                    </div>
+                    </>
 
                     <ReferenceIntroduction heading="خلاصه داستان:" paragraphs={item.synopsis} />
                     <ScreenMediaCredits item={item} />
@@ -234,9 +228,7 @@ export default function ScreenMediaDetailPage({
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
             <main className="mx-auto w-full max-w-[430px] px-4 py-4">
-                <header data-page-header className="sticky top-0 z-20 -mx-4 flex items-center justify-between bg-[#f7f8fa]/92 px-4 py-2 backdrop-blur dark:bg-[#10151c]/92" dir="rtl">
-                    <BackButton href={`/explore/${domain}`} label={`بازگشت به فهرست ${title}`} />
-                    <div className="flex items-center gap-1">
+                <AppHeader className="mb-0" backHref={`/explore/${domain}`} backLabel={`بازگشت به فهرست ${title}`} title={null} actions={<div className="flex items-center gap-1">
                         <CollectionBookmarkButton domain={domain} slug={item.slug} courseId={publishedCourse?.id} />
                         <button
                             type="button"
@@ -246,8 +238,7 @@ export default function ScreenMediaDetailPage({
                         >
                             <MoreVertical size={22} />
                         </button>
-                    </div>
-                </header>
+                    </div>} />
 
                 <section className="mt-3 grid grid-cols-[1fr_42%] items-center gap-4" dir="ltr">
                     <div data-course-heading className="min-w-0 text-center" dir="ltr">

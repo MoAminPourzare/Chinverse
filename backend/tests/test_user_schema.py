@@ -26,11 +26,10 @@ def test_multiple_job_titles_normalize_deduplicate_and_reject_unknown_choices():
         UserProfileUpdate(job_titles=["صراف", "عنوان نامعتبر"])
 
 
-def test_signup_normalizes_email_phone_name_and_referral_code():
+def test_signup_normalizes_email_name_and_referral_code():
     user = UserCreate(
         email="  USER@Example.COM ",
         password="Secure account passphrase 123!",
-        phone="+98 912 123 4567",
         display_name="  امین   پورزارع ",
         referral_code="ab-12",
         accept_terms=True,
@@ -39,7 +38,6 @@ def test_signup_normalizes_email_phone_name_and_referral_code():
     )
 
     assert str(user.email) == "user@example.com"
-    assert user.phone == "09121234567"
     assert user.display_name == "امین پورزارع"
     assert user.referral_code == "AB12"
 
@@ -48,7 +46,6 @@ def test_signup_normalizes_email_phone_name_and_referral_code():
     ("field", "value"),
     [
         ("password", "short"),
-        ("phone", "123"),
         ("display_name", "Latin Name"),
         ("referral_code", "A!"),
     ],
@@ -57,7 +54,6 @@ def test_signup_rejects_invalid_identity_fields(field, value):
     payload = {
         "email": "person@example.com",
         "password": "Secure account passphrase 123!",
-        "phone": "09121234567",
         "display_name": "کاربر آزمایشی",
         "accept_terms": True,
         "accept_privacy": True,

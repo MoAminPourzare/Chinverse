@@ -58,6 +58,181 @@ test("staging blocks search indexing and incomplete routes", async ({ request })
 });
 
 test.describe("authentication forms", () => {
+  test("password recovery accepts an emailed code and keeps focused fields clear of their labels", async ({ page }) => {
+    const email = "password-recovery@example.com";
+    const code = "r".repeat(43);
+    const newPassword = "A secure recovery passphrase!";
+    let requests = 0;
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.route("**/api/backend/auth/password/reset/request", async (route) => {
+      expect(route.request().postDataJSON()).toEqual({ email, turnstile_token: null });
+      requests += 1;
+      await route.fulfill({ status: 202, json: { message: "Accepted" } });
+    });
+    await page.route("**/api/backend/auth/password/reset/confirm", async (route) => {
+      const data = route.request().postDataJSON();
+      expect(data.new_password).toBe(newPassword);
+      if (data.token !== code) {
+        await route.fulfill({ status: 401, json: { detail: "Invalid code" } });
+        return;
+      }
+      await route.fulfill({ json: { message: "Password reset" } });
+    });
+
+    const focusedField = async (id: string) => {
+      const field = page.locator(`#${id}:visible`);
+      await field.focus();
+      await expect(field).toBeFocused();
+      const labelBox = await page.locator(`label[for="${id}"]:visible`).boundingBox();
+      const fieldBox = await field.boundingBox();
+      expect(labelBox).not.toBeNull();
+      expect(fieldBox).not.toBeNull();
+      expect(fieldBox!.y - (labelBox!.y + labelBox!.height)).toBeGreaterThanOrEqual(10);
+      return field;
+    };
+
+    await page.goto("/forgot-password");
+    const emailField = await focusedField("reset-email");
+    await emailField.fill(email);
+    await page.getByRole("button", { name: "ارسال کد بازیابی", exact: true }).click();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    const codeField = await focusedField("reset-code");
+    const password = await focusedField("reset-new-password");
+    await page.getByRole("button", { name: "دریافت کد تازه یا تغییر ایمیل", exact: true }).click();
+    await expect(emailField).toHaveValue(email);
+    await page.getByRole("button", { name: "ارسال کد بازیابی", exact: true }).click();
+    expect(requests).toBe(2);
+    await codeField.fill("x".repeat(43));
+    await password.fill(newPassword);
+    const confirm = page.getByRole("button", { name: "ثبت رمز عبور جدید", exact: true });
+    await confirm.click();
+    await expect(page.getByRole("alert").filter({ hasText: "کد بازیابی نادرست یا منقضی شده است." })).toBeVisible();
+    await codeField.fill(` ${code} `);
+    await confirm.click();
+    await expect(page).toHaveURL(/\/login\?password_reset=1$/);
+    await expect(page.getByText("رمز عبور عوض شد. با رمز جدید وارد شو.", { exact: true })).toBeVisible();
+  });
+
+  test("an existing recovery link pre-fills the code and removes it from the address bar", async ({ page }) => {
+    const previousCode = "r".repeat(43);
+    await page.goto(`/forgot-password?token=${previousCode}`);
+    await expect(page.getByLabel("کد بازیابی")).toHaveValue(previousCode);
+    await expect(page).toHaveURL("/forgot-password");
+  });
+
+  test("signup opens a code form and unlocks the app after email verification", async ({ page, context }) => {
+    const email = "verify-journey@example.com";
+    const code = "a".repeat(43);
+    let verified = false;
+    let signupRequests = 0;
+    let resendRequests = 0;
+    await context.route("**/api/backend/**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname.endsWith("/signup")) {
+        signupRequests += 1;
+        await route.fulfill({ json: { id: 27, email, is_verified: false } });
+      } else if (url.pathname.endsWith("/auth/refresh")) {
+        await route.fulfill({ json: { access_token: "mock-verification-session" } });
+      } else if (url.pathname.endsWith("/auth/verification/status")) {
+        await route.fulfill({
+          json: { account_id: 27, email, email_verified: verified, account_verified: verified },
+        });
+      } else if (url.pathname.endsWith("/auth/verification/email/confirm")) {
+        expect(route.request().headers().authorization).toBe("Bearer mock-verification-session");
+        if (route.request().postDataJSON().token !== code) {
+          await route.fulfill({ status: 401, json: { detail: "Invalid code" } });
+          return;
+        }
+        verified = true;
+        await route.fulfill({ json: { account_id: 27, message: "Email verified." } });
+      } else if (url.pathname.endsWith("/auth/verification/email/request")) {
+        resendRequests += 1;
+        await route.fulfill({ json: { message: "Email sent." } });
+      } else {
+        await route.fulfill({ json: [] });
+      }
+    });
+
+    await page.goto("/signup");
+    await page.locator("#signup-display-name:visible").fill("کاربر آزمایشی");
+    await page.locator("#signup-email:visible").fill(email);
+    await page.locator("#signup-password:visible").fill("A long test-only passphrase");
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "ثبت نام", exact: true }).click();
+    await expect(page).toHaveURL(/\/verify-account\?signup=1$/);
+    await expect(page.getByRole("heading", { name: "صندوق ایمیلت را چک کن" })).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    expect(signupRequests).toBe(1);
+    expect(resendRequests).toBe(0);
+
+    const input = page.getByLabel("کد تأیید داخل ایمیل");
+    const confirm = page.getByRole("button", { name: "تأیید و ورود", exact: true });
+    await expect(input).toBeVisible();
+    await input.fill("z".repeat(43));
+    await confirm.click();
+    await expect(page.getByRole("alert").filter({ hasText: "کد نادرست یا منقضی شده است." })).toBeVisible();
+    await input.fill(` ${code} `);
+    await confirm.click();
+    await expect(page).toHaveURL("/");
+    expect(resendRequests).toBe(0);
+  });
+
+  test("an unfinished signup can be verified on the same page and later logins skip verification", async ({ page }) => {
+    const email = "verify-code@example.com";
+    const code = "q".repeat(43);
+    let verified = false;
+    let resendRequests = 0;
+    await page.route("**/api/backend/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/login/access-token") || path.endsWith("/auth/refresh")) {
+        await route.fulfill({ json: { access_token: "mock-session", requires_verification: !verified } });
+      } else if (path.endsWith("/auth/verification/status")) {
+        await route.fulfill({ json: { account_id: 32, email, email_verified: verified, account_verified: verified } });
+      } else if (path.endsWith("/auth/verification/email/confirm")) {
+        expect(route.request().postDataJSON()).toEqual({ token: code });
+        verified = true;
+        await route.fulfill({ json: { account_id: 32 } });
+      } else if (path.endsWith("/auth/verification/email/request")) {
+        resendRequests += 1;
+        await route.fulfill({ json: { message: "Email requested." } });
+      } else {
+        await route.fulfill({ json: [] });
+      }
+    });
+
+    const login = async () => {
+      await page.goto("/login");
+      await page.locator("#login-email:visible").fill(email);
+      await page.locator("#login-password:visible").fill("A long test-only passphrase");
+      await page.getByRole("button", { name: "ورود", exact: true }).click();
+    };
+
+    await login();
+    await expect(page.getByRole("heading", { name: "ثبت‌نامت را کامل کن" })).toBeVisible();
+    await expect(page.getByText(/می‌توانی این صفحه را باز بگذاری/)).toHaveCount(0);
+    await page.getByLabel("کد تأیید داخل ایمیل").fill(code);
+    await page.getByRole("button", { name: "تأیید و ورود", exact: true }).click();
+    await expect(page).toHaveURL("/");
+
+    await login();
+    await expect(page).toHaveURL("/");
+    expect(resendRequests).toBe(0);
+  });
+
+  test("the verification page requires a session and ignores old email links", async ({ page }) => {
+    let attempts = 0;
+    await page.route("**/api/backend/auth/verification/email/confirm", (route) => {
+      attempts += 1;
+      return route.fulfill({ json: { account_id: 27 } });
+    });
+    await page.route("**/api/backend/auth/refresh", (route) =>
+      route.fulfill({ status: 401, json: { detail: "Session expired" } }));
+
+    await page.goto("/verify-account?email_token=test-email-token");
+    await expect(page).toHaveURL("/login");
+    expect(attempts).toBe(0);
+  });
+
   for (const route of ["/login", "/signup"]) {
     test(`${route} can reveal and hide the password`, async ({ page }) => {
       await page.goto(route);
@@ -88,7 +263,7 @@ test.describe("authentication forms", () => {
     await page.goto("/signup?ref=CH12AB");
     await page.locator("#signup-display-name").fill("کاربر آزمایشی");
     await page.locator("#signup-email").fill("draft@example.invalid");
-    await page.locator("#signup-phone").fill("09121234567");
+    await expect(page.locator("#signup-phone")).toHaveCount(0);
     await page.locator("#signup-password").fill("A long test-only passphrase");
 
     for (const [title, slug, action] of [
@@ -119,7 +294,6 @@ test.describe("authentication forms", () => {
       await expect(page).toHaveURL(/\/signup\?ref=CH12AB$/);
       await expect(page.locator("#signup-display-name")).toHaveValue("کاربر آزمایشی");
       await expect(page.locator("#signup-email")).toHaveValue("draft@example.invalid");
-      await expect(page.locator("#signup-phone")).toHaveValue("09121234567");
       await expect(page.locator("#signup-password")).toHaveValue("A long test-only passphrase");
       await expect(page.getByRole("checkbox")).not.toBeChecked();
     }

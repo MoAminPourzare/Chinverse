@@ -95,7 +95,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     if (typeof window === "undefined") return null;
     if (refreshPromise) return refreshPromise;
 
-    refreshPromise = axios
+    const refresh = () => axios
         .post<{ access_token: string }>(`${BROWSER_API_URL}/auth/refresh`, undefined, {
             withCredentials: true,
             timeout: API_TIMEOUT_MS,
@@ -108,10 +108,16 @@ export const refreshAccessToken = async (): Promise<string | null> => {
         .catch(() => {
             updateAccessToken(null);
             return null;
-        })
-        .finally(() => {
-            refreshPromise = null;
         });
+
+    // Two verification tabs can share a refresh cookie. Serialize rotations
+    // so the second tab reads the updated cookie rather than replaying it.
+    const pendingRefresh = navigator.locks
+        ? navigator.locks.request("chinverse-auth-refresh", refresh)
+        : refresh();
+    refreshPromise = Promise.resolve(pendingRefresh).finally(() => {
+        refreshPromise = null;
+    });
 
     return refreshPromise;
 };
@@ -203,7 +209,8 @@ api.interceptors.response.use(
             if (hadAccessToken && typeof window !== "undefined") {
                 const currentPath = `${window.location.pathname}${window.location.search}`;
                 const isAuthPage = window.location.pathname.startsWith("/login")
-                    || window.location.pathname.startsWith("/signup");
+                    || window.location.pathname.startsWith("/signup")
+                    || window.location.pathname === "/verify-account";
                 if (!isAuthPage) window.location.assign(`/login?next=${encodeURIComponent(currentPath)}`);
             }
         }

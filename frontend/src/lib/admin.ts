@@ -9,7 +9,6 @@ export interface AdminStat {
 export interface AdminUserSummary {
     id: number;
     email: string;
-    phone: string;
     status: "active" | "suspended" | "deleted";
     is_verified: boolean;
     role: "user" | "moderator" | "admin";
@@ -60,7 +59,6 @@ export interface AdminSupportTicket {
     user: {
         id: number;
         email: string;
-        phone: string;
         display_name?: string | null;
     };
 }

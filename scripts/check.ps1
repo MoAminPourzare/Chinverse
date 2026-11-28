@@ -106,8 +106,6 @@ try {
             Assert-NativeSuccess "Phase 7 schema invariants"
             & $Python scripts\verify_phase8_schema.py
             Assert-NativeSuccess "Phase 8 schema invariants"
-            & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m integration
-            Assert-NativeSuccess "Backend integration tests"
             & $Python -m alembic downgrade base
             Assert-NativeSuccess "Migration rollback"
             & $Python -m alembic upgrade head
@@ -128,6 +126,8 @@ try {
             Assert-NativeSuccess "Post-rebuild phase 7 schema invariants"
             & $Python scripts\verify_phase8_schema.py
             Assert-NativeSuccess "Post-rebuild phase 8 schema invariants"
+            & $Python -m pytest -p no:cacheprovider --basetemp $pytestBaseTemp -m integration
+            Assert-NativeSuccess "Backend integration tests"
 
             docker build --tag chinverse-backend:local-check .
             Assert-NativeSuccess "Production backend container build"

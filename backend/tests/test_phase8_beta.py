@@ -145,7 +145,6 @@ def test_beta_status_is_explicitly_closed_when_flag_is_off() -> None:
     user = User(
         id=1,
         email="tester@example.com",
-        phone="+989120000000",
         password_hash="not-used",
     )
     app.dependency_overrides[deps.get_current_user] = lambda: user
@@ -215,7 +214,6 @@ def test_beta_admin_summary_is_aggregate_and_pii_free() -> None:
     user = User(
         id=10,
         email="admin@example.com",
-        phone="+989120000010",
         password_hash="not-used",
     )
     payload = asyncio.run(
@@ -243,7 +241,6 @@ def test_beta_consent_is_fail_closed_when_beta_is_disabled() -> None:
     user = User(
         id=2,
         email="consent@example.com",
-        phone="+989120000001",
         password_hash="not-used",
     )
     request = SimpleNamespace(client=SimpleNamespace(host="127.0.0.1"), headers={})

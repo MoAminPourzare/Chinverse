@@ -24,7 +24,7 @@
     margin-inline: auto;
     flex-direction: column;
     gap: 20px;
-    padding: 24px 16px 12px;
+    padding: 16px 16px 12px;
 }
 
 .header {
@@ -402,7 +402,7 @@
 
 @media (max-width: 360px) {
     .main {
-        padding-inline: 12px;
+        padding-inline: 16px;
         gap: 17px;
     }
 

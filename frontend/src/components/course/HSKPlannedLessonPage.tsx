@@ -3,7 +3,7 @@
 import Link from "@/components/ui/ReturnAwareLink";
 import { useParams } from "next/navigation";
 import { Clock3, Play } from "lucide-react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { getHskCourse, getHskLessonTitle, getHskLessonTopic } from "@/lib/hskCatalog";
 import { findPublishedHskLesson, getPublishedHskLessonHref } from "@/lib/hskPublished";
 import { useHskPublishedCourse } from "@/lib/useHskPublishedCourse";
@@ -34,15 +34,13 @@ export default function HSKPlannedLessonPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                    <BackButton href={`/hsk/${course.slug}`} label={`بازگشت به ${course.title}`} />
-                    <div data-header-title className="min-w-0 text-center" dir="rtl">
+            <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                <AppHeader className="mb-0" backHref={`/hsk/${course.slug}`} backLabel={`بازگشت به ${course.title}`} title={
+                    <div className="min-w-0 text-center" dir="rtl">
                         <p className="truncate text-[10px] font-black text-[#155aa6]" dir="ltr">{course.title}</p>
                         <h1 className="truncate text-sm font-black text-[#343941] dark:text-white" dir="ltr">{title}</h1>
                     </div>
-                    <span aria-hidden />
-                </header>
+                } />
 
                 <section className="mt-5 overflow-hidden rounded-[22px] bg-[#17202c] shadow-[0_18px_34px_rgba(15,23,42,0.20)]">
                     <div className="flex aspect-video flex-col items-center justify-center px-8 text-center text-white">

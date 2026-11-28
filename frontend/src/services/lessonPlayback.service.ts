@@ -8,12 +8,13 @@ import {
 export interface FetchLessonPlaybackOptions {
     forceRefresh?: boolean;
     signal?: AbortSignal;
+    learningPath?: boolean;
 }
 
 export const lessonPlaybackService = {
     async fetch(
         lessonId: number,
-        { forceRefresh = false, signal }: FetchLessonPlaybackOptions = {},
+        { forceRefresh = false, signal, learningPath = false }: FetchLessonPlaybackOptions = {},
     ): Promise<LessonPlayback> {
         if (!Number.isSafeInteger(lessonId) || lessonId <= 0) {
             throw new Error("A positive lesson ID is required for playback");
@@ -24,6 +25,7 @@ export const lessonPlaybackService = {
             `/courses/lessons/${lessonId}/playback`,
             {
                 signal,
+                params: learningPath ? { learning_path: true } : undefined,
                 headers: { "Cache-Control": "no-store" },
             },
         );

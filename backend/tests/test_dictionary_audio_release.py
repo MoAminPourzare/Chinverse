@@ -134,8 +134,6 @@ async def test_durable_release_storage_starts_audio_import_and_cancels_on_shutdo
     monkeypatch.setattr(main.settings, "ENVIRONMENT", environment)
     monkeypatch.setattr(main.settings, "FILE_STORAGE_MODE", storage)
     monkeypatch.setattr(release, "run_background_import", importer)
-    monkeypatch.setattr(main, "start_chat_realtime", AsyncMock())
-    monkeypatch.setattr(main, "stop_chat_realtime", AsyncMock())
     disposal = AsyncMock()
     monkeypatch.setattr(main, "engine", SimpleNamespace(dispose=disposal))
     async with main.lifespan(main.app):

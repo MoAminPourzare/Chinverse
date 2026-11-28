@@ -10,7 +10,7 @@ export function LegalDocument({
     version,
 }: LegalDocumentData) {
     return (
-        <main className="min-h-full bg-[#f7f8fb] px-5 pb-12 pt-5 text-right text-slate-800" dir="rtl">
+        <main className="min-h-full bg-[#f7f8fb] px-4 pb-12 pt-4 text-right text-slate-800" dir="rtl">
             <div className="mx-auto w-full max-w-[680px]">
                 <AppHeader title={title} backHref="/settings/about" />
                 <LegalDocumentBody intro={intro} sections={sections} version={version} />

@@ -1,168 +1,158 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Mail, Phone } from "lucide-react";
+import { Loader2, Mail, MailCheck } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
-import { authService, VerificationStatus } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 
-const emptyStatus: VerificationStatus = {
-    email_verified: false,
-    phone_verified: false,
-    account_verified: false,
-};
+function responseStatus(error: unknown) {
+    return (error as { response?: { status?: number } })?.response?.status;
+}
 
 export default function VerifyAccountPage() {
     const router = useRouter();
-    const [status, setStatus] = useState(emptyStatus);
-    const [emailToken, setEmailToken] = useState("");
-    const [phoneToken, setPhoneToken] = useState("");
-    const [pending, setPending] = useState("");
+    const [email, setEmail] = useState("");
+    const [checking, setChecking] = useState(true);
+    const [statusAttempt, setStatusAttempt] = useState(0);
+    const [afterSignup] = useState(() => typeof window !== "undefined"
+        && new URLSearchParams(window.location.search).get("signup") === "1");
+    const [code, setCode] = useState("");
+    const [pending, setPending] = useState<"confirm" | "resend" | null>(null);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
-    const initialized = useRef(false);
-
-    const loadStatus = useCallback(async () => {
-        if (!await authService.restoreSession()) {
-            router.replace("/login?next=/verify-account");
-            return;
-        }
-        const nextStatus = await authService.getVerificationStatus();
-        setStatus(nextStatus);
-        if (nextStatus.account_verified) router.replace("/");
-    }, [router]);
 
     useEffect(() => {
-        if (initialized.current) return;
-        initialized.current = true;
+        let stopped = false;
+        void (async () => {
+            const hasSession = await authService.restoreSession();
+            if (stopped) return;
+            if (!hasSession) {
+                router.replace("/login");
+                return;
+            }
+            const status = await authService.getVerificationStatus();
+            if (stopped) return;
+            if (status.account_verified) {
+                router.replace("/");
+                return;
+            }
+            setEmail(status.email);
+            setChecking(false);
+        })().catch((caught: unknown) => {
+            if (stopped) return;
+            const status = responseStatus(caught);
+            if (status === 401 || status === 403) {
+                router.replace("/login");
+                return;
+            }
+            setError("وضعیت تأیید ایمیل دریافت نشد. دوباره تلاش کن.");
+            setChecking(false);
+        });
+        return () => { stopped = true; };
+    }, [router, statusAttempt]);
 
-        const emailLinkToken = new URLSearchParams(window.location.search).get("email_token")?.trim();
-        if (emailLinkToken) {
-            setPending("email-link");
-            void authService.confirmEmailVerification(emailLinkToken)
-                .then(() => router.replace("/login?email_verified=1"))
-                .catch((caught: unknown) => {
-                    const apiError = caught as { response?: { data?: { detail?: string } } };
-                    setError(apiError.response?.data?.detail || "لینک تأیید ایمیل نامعتبر یا منقضی شده است.");
-                    setPending("");
-                });
+    const confirmCode = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (pending) return;
+        const token = code.trim();
+        setMessage("");
+        if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+            setError("کد تأیید را کامل از ایمیل کپی کن.");
             return;
         }
-        void loadStatus().catch(() => router.replace("/login?next=/verify-account"));
-    }, [loadStatus, router]);
-
-    const run = async (name: string, action: () => Promise<void>, success: string) => {
-        setPending(name);
+        setPending("confirm");
         setError("");
-        setMessage("");
         try {
-            await action();
-            setMessage(success);
-            await loadStatus();
-        } catch (caught: unknown) {
-            const apiError = caught as { response?: { data?: { detail?: string } } };
-            setError(apiError.response?.data?.detail || "انجام درخواست ناموفق بود. دوباره تلاش کن.");
-        } finally {
-            setPending("");
+            await authService.confirmEmailVerification(token);
+            router.replace("/");
+        } catch (caught) {
+            const status = responseStatus(caught);
+            if (status === 401 || status === 422) {
+                setError("کد نادرست یا منقضی شده است. کد آخرین ایمیل را وارد کن یا کد تازه بگیر.");
+            } else if (status === 429) {
+                setError("تعداد تلاش‌ها زیاد شد. کمی صبر کن و دوباره امتحان کن.");
+            } else {
+                setError("تأیید ایمیل انجام نشد. دوباره تلاش کن.");
+            }
+            setPending(null);
         }
     };
 
+    const resendCode = async () => {
+        if (pending) return;
+        setPending("resend");
+        setError("");
+        setMessage("");
+        try {
+            await authService.requestEmailVerification();
+            setCode("");
+            setMessage("درخواست کد تازه ثبت شد. کد آخرین ایمیل را وارد کن.");
+        } catch (caught) {
+            setError(responseStatus(caught) === 429
+                ? "برای درخواست کد تازه، کمی صبر کن."
+                : "درخواست کد تازه انجام نشد. دوباره تلاش کن.");
+        } finally {
+            setPending(null);
+        }
+    };
+
+    const retryStatus = () => {
+        setChecking(true);
+        setError("");
+        setStatusAttempt((attempt) => attempt + 1);
+    };
+
     return (
-        <AuthShell backHref="/login" title="تأیید حساب">
-            <p className="mb-5 text-sm leading-7 text-slate-600">
-                برای فعال‌شدن کامل حساب، ایمیل و شماره موبایل را تأیید کن.
-            </p>
-            {message && <p className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{message}</p>}
-            {error && <p className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{error}</p>}
-            {pending === "email-link" && (
-                <div className="flex items-center justify-center gap-2 py-10 text-sm font-bold text-slate-600">
+        <AuthShell backHref="/login" title="تأیید ایمیل" icon={<MailCheck size={22} />}>
+            {error && <p role="alert" className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{error}</p>}
+            {checking && (
+                <div role="status" className="flex items-center justify-center gap-2 py-10 text-sm font-bold text-slate-600">
                     <Loader2 size={18} className="animate-spin" />
-                    در حال تأیید ایمیل…
+                    در حال بررسی وضعیت ایمیل…
                 </div>
             )}
-
-            {pending !== "email-link" && <VerificationSection
-                icon={<Mail size={19} />}
-                title="ایمیل"
-                verified={status.email_verified}
-                value={emailToken}
-                placeholder="کد یا توکن ارسال‌شده"
-                pending={pending}
-                name="email"
-                onChange={setEmailToken}
-                onRequest={() => run("email-request", authService.requestEmailVerification, "لینک تأیید ایمیل دوباره ارسال شد.")}
-                onConfirm={() => run("email-confirm", () => authService.confirmEmailVerification(emailToken.trim()), "ایمیل تأیید شد.")}
-            />}
-
-            {pending !== "email-link" && <VerificationSection
-                icon={<Phone size={19} />}
-                title="شماره موبایل"
-                verified={status.phone_verified}
-                value={phoneToken}
-                placeholder="کد ۶ رقمی"
-                pending={pending}
-                name="phone"
-                inputMode="numeric"
-                onChange={(value) => setPhoneToken(value.replace(/\D/g, "").slice(0, 6))}
-                onRequest={() => run("phone-request", authService.requestPhoneVerification, "کد موبایل دوباره ارسال شد.")}
-                onConfirm={() => run("phone-confirm", () => authService.confirmPhoneVerification(phoneToken), "شماره موبایل تأیید شد.")}
-            />}
-        </AuthShell>
-    );
-}
-
-function VerificationSection({
-    icon,
-    title,
-    verified,
-    value,
-    placeholder,
-    pending,
-    name,
-    inputMode,
-    onChange,
-    onRequest,
-    onConfirm,
-}: {
-    icon: React.ReactNode;
-    title: string;
-    verified: boolean;
-    value: string;
-    placeholder: string;
-    pending: string;
-    name: string;
-    inputMode?: "numeric";
-    onChange: (value: string) => void;
-    onRequest: () => void;
-    onConfirm: () => void;
-}) {
-    const busy = pending.startsWith(name);
-    return (
-        <section className="border-t border-slate-100 py-5 first:border-t-0 first:pt-0">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-                <span className="text-[#155aa6]">{icon}</span>
-                <span>{title}</span>
-                {verified && <CheckCircle2 className="mr-auto text-emerald-500" size={20} />}
-            </div>
-            {!verified && (
-                <>
-                    <input
-                        value={value}
-                        onChange={(event) => onChange(event.target.value)}
-                        inputMode={inputMode}
-                        dir="ltr"
-                        placeholder={placeholder}
-                        className="mt-3 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#155aa6] focus:ring-4 focus:ring-[#155aa6]/10"
-                    />
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                        <button type="button" onClick={onRequest} disabled={busy} className="h-11 rounded-2xl border border-[#155aa6] text-xs font-black text-[#155aa6] disabled:opacity-50">ارسال دوباره</button>
-                        <button type="button" onClick={onConfirm} disabled={busy || !value.trim()} className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#155aa6] text-xs font-black text-white disabled:opacity-50">
-                            {busy && <Loader2 size={15} className="animate-spin" />}
-                            تأیید
+            {!checking && email && (
+                <div className="space-y-4">
+                    <h2 className="text-xl font-black text-slate-950">{afterSignup ? "صندوق ایمیلت را چک کن" : "ثبت‌نامت را کامل کن"}</h2>
+                    <p className="text-sm leading-7 text-slate-700">
+                        {afterSignup ? "کد تأیید را به " : "برای تکمیل ثبت‌نام، کدی را که به "}
+                        <bdi dir="ltr" className="break-all font-bold text-[#155aa6]">{email}</bdi>
+                        {afterSignup ? " فرستادیم. کد را از ایمیل کپی کن و اینجا وارد کن." : " فرستاده شده وارد کن."}
+                    </p>
+                    <form onSubmit={(event) => void confirmCode(event)} className="space-y-2">
+                        <label htmlFor="email-verification-code" className="block text-sm font-bold text-slate-700">کد تأیید داخل ایمیل</label>
+                        <input
+                            id="email-verification-code"
+                            dir="ltr"
+                            type="text"
+                            autoComplete="one-time-code"
+                            spellCheck={false}
+                            autoCapitalize="off"
+                            value={code}
+                            onChange={(event) => setCode(event.target.value)}
+                            className="min-h-12 w-full rounded-xl border border-slate-300 px-3 font-mono text-slate-950"
+                            required
+                        />
+                        <button type="submit" disabled={pending !== null} className="min-h-12 w-full rounded-xl bg-[#155aa6] px-3 text-sm font-bold text-white disabled:opacity-50">
+                            {pending === "confirm" ? "در حال تأیید…" : "تأیید و ورود"}
                         </button>
-                    </div>
-                </>
+                    </form>
+                    {message && <p role="status" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{message}</p>}
+                    <button
+                        type="button"
+                        onClick={() => void resendCode()}
+                        disabled={pending !== null}
+                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#155aa6] px-4 text-sm font-bold text-[#155aa6] disabled:opacity-50"
+                    >
+                        {pending === "resend" ? <Loader2 size={17} className="animate-spin" /> : <Mail size={17} />}
+                        ارسال دوبارهٔ کد
+                    </button>
+                </div>
             )}
-        </section>
+            {!checking && !email && error && (
+                <button type="button" onClick={retryStatus} className="min-h-11 text-sm font-bold text-[#155aa6]">تلاش دوباره</button>
+            )}
+        </AuthShell>
     );
 }

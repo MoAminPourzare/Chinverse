@@ -56,6 +56,7 @@ test-results/
 .backups/
 .migration-state/
 /dictionary-audio-output/
+/learning/
 # Owner reference originals; runtime copies are tracked under frontend/public/assets.
 /پروفایل دوره ها/
 /فایل های اپلیکیشن من/

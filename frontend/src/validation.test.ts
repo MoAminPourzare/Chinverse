@@ -5,13 +5,11 @@ import {
   isAdjustableImageFile,
   isImageConvertedOnUpload,
   normalizeDigits,
-  normalizeIranMobile,
   normalizePersianName,
   normalizeWebsiteUrl,
   parseJsonObject,
   validateEmail,
   validateImageFile,
-  validateIranMobile,
   validateJsonObject,
   validateNonNegativeNumber,
   validatePassword,
@@ -29,16 +27,9 @@ describe("identity validation", () => {
     expect(normalizeDigits("۱۲٣۴")).toBe("1234");
   });
 
-  it("normalizes Iranian mobile prefixes", () => {
-    expect(normalizeIranMobile("+98 912-123-4567")).toBe("09121234567");
-    expect(normalizeIranMobile("۰۰۹۸۹۱۲۱۲۳۴۵۶۷")).toBe("09121234567");
-  });
-
-  it("validates email, mobile, password, and referral boundaries", () => {
+  it("validates email, password, and referral boundaries", () => {
     expect(validateEmail("person@example.com").ok).toBe(true);
     expect(validateEmail("person@example").ok).toBe(false);
-    expect(validateIranMobile("09121234567").ok).toBe(true);
-    expect(validateIranMobile("9121234567").ok).toBe(false);
     expect(validatePassword("یک رمز طولانی و امن").ok).toBe(true);
     expect(validatePassword("secure123").ok).toBe(false);
     expect(validatePassword("password123456").ok).toBe(false);

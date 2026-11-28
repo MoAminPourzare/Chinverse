@@ -1,0 +1,51 @@
+.roadmap { position: relative; isolation: isolate; overflow: hidden; margin: 0 10px; border: 1px solid #fff; border-radius: 30px; background: linear-gradient(145deg,#fff 15%,#f5fbff 100%); box-shadow: 0 8px 30px #155aa60a; }
+.intro { position: relative; z-index: 1; padding: 23px 21px 0; }
+.journey { position: relative; isolation: isolate; min-height: 330px; padding-top: 23px; }
+.scenery { position: absolute; z-index: -1; inset: 0; pointer-events: none; background: url('/assets/chinverse/profile/learning-scenery-v2.webp') left top / 100% auto repeat-y; opacity: .88; }
+.steps { position: relative; margin: 0; padding: 0 30px 38px 66px; list-style: none; }
+.step { position: relative; padding-bottom: 20px; }
+.step:last-child { padding-bottom: 0; }
+.trail { position: absolute; z-index: -1; top: 17px; left: -53px; width: 62px; height: calc(100% + 2px); overflow: visible; }
+.step:nth-child(even) .trail { transform: scaleX(-1); }
+.card { position: relative; display: flex; direction: ltr; align-items: center; gap: 10px; min-height: 150px; padding: 15px 10px 15px 13px; border: 1px solid #fff; border-radius: 24px; background: linear-gradient(108deg,#eff8fff5,#e3f1fff2); box-shadow: 0 4px 18px #2c618910; transition: box-shadow .2s,transform .2s,border-color .2s; }
+a.card:hover { border-color: #83bceb; box-shadow: 0 8px 22px #155aa61c; transform: translateY(-2px); }
+a.card:focus-visible { outline: 3px solid #1688e8; outline-offset: 3px; }
+.number { position: absolute; top: -4px; left: -22px; display: flex; width: 36px; height: 36px; align-items: center; justify-content: center; border: 3px solid #fff; border-radius: 50%; color: white; font-size: 17px; font-weight: 900; box-shadow: 0 3px 10px #155aa619; }
+.current { background: linear-gradient(145deg,#159aff,#0075dc); }
+.completed { background: #087f65; }
+.locked { background: #8993a6; }
+.lockedCard { background: linear-gradient(108deg,#fafafaf5,#f0f1f5f2); }
+.step[data-state='completed'] .card { border-color: #d3eee4; background: linear-gradient(108deg,#f3fcf8f5,#e8f5f2f2); }
+.thumbnail { position: relative; display: flex; flex-shrink: 0; width: 67px; height: 92px; align-items: center; justify-content: center; border-radius: 17px; background: linear-gradient(145deg,#d6e9f7,#b9d7eb); }
+.thumbnail > img { border-radius: inherit; }
+.exploreThumbnail { background: linear-gradient(145deg,#eeeefc,#dfddf1); }
+.play { position: absolute; right: -5px; bottom: -4px; display: flex; width: 29px; height: 29px; align-items: center; justify-content: center; border: 2px solid #fff; border-radius: 50%; background: #fff; color: #0076d6; box-shadow: 0 3px 10px #155aa612; }
+.lockedCard .play { color: #737e92; }
+.copy { min-width: 0; flex: 1; text-align: right; direction: rtl; }
+.kind { display: inline-block; margin-bottom: 4px; font-size: 10px; font-weight: 800; line-height: 18px; color: #205a92; }
+.exploreKind { padding: 0 8px; border-radius: 15px; background: #eae3ff; color: #6046ac; }
+.title { display: block; overflow-wrap: anywhere; font-size: 13px; font-weight: 900; line-height: 24px; color: #20294e; }
+.summary { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 3px; font-size: 11px; line-height: 21px; color: #596d83; }
+.meta { display: flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 10px; line-height: 17px; color: #526b83; }
+.status { display: block; margin-top: 6px; font-size: 10px; font-weight: 700; line-height: 18px; color: #536980; }
+.completeLabel { color: #06785a; }
+.partial { margin-top: 8px; }
+.partial span { display: block; margin-bottom: 4px; color: #155aa6; font-size: 10px; font-weight: 800; }
+.partialTrack { height: 4px; overflow: hidden; border-radius: 8px; background: #cbdfef; }
+.partialTrack i { display: block; height: 100%; border-radius: inherit; background: #087bdb; }
+.finish { position: relative; z-index: 1; margin: 0 20px 22px; border: 1px solid #d9e9f3; border-radius: 18px; background: #ffffffeb; padding: 12px 15px; text-align: center; color: #526b83; font-size: 11px; line-height: 23px; }
+:global(.dark) .roadmap { border-color: #283a4d; background: linear-gradient(155deg,#182430,#14202c); }
+:global(.dark) .scenery { opacity: .32; }
+:global(.dark) .card { border-color: #38556d; background: linear-gradient(110deg,#20374af5,#1c2c3ef5); }
+:global(.dark) .lockedCard { border-color: #3e4a5b; background: #242e3bec; }
+:global(.dark) .step[data-state='completed'] .card { border-color: #34584d; background: #1a3732f2; }
+:global(.dark) .number { border-color: #182430; }
+:global(.dark) .title { color: #f1f5fc; }
+:global(.dark) .summary, :global(.dark) .meta, :global(.dark) .status { color: #bfcede; }
+:global(.dark) .kind, :global(.dark) .partial span { color: #91caff; }
+:global(.dark) .completeLabel { color: #82dfbd; }
+:global(.dark) .exploreKind { background: #443466; color: #e0d4ff; }
+:global(.dark) .finish { border-color: #34465a; background: #1b2b3ce8; color: #bfcede; }
+@media (min-width:390px) { .steps { padding-right: 43px; padding-left: 82px; } .card { min-height: 160px; gap: 12px; padding-right: 12px; } .thumbnail { width: 80px; height: 100px; } .title { font-size: 14px; } .summary { font-size: 12px; } .trail { left: -63px; width: 76px; } }
+@media (max-width:350px) { .steps { padding-right: 16px; padding-left: 44px; } .trail { left: -32px; width: 42px; } .thumbnail { width: 54px; height: 76px; } .card { gap: 7px; padding-left: 9px; } .intro { padding-right: 17px; padding-left: 17px; } }
+@media (prefers-reduced-motion:reduce) { .card { transition: none; } a.card:hover { transform: none; } }

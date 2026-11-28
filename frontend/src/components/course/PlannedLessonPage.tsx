@@ -3,7 +3,7 @@
 import Link from "@/components/ui/ReturnAwareLink";
 import { useParams } from "next/navigation";
 import { Clock3, Play } from "lucide-react";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import { getPlannedCourse, getPlannedItemCount, getPlannedLessonTitle, type PlannedCatalogCourse } from "@/lib/plannedCourseCatalog";
 import { findPublishedPlannedLesson, getPublishedPlannedLessonHref } from "@/lib/plannedCoursePublished";
 import { usePublishedPlannedCourse } from "@/lib/usePublishedPlannedCourse";
@@ -56,12 +56,8 @@ export default function PlannedLessonPage({
     if (groupLessonCount) {
         return (
             <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-                <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                    <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                        <BackButton href={`${basePath}/${course.slug}`} label={`بازگشت به ${course.title}`} />
-                        <span data-header-title className="text-center text-xs font-black text-[#155aa6]">{course.title}</span>
-                        <span aria-hidden />
-                    </header>
+                <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                    <AppHeader title={course.title} backHref={`${basePath}/${course.slug}`} backLabel={`بازگشت به ${course.title}`} className="mb-0" />
                     <section className="mt-6 rounded-[20px] border border-[#dfe6f0] bg-white p-5 dark:border-slate-700 dark:bg-[#18212b]">
                         <p className="text-xs font-bold text-[#155aa6]">مجموعهٔ گرامر</p>
                         <h1 className="mt-2 text-xl font-black text-[#343941] dark:text-white" dir="ltr">{title}</h1>
@@ -75,15 +71,13 @@ export default function PlannedLessonPage({
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto w-full max-w-[430px] px-4 py-5">
-                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                    <BackButton href={`${basePath}/${course.slug}`} label={`بازگشت به ${course.title}`} />
-                    <div data-header-title className="min-w-0 text-center" dir="ltr">
+            <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                <AppHeader backHref={`${basePath}/${course.slug}`} backLabel={`بازگشت به ${course.title}`} className="mb-0" title={
+                    <div className="min-w-0 text-center" dir="ltr">
                         <p className="truncate text-[10px] font-black text-[#155aa6]">{course.title}</p>
                         <h1 className="truncate text-sm font-black text-[#343941] dark:text-white">{title}</h1>
                     </div>
-                    <span aria-hidden />
-                </header>
+                } />
 
                 <section className="mt-5 overflow-hidden rounded-[22px] bg-[#17202c] shadow-[0_18px_34px_rgba(15,23,42,0.20)]">
                     <div className="flex aspect-video flex-col items-center justify-center px-8 text-center text-white">

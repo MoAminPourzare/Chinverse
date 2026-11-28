@@ -57,12 +57,10 @@ for (const width of [320, 390]) {
             ["grouped-lessons", "/grammar/chinese-zero-to-hero-grammar/lesson/1"],
             ["player", "/watch/pronunciation/121?lesson=501"],
             ["course", "/pronunciation/121"],
-            ["service", "/services/9"],
             ["daily", "/settings/daily"],
-            ["network", "/profile/network"],
+            ["saved", "/profile/collections"],
             ["review", "/leitner/review"],
             ["account", "/account"],
-            ["conversation", "/chat/2"],
             ["post", "/posts/12"],
             ["explore", "/explore?returnTo=%2F%3Ftab%3Ddaily"],
             ["community", "/community"],
@@ -72,6 +70,9 @@ for (const width of [320, 390]) {
             const header = page.locator(name === "conversation" ? ".app-scroll header" : "[data-page-header]").first();
             await expect(header).toBeVisible();
             await page.waitForFunction(() => document.fonts.status === "loaded");
+            // Finish Next's visible-link prefetches before scrolling or replacing
+            // the document; WebKit reports cancelled prefetches as page errors.
+            await page.waitForLoadState("networkidle");
             if (name !== "conversation") await expect.poll(() => header.evaluate(el => el.style.getPropertyValue("--app-header-top")), { message: url }).not.toBe("");
             else await expect(header.getByRole("heading", { level: 1 })).toHaveText("مشاور سفر چین");
             const title = await header.locator("[data-header-title]").count() ? header.locator("[data-header-title]").first() : header.locator("h1");
@@ -90,10 +91,18 @@ for (const width of [320, 390]) {
             expect(alignment.align, url).toBe("center");
             expect(alignment.centerDelta, url).toBeLessThanOrEqual(1.5);
             expect(alignment.textRight, url).toBeLessThanOrEqual(alignment.backLeft - 1);
-            if (["course", "service", "post"].includes(name)) {
+            {
+                await expect.poll(() => header.locator("[data-back-button]").evaluate(element => element.getBoundingClientRect().width)).toBeCloseTo(46, 1);
                 const titleBox = (await title.boundingBox())!;
                 const backBox = (await header.locator("[data-back-button]").boundingBox())!;
-                expect(Math.abs(titleBox.y + titleBox.height / 2 - backBox.y - backBox.height / 2), url).toBeLessThanOrEqual(1);
+                // Long titles may grow the header; navigation keeps its fixed
+                // top inset instead of moving down to the text block's center.
+                if (titleBox.height <= 46) expect(Math.abs(titleBox.y + titleBox.height / 2 - backBox.y - backBox.height / 2), url).toBeLessThanOrEqual(1);
+                const frame = (await page.locator(".app-scroll").boundingBox())!;
+                expect(backBox.width, url).toBeCloseTo(46, 1);
+                expect(backBox.height, url).toBeCloseTo(46, 1);
+                expect(backBox.y - frame.y, url).toBeCloseTo(29, 1);
+                expect(frame.x + frame.width - backBox.x - backBox.width, url).toBeCloseTo(29, 1);
             }
             const copy = title.locator("p");
             for (const paragraph of await copy.all()) await expect(paragraph).toHaveCSS("text-align", "center");
@@ -106,6 +115,7 @@ for (const width of [320, 390]) {
                 await page.screenshot({ path: path.resolve("../artifacts", `centered-title-${name}-${info.project.name}.png`) });
             }
             expect(await page.locator(".app-scroll").evaluate(el => el.scrollWidth - el.clientWidth), url).toBeLessThanOrEqual(1);
+            await page.waitForLoadState("networkidle");
         }
         expect(errors).toEqual([]);
     });

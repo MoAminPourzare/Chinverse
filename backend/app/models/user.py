@@ -2,7 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional, List
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 from sqlalchemy.dialects.postgresql import JSON
@@ -34,10 +34,16 @@ class SocialPlatform(str, Enum):
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
+    # Keep legacy values in the database without loading or exposing them
+    # through the application model.
+    __table_args__ = (
+        Column("phone", String, index=True, unique=True),
+        Column("phone_verified_at", DateTime(timezone=True)),
+    )
+    __mapper_args__ = {"exclude_properties": ("phone", "phone_verified_at")}
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
-    phone: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[UserStatus] = mapped_column(String, default=UserStatus.ACTIVE)
@@ -48,10 +54,6 @@ class User(Base, TimestampMixin):
         index=True,
     )
     email_verified_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-    phone_verified_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

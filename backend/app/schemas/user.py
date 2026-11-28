@@ -76,29 +76,6 @@ ALLOWED_PROFILE_GENDERS = {
 }
 
 
-def _normalize_digits(value: str) -> str:
-    persian_digits = "۰۱۲۳۴۵۶۷۸۹"
-    arabic_digits = "٠١٢٣٤٥٦٧٨٩"
-    translated = []
-    for char in value:
-        if char in persian_digits:
-            translated.append(str(persian_digits.index(char)))
-        elif char in arabic_digits:
-            translated.append(str(arabic_digits.index(char)))
-        else:
-            translated.append(char)
-    return "".join(translated)
-
-
-def _normalize_iran_mobile(value: str) -> str:
-    phone = re.sub(r"[^\d+]", "", _normalize_digits(value.strip()))
-    if phone.startswith("+98"):
-        phone = f"0{phone[3:]}"
-    if phone.startswith("0098"):
-        phone = f"0{phone[4:]}"
-    return phone
-
-
 def _validate_password_strength(value: str) -> str:
     return validate_new_password(value)
 
@@ -202,14 +179,12 @@ def _normalize_social_handle(platform: str, raw_handle: str) -> str:
 # Shared properties
 class UserBase(BaseModel):
     email: Optional[EmailStr] = None
-    phone: Optional[str] = Field(default=None, max_length=32)
     is_verified: bool = False
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
     password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
-    phone: str = Field(min_length=5, max_length=32)
     display_name: str = Field(min_length=1, max_length=120)
     referral_code: Optional[str] = Field(default=None, min_length=4, max_length=32)
     accept_terms: Literal[True]
@@ -225,14 +200,6 @@ class UserCreate(UserBase):
     @classmethod
     def password_must_fit_bcrypt(cls, value: str) -> str:
         return _validate_password_strength(value)
-
-    @field_validator("phone", mode="before")
-    @classmethod
-    def validate_signup_phone(cls, value: str) -> str:
-        phone = _normalize_iran_mobile(value)
-        if not re.fullmatch(r"09\d{9}", phone):
-            raise ValueError("شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567")
-        return phone
 
     @field_validator("display_name", mode="before")
     @classmethod
@@ -263,16 +230,6 @@ class UserUpdate(UserBase):
         if value is None:
             return value
         return _validate_password_strength(value)
-
-    @field_validator("phone", mode="before")
-    @classmethod
-    def validate_update_phone(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return value
-        phone = _normalize_iran_mobile(value)
-        if not re.fullmatch(r"09\d{9}", phone):
-            raise ValueError("شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567")
-        return phone
 
 
 class AccountDeletionRequest(BaseModel):
@@ -476,3 +433,8 @@ class User(UserInDBBase):
 
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+class PublicUserIdentity(BaseModel):
+    id: int
+    display_name: str | None = None
+    avatar_url: str | None = None

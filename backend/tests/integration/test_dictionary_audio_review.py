@@ -25,7 +25,7 @@ async def test_generated_audio_review_is_persistent_exact_and_preserves_curated_
     source.write_bytes(b"isolated-audio-review-test")
     digest = file_digest(source)
     async with SessionLocal.begin() as db:
-        admin = User(email=f"audio-review-{suffix}@example.com", phone=f"09{uuid4().int % 10**9:09d}", password_hash="test-only", role=UserRole.ADMIN)
+        admin = User(email=f"audio-review-{suffix}@example.com", password_hash="test-only", role=UserRole.ADMIN)
         words = [DictionaryWord(chinese=f"敏-{suffix}", pinyin="zhī/zhǐ", level="HSK1"),
                  DictionaryWord(chinese=f"普通-{suffix}", pinyin="pǔtōng", level="HSK2"),
                  DictionaryWord(chinese=f"旧-{suffix}", pinyin="jiù", level="HSK3", audio_url="https://example.com/curated.mp3"),
@@ -79,7 +79,7 @@ async def test_generated_audio_review_is_persistent_exact_and_preserves_curated_
     async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
         assert (await client.get("/api/v1/admin/dictionary-audio")).status_code == 401
         assert (await client.post(f"/api/v1/admin/dictionary-audio/{clip_id}/review", json={"sha256": digest, "decision": "rejected"})).status_code == 401
-        normal = User(id=admin_id, role=UserRole.USER, email="normal@example.com", phone="09123456789", password_hash="test")
+        normal = User(id=admin_id, role=UserRole.USER, email="normal@example.com", password_hash="test")
 
         async def current():
             return normal

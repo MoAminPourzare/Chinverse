@@ -16,7 +16,6 @@ export interface SignupRequest {
     email: string;
     password: string;
     referral_code?: string;
-    phone: string;
     display_name?: string;
     turnstile_token?: string;
     accept_terms: true;
@@ -33,8 +32,9 @@ export interface AuthResponse {
 }
 
 export interface VerificationStatus {
+    account_id: number;
+    email: string;
     email_verified: boolean;
-    phone_verified: boolean;
     account_verified: boolean;
 }
 
@@ -74,11 +74,14 @@ export const authService = {
         const response = await api.post("/signup", payload, {
             headers: turnstile_token ? { "X-Turnstile-Token": turnstile_token } : {},
         });
+        clearAuthSession();
         return response.data;
     },
 
     async getVerificationStatus(): Promise<VerificationStatus> {
-        const response = await api.get<VerificationStatus>("/auth/verification/status");
+        const response = await api.get<VerificationStatus>("/auth/verification/status", {
+            chinverseCacheTtlMs: 0,
+        });
         return response.data;
     },
 
@@ -88,14 +91,6 @@ export const authService = {
 
     async confirmEmailVerification(token: string): Promise<void> {
         await api.post("/auth/verification/email/confirm", { token });
-    },
-
-    async requestPhoneVerification(): Promise<void> {
-        await api.post("/auth/verification/phone/request");
-    },
-
-    async confirmPhoneVerification(token: string): Promise<void> {
-        await api.post("/auth/verification/phone/confirm", { token });
     },
 
     async requestPasswordReset(email: string, turnstileToken?: string): Promise<void> {
@@ -110,6 +105,7 @@ export const authService = {
             token,
             new_password: newPassword,
         });
+        clearAuthSession();
     },
 
     async changePassword(currentPassword: string, newPassword: string): Promise<void> {

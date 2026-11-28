@@ -18,9 +18,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.mark.asyncio
 async def test_signup_login_and_authenticated_profile_round_trip():
-    suffix = str(uuid4().int)[-9:]
     email = f"phase1-{uuid4().hex[:12]}@example.com"
-    phone = f"09{suffix}"
     password = "Secure auth passphrase 123!"
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -39,7 +37,6 @@ async def test_signup_login_and_authenticated_profile_round_trip():
             "/api/v1/signup",
             json={
                 "email": email.upper(),
-                "phone": phone,
                 "password": password,
                 "display_name": "کاربر آزمایشی",
                 "accept_terms": True,
@@ -49,6 +46,7 @@ async def test_signup_login_and_authenticated_profile_round_trip():
         )
         assert signup.status_code == 200, signup.text
         assert signup.json()["email"] == email
+        assert "phone" not in signup.json()
 
         async with SessionLocal() as db:
             accepted = (
@@ -109,9 +107,7 @@ async def test_signup_login_and_authenticated_profile_round_trip():
 
 @pytest.mark.asyncio
 async def test_account_deletion_requires_reauthentication_and_revokes_access():
-    suffix = str(uuid4().int)[-9:]
     email = f"delete-{uuid4().hex[:12]}@example.com"
-    phone = f"09{suffix}"
     password = "Secure deletion passphrase 123!"
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
@@ -119,7 +115,6 @@ async def test_account_deletion_requires_reauthentication_and_revokes_access():
             "/api/v1/signup",
             json={
                 "email": email,
-                "phone": phone,
                 "password": password,
                 "display_name": "کاربر حذف آزمایشی",
                 "accept_terms": True,
@@ -159,9 +154,7 @@ async def test_account_deletion_requires_reauthentication_and_revokes_access():
 
 
 @pytest.mark.asyncio
-async def test_refresh_logout_and_phone_challenge_lockout(monkeypatch):
-    monkeypatch.setattr(settings, "AUTH_DEBUG_TOKENS", True)
-    suffix = str(uuid4().int)[-9:]
+async def test_refresh_replay_revokes_session_and_logout_revokes_new_session():
     email = f"security-{uuid4().hex[:12]}@example.com"
     password = "Secure refresh passphrase 123!"
 
@@ -173,7 +166,6 @@ async def test_refresh_logout_and_phone_challenge_lockout(monkeypatch):
             "/api/v1/signup",
             json={
                 "email": email,
-                "phone": f"09{suffix}",
                 "password": password,
                 "display_name": "کاربر امنیتی",
                 "accept_terms": True,
@@ -183,12 +175,9 @@ async def test_refresh_logout_and_phone_challenge_lockout(monkeypatch):
         )
         assert signup.status_code == 200, signup.text
 
-        login = await client.post(
-            "/api/v1/login/access-token",
-            data={"username": email, "password": password},
-        )
-        assert login.status_code == 200, login.text
-        first_token = login.json()["access_token"]
+        initial_session = await client.post("/api/v1/auth/refresh")
+        assert initial_session.status_code == 200, initial_session.text
+        first_token = initial_session.json()["access_token"]
         first_refresh_cookie = client.cookies.get(settings.REFRESH_COOKIE_NAME)
         assert first_refresh_cookie
 
@@ -222,29 +211,6 @@ async def test_refresh_logout_and_phone_challenge_lockout(monkeypatch):
         assert login_again.status_code == 200, login_again.text
         headers = {"Authorization": f"Bearer {login_again.json()['access_token']}"}
 
-        phone_request = await client.post(
-            "/api/v1/auth/verification/phone/request",
-            headers=headers,
-        )
-        assert phone_request.status_code == 200, phone_request.text
-        phone_token = phone_request.json()["debug_token"]
-        assert phone_token
-        wrong_token = "000000" if phone_token != "000000" else "999999"
-        for _ in range(8):
-            rejected = await client.post(
-                "/api/v1/auth/verification/phone/confirm",
-                headers=headers,
-                json={"token": wrong_token},
-            )
-            assert rejected.status_code == 401, rejected.text
-
-        locked = await client.post(
-            "/api/v1/auth/verification/phone/confirm",
-            headers=headers,
-            json={"token": phone_token},
-        )
-        assert locked.status_code == 401, locked.text
-
         logout = await client.post("/api/v1/auth/logout")
         assert logout.status_code == 204, logout.text
         revoked_session = await client.get("/api/v1/users/me", headers=headers)
@@ -252,12 +218,17 @@ async def test_refresh_logout_and_phone_challenge_lockout(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_unverified_session_is_limited_until_email_and_phone_are_confirmed(
-    monkeypatch,
-):
-    monkeypatch.setattr(settings, "AUTH_DEBUG_TOKENS", True)
+async def test_email_only_signup_verification_and_password_recovery(monkeypatch):
+    delivered = []
+
+    async def capture_email(*, purpose: str, destination: str, token: str) -> None:
+        delivered.append((purpose, destination, token))
+
+    monkeypatch.setattr("app.api.v1.endpoints.auth.dispatch_challenge", capture_email)
     monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", True)
-    suffix = str(uuid4().int)[-9:]
+    monkeypatch.setattr(settings, "AUTH_DEBUG_TOKENS", False)
+    monkeypatch.setattr(settings, "RATE_LIMIT_ENABLED", True)
+    monkeypatch.setattr(settings, "RATE_LIMIT_BACKEND", "memory")
     email = f"verification-{uuid4().hex[:12]}@example.com"
     password = "Secure verify passphrase 123!"
 
@@ -269,7 +240,6 @@ async def test_unverified_session_is_limited_until_email_and_phone_are_confirmed
             "/api/v1/signup",
             json={
                 "email": email,
-                "phone": f"09{suffix}",
                 "password": password,
                 "display_name": "کاربر آزمایشی",
                 "accept_terms": True,
@@ -278,14 +248,25 @@ async def test_unverified_session_is_limited_until_email_and_phone_are_confirmed
             },
         )
         assert signup.status_code == 200, signup.text
+        assert len(delivered) == 1
+        assert delivered[0][:2] == ("verify_email", email)
+        initial_token = delivered[0][2]
+        account_id = signup.json()["id"]
+        assert client.cookies.get(settings.REFRESH_COOKIE_NAME)
+        pending = await client.post("/api/v1/auth/refresh")
+        assert pending.status_code == 200, pending.text
+        assert pending.json()["requires_verification"] is True
+        headers = {"Authorization": f"Bearer {pending.json()['access_token']}"}
 
-        login = await client.post(
-            "/api/v1/login/access-token",
-            data={"username": email, "password": password},
-        )
-        assert login.status_code == 200, login.text
-        assert login.json()["requires_verification"] is True
-        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as other_browser:
+            login = await other_browser.post(
+                "/api/v1/login/access-token", data={"username": email, "password": password},
+            )
+            assert login.status_code == 200, login.text
+            assert login.json()["requires_verification"] is True
+            other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+            assert (await other_browser.get("/api/v1/users/me", headers=other_headers)).status_code == 403
+        assert len(delivered) == 1
 
         blocked_profile = await client.get("/api/v1/users/me", headers=headers)
         assert blocked_profile.status_code == 403, blocked_profile.text
@@ -293,40 +274,98 @@ async def test_unverified_session_is_limited_until_email_and_phone_are_confirmed
             "/api/v1/auth/verification/status",
             headers=headers,
         )
-        assert initial_status.json()["account_verified"] is False
+        assert initial_status.json() == {
+            "account_id": account_id, "email": email,
+            "email_verified": False, "account_verified": False,
+        }
 
         email_request = await client.post(
             "/api/v1/auth/verification/email/request",
             headers=headers,
         )
-        email_token = email_request.json()["debug_token"]
-        email_confirm = await client.post(
-            "/api/v1/auth/verification/email/confirm",
-            json={"token": email_token},
+        assert email_request.status_code == 200
+        assert email_request.json()["debug_token"] is None
+        assert len(delivered) == 2
+        assert delivered[1][:2] == ("verify_email", email)
+        email_token = delivered[1][2]
+        duplicate_resend = await client.post("/api/v1/auth/verification/email/request", headers=headers)
+        assert duplicate_resend.status_code == 429, duplicate_resend.text
+        assert len(delivered) == 2
+        confirm_path = "/api/v1/auth/verification/email/confirm"
+        replaced_code = await client.post(
+            confirm_path, headers=headers, json={"token": initial_token},
         )
-        assert email_confirm.status_code == 200, email_confirm.text
+        assert replaced_code.status_code == 401
 
-        phone_request = await client.post(
-            "/api/v1/auth/verification/phone/request",
-            headers=headers,
-        )
-        phone_token = phone_request.json()["debug_token"]
-        phone_confirm = await client.post(
-            "/api/v1/auth/verification/phone/confirm",
-            headers=headers,
-            json={"token": phone_token},
-        )
-        assert phone_confirm.status_code == 200, phone_confirm.text
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as other_browser:
+            no_session = await other_browser.post(confirm_path, json={"token": email_token})
+            assert no_session.status_code == 401
+            other_signup = await other_browser.post(
+                "/api/v1/signup",
+                json={
+                    "email": f"other-verification-{uuid4().hex[:12]}@example.com",
+                    "password": password,
+                    "display_name": "کاربر آزمایشی",
+                    "accept_terms": True,
+                    "accept_privacy": True,
+                    "accept_community_guidelines": True,
+                },
+            )
+            assert other_signup.status_code == 200, other_signup.text
+            other_session = await other_browser.post("/api/v1/auth/refresh")
+            assert other_session.status_code == 200, other_session.text
+            wrong_account = await other_browser.post(
+                confirm_path,
+                headers={"Authorization": f"Bearer {other_session.json()['access_token']}"},
+                json={"token": email_token},
+            )
+            assert wrong_account.status_code == 401
+
+        email_confirm = await client.post(confirm_path, headers=headers, json={"token": email_token})
+        assert email_confirm.status_code == 200, email_confirm.text
+        assert email_confirm.json()["account_id"] == account_id
+        replay = await client.post(confirm_path, headers=headers, json={"token": email_token})
+        assert replay.status_code == 401
+        assert len(delivered) == 3
 
         verified_profile = await client.get("/api/v1/users/me", headers=headers)
         assert verified_profile.status_code == 200, verified_profile.text
+        verified_status = await client.get("/api/v1/auth/verification/status", headers=headers)
+        assert verified_status.json() == {
+            "account_id": account_id, "email": email,
+            "email_verified": True, "account_verified": True,
+        }
+
+        reset_request = await client.post("/api/v1/auth/password/reset/request", json={"email": email})
+        assert reset_request.status_code == 202
+        assert reset_request.json()["debug_token"] is None
+        assert len(delivered) == 4
+        assert delivered[3][:2] == ("password_reset", email)
+        reset_token = delivered[3][2]
+        new_password = "Another secure recovery passphrase 456!"
+        reset_payload = {"token": reset_token, "new_password": new_password}
+        reset = await client.post("/api/v1/auth/password/reset/confirm", json=reset_payload)
+        assert reset.status_code == 200, reset.text
+        reused = await client.post("/api/v1/auth/password/reset/confirm", json=reset_payload)
+        assert reused.status_code == 401
+        assert (await client.get("/api/v1/users/me", headers=headers)).status_code == 401
+
+        old_login = await client.post(
+            "/api/v1/login/access-token", data={"username": email, "password": password},
+        )
+        assert old_login.status_code == 401
+        new_login = await client.post(
+            "/api/v1/login/access-token", data={"username": email, "password": new_password},
+        )
+        assert new_login.status_code == 200, new_login.text
+        assert new_login.json()["requires_verification"] is False
+        assert len(delivered) == 4
 
 
 @pytest.mark.asyncio
 async def test_admin_mfa_enrollment_revokes_sessions_and_backup_codes_are_one_time(
     monkeypatch,
 ):
-    suffix = str(uuid4().int)[-9:]
     email = f"admin-mfa-{uuid4().hex[:12]}@example.com"
     password = "Secure admin passphrase 123!"
 
@@ -338,7 +377,6 @@ async def test_admin_mfa_enrollment_revokes_sessions_and_backup_codes_are_one_ti
             "/api/v1/signup",
             json={
                 "email": email,
-                "phone": f"09{suffix}",
                 "password": password,
                 "display_name": "مدیر آزمایشی",
                 "accept_terms": True,
@@ -359,7 +397,6 @@ async def test_admin_mfa_enrollment_revokes_sessions_and_backup_codes_are_one_ti
             "/api/v1/signup",
             json={
                 "email": target_email,
-                "phone": f"09{str(uuid4().int)[-9:]}",
                 "password": target_password,
                 "display_name": "کاربر نقش آزمایشی",
                 "accept_terms": True,

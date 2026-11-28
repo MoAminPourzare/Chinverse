@@ -13,7 +13,9 @@ for (const collection of [
             const path = new URL(route.request().url()).pathname;
             const method = route.request().method();
             let body: unknown = [];
-            if (path.endsWith("/users/me")) body = { id: 9, email: "qa@example.com", profile: { display_name: "کاربر تست" } };
+            if (path.endsWith("/auth/refresh")) body = { access_token: "isolated-bookmark-session" };
+            else if (path.endsWith("/learning-path")) body = { steps: [], completed_count: 0, total_count: 0, next_lesson_id: null };
+            else if (path.endsWith("/users/me")) body = { id: 9, email: "qa@example.com", profile: { display_name: "کاربر تست" } };
             else if (path.endsWith("/followers/count")) body = { count: 0 };
             else if (path.endsWith("/collections/saved")) body = saved ? [collection] : [];
             else if (path.includes(`/collections/${collection.domain}/${collection.slug}/`)) {
@@ -29,7 +31,7 @@ for (const collection of [
         await page.reload();
         await expect(page.getByRole("button", { name: "حذف از منتخب‌ها", exact: true })).toBeEnabled();
         await page.goto("/profile");
-        await page.getByRole("button", { name: /مجموعه‌های منتخب/ }).click();
+        await page.getByRole("link", { name: "مجموعه‌های منتخب", exact: true }).click();
         const link = page.locator(`a[href="/${collection.domain}/${collection.slug}"]`);
         await expect(link).toHaveCount(1);
         await expect.poll(() => link.locator("img").evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
@@ -37,7 +39,7 @@ for (const collection of [
         await page.getByRole("button", { name: "حذف از منتخب‌ها", exact: true }).click();
         await expect(page.getByRole("button", { name: "ذخیره در منتخب‌ها", exact: true })).toHaveAttribute("aria-pressed", "false");
         await page.goto("/profile");
-        await page.getByRole("button", { name: /مجموعه‌های منتخب/ }).click();
+        await page.getByRole("link", { name: "مجموعه‌های منتخب", exact: true }).click();
         await expect(page.getByText("اولین مجموعه‌ات رو انتخاب کن!")).toBeVisible();
     });
 }

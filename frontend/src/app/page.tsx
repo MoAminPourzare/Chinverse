@@ -3,14 +3,14 @@
 import Image from "@/components/ui/PublicMediaImage";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import ActivitiesFeed from "@/components/home/ActivitiesFeed";
+import CommunityForum from "@/components/community/CommunityForum";
 import { cn } from "@/lib/cn";
 import DailyPracticeContent from "@/components/daily/DailyPracticeContent";
 
-type HomeTab = "activities" | "daily";
+type HomeTab = "forum" | "daily";
 
 const homeTabs: Array<{ id: HomeTab; label: string }> = [
-    { id: "activities", label: "فعالیت‌ها" },
+    { id: "forum", label: "تالار گفتگو" },
     { id: "daily", label: "روند یادگیری" },
 ];
 
@@ -20,7 +20,7 @@ export default function HomePage() {
 
 function HomeContent() {
     const requestedTab = useSearchParams().get("tab");
-    const activeTab = requestedTab === "daily" ? "daily" : "activities";
+    const activeTab = requestedTab === "daily" ? "daily" : "forum";
 
     const selectTab = (tab: HomeTab) => {
         const url = new URL(window.location.href);
@@ -73,7 +73,7 @@ function HomeContent() {
                         <DailyPracticeContent />
                     </section>
                 ) : (
-                    <ActivitiesFeed />
+                    <CommunityForum />
                 )}
             </main>
         </div>

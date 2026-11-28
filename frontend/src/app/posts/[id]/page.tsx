@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "@/components/ui/PublicMediaImage";
+import { AppHeader } from "@/components/ui/IconButton";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -82,13 +83,9 @@ export default function PostDetailPage() {
     return (
         <div className="min-h-full bg-[#f7f8fb] pb-28" dir="rtl">
             <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-4">
-                <header data-page-header className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                    <SafeBackButton fallback="/community" />
-                    <Link data-header-title href="/" className="flex items-center justify-center text-center text-xs font-black text-[#155aa6]">
+                <AppHeader className="mb-0" backControl={<SafeBackButton fallback="/community" />} title={<Link href="/" className="flex items-center justify-center text-center text-xs font-black text-[#155aa6]">
                         خانه
-                    </Link>
-                    <span aria-hidden />
-                </header>
+                    </Link>} />
 
                 <article className="overflow-hidden rounded-[30px] border border-white bg-white shadow-[0_22px_60px_rgba(15,23,42,0.10)]">
                     <div className="p-4">

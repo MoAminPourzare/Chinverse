@@ -39,7 +39,6 @@ async def test_public_image_rejects_unsafe_same_origin_content_type():
     async with SessionLocal() as db:
         owner = User(
             email=f"phase5-unsafe-{suffix}@example.com",
-            phone=f"+988{suffix[:9]}",
             password_hash="test-only",
             is_verified=True,
             status=UserStatus.ACTIVE,
@@ -102,7 +101,6 @@ async def test_public_image_streams_then_revocation_becomes_opaque_404():
     async with SessionLocal() as db:
         owner = User(
             email=f"phase5-image-{suffix}@example.com",
-            phone=f"+989{suffix[:9]}",
             password_hash="test-only",
             is_verified=True,
             status=UserStatus.ACTIVE,

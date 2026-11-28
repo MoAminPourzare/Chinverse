@@ -11,4 +11,4 @@ def test_challenge_links_use_configured_public_origin_and_encoded_tokens(monkeyp
     assert challenge_public_url(purpose="password_reset", token="reset token") == (
         "https://chinverse.example/forgot-password?token=reset+token"
     )
-    assert challenge_public_url(purpose="verify_phone", token="123456") is None
+    assert challenge_public_url(purpose="unknown", token="token") is None

@@ -21,7 +21,7 @@ async def test_home_feed_has_stable_mixed_pagination_and_server_side_filters(mon
     stamp = datetime(2090, 1, 1, tzinfo=timezone.utc)
     suffix = uuid4().hex
     async with SessionLocal.begin() as db:
-        owner = User(email=f"feed-{suffix}@example.com", phone=f"07{uuid4().int % 10**9:09d}",
+        owner = User(email=f"feed-{suffix}@example.com",
                      password_hash="unused-test-hash", status=UserStatus.ACTIVE, is_verified=False)
         db.add(owner)
         await db.flush()

@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 from dataclasses import dataclass
-import hashlib
 import json
 import os
 import secrets
@@ -39,7 +38,6 @@ class SmokeFailure(RuntimeError):
 @dataclass(frozen=True)
 class SyntheticAccount:
     email: str
-    phone: str
     password: str
 
 
@@ -66,13 +64,11 @@ def require_release(value: str) -> str:
 
 def build_synthetic_account() -> SyntheticAccount:
     nonce = secrets.token_hex(8)
-    phone_suffix = int.from_bytes(hashlib.sha256(nonce.encode("ascii")).digest()[:8], "big") % 1_000_000_000
     # The password is deliberately unrelated to every account field so the
     # server's account-data password guard cannot reject this generated user.
     password = f"Qz!{secrets.token_urlsafe(18)}_phase2"
     return SyntheticAccount(
         email=f"phase2-{nonce}@example.com",
-        phone=f"09{phone_suffix:09d}",
         password=password,
     )
 
@@ -92,8 +88,9 @@ def json_body(response: httpx.Response, label: str) -> dict:
     return value
 
 
-async def websocket_smoke(base_url: str, token: str) -> None:
+async def websocket_smoke(base_url: str, token: str, *, verification_required: bool) -> None:
     try:
+        from websockets.exceptions import ConnectionClosedError
         try:
             from websockets.asyncio.client import connect  # websockets >= 14
         except ImportError:  # pragma: no cover - compatibility for older lockfiles
@@ -104,7 +101,14 @@ async def websocket_smoke(base_url: str, token: str) -> None:
         websocket_url = urlunsplit((scheme, parsed.netloc, "/api/v1/chat/ws", "", ""))
         async with connect(websocket_url, open_timeout=10, close_timeout=5, max_size=256_000) as socket:
             await socket.send(json.dumps({"type": "auth", "token": token}))
-            ready = json.loads(await asyncio.wait_for(socket.recv(), timeout=10))
+            try:
+                ready = json.loads(await asyncio.wait_for(socket.recv(), timeout=10))
+            except ConnectionClosedError as exc:
+                if verification_required and exc.rcvd and exc.rcvd.code == 1008:
+                    return
+                raise
+            if verification_required:
+                raise SmokeFailure("chat websocket accepted an unverified account")
             if ready.get("type") != "connection:ready":
                 raise SmokeFailure("chat websocket did not emit connection:ready")
             await socket.send(json.dumps({"type": "ping"}))
@@ -157,7 +161,6 @@ async def run_smoke(base_url: str, expected_release: str, *, allow_local: bool =
                 "/api/v1/signup",
                 json={
                     "email": account.email,
-                    "phone": account.phone,
                     "display_name": "کاربر آزمایشی",
                     "password": account.password,
                     "accept_terms": True,
@@ -185,34 +188,47 @@ async def run_smoke(base_url: str, expected_release: str, *, allow_local: bool =
             checks["login"] = True
 
             me_response = await client.get("/api/v1/users/me", headers=auth_headers)
-            expect_status(me_response, 200, "account")
-            me = json_body(me_response, "account")
-            if me.get("email") != account.email or me.get("is_verified") is not False:
-                raise SmokeFailure("account response did not match the synthetic user contract")
+            verification_required = me_response.status_code == 403
+            if verification_required:
+                if (
+                    json_body(me_response, "account").get("detail") != "Account verification is required"
+                    or login.get("requires_verification") is not True
+                ):
+                    raise SmokeFailure("unverified account did not report the verification gate")
+                verification = await client.get("/api/v1/auth/verification/status", headers=auth_headers)
+                expect_status(verification, 200, "verification status")
+                if json_body(verification, "verification status").get("email_verified") is not False:
+                    raise SmokeFailure("new email unexpectedly started verified")
+            else:
+                expect_status(me_response, 200, "account")
+                me = json_body(me_response, "account")
+                if me.get("email") != account.email or me.get("is_verified") is not False:
+                    raise SmokeFailure("account response did not match the synthetic user contract")
             checks["account"] = True
 
             beta_response = await client.get("/api/v1/beta/status", headers=auth_headers)
-            expect_status(beta_response, 200, "beta status")
-            beta = json_body(beta_response, "beta status")
-            if not (
-                beta.get("enabled") is False
-                and beta.get("eligible") is False
-                and beta.get("reason") == "disabled"
-                and beta.get("feedback_enabled") is False
-            ):
-                raise SmokeFailure("beta/feedback did not fail closed")
+            expect_status(beta_response, 403 if verification_required else 200, "beta status")
+            if not verification_required:
+                beta = json_body(beta_response, "beta status")
+                if not (
+                    beta.get("enabled") is False
+                    and beta.get("eligible") is False
+                    and beta.get("reason") == "disabled"
+                    and beta.get("feedback_enabled") is False
+                ):
+                    raise SmokeFailure("beta/feedback did not fail closed")
             checks["beta_disabled"] = True
 
             conversations_response = await client.get(
                 "/api/v1/chat/conversations",
                 headers=auth_headers,
             )
-            expect_status(conversations_response, 200, "chat conversations")
-            if not isinstance(conversations_response.json(), list):
+            expect_status(conversations_response, 403 if verification_required else 200, "chat conversations")
+            if not verification_required and not isinstance(conversations_response.json(), list):
                 raise SmokeFailure("chat conversations response was not a list")
             checks["chat_http"] = True
 
-            await websocket_smoke(base_url, token)
+            await websocket_smoke(base_url, token, verification_required=verification_required)
             checks["chat_websocket"] = True
 
             admin_response = await client.get("/api/v1/admin/users?limit=1", headers=auth_headers)

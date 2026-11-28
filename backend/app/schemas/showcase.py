@@ -48,7 +48,7 @@ class PublicUserProfile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class PublicUser(BaseModel):
-    """Full public user for profile view - excludes email, phone, password"""
+    """Public user details for the profile view."""
     id: int
     profile: Optional[PublicUserProfile] = None
     gallery_items: List[GalleryItemPublic] = Field(default_factory=list)

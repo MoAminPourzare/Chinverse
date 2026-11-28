@@ -68,9 +68,9 @@ export default async function RootLayout({
   await connection();
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const releaseSha = process.env.VERCEL_GIT_COMMIT_SHA
-    ?? process.env.GITHUB_SHA
-    ?? process.env.NEXT_PUBLIC_RELEASE_SHA
-    ?? "local";
+    || process.env.GITHUB_SHA
+    || process.env.NEXT_PUBLIC_RELEASE_SHA
+    || "local";
 
   return (
     <html lang="fa" suppressHydrationWarning>

@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MoreVertical, Star } from "lucide-react";
 import CourseDetailPage from "@/components/course/CourseDetailPage";
 import ReferenceIntroduction from "@/components/course/ReferenceIntroduction";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import CollectionBookmarkButton from "@/components/course/CollectionBookmarkButton";
 import { getTeaCultureCourse } from "@/lib/teaCultureCatalog";
 import { getPlannedLessonTitle } from "@/lib/plannedCourseCatalog";
@@ -38,17 +38,14 @@ export default function TeaCultureDetailPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fa] pb-28 dark:bg-[#10151c]" dir="rtl">
-            <main className="mx-auto w-full max-w-[430px] px-6 py-4">
-                <div data-page-header className="sticky top-0 z-10 -mx-6 bg-[#f7f8fa] px-6 pb-5 dark:bg-[#10151c]">
-                    <header className="-mx-2 flex items-center justify-between py-2" dir="rtl">
-                        <BackButton href="/explore/tea-culture" label="بازگشت به فهرست فرهنگ چای" />
-                        <div className="flex items-center gap-1">
+            <main className="mx-auto w-full max-w-[430px] px-4 py-4">
+                <>
+                    <AppHeader className="mb-0" backHref="/explore/tea-culture" backLabel="بازگشت به فهرست فرهنگ چای" title={null} actions={<div className="flex items-center gap-1">
                             <CollectionBookmarkButton domain={"tea-culture"} slug={course.slug} courseId={publishedCourse?.id} />
                             <button type="button" onClick={() => router.push(getReturnToHref("/settings/appearance"))} aria-label="تنظیمات نمایش" className="flex h-10 w-10 items-center justify-center rounded-full text-[#333941] transition hover:bg-white dark:text-slate-100 dark:hover:bg-slate-800">
                                 <MoreVertical size={22} />
                             </button>
-                        </div>
-                    </header>
+                        </div>} />
                     <section className="mt-4 grid grid-cols-2 items-center gap-2" dir="ltr">
                         <div data-course-heading className="min-w-0 text-center">
                             <h1 className="text-[15px] font-bold leading-6 text-[#343941] dark:text-white" lang="en">{course.cardTitle || course.title}</h1>
@@ -63,7 +60,7 @@ export default function TeaCultureDetailPage() {
                             <Image src={course.coverPath} alt={`کاور ${course.title}`} fill sizes="(max-width: 430px) 43vw, 187px" className="object-cover" priority />
                         </div>
                     </section>
-                </div>
+                </>
 
                 <ReferenceIntroduction heading={course.introductionHeading || "معرفی دوره:"} paragraphs={course.description} />
 

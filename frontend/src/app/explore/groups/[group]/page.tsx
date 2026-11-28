@@ -4,7 +4,7 @@ import { notFound, useParams } from "next/navigation";
 import Image from "@/components/ui/PublicMediaImage";
 import { getExploreSection } from "@/components/explore/exploreData";
 import ExploreItemLink from "@/components/explore/ExploreItemLink";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import styles from "@/components/explore/ExploreGallery.module.css";
 
 export default function ExploreGroupPage() {
@@ -15,14 +15,8 @@ export default function ExploreGroupPage() {
     return (
         <div className={styles.page} data-tone={section.tone} dir="rtl">
             <main className={styles.main}>
-                <header data-page-header className={styles.groupHeader}>
-                    <div className={styles.groupToolbar} dir="rtl">
-                        <BackButton href="/explore" label="بازگشت به کاوش" />
-                        <h1 className={styles.groupTitle} dir="rtl">{section.title}</h1>
-                        <span aria-hidden />
-                    </div>
-                    <p className={styles.groupDescription}>{section.subtitle}</p>
-                </header>
+                <AppHeader title={section.title} backHref="/explore" backLabel="بازگشت به کاوش" className="mb-0" />
+                <p className={styles.groupDescription}>{section.subtitle}</p>
                 <figure className={styles.hero}>
                     <Image src={section.heroPath} alt={section.heroAlt} width={section.heroWidth} height={section.heroHeight}
                         sizes="(max-width: 430px) 93vw, 398px" preload className={styles.heroImage} />

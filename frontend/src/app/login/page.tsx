@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Image from "@/components/ui/PublicMediaImage";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Mail, Lock, Eye, EyeOff, KeyRound } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import TurnstileWidget from "@/components/auth/TurnstileWidget";
@@ -29,12 +29,6 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-    const [notice] = useState(() => {
-        if (typeof window === "undefined") return "";
-        return new URLSearchParams(window.location.search).get("email_verified") === "1"
-            ? "ایمیل با موفقیت تأیید شد. حالا وارد حسابت شو."
-            : "";
-    });
 
     const togglePasswordVisibility = () => {
         const livePassword = passwordInputRef.current?.value;
@@ -95,18 +89,13 @@ export default function LoginPage() {
                 <h2 className="text-xl font-black text-slate-950">خوش برگشتی</h2>
             </div>
 
+            <Suspense fallback={null}><PasswordResetNotice /></Suspense>
             {error && (
                 <div className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700" role="alert" aria-live="assertive">
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
                     <p className="text-sm leading-6">{error}</p>
                 </div>
             )}
-            {notice && (
-                <p className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
-                    {notice}
-                </p>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <label htmlFor="login-email" className="flex flex-col gap-2.5">
                     <span className="text-sm font-semibold text-slate-700">ایمیل</span>
@@ -200,6 +189,16 @@ export default function LoginPage() {
                 </PrimaryButton>
             </form>
         </AuthShell>
+    );
+}
+
+function PasswordResetNotice() {
+    const params = useSearchParams();
+    if (params.get("password_reset") !== "1") return null;
+    return (
+        <p role="status" className="mb-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-800">
+            رمز عبور عوض شد. با رمز جدید وارد شو.
+        </p>
     );
 }
 

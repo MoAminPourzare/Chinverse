@@ -51,7 +51,6 @@ async def _create_user_and_order(*, label: str, provider_reference: str) -> tupl
         assert plan is not None
         user = User(
             email=f"phase6-{label}-{uuid4().hex[:12]}@example.test",
-            phone=f"09{uuid4().int % 10**9:09d}",
             password_hash="phase6-integration-password-hash",
             is_verified=True,
         )

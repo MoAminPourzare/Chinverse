@@ -9,13 +9,6 @@ export const normalizeDigits = (value: string) => {
         .replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)));
 };
 
-export const normalizeIranMobile = (value: string) => {
-    let phone = normalizeDigits(value).trim().replace(/[^\d+]/g, "");
-    if (phone.startsWith("+98")) phone = `0${phone.slice(3)}`;
-    if (phone.startsWith("0098")) phone = `0${phone.slice(4)}`;
-    return phone;
-};
-
 const PERSIAN_NAME_PATTERN = /^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءئؤۀة\s‌]+$/u;
 
 export const normalizePersianName = (value: string) => value
@@ -84,17 +77,6 @@ export const validateEmail = (value: string): ValidationResult => {
     }
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(email)) {
         return { ok: false, message: "ایمیل را با ساختار درست وارد کن؛ مثل name@example.com" };
-    }
-    return { ok: true };
-};
-
-export const validateIranMobile = (value: string): ValidationResult => {
-    const phone = normalizeIranMobile(value);
-    if (!phone) {
-        return { ok: false, message: "شماره موبایل را وارد کن." };
-    }
-    if (!/^09\d{9}$/.test(phone)) {
-        return { ok: false, message: "شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل 09121234567" };
     }
     return { ok: true };
 };

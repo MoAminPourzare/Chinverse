@@ -12,6 +12,7 @@ from .auth import (
     SessionRead,
     VerificationConfirm,
     VerificationStatus,
+    EmailVerificationResult,
 )
 from .showcase import ShowcaseUser, PublicUser, PublicUserProfile, GalleryItemPublic
 from .moderation import (

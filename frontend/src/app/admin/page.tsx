@@ -35,7 +35,7 @@ import { isHttpStatus } from "@/lib/http";
 import { DICTIONARY_LEVELS, dictionaryLevelLabel } from "@/lib/dictionaryLevels";
 import Surface from "@/components/ui/Surface";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-import { BackButton } from "@/components/ui/IconButton";
+import { AppHeader } from "@/components/ui/IconButton";
 import {
     normalizeDigits,
     parseJsonObject,
@@ -898,16 +898,12 @@ export default function AdminPanelPage() {
 
     return (
         <div className="min-h-full bg-[#f7f8fb] pb-10" dir="rtl">
-            <header data-page-header className="sticky top-0 z-30 border-b border-white/70 bg-white/88 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+            <header data-page-header className="sticky top-0 z-30 bg-[#f7f8fb] px-4 pb-3 pt-4 dark:bg-[#10151c]">
                 <div className="mx-auto flex max-w-6xl flex-col gap-3">
-                    <div className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3" dir="rtl">
-                        <BackButton href="/" />
-                        <div data-header-title className="min-w-0" dir="rtl">
+                    <AppHeader backHref="/" sticky={false} className="mb-0" title={<div className="min-w-0" dir="rtl">
                             <h1 className="text-lg font-black leading-7 text-slate-950">پنل ادمین چین‌ورس</h1>
                             <p className="text-xs font-bold leading-5 text-slate-500">محتوا، ویدیو، دیکشنری و کاربران</p>
-                        </div>
-                        <span aria-hidden />
-                    </div>
+                        </div>} />
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                             <Link href="/admin/beta" title="عملیات بتای بسته" aria-label="مدیریت cohort و بازخورد بتا" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
@@ -932,7 +928,7 @@ export default function AdminPanelPage() {
                 </div>
             </header>
 
-            <main className="mx-auto max-w-6xl px-4 py-5">
+            <main className="mx-auto max-w-6xl px-4 py-4">
                 <nav aria-label="بخش‌های پنل ادمین" className="mb-5 flex flex-wrap gap-2">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
@@ -1921,7 +1917,7 @@ function UsersTab({
         <Surface className={cn(panelClass, "motion-list p-4")}>
             <PanelTitle icon={<Users size={18} />} title="کاربران" subtitle="نقش‌ها از دیتابیس اعمال می‌شوند و تغییر نقش، نشست‌های قبلی کاربر را می‌بندد." />
             <div className="mt-4 flex gap-2">
-                <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="ایمیل یا موبایل" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldClass} placeholder="ایمیل کاربر" />
                 <button type="button" onClick={onRefresh} className="rounded-2xl bg-[#155aa6] px-4 text-sm font-black text-white">جست‌وجو</button>
             </div>
             <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-100">
@@ -1929,7 +1925,7 @@ function UsersTab({
                     <div key={user.id} className="grid gap-1 border-b border-slate-100 bg-white px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto]">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-black text-slate-950">{user.display_name || user.email}</p>
-                            <p className="truncate text-xs font-bold text-slate-400">{user.email} · {user.phone}</p>
+                            <p className="truncate text-xs font-bold text-slate-400">{user.email}</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-black text-slate-500">
                             <select

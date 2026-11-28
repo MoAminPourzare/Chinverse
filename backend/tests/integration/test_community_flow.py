@@ -14,7 +14,6 @@ pytestmark = pytest.mark.integration
 
 
 async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
-    suffix = str(uuid4().int)[-9:]
     email = f"community-{uuid4().hex[:12]}@example.com"
     password = "Secure community passphrase 123!"
 
@@ -22,7 +21,6 @@ async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
         "/api/v1/signup",
         json={
             "email": email,
-            "phone": f"09{suffix}",
             "password": password,
             "display_name": "\u06a9\u0627\u0631\u0628\u0631 \u0622\u0632\u0645\u0627\u06cc\u0634\u06cc",
             "accept_terms": True,
@@ -35,7 +33,6 @@ async def authenticated_user(client: AsyncClient) -> tuple[int, dict[str, str]]:
     async with SessionLocal() as db:
         user = await db.get(User, signup.json()["id"])
         user.email_verified_at = datetime.now(UTC)
-        user.phone_verified_at = datetime.now(UTC)
         user.is_verified = True
         await db.commit()
 
@@ -178,18 +175,19 @@ async def test_message_reports_are_private_and_deduplicated():
         first_user_id, first_headers = await authenticated_user(client)
         second_user_id, second_headers = await authenticated_user(client)
 
-        message = await client.post(
-            "/api/v1/chat",
-            headers=second_headers,
-            json={"receiver_id": first_user_id, "content": "reportable message"},
-        )
-        assert message.status_code == 200, message.text
+        # Retained historical messages can still be reported by their recipients.
+        from app.models.social import Message
+        async with SessionLocal() as db:
+            message = Message(sender_id=second_user_id, receiver_id=first_user_id, content="historical reportable message")
+            db.add(message)
+            await db.commit()
+            message_id = message.id
 
         _, third_headers = await authenticated_user(client)
 
         report_payload = {
             "target_type": "message",
-            "target_id": message.json()["id"],
+            "target_id": message_id,
             "reason": "harassment",
             "details": "integration security test",
         }

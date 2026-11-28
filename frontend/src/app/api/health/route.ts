@@ -11,8 +11,9 @@ export function GET() {
       deployment_tier: releaseConfig.deploymentTier,
       indexable: releaseConfig.isPublicRelease,
       release:
-        process.env.VERCEL_GIT_COMMIT_SHA ??
-        process.env.GITHUB_SHA ??
+        process.env.VERCEL_GIT_COMMIT_SHA ||
+        process.env.GITHUB_SHA ||
+        process.env.NEXT_PUBLIC_RELEASE_SHA ||
         "local",
     },
     {

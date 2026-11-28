@@ -277,6 +277,54 @@ html:not(.dark) [class~="bg-[#f7f8fa]/90"] {
     top: var(--app-header-top, 0px);
 }
 
+/* A quiet card, separate from the canvas: the previous inherited ::before
+   expanded the white header into a square banner above its rounded corners. */
+.page-toolbar[data-page-header] {
+  background: #fff;
+  border: 1px solid #e7edf5;
+  box-shadow: 0 3px 14px #24385b05;
+}
+.app-scroll .page-toolbar[data-page-header] { top: var(--app-header-top, 16px); }
+.page-toolbar[data-header-sticky="false"] { position: static; }
+.app-scroll .page-toolbar[data-page-header]::before {
+  inset: -24px -16px auto;
+  height: 23px;
+  background: var(--app-canvas);
+}
+.app-back-button {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  border-radius: 16px;
+}
+.app-back-button > svg { width: 21px; height: 21px; }
+.page-toolbar-icon { color: #155aa6; }
+.dark .page-toolbar[data-page-header] {
+  background: #192330;
+  border-color: #2c3b4f;
+  box-shadow: 0 3px 14px #0000000a;
+}
+.forum-support-shortcut {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(98px + env(safe-area-inset-bottom));
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1d5297;
+  box-shadow: 0 4px 12px #1c406833;
+  transition: background .18s, transform .18s;
+}
+.forum-support-shortcut:hover { background: #14447e; transform: translateY(-2px); }
+.forum-support-shortcut:focus-visible { outline: 3px solid #74b4f8; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .forum-support-shortcut { transition: none; } }
+
 /* Page titles remain centered regardless of the writing direction or side controls. */
 .app-scroll h1,
 [data-header-title],

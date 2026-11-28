@@ -99,11 +99,9 @@ def test_fixture_identities_are_deterministic_unique_and_synthetic():
 
     assert [asdict(item) for item in first] == [asdict(item) for item in second]
     assert len({item.email for item in first}) == 4
-    assert len({item.phone for item in first}) == 4
     assert {item.role for item in first} == {"user", "moderator", "admin"}
     assert all(item.email.endswith("@example.com") for item in first)
     assert all(item.email.startswith("phase4-live-smoke-20260809-") for item in first)
-    assert all(len(item.phone) == 11 and item.phone.startswith("09") for item in first)
     assert all(any("\u0600" <= character <= "\u06ff" for character in item.display_name) for item in first)
 
 
@@ -128,7 +126,6 @@ def test_fixture_state_requires_all_exact_accounts_without_exposing_passwords():
         {
             "id": index,
             "email": account.email,
-            "phone": account.phone,
             "role": account.role,
             "is_verified": True,
             "status": "active",
