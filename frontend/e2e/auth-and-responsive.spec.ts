@@ -92,9 +92,9 @@ test.describe("authentication forms", () => {
     });
 
     await page.goto("/signup");
-    await page.locator("#signup-display-name").fill("کاربر آزمایشی");
-    await page.locator("#signup-email").fill(email);
-    await page.locator("#signup-password").fill("A long test-only passphrase");
+    await page.locator("#signup-display-name:visible").fill("کاربر آزمایشی");
+    await page.locator("#signup-email:visible").fill(email);
+    await page.locator("#signup-password:visible").fill("A long test-only passphrase");
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "ثبت نام", exact: true }).click();
     await expect(page).toHaveURL(/\/verify-account\?signup=1$/);
@@ -140,8 +140,8 @@ test.describe("authentication forms", () => {
 
     const login = async () => {
       await page.goto("/login");
-      await page.locator("#login-email").fill(email);
-      await page.locator("#login-password").fill("A long test-only passphrase");
+      await page.locator("#login-email:visible").fill(email);
+      await page.locator("#login-password:visible").fill("A long test-only passphrase");
       await page.getByRole("button", { name: "ورود", exact: true }).click();
     };
 
