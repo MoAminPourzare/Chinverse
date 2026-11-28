@@ -459,6 +459,13 @@ async def request_email_verification(
 ) -> Any:
     if current_user.email_verified_at:
         return {"message": "Email is already verified."}
+    await enforce_rate_limit(
+        request,
+        name="auth-verification-resend-account",
+        max_requests=1,
+        window_seconds=60,
+        discriminator=str(current_user.id),
+    )
     token = await create_challenge(
         db,
         user=current_user,

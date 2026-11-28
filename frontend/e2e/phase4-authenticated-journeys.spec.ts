@@ -89,8 +89,16 @@ test.describe("phase four authenticated journeys", () => {
   });
 
   test("focused pages do not place the floating support shortcut over their controls", async ({ page }) => {
+    await page.route("**/api/backend/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/auth/refresh")) return json(route, { access_token: "phase4-access-token" });
+      if (path.endsWith("/admin/me")) return json(route, { is_admin: false });
+      return json(route, []);
+    });
+
     for (const route of ["/notifications", "/settings", "/account/security", "/support"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page).toHaveURL(route);
       await expect(page.locator(".app-support-button")).toHaveCount(0);
     }
   });

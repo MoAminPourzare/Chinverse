@@ -92,17 +92,65 @@ test.describe("authentication forms", () => {
     await page.locator("#signup-password").fill("A long test-only passphrase");
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "ثبت نام", exact: true }).click();
-    await expect(page).toHaveURL(/\/verify-account$/);
+    await expect(page).toHaveURL(/\/verify-account\?signup=1$/);
     await expect(page.getByRole("heading", { name: "صندوق ایمیلت را چک کن" })).toBeVisible();
     await expect(page.getByText(email, { exact: true })).toBeVisible();
     expect(signupRequests).toBe(1);
     expect(resendRequests).toBe(0);
 
     const emailTab = await context.newPage();
-    await emailTab.goto("/verify-account?email_token=test-email-token");
+    const emailButton = "https://mail-relay.example/verification";
+    await emailTab.route(emailButton, (route) => route.fulfill({
+      status: 302,
+      headers: { location: new URL("/verify-account?email_token=test-email-token", page.url()).href },
+    }));
+    await emailTab.goto(emailButton);
     await expect(emailTab).toHaveURL("/");
     await page.bringToFront();
     await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page).toHaveURL("/");
+    expect(resendRequests).toBe(0);
+  });
+
+  test("an unfinished signup can be verified on the same page and later logins skip verification", async ({ page }) => {
+    const email = "verify-code@example.com";
+    const code = "q".repeat(43);
+    let verified = false;
+    let resendRequests = 0;
+    await page.route("**/api/backend/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/login/access-token") || path.endsWith("/auth/refresh")) {
+        await route.fulfill({ json: { access_token: "mock-session", requires_verification: !verified } });
+      } else if (path.endsWith("/auth/verification/status")) {
+        await route.fulfill({ json: { account_id: 32, email, email_verified: verified, account_verified: verified } });
+      } else if (path.endsWith("/auth/verification/email/confirm")) {
+        expect(route.request().postDataJSON()).toEqual({ token: code });
+        verified = true;
+        await route.fulfill({ json: { account_id: 32 } });
+      } else if (path.endsWith("/auth/verification/email/request")) {
+        resendRequests += 1;
+        await route.fulfill({ json: { message: "Email requested." } });
+      } else {
+        await route.fulfill({ json: [] });
+      }
+    });
+
+    const login = async () => {
+      await page.goto("/login");
+      await page.locator("#login-email").fill(email);
+      await page.locator("#login-password").fill("A long test-only passphrase");
+      await page.getByRole("button", { name: "ورود", exact: true }).click();
+    };
+
+    await login();
+    await expect(page.getByRole("heading", { name: "ثبت‌نامت را کامل کن" })).toBeVisible();
+    await expect(page.getByText(/می‌توانی این صفحه را باز بگذاری/)).toHaveCount(0);
+    await page.getByText("لینک باز نمی‌شود؟", { exact: true }).click();
+    await page.getByLabel("کد تأیید داخل ایمیل").fill(code);
+    await page.getByRole("button", { name: "تأیید حساب", exact: true }).click();
+    await expect(page).toHaveURL("/");
+
+    await login();
     await expect(page).toHaveURL("/");
     expect(resendRequests).toBe(0);
   });

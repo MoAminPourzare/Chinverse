@@ -1,19 +1,39 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Mail, MailCheck } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import { authService } from "@/services/auth.service";
 
+function responseStatus(error: unknown) {
+    return (error as { response?: { status?: number } })?.response?.status;
+}
+
+function confirmationError(error: unknown) {
+    const status = responseStatus(error);
+    if (status === 400 || status === 401 || status === 422) {
+        return "این لینک یا کد معتبر نیست. اگر ایمیل تازه‌تری داری، از همان استفاده کن یا لینک تازه بگیر.";
+    }
+    if (status === 429) return "تعداد تلاش‌ها زیاد شد. کمی صبر کن و دوباره امتحان کن.";
+    return "تأیید ایمیل فعلاً انجام نشد. دوباره تلاش کن.";
+}
+
 export default function VerifyAccountPage() {
     const router = useRouter();
     const [checking, setChecking] = useState(true);
     const [email, setEmail] = useState("");
+    const [afterSignup] = useState(() => typeof window !== "undefined"
+        && new URLSearchParams(window.location.search).get("signup") === "1");
     const [resending, setResending] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+    const [linkAttempt, setLinkAttempt] = useState(0);
+    const [canRetryLink, setCanRetryLink] = useState(false);
+    const [code, setCode] = useState("");
+    const [confirmingCode, setConfirmingCode] = useState(false);
+    const linkToken = useRef<string | null>(null);
     const confirmation = useRef<Promise<number> | null>(null);
     const resendInProgress = useRef(false);
 
@@ -24,10 +44,11 @@ export default function VerifyAccountPage() {
         const currentUrl = new URL(window.location.href);
         const emailLinkToken = currentUrl.searchParams.get("email_token")?.trim();
         if (emailLinkToken) {
+            linkToken.current = emailLinkToken;
             currentUrl.searchParams.delete("email_token");
             window.history.replaceState(window.history.state, "", currentUrl);
-            confirmation.current ??= authService.confirmEmailVerification(emailLinkToken);
         }
+        if (linkToken.current) confirmation.current ??= authService.confirmEmailVerification(linkToken.current);
 
         const checkStatus = async () => {
             if (stopped || !sessionReady || statusInProgress || document.hidden) return;
@@ -42,10 +63,8 @@ export default function VerifyAccountPage() {
                 setEmail(status.email);
                 setChecking(false);
             } catch (caught: unknown) {
-                const status = (caught as { response?: { status?: number } }).response?.status;
-                if (!stopped && (status === 401 || status === 403)) {
-                    router.replace("/login?next=/verify-account");
-                }
+                const status = responseStatus(caught);
+                if (!stopped && (status === 401 || status === 403)) router.replace("/login");
             } finally {
                 statusInProgress = false;
             }
@@ -56,9 +75,11 @@ export default function VerifyAccountPage() {
                 let verifiedAccountId: number;
                 try {
                     verifiedAccountId = await confirmation.current;
-                } catch {
+                } catch (caught) {
                     if (!stopped) {
-                        setError("این لینک منقضی شده یا قبلاً استفاده شده است. برای دریافت لینک تازه وارد حساب شو.");
+                        const status = responseStatus(caught);
+                        setError(confirmationError(caught));
+                        setCanRetryLink(status === undefined || status === 429 || status >= 500);
                         setChecking(false);
                     }
                     return;
@@ -76,13 +97,13 @@ export default function VerifyAccountPage() {
             const hasSession = await authService.restoreSession();
             if (stopped) return;
             if (!hasSession) {
-                router.replace("/login?next=/verify-account");
+                router.replace("/login");
                 return;
             }
             sessionReady = true;
             await checkStatus();
         })().catch(() => {
-            if (!stopped) router.replace("/login?next=/verify-account");
+            if (!stopped) router.replace("/login");
         });
 
         const interval = window.setInterval(() => void checkStatus(), 5000);
@@ -95,7 +116,15 @@ export default function VerifyAccountPage() {
             window.removeEventListener("focus", onReturn);
             document.removeEventListener("visibilitychange", onReturn);
         };
-    }, [router]);
+    }, [router, linkAttempt]);
+
+    const retryLink = () => {
+        confirmation.current = null;
+        setError("");
+        setCanRetryLink(false);
+        setChecking(true);
+        setLinkAttempt((attempt) => attempt + 1);
+    };
 
     const resendEmail = async () => {
         if (resendInProgress.current) return;
@@ -105,18 +134,41 @@ export default function VerifyAccountPage() {
         setMessage("");
         try {
             await authService.requestEmailVerification();
-            setMessage("درخواست ارسال دوباره ثبت شد. صندوق ایمیل و پوشهٔ اسپم را بررسی کن.");
+            setMessage("لینک تازهٔ تأیید درخواست شد.");
         } catch (caught: unknown) {
-            const apiError = caught as { response?: { data?: { detail?: string } } };
-            setError(apiError.response?.data?.detail || "انجام درخواست ناموفق بود. دوباره تلاش کن.");
+            setError(responseStatus(caught) === 429
+                ? "برای درخواست لینک تازه، کمی صبر کن."
+                : "درخواست ارسال لینک انجام نشد. دوباره تلاش کن.");
         } finally {
             resendInProgress.current = false;
             setResending(false);
         }
     };
 
+    const confirmCode = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const token = code.trim();
+        if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+            setError("کد تأیید را کامل از ایمیل کپی کن.");
+            return;
+        }
+        setConfirmingCode(true);
+        setError("");
+        setMessage("");
+        try {
+            const accountId = await authService.confirmEmailVerification(token);
+            const status = await authService.getVerificationStatus();
+            if (status.account_verified && status.account_id === accountId) router.replace("/");
+            else setError("این کد برای نشانی ایمیل دیگری است.");
+        } catch (caught) {
+            setError(confirmationError(caught));
+        } finally {
+            setConfirmingCode(false);
+        }
+    };
+
     return (
-        <AuthShell backHref="/login" title="تأیید حساب" icon={<MailCheck size={22} />}>
+        <AuthShell backHref="/login" title="تأیید ایمیل" icon={<MailCheck size={22} />}>
             {error && <p role="alert" className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{error}</p>}
             {checking && (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm font-bold text-slate-600">
@@ -127,13 +179,11 @@ export default function VerifyAccountPage() {
 
             {!checking && email && (
                 <div className="space-y-4">
-                    <h1 className="text-xl font-black text-slate-950">صندوق ایمیلت را چک کن</h1>
+                    <h2 className="text-xl font-black text-slate-950">{afterSignup ? "صندوق ایمیلت را چک کن" : "ثبت‌نامت را کامل کن"}</h2>
                     <p className="text-sm leading-7 text-slate-700">
-                        لینک تأیید حساب را به <bdi dir="ltr" className="break-all font-bold text-[#155aa6]">{email}</bdi> فرستادیم.
-                        ایمیل را باز کن و روی «تأیید حساب» بزن تا حسابت فعال شود.
-                    </p>
-                    <p className="text-sm leading-7 text-slate-600">
-                        می‌توانی این صفحه را باز بگذاری. بعد از تأیید، خودکار وارد چین‌ورس می‌شوی. اگر ایمیل را پیدا نکردی، پوشهٔ هرزنامه را هم چک کن.
+                        {afterSignup ? "لینک تأیید حساب را به " : "برای تکمیل ثبت‌نام، نشانی "}
+                        <bdi dir="ltr" className="break-all font-bold text-[#155aa6]">{email}</bdi>
+                        {afterSignup ? " فرستادیم. ایمیل را باز کن و روی «تأیید حساب» بزن." : " را تأیید کن. ایمیل ثبت‌نام را باز کن یا لینک تازه بگیر."}
                     </p>
                     {message && <p role="status" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{message}</p>}
                     <button
@@ -145,10 +195,34 @@ export default function VerifyAccountPage() {
                         {resending ? <Loader2 size={17} className="animate-spin" /> : <Mail size={17} />}
                         ارسال دوبارهٔ لینک تأیید
                     </button>
+                    <details className="rounded-2xl border border-slate-200 px-4 py-3 text-sm">
+                        <summary className="cursor-pointer font-bold text-[#155aa6]">لینک باز نمی‌شود؟</summary>
+                        <form onSubmit={(event) => void confirmCode(event)} className="mt-3 space-y-2">
+                            <label htmlFor="email-verification-code" className="block text-slate-700">کد تأیید داخل ایمیل</label>
+                            <input
+                                id="email-verification-code"
+                                dir="ltr"
+                                type="text"
+                                autoComplete="one-time-code"
+                                spellCheck={false}
+                                autoCapitalize="off"
+                                value={code}
+                                onChange={(event) => setCode(event.target.value)}
+                                className="min-h-11 w-full rounded-xl border border-slate-300 px-3 font-mono text-slate-950"
+                                required
+                            />
+                            <button type="submit" disabled={confirmingCode} className="min-h-11 w-full rounded-xl bg-[#155aa6] px-3 font-bold text-white disabled:opacity-50">
+                                {confirmingCode ? "در حال تأیید…" : "تأیید حساب"}
+                            </button>
+                        </form>
+                    </details>
                 </div>
             )}
             {!checking && !email && error && (
-                <Link className="text-sm font-bold text-[#155aa6]" href="/login?next=/verify-account">رفتن به صفحهٔ ورود</Link>
+                <div className="flex flex-wrap gap-4 text-sm font-bold text-[#155aa6]">
+                    {canRetryLink && <button type="button" onClick={retryLink}>تلاش دوباره</button>}
+                    <Link href="/login">رفتن به صفحهٔ ورود</Link>
+                </div>
             )}
         </AuthShell>
     );

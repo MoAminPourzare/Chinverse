@@ -68,6 +68,8 @@ describe("account email delivery", () => {
         }));
         expect(sendMail.mock.calls[0][0].html).toContain('href="{unsubscribe}"');
         expect(sendMail.mock.calls[0][0].text).toContain("مدیریت دریافت ایمیل‌ها: {unsubscribe}");
+        expect(sendMail.mock.calls[0][0].html).toContain(`>${token}</p>`);
+        expect(sendMail.mock.calls[0][0].text.split("\n")).toContain(token);
     });
 
     it("builds the password reset message and respects the optional test recipient list", async () => {

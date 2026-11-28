@@ -227,6 +227,8 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
     monkeypatch.setattr("app.api.v1.endpoints.auth.dispatch_challenge", capture_email)
     monkeypatch.setattr(settings, "REQUIRE_VERIFIED_LOGIN", True)
     monkeypatch.setattr(settings, "AUTH_DEBUG_TOKENS", False)
+    monkeypatch.setattr(settings, "RATE_LIMIT_ENABLED", True)
+    monkeypatch.setattr(settings, "RATE_LIMIT_BACKEND", "memory")
     email = f"verification-{uuid4().hex[:12]}@example.com"
     password = "Secure verify passphrase 123!"
 
@@ -286,6 +288,9 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
         assert len(delivered) == 2
         assert delivered[1][:2] == ("verify_email", email)
         email_token = delivered[1][2]
+        duplicate_resend = await client.post("/api/v1/auth/verification/email/request", headers=headers)
+        assert duplicate_resend.status_code == 429, duplicate_resend.text
+        assert len(delivered) == 2
         old_link = await client.post(
             "/api/v1/auth/verification/email/confirm", json={"token": initial_token},
         )
@@ -330,6 +335,7 @@ async def test_email_only_signup_verification_and_password_recovery(monkeypatch)
         )
         assert new_login.status_code == 200, new_login.text
         assert new_login.json()["requires_verification"] is False
+        assert len(delivered) == 3
 
 
 @pytest.mark.asyncio

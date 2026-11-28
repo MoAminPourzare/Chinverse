@@ -133,7 +133,7 @@ export default function SignupForm({ children }: { children: ReactNode }) {
                 accept_privacy: true,
                 accept_community_guidelines: true,
             });
-            router.replace("/verify-account");
+            router.replace("/verify-account?signup=1");
         } catch (err: unknown) {
             setTurnstileResetKey((value) => value + 1);
             const apiError = err as { response?: { data?: { detail?: string | Array<{ loc?: Array<string | number>; msg?: string }> } } };

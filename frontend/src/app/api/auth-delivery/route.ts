@@ -28,13 +28,15 @@ const opaqueTokenPattern = /^[A-Za-z0-9_-]{43}$/;
 const expiryNote = "این لینک تا ۳۰ دقیقه اعتبار دارد.";
 const ignoreNote = "اگر خودت این درخواست را ثبت نکردی، می‌توانی این ایمیل را نادیده بگیری.";
 
-function renderEmail(template: typeof templates[keyof typeof templates], url: URL) {
+function renderEmail(template: typeof templates[keyof typeof templates], url: URL, recoveryCode?: string) {
+    const recoveryText = "اگر دکمه باز نشد، این کد را کپی کن و در بخش «لینک باز نمی‌شود؟» در چین‌ورس وارد کن.";
     return {
         text: [
             template.heading,
             template.instruction,
             "",
             `${template.button}: ${url.href}`,
+            ...(recoveryCode ? ["", recoveryText, recoveryCode] : []),
             "",
             expiryNote,
             ignoreNote,
@@ -57,6 +59,8 @@ function renderEmail(template: typeof templates[keyof typeof templates], url: UR
               <a href="${url.href}" style="display:inline-block;padding:13px 24px;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;line-height:1.5">${template.button}</a>
             </td>
           </tr></table>
+          ${recoveryCode ? `<p style="margin:20px 0 8px;color:#334961;font-size:13px;line-height:1.9">${recoveryText}</p>
+          <p dir="ltr" style="margin:0;padding:10px;background:#f0f5fa;border-radius:8px;color:#172940;font:13px monospace;overflow-wrap:anywhere;word-break:break-all">${recoveryCode}</p>` : ""}
           <p style="margin:22px 0 0;color:#52677e;font-size:13px;line-height:1.9">${expiryNote} ${ignoreNote}</p>
         </td></tr>
         <tr><td align="right" style="padding:16px 24px;border-top:1px solid #e1ebf4;color:#52677e;font-size:12px">
@@ -138,7 +142,7 @@ export async function POST(request: Request) {
             from: { name: "چین‌ورس", address: from },
             to: { name: "", address: body.destination },
             subject: template.subject,
-            ...renderEmail(template, actionUrl),
+            ...renderEmail(template, actionUrl, body.purpose === "verify_email" ? token : undefined),
             headers: { IsTransactional: "True" },
         });
         return reply(204);
